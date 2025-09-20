@@ -7,7 +7,7 @@ import type {
   StrainBlueprint,
   DevicePriceEntry,
 } from '../data/schemas/index.js';
-import { DEFAULT_SAVEGAME_VERSION } from './state/serialization.js';
+import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
 import {
   DeviceInstanceState,
   DifficultyLevel,

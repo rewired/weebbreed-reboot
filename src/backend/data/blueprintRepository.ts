@@ -8,7 +8,10 @@ import {
   loadBlueprintData,
 } from './dataLoader.js';
 
-export type HotReloadHandler = (payload: DataLoadResult) => void;
+export type HotReloadDisposition = 'commit' | 'defer';
+export type HotReloadHandler = (
+  payload: DataLoadResult,
+) => HotReloadDisposition | void | Promise<HotReloadDisposition | void>;
 export type HotReloadErrorHandler = (error: unknown) => void;
 
 export interface BlueprintRepositoryOptions {
@@ -18,6 +21,8 @@ export interface BlueprintRepositoryOptions {
 export class BlueprintRepository {
   private data: BlueprintData;
   private summary: DataLoadSummary;
+
+  private stagedResult: DataLoadResult | null = null;
 
   private constructor(
     private readonly dataDirectory: string,
@@ -79,9 +84,23 @@ export class BlueprintRepository {
 
   async reload(): Promise<DataLoadResult> {
     const result = await loadBlueprintData(this.dataDirectory);
-    this.data = result.data;
-    this.summary = result.summary;
+    this.stagedResult = result;
     return result;
+  }
+
+  commitReload(): DataLoadResult | null {
+    if (!this.stagedResult) {
+      return null;
+    }
+    this.data = this.stagedResult.data;
+    this.summary = this.stagedResult.summary;
+    const committed = this.stagedResult;
+    this.stagedResult = null;
+    return committed;
+  }
+
+  discardStagedReload(): void {
+    this.stagedResult = null;
   }
 
   onHotReload(
@@ -103,7 +122,10 @@ export class BlueprintRepository {
       reloading = true;
       try {
         const result = await this.reload();
-        handler(result);
+        const disposition = await handler(result);
+        if (disposition !== 'defer' && this.stagedResult) {
+          this.commitReload();
+        }
       } catch (error) {
         if (error instanceof DataLoaderError) {
           options.onHotReloadError?.({
