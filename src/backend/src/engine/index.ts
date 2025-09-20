@@ -5,3 +5,4 @@ export * from './plants/resourceDemand.js';
 export * from './plants/growthModel.js';
 export * from './health/models.js';
 export * from './health/healthEngine.js';
+export * from './workforce/index.js';

@@ -1,0 +1,829 @@
+import type { EventCollector } from '../../lib/eventBus.js';
+import type {
+  EmployeeState,
+  GameState,
+  PendingTreatmentApplication,
+  StructureState,
+  TaskAssignment,
+  TaskDefinition,
+  TaskDefinitionMap,
+  TaskLocation,
+  TaskState,
+  TaskSystemState,
+  ZoneState,
+} from '../../state/models.js';
+import type { SimulationPhaseHandler } from '../../sim/loop.js';
+import {
+  type TaskSafetyRequirements,
+  type WorkforceEmployeeRuntimeState,
+  type WorkforceEngineOptions,
+  type WorkforcePolicies,
+  type WorkforceTaskMetadata,
+} from './types.js';
+
+const clamp = (value: number, min: number, max: number): number => {
+  if (Number.isNaN(value)) {
+    return min;
+  }
+  return Math.min(Math.max(value, min), max);
+};
+
+const DEFAULT_POLICIES: WorkforcePolicies = {
+  energy: {
+    minEnergyToClaim: 0.35,
+    energyCostPerHour: 0.08,
+    idleRecoveryPerTick: 0.05,
+    overtimeCostMultiplier: 1.5,
+  },
+  overtime: {
+    standardHoursPerDay: 8,
+    overtimeThresholdHours: 8,
+    maxOvertimeHoursPerDay: 4,
+  },
+  utility: {
+    weights: {
+      priority: 0.4,
+      skill: 0.3,
+      energy: 0.2,
+      morale: 0.1,
+    },
+    claimThreshold: 0.45,
+    skillEfficiencyBonus: 0.08,
+  },
+  safety: {
+    treatmentCertifications: {
+      cultural: 'cert.treatment.cultural',
+      biological: 'cert.treatment.biological',
+      mechanical: 'cert.treatment.mechanical',
+      chemical: 'cert.treatment.chemical',
+      physical: 'cert.treatment.physical',
+    },
+    defaultTreatmentCertification: 'cert.treatment.general',
+  },
+  generation: {
+    reservoirLevelThreshold: 0.45,
+    nutrientStrengthThreshold: 0.6,
+    cleanlinessThreshold: 0.7,
+    harvestReadinessThreshold: 0.5,
+    maintenanceConditionThreshold: 0.55,
+    maintenanceGraceTicks: 6,
+  },
+};
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+};
+
+const getTaskMetadata = (task: TaskState): WorkforceTaskMetadata | undefined => {
+  const raw = task.metadata as WorkforceTaskMetadata | undefined;
+  if (!raw) {
+    return undefined;
+  }
+  if (typeof raw.estimatedWorkHours !== 'number') {
+    return undefined;
+  }
+  return raw;
+};
+
+const computeDayIndex = (tick: number, ticksPerDay: number): number => {
+  if (ticksPerDay <= 0) {
+    return 0;
+  }
+  return Math.floor(Math.max(tick - 1, 0) / ticksPerDay);
+};
+
+interface TaskCreationContext {
+  structure: StructureState;
+  zone: ZoneState;
+  taskSystem: TaskSystemState;
+  tick: number;
+  definitionId: string;
+  fallbackPriority: number;
+  events: EventCollector;
+  metadata: Record<string, unknown>;
+  safety?: TaskSafetyRequirements;
+  taskKey?: string;
+}
+
+interface WorkHoursAllocation {
+  regularHours: number;
+  overtimeHours: number;
+  totalHours: number;
+}
+
+const HOURS_PER_DAY = 24;
+const MIN_ESTIMATED_HOURS = 0.25;
+
+export class WorkforceEngine {
+  private readonly definitions: TaskDefinitionMap;
+
+  private readonly policies: WorkforcePolicies;
+
+  private readonly runtime = new Map<string, WorkforceEmployeeRuntimeState>();
+
+  private sequence = 0;
+
+  constructor(definitions: TaskDefinitionMap, options?: WorkforceEngineOptions) {
+    this.definitions = definitions;
+    this.policies = {
+      ...DEFAULT_POLICIES,
+      ...options?.policies,
+      energy: { ...DEFAULT_POLICIES.energy, ...options?.policies?.energy },
+      overtime: { ...DEFAULT_POLICIES.overtime, ...options?.policies?.overtime },
+      utility: { ...DEFAULT_POLICIES.utility, ...options?.policies?.utility },
+      safety: { ...DEFAULT_POLICIES.safety, ...options?.policies?.safety },
+      generation: { ...DEFAULT_POLICIES.generation, ...options?.policies?.generation },
+    } satisfies WorkforcePolicies;
+  }
+
+  createPhaseHandler(): SimulationPhaseHandler {
+    return (context) => {
+      this.processTick(context.state, context.tick, context.tickLengthMinutes, context.events);
+    };
+  }
+
+  processTick(
+    state: GameState,
+    tick: number,
+    tickLengthMinutes: number,
+    events: EventCollector,
+  ): void {
+    const ticksPerDay = Math.max(
+      1,
+      Math.round((HOURS_PER_DAY * 60) / Math.max(tickLengthMinutes, 1)),
+    );
+    this.ensureRuntimeState(state.personnel.employees);
+    this.resetDailyCounters(state.personnel.employees, tick, ticksPerDay);
+    this.generateTasks(state, tick, events);
+    this.assignTasks(state, tick, tickLengthMinutes);
+    this.advanceActiveTasks(state, tick, tickLengthMinutes, events);
+    this.recoverIdleEmployees(state.personnel.employees, tickLengthMinutes);
+  }
+
+  private ensureRuntimeState(employees: EmployeeState[]): void {
+    for (const employee of employees) {
+      const certifications = new Set(employee.certifications ?? []);
+      const existing = this.runtime.get(employee.id);
+      if (existing) {
+        existing.certifications = certifications;
+      } else {
+        this.runtime.set(employee.id, {
+          certifications,
+          lastShiftDayIndex: -1,
+        });
+      }
+    }
+  }
+
+  private resetDailyCounters(employees: EmployeeState[], tick: number, ticksPerDay: number): void {
+    const currentDay = computeDayIndex(tick, ticksPerDay);
+    for (const employee of employees) {
+      const runtime = this.runtime.get(employee.id);
+      if (!runtime) {
+        continue;
+      }
+      if (runtime.lastShiftDayIndex !== currentDay) {
+        employee.hoursWorkedToday = 0;
+        runtime.lastShiftDayIndex = currentDay;
+        employee.lastShiftResetTick = tick;
+      }
+      if (!Number.isFinite(employee.overtimeHours) || employee.overtimeHours < 0) {
+        employee.overtimeHours = 0;
+      }
+    }
+  }
+
+  private recoverIdleEmployees(employees: EmployeeState[], tickLengthMinutes: number): void {
+    const recoveryPerTick = this.policies.energy.idleRecoveryPerTick * (tickLengthMinutes / 60);
+    for (const employee of employees) {
+      if (employee.status !== 'assigned') {
+        employee.energy = clamp(employee.energy + recoveryPerTick, 0, 1);
+      }
+      if (employee.status === 'assigned' && !employee.currentTaskId) {
+        employee.status = 'idle';
+      }
+    }
+  }
+
+  private generateTasks(state: GameState, tick: number, events: EventCollector): void {
+    for (const structure of state.structures) {
+      for (const room of structure.rooms) {
+        for (const zone of room.zones) {
+          this.generateZoneTasks(state.tasks, structure, room, zone, tick, events);
+        }
+      }
+    }
+  }
+
+  private generateZoneTasks(
+    taskSystem: TaskSystemState,
+    structure: StructureState,
+    room: StructureState['rooms'][number],
+    zone: ZoneState,
+    tick: number,
+    events: EventCollector,
+  ): void {
+    const generationPolicy = this.policies.generation;
+    if (
+      zone.resources.reservoirLevel < generationPolicy.reservoirLevelThreshold &&
+      !this.hasOpenTask(taskSystem, zone.id, 'refill_supplies_water')
+    ) {
+      const priorityBoost = Math.round((1 - clamp(zone.resources.reservoirLevel, 0, 1)) * 4);
+      this.queueTask({
+        structure,
+        zone,
+        taskSystem,
+        tick,
+        definitionId: 'refill_supplies_water',
+        fallbackPriority: 7 + priorityBoost,
+        events,
+        metadata: {
+          zoneName: zone.name,
+          structureName: structure.name,
+          reason: 'lowReservoir',
+          taskKey: 'refill_supplies_water',
+        },
+        taskKey: 'refill_supplies_water',
+      });
+    }
+
+    if (
+      zone.resources.nutrientStrength < generationPolicy.nutrientStrengthThreshold &&
+      !this.hasOpenTask(taskSystem, zone.id, 'refill_supplies_nutrients')
+    ) {
+      const priorityBoost = Math.round((1 - clamp(zone.resources.nutrientStrength, 0, 1)) * 4);
+      this.queueTask({
+        structure,
+        zone,
+        taskSystem,
+        tick,
+        definitionId: 'refill_supplies_nutrients',
+        fallbackPriority: 6 + priorityBoost,
+        events,
+        metadata: {
+          zoneName: zone.name,
+          structureName: structure.name,
+          reason: 'lowNutrients',
+          taskKey: 'refill_supplies_nutrients',
+        },
+        taskKey: 'refill_supplies_nutrients',
+      });
+    }
+
+    if (
+      room.cleanliness < generationPolicy.cleanlinessThreshold &&
+      !this.hasOpenTask(taskSystem, zone.id, 'clean_zone')
+    ) {
+      const dirtiness = 1 - clamp(room.cleanliness, 0, 1);
+      const priorityBoost = Math.round(dirtiness * 5);
+      this.queueTask({
+        structure,
+        zone,
+        taskSystem,
+        tick,
+        definitionId: 'clean_zone',
+        fallbackPriority: 5 + priorityBoost,
+        events,
+        metadata: {
+          zoneName: zone.name,
+          structureName: structure.name,
+          area: room.area,
+          taskKey: 'clean_zone',
+        },
+        taskKey: 'clean_zone',
+      });
+    }
+
+    const harvestablePlants = zone.plants.filter((plant) => plant.stage === 'harvestReady');
+    if (
+      harvestablePlants.length / Math.max(zone.plants.length || 1, 1) >=
+        generationPolicy.harvestReadinessThreshold &&
+      harvestablePlants.length > 0 &&
+      !this.hasOpenTask(taskSystem, zone.id, 'harvest_plants')
+    ) {
+      this.queueTask({
+        structure,
+        zone,
+        taskSystem,
+        tick,
+        definitionId: 'harvest_plants',
+        fallbackPriority: 9,
+        events,
+        metadata: {
+          zoneName: zone.name,
+          structureName: structure.name,
+          plantCount: harvestablePlants.length,
+          taskKey: 'harvest_plants',
+        },
+        taskKey: 'harvest_plants',
+      });
+    }
+
+    for (const device of zone.devices) {
+      const key = `maintain_${device.id}`;
+      if (
+        device.maintenance.condition < generationPolicy.maintenanceConditionThreshold ||
+        device.maintenance.nextDueTick - tick <= generationPolicy.maintenanceGraceTicks
+      ) {
+        if (!this.hasOpenTask(taskSystem, zone.id, 'maintain_device', key)) {
+          this.queueTask({
+            structure,
+            zone,
+            taskSystem,
+            tick,
+            definitionId: 'maintain_device',
+            fallbackPriority: 6,
+            events,
+            metadata: {
+              zoneName: zone.name,
+              structureName: structure.name,
+              deviceId: device.id,
+              deviceName: device.name,
+              taskKey: key,
+            },
+            taskKey: key,
+          });
+        }
+      }
+      if (device.status === 'failed' || device.maintenance.condition < 0.35) {
+        const repairKey = `repair_${device.id}`;
+        if (!this.hasOpenTask(taskSystem, zone.id, 'repair_device', repairKey)) {
+          this.queueTask({
+            structure,
+            zone,
+            taskSystem,
+            tick,
+            definitionId: 'repair_device',
+            fallbackPriority: 10,
+            events,
+            metadata: {
+              zoneName: zone.name,
+              structureName: structure.name,
+              deviceId: device.id,
+              deviceName: device.name,
+              taskKey: repairKey,
+            },
+            safety: {
+              hazardLevel: 'medium',
+              requiredCertifications: [],
+            },
+            taskKey: repairKey,
+          });
+        }
+      }
+    }
+
+    for (const pending of zone.health.pendingTreatments) {
+      if (pending.scheduledTick > tick) {
+        continue;
+      }
+      const taskKey = this.buildTreatmentTaskKey(pending);
+      if (this.hasOpenTask(taskSystem, zone.id, 'apply_treatment', taskKey)) {
+        continue;
+      }
+      const safety = this.createTreatmentSafety(pending);
+      const plantCount = pending.plantIds.length || 1;
+      this.queueTask({
+        structure,
+        zone,
+        taskSystem,
+        tick,
+        definitionId: 'apply_treatment',
+        fallbackPriority: 10,
+        events,
+        metadata: {
+          zoneName: zone.name,
+          structureName: structure.name,
+          treatmentOptionId: pending.optionId,
+          treatmentTarget: pending.target,
+          treatmentCategory: pending.category,
+          treatmentName: pending.optionId,
+          plantCount,
+          taskKey,
+        },
+        safety,
+        taskKey,
+      });
+    }
+  }
+
+  private hasOpenTask(
+    taskSystem: TaskSystemState,
+    zoneId: string,
+    definitionId: string,
+    taskKey?: string,
+  ): boolean {
+    const matches = (task: TaskState) => {
+      if (task.definitionId !== definitionId) {
+        return false;
+      }
+      if (task.location?.zoneId !== zoneId) {
+        return false;
+      }
+      if (task.status === 'completed' || task.status === 'cancelled') {
+        return false;
+      }
+      if (!taskKey) {
+        return true;
+      }
+      const metadata = getTaskMetadata(task);
+      return metadata?.taskKey === taskKey;
+    };
+
+    return taskSystem.backlog.some(matches) || taskSystem.active.some(matches);
+  }
+
+  private queueTask(context: TaskCreationContext): void {
+    const definition = this.definitions[context.definitionId];
+    const priority = definition?.priority ?? context.fallbackPriority;
+    const metadata: WorkforceTaskMetadata = {
+      ...context.metadata,
+      estimatedWorkHours: this.estimateWorkHours(definition, context.metadata),
+    };
+    if (context.safety) {
+      metadata.safety = context.safety;
+    }
+    if (context.taskKey) {
+      metadata.taskKey = context.taskKey;
+    }
+
+    const task: TaskState = {
+      id: this.generateTaskId(context.tick),
+      definitionId: context.definitionId,
+      status: 'pending',
+      priority: Math.max(1, Math.round(priority)),
+      createdAtTick: context.tick,
+      dueTick: this.computeDueTick(priority, context.tick),
+      location: {
+        structureId: context.structure.id,
+        roomId: context.zone.roomId,
+        zoneId: context.zone.id,
+      } satisfies TaskLocation,
+      metadata,
+    };
+
+    context.events.queue({
+      type: 'task.created',
+      payload: {
+        taskId: task.id,
+        definitionId: task.definitionId,
+        priority: task.priority,
+        structureId: context.structure.id,
+        roomId: context.zone.roomId,
+        zoneId: context.zone.id,
+        safety: metadata.safety,
+      },
+      tick: context.tick,
+      level: 'info',
+    });
+
+    context.taskSystem.backlog.push(task);
+  }
+
+  private assignTasks(state: GameState, tick: number, tickLengthMinutes: number): void {
+    const backlog = state.tasks.backlog.filter((task) => task.status === 'pending');
+    backlog.sort((left, right) => right.priority - left.priority);
+
+    const availableEmployees = state.personnel.employees.filter((employee) => {
+      if (employee.status !== 'idle') {
+        return false;
+      }
+      if (employee.energy < this.policies.energy.minEnergyToClaim) {
+        return false;
+      }
+      return true;
+    });
+
+    for (const task of backlog) {
+      const definition = this.definitions[task.definitionId];
+      const best = this.selectEmployeeForTask(availableEmployees, task, definition);
+      if (!best) {
+        continue;
+      }
+      const index = state.tasks.backlog.indexOf(task);
+      if (index >= 0) {
+        state.tasks.backlog.splice(index, 1);
+      }
+      task.status = 'inProgress';
+      const metadata = getTaskMetadata(task);
+      const estimatedHours =
+        metadata?.estimatedWorkHours ?? this.estimateWorkHours(definition, task.metadata);
+      const hoursPerTick = Math.max(tickLengthMinutes / 60, 0.1);
+      const etaTicks = Math.max(1, Math.ceil(estimatedHours / hoursPerTick));
+      const assignment: TaskAssignment = {
+        employeeId: best.id,
+        startedAtTick: tick,
+        progress: 0,
+        etaTick: tick + etaTicks,
+      };
+      task.assignment = assignment;
+      state.tasks.active.push(task);
+      best.status = 'assigned';
+      best.currentTaskId = task.id;
+      const zone = this.findZone(state, task.location);
+      if (zone && !zone.activeTaskIds.includes(task.id)) {
+        zone.activeTaskIds.push(task.id);
+      }
+      const employeeIndex = availableEmployees.findIndex((item) => item.id === best.id);
+      if (employeeIndex >= 0) {
+        availableEmployees.splice(employeeIndex, 1);
+      }
+    }
+  }
+
+  private selectEmployeeForTask(
+    employees: EmployeeState[],
+    task: TaskState,
+    definition: TaskDefinition | undefined,
+  ): EmployeeState | undefined {
+    let best: EmployeeState | undefined;
+    let bestScore = this.policies.utility.claimThreshold;
+    for (const employee of employees) {
+      const score = this.computeUtility(employee, task, definition);
+      if (score > bestScore) {
+        best = employee;
+        bestScore = score;
+      }
+    }
+    return best;
+  }
+
+  private computeUtility(
+    employee: EmployeeState,
+    task: TaskState,
+    definition: TaskDefinition | undefined,
+  ): number {
+    if (definition) {
+      if (employee.role !== definition.requiredRole) {
+        return Number.NEGATIVE_INFINITY;
+      }
+      const skillLevel = toNumber(employee.skills?.[definition.requiredSkill]);
+      if (skillLevel < definition.minSkillLevel) {
+        return Number.NEGATIVE_INFINITY;
+      }
+    }
+
+    const metadata = getTaskMetadata(task);
+    const safety = metadata?.safety;
+    if (safety && safety.requiredCertifications.length > 0) {
+      const runtime = this.runtime.get(employee.id);
+      const certs = runtime?.certifications ?? new Set(employee.certifications);
+      for (const certification of safety.requiredCertifications) {
+        if (!certs.has(certification)) {
+          return Number.NEGATIVE_INFINITY;
+        }
+      }
+    }
+
+    if (employee.energy < this.policies.energy.minEnergyToClaim) {
+      return Number.NEGATIVE_INFINITY;
+    }
+
+    const weights = this.policies.utility.weights;
+    const priorityScore = clamp(task.priority / 10, 0, 1);
+    const skillScore = definition
+      ? clamp(toNumber(employee.skills?.[definition.requiredSkill]) / 10, 0, 1)
+      : 0.5;
+    const energyScore = clamp(employee.energy, 0, 1);
+    const moraleScore = clamp(employee.morale, 0, 1);
+
+    return (
+      weights.priority * priorityScore +
+      weights.skill * skillScore +
+      weights.energy * energyScore +
+      weights.morale * moraleScore
+    );
+  }
+
+  private advanceActiveTasks(
+    state: GameState,
+    tick: number,
+    tickLengthMinutes: number,
+    events: EventCollector,
+  ): void {
+    const hoursPerTick = Math.max(tickLengthMinutes / 60, 0.1);
+    const completed: TaskState[] = [];
+    const requeued: TaskState[] = [];
+
+    for (const task of state.tasks.active) {
+      const assignment = task.assignment;
+      if (!assignment) {
+        task.status = 'pending';
+        const zone = this.findZone(state, task.location);
+        if (zone) {
+          zone.activeTaskIds = zone.activeTaskIds.filter((id) => id !== task.id);
+        }
+        state.tasks.backlog.push(task);
+        requeued.push(task);
+        continue;
+      }
+
+      const employee = state.personnel.employees.find((item) => item.id === assignment.employeeId);
+      if (!employee) {
+        task.assignment = undefined;
+        task.status = 'pending';
+        const zone = this.findZone(state, task.location);
+        if (zone) {
+          zone.activeTaskIds = zone.activeTaskIds.filter((id) => id !== task.id);
+        }
+        state.tasks.backlog.push(task);
+        requeued.push(task);
+        continue;
+      }
+
+      const definition = this.definitions[task.definitionId];
+      const metadata = getTaskMetadata(task);
+      const estimatedHours =
+        metadata?.estimatedWorkHours ?? this.estimateWorkHours(definition, task.metadata);
+      const allocation = this.allocateWorkHours(employee, hoursPerTick);
+      if (allocation.totalHours <= 0) {
+        assignment.etaTick = tick + 1;
+        continue;
+      }
+
+      const skillLevel = definition ? toNumber(employee.skills?.[definition.requiredSkill]) : 0;
+      const skillBonus = Math.max(skillLevel - (definition?.minSkillLevel ?? 0), 0);
+      const skillMultiplier = 1 + skillBonus * this.policies.utility.skillEfficiencyBonus;
+      const energyMultiplier = 0.4 + clamp(employee.energy, 0, 1) * 0.6;
+      const moraleMultiplier = 0.5 + clamp(employee.morale, 0, 1) * 0.5;
+
+      const effectiveHours =
+        allocation.totalHours * skillMultiplier * energyMultiplier * moraleMultiplier;
+      const requiredHours = Math.max(estimatedHours, MIN_ESTIMATED_HOURS);
+      assignment.progress = clamp(assignment.progress + effectiveHours / requiredHours, 0, 1);
+
+      employee.hoursWorkedToday += allocation.totalHours;
+      employee.overtimeHours += allocation.overtimeHours;
+      if (allocation.overtimeHours > 0) {
+        events.queue({
+          type: 'hr.overtimeAccrued',
+          payload: {
+            employeeId: employee.id,
+            hours: allocation.overtimeHours,
+            totalOvertimeHours: employee.overtimeHours,
+            taskId: task.id,
+          },
+          tick,
+          level: 'info',
+        });
+      }
+
+      const baseEnergyCost = allocation.totalHours * this.policies.energy.energyCostPerHour;
+      const overtimePenalty =
+        allocation.overtimeHours *
+        this.policies.energy.energyCostPerHour *
+        (this.policies.energy.overtimeCostMultiplier - 1);
+      employee.energy = clamp(employee.energy - baseEnergyCost - overtimePenalty, 0, 1);
+
+      if (assignment.progress >= 0.999) {
+        assignment.progress = 1;
+        assignment.etaTick = tick;
+        completed.push(task);
+        this.finishTask(state, task, employee, tick, events);
+      } else {
+        const remaining = Math.max(requiredHours * (1 - assignment.progress), 0.1);
+        const etaTicks = Math.max(1, Math.ceil(remaining / Math.max(allocation.totalHours, 0.1)));
+        assignment.etaTick = tick + etaTicks;
+      }
+    }
+
+    for (const task of completed) {
+      const index = state.tasks.active.indexOf(task);
+      if (index >= 0) {
+        state.tasks.active.splice(index, 1);
+      }
+      state.tasks.completed.push(task);
+    }
+
+    for (const task of requeued) {
+      const index = state.tasks.active.indexOf(task);
+      if (index >= 0) {
+        state.tasks.active.splice(index, 1);
+      }
+    }
+  }
+
+  private finishTask(
+    state: GameState,
+    task: TaskState,
+    employee: EmployeeState,
+    tick: number,
+    events: EventCollector,
+  ): void {
+    task.status = 'completed';
+    employee.status = 'idle';
+    if (employee.currentTaskId === task.id) {
+      employee.currentTaskId = undefined;
+    }
+    const zone = this.findZone(state, task.location);
+    if (zone) {
+      zone.activeTaskIds = zone.activeTaskIds.filter((id) => id !== task.id);
+    }
+    events.queue({
+      type: 'task.completed',
+      payload: {
+        taskId: task.id,
+        definitionId: task.definitionId,
+        employeeId: employee.id,
+        zoneId: task.location?.zoneId,
+      },
+      tick,
+      level: 'info',
+    });
+  }
+
+  private allocateWorkHours(employee: EmployeeState, hoursPerTick: number): WorkHoursAllocation {
+    const overtimePolicy = this.policies.overtime;
+    const threshold = overtimePolicy.overtimeThresholdHours;
+    const standardLimit =
+      overtimePolicy.standardHoursPerDay + overtimePolicy.maxOvertimeHoursPerDay;
+    const hoursWorked = employee.hoursWorkedToday;
+    const regularAvailable = Math.max(threshold - hoursWorked, 0);
+    const regularHours = Math.min(regularAvailable, hoursPerTick);
+    let overtimeHours = Math.max(hoursPerTick - regularHours, 0);
+    const overtimeRemaining = Math.max(standardLimit - hoursWorked - regularHours, 0);
+    if (overtimeHours > overtimeRemaining) {
+      overtimeHours = overtimeRemaining;
+    }
+    const totalHours = regularHours + overtimeHours;
+    return { regularHours, overtimeHours, totalHours };
+  }
+
+  private estimateWorkHours(
+    definition: TaskDefinition | undefined,
+    metadata: Record<string, unknown>,
+  ): number {
+    if (!definition) {
+      return 1;
+    }
+    const baseMinutes = definition.costModel.laborMinutes;
+    let quantity = 1;
+    if (definition.costModel.basis === 'perPlant') {
+      quantity = Math.max(toNumber(metadata.plantCount, 1), 1);
+    } else if (definition.costModel.basis === 'perSquareMeter') {
+      quantity = Math.max(toNumber(metadata.area, 1), 1);
+    }
+    const minutes = baseMinutes * quantity;
+    return Math.max(minutes / 60, MIN_ESTIMATED_HOURS);
+  }
+
+  private computeDueTick(priority: number, tick: number): number {
+    const clamped = clamp(priority, 1, 10);
+    const horizon = Math.max(3, Math.round(16 / clamped));
+    return tick + horizon;
+  }
+
+  private generateTaskId(tick: number): string {
+    this.sequence += 1;
+    return `wf-${tick}-${this.sequence}`;
+  }
+
+  private findZone(state: GameState, location: TaskLocation | undefined): ZoneState | undefined {
+    if (!location) {
+      return undefined;
+    }
+    for (const structure of state.structures) {
+      if (structure.id !== location.structureId) {
+        continue;
+      }
+      for (const room of structure.rooms) {
+        if (room.id !== location.roomId) {
+          continue;
+        }
+        const zone = room.zones.find((item) => item.id === location.zoneId);
+        if (zone) {
+          return zone;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  private createTreatmentSafety(pending: PendingTreatmentApplication): TaskSafetyRequirements {
+    const category = pending.category;
+    const certification =
+      (category ? this.policies.safety.treatmentCertifications[category] : undefined) ??
+      this.policies.safety.defaultTreatmentCertification;
+    const requiredCertifications = certification ? [certification] : [];
+    const hazard: TaskSafetyRequirements['hazardLevel'] =
+      category === 'chemical' ? 'high' : category === 'mechanical' ? 'medium' : 'medium';
+    return {
+      hazardLevel: hazard,
+      requiredCertifications,
+    };
+  }
+
+  private buildTreatmentTaskKey(pending: PendingTreatmentApplication): string {
+    const plants = pending.plantIds.join(',');
+    return `${pending.optionId}:${pending.target}:${plants}`;
+  }
+}

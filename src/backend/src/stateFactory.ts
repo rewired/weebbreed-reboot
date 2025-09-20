@@ -604,6 +604,10 @@ const createPersonnel = (
         skills,
         experience: createExperienceStub(skills),
         traits: employeeTraits,
+        certifications: [],
+        hoursWorkedToday: 0,
+        overtimeHours: 0,
+        lastShiftResetTick: 0,
         assignedStructureId: structureId,
       });
     }
