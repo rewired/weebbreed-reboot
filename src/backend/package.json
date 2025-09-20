@@ -8,7 +8,11 @@
   "scripts": {
     "dev": "ts-node --esm src/index.ts",
     "build": "tsc --project tsconfig.json",
-    "lint": "eslint --ext .ts src",
+    "lint": "eslint --ext .ts src data",
     "test": "vitest --run --passWithNoTests"
+  },
+  "dependencies": {
+    "chokidar": "^3.5.3",
+    "zod": "^3.23.8"
   }
 }

@@ -1,0 +1,348 @@
+import { promises as fs, Dirent } from 'fs';
+import path from 'path';
+import { ZodError, ZodType, ZodTypeDef } from 'zod';
+import {
+  StrainBlueprint,
+  strainSchema,
+  DeviceBlueprint,
+  deviceSchema,
+  CultivationMethodBlueprint,
+  cultivationMethodSchema,
+  DevicePriceEntry,
+  devicePricesSchema,
+  StrainPriceEntry,
+  strainPricesSchema,
+  UtilityPrices,
+  utilityPricesSchema,
+} from './schemas/index.js';
+
+export type IssueLevel = 'error' | 'warning';
+
+export interface DataIssue {
+  level: IssueLevel;
+  message: string;
+  file?: string;
+  details?: unknown;
+}
+
+export interface DataLoadSummary {
+  loadedFiles: number;
+  versions: Record<string, string>;
+  issues: DataIssue[];
+}
+
+export interface BlueprintData {
+  strains: Map<string, StrainBlueprint>;
+  devices: Map<string, DeviceBlueprint>;
+  cultivationMethods: Map<string, CultivationMethodBlueprint>;
+  prices: {
+    devices: Map<string, DevicePriceEntry>;
+    strains: Map<string, StrainPriceEntry>;
+    utility: UtilityPrices;
+  };
+}
+
+export interface DataLoadResult {
+  data: BlueprintData;
+  summary: DataLoadSummary;
+}
+
+export class DataLoaderError extends Error {
+  constructor(public readonly issues: DataIssue[]) {
+    super('Data loader encountered blocking issues.');
+    this.name = 'DataLoaderError';
+  }
+}
+
+interface CollectionEntry<T> {
+  data: T;
+  file: string;
+}
+
+const JSON_EXTENSION = '.json';
+
+type BlueprintSchema<T> = ZodType<T, ZodTypeDef, unknown>;
+
+const formatRelative = (baseDir: string, filePath: string) =>
+  path.relative(baseDir, filePath).split(path.sep).join('/');
+
+const readJsonFile = async (filePath: string): Promise<unknown> => {
+  const raw = await fs.readFile(filePath, 'utf-8');
+  return JSON.parse(raw);
+};
+
+const collectZodIssues = (error: ZodError): string[] =>
+  error.issues.map((issue) => {
+    const location = issue.path.length > 0 ? issue.path.join('.') : '<root>';
+    return `${location}: ${issue.message}`;
+  });
+
+async function loadDirectoryCollection<T>(
+  directory: string,
+  schema: BlueprintSchema<T>,
+  baseDir: string,
+  summary: DataLoadSummary,
+  issues: DataIssue[],
+): Promise<CollectionEntry<T>[]> {
+  const entries: CollectionEntry<T>[] = [];
+  let dirEntries: Dirent[] = [];
+  try {
+    dirEntries = await fs.readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    issues.push({
+      level: 'error',
+      message: `Failed to read directory: ${(error as Error).message}`,
+      file: formatRelative(baseDir, directory),
+    });
+    return entries;
+  }
+
+  for (const entry of dirEntries) {
+    if (!entry.isFile() || !entry.name.endsWith(JSON_EXTENSION)) {
+      continue;
+    }
+    const absoluteFile = path.join(directory, entry.name);
+    const relativeFile = formatRelative(baseDir, absoluteFile);
+    let payload: unknown;
+    try {
+      payload = await readJsonFile(absoluteFile);
+    } catch (error) {
+      issues.push({
+        level: 'error',
+        message: `Failed to parse JSON: ${(error as Error).message}`,
+        file: relativeFile,
+      });
+      continue;
+    }
+
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      const errorMessages = collectZodIssues(parsed.error);
+      issues.push({
+        level: 'error',
+        message: `Schema validation failed`,
+        file: relativeFile,
+        details: errorMessages,
+      });
+      continue;
+    }
+
+    const rawRecord = payload as Record<string, unknown>;
+    if (typeof rawRecord.version === 'string') {
+      summary.versions[relativeFile] = rawRecord.version;
+    }
+
+    summary.loadedFiles += 1;
+    entries.push({ data: parsed.data, file: relativeFile });
+  }
+
+  return entries;
+}
+
+const toMapWithDuplicateCheck = <T extends { id: string }>(
+  entries: CollectionEntry<T>[],
+  issues: DataIssue[],
+): Map<string, T> => {
+  const map = new Map<string, T>();
+  const seenFiles = new Map<string, string>();
+  for (const entry of entries) {
+    const previousFile = seenFiles.get(entry.data.id);
+    if (previousFile) {
+      issues.push({
+        level: 'error',
+        message: `Duplicate identifier '${entry.data.id}' detected`,
+        file: entry.file,
+        details: { previousFile },
+      });
+      continue;
+    }
+    seenFiles.set(entry.data.id, entry.file);
+    map.set(entry.data.id, entry.data);
+  }
+  return map;
+};
+
+const buildPriceMap = <T>(
+  payload: Record<string, T>,
+  file: string,
+  issues: DataIssue[],
+): Map<string, T> => {
+  const map = new Map<string, T>();
+  for (const [id, price] of Object.entries(payload)) {
+    if (map.has(id)) {
+      issues.push({
+        level: 'error',
+        message: `Duplicate price entry for '${id}'`,
+        file,
+      });
+      continue;
+    }
+    map.set(id, price);
+  }
+  return map;
+};
+
+const runCrossChecks = (data: BlueprintData, summary: DataLoadSummary) => {
+  const issues = summary.issues;
+
+  const strainPriceFile = 'prices/strainPrices.json';
+  const devicePriceFile = 'prices/devicePrices.json';
+
+  for (const id of data.prices.strains.keys()) {
+    if (!data.strains.has(id)) {
+      issues.push({
+        level: 'error',
+        message: `Strain price references unknown strain '${id}'`,
+        file: strainPriceFile,
+      });
+    }
+  }
+
+  for (const id of data.prices.devices.keys()) {
+    if (!data.devices.has(id)) {
+      issues.push({
+        level: 'error',
+        message: `Device price references unknown device '${id}'`,
+        file: devicePriceFile,
+      });
+    }
+  }
+
+  for (const [id] of data.strains) {
+    if (!data.prices.strains.has(id)) {
+      issues.push({
+        level: 'warning',
+        message: `Strain '${id}' has no price entry`,
+        file: strainPriceFile,
+      });
+    }
+  }
+
+  for (const [id] of data.devices) {
+    if (!data.prices.devices.has(id)) {
+      issues.push({
+        level: 'warning',
+        message: `Device '${id}' has no price entry`,
+        file: devicePriceFile,
+      });
+    }
+  }
+};
+
+export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoadResult> => {
+  const absoluteDataDir = path.resolve(dataDirectory);
+  const summary: DataLoadSummary = {
+    loadedFiles: 0,
+    versions: {},
+    issues: [],
+  };
+  const issues = summary.issues;
+
+  const blueprintsDir = path.join(absoluteDataDir, 'blueprints');
+  const strainDir = path.join(blueprintsDir, 'strains');
+  const deviceDir = path.join(blueprintsDir, 'devices');
+  const cultivationDir = path.join(blueprintsDir, 'cultivationMethods');
+  const pricesDir = path.join(absoluteDataDir, 'prices');
+
+  const strainEntries = await loadDirectoryCollection(
+    strainDir,
+    strainSchema,
+    absoluteDataDir,
+    summary,
+    issues,
+  );
+  const deviceEntries = await loadDirectoryCollection(
+    deviceDir,
+    deviceSchema,
+    absoluteDataDir,
+    summary,
+    issues,
+  );
+  const cultivationEntries = await loadDirectoryCollection(
+    cultivationDir,
+    cultivationMethodSchema,
+    absoluteDataDir,
+    summary,
+    issues,
+  );
+
+  const strains = toMapWithDuplicateCheck(strainEntries, issues);
+  const devices = toMapWithDuplicateCheck(deviceEntries, issues);
+  const cultivationMethods = toMapWithDuplicateCheck(cultivationEntries, issues);
+
+  const loadPriceFile = async <T>(
+    fileName: string,
+    schema: BlueprintSchema<T>,
+  ): Promise<T | undefined> => {
+    const absoluteFile = path.join(pricesDir, fileName);
+    const relativeFile = formatRelative(absoluteDataDir, absoluteFile);
+    let payload: unknown;
+    try {
+      payload = await readJsonFile(absoluteFile);
+    } catch (error) {
+      issues.push({
+        level: 'error',
+        message: `Failed to parse JSON: ${(error as Error).message}`,
+        file: relativeFile,
+      });
+      return undefined;
+    }
+    const parsed = schema.safeParse(payload);
+    if (!parsed.success) {
+      issues.push({
+        level: 'error',
+        message: `Schema validation failed`,
+        file: relativeFile,
+        details: collectZodIssues(parsed.error),
+      });
+      return undefined;
+    }
+    const rawRecord = payload as Record<string, unknown>;
+    if (typeof rawRecord.version === 'string') {
+      summary.versions[relativeFile] = rawRecord.version;
+    }
+    summary.loadedFiles += 1;
+    return parsed.data;
+  };
+
+  const devicePricePayload = await loadPriceFile('devicePrices.json', devicePricesSchema);
+  const strainPricePayload = await loadPriceFile('strainPrices.json', strainPricesSchema);
+  const utilityPricePayload = await loadPriceFile('utilityPrices.json', utilityPricesSchema);
+
+  const devicePrices: Map<string, DevicePriceEntry> = devicePricePayload
+    ? buildPriceMap(devicePricePayload.devicePrices, 'prices/devicePrices.json', issues)
+    : new Map();
+  const strainPrices: Map<string, StrainPriceEntry> = strainPricePayload
+    ? buildPriceMap(strainPricePayload.strainPrices, 'prices/strainPrices.json', issues)
+    : new Map();
+  const utilityPrices: UtilityPrices =
+    utilityPricePayload ??
+    ({
+      pricePerKwh: 0,
+      pricePerLiterWater: 0,
+      pricePerGramNutrients: 0,
+    } as UtilityPrices);
+
+  const data: BlueprintData = {
+    strains,
+    devices,
+    cultivationMethods,
+    prices: {
+      devices: devicePrices,
+      strains: strainPrices,
+      utility: utilityPrices,
+    },
+  };
+
+  runCrossChecks(data, summary);
+
+  const blockingIssues = summary.issues.filter((item) => item.level === 'error');
+  if (blockingIssues.length > 0) {
+    throw new DataLoaderError(blockingIssues);
+  }
+
+  return {
+    data,
+    summary,
+  };
+};

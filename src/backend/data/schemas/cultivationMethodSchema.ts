@@ -1,0 +1,54 @@
+import { z } from 'zod';
+
+const rangeTuple = z.tuple([z.number(), z.number()]);
+
+export const cultivationMethodSchema = z
+  .object({
+    id: z.string().uuid(),
+    kind: z.string().default('CultivationMethod'),
+    name: z.string().min(1),
+    setupCost: z.number(),
+    laborIntensity: z.number(),
+    areaPerPlant: z.number(),
+    minimumSpacing: z.number(),
+    maxCycles: z.number().int().min(0).optional(),
+    substrate: z
+      .object({
+        type: z.string(),
+        costPerSquareMeter: z.number().optional(),
+        maxCycles: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+    containerSpec: z
+      .object({
+        type: z.string(),
+        volumeInLiters: z.number().optional(),
+        footprintArea: z.number().optional(),
+        reusableCycles: z.number().optional(),
+        costPerUnit: z.number().optional(),
+        packingDensity: z.number().optional(),
+      })
+      .passthrough()
+      .optional(),
+    strainTraitCompatibility: z.record(z.string(), z.number()).optional(),
+    idealConditions: z
+      .object({
+        idealTemperature: rangeTuple.optional(),
+        idealHumidity: rangeTuple.optional(),
+      })
+      .passthrough()
+      .optional(),
+    meta: z
+      .object({
+        description: z.string().optional(),
+        advantages: z.array(z.string()).optional(),
+        disadvantages: z.array(z.string()).optional(),
+        notes: z.string().optional(),
+      })
+      .passthrough()
+      .optional(),
+  })
+  .passthrough();
+
+export type CultivationMethodBlueprint = z.infer<typeof cultivationMethodSchema>;
