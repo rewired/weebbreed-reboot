@@ -5,6 +5,7 @@ import type {
   GameState,
   StructureState,
   ZoneEnvironmentState,
+  ZoneHealthState,
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
@@ -171,6 +172,11 @@ const createGameStateWithZone = (): GameState => {
       stressLevel: 0.2,
       lastUpdatedTick: 0,
     } satisfies ZoneMetricState,
+    health: {
+      plantHealth: {},
+      pendingTreatments: [],
+      appliedTreatments: [],
+    } satisfies ZoneHealthState,
     activeTaskIds: [],
   } satisfies ZoneState;
 

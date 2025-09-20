@@ -37,7 +37,9 @@ import {
   TaskSystemState,
   ZoneEnvironmentState,
   ZoneMetricState,
+  ZoneHealthState,
   ZoneResourceState,
+  PlantHealthState,
 } from './state/models.js';
 import { RngService, RngStream } from './lib/rng.js';
 
@@ -362,6 +364,22 @@ const createZoneMetrics = (environment: ZoneEnvironmentState): ZoneMetricState =
   lastUpdatedTick: 0,
 });
 
+const createZoneHealth = (plants: PlantState[]): ZoneHealthState => {
+  const plantEntries = plants.map((plant) => [
+    plant.id,
+    {
+      diseases: [],
+      pests: [],
+    } satisfies PlantHealthState,
+  ]);
+
+  return {
+    plantHealth: Object.fromEntries(plantEntries),
+    pendingTreatments: [],
+    appliedTreatments: [],
+  } satisfies ZoneHealthState;
+};
+
 const drawUnique = <T>(items: readonly T[], count: number, stream: RngStream): T[] => {
   if (items.length === 0 || count <= 0) {
     return [];
@@ -458,6 +476,7 @@ const buildStructureState = (
     plants,
     devices: deviceInstances,
     metrics: createZoneMetrics(environment),
+    health: createZoneHealth(plants),
     activeTaskIds: [],
   };
 

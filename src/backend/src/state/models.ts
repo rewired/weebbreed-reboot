@@ -122,6 +122,93 @@ export interface ZoneMetricState {
   lastUpdatedTick: number;
 }
 
+export type HealthTarget = 'disease' | 'pest';
+
+export type TreatmentCategory = 'cultural' | 'biological' | 'mechanical' | 'chemical' | 'physical';
+
+export interface DiseaseTreatmentEffectState {
+  optionId: string;
+  expiresTick: number;
+  infectionMultiplier: number;
+  degenerationMultiplier: number;
+  recoveryMultiplier: number;
+}
+
+export interface PestTreatmentEffectState {
+  optionId: string;
+  expiresTick: number;
+  reproductionMultiplier: number;
+  mortalityMultiplier: number;
+  damageMultiplier: number;
+}
+
+export interface DiseaseState {
+  id: string;
+  pathogenId: string;
+  severity: number;
+  infection: number;
+  detected: boolean;
+  detectionTick?: number;
+  symptomTimerTicks: number;
+  spreadCooldownTicks: number;
+  lastSpreadTick?: number;
+  baseInfectionRatePerDay: number;
+  baseRecoveryRatePerDay: number;
+  baseDegenerationRatePerDay: number;
+  phaseOverride?: string;
+  activeTreatments: DiseaseTreatmentEffectState[];
+}
+
+export interface PestState {
+  id: string;
+  pestId: string;
+  population: number;
+  damage: number;
+  detected: boolean;
+  detectionTick?: number;
+  symptomTimerTicks: number;
+  spreadCooldownTicks: number;
+  lastSpreadTick?: number;
+  baseReproductionRatePerDay: number;
+  baseMortalityRatePerDay: number;
+  baseDamageRatePerDay: number;
+  phaseOverride?: string;
+  activeTreatments: PestTreatmentEffectState[];
+}
+
+export interface PlantHealthState {
+  diseases: DiseaseState[];
+  pests: PestState[];
+}
+
+export interface PendingTreatmentApplication {
+  optionId: string;
+  target: HealthTarget;
+  plantIds: string[];
+  scheduledTick: number;
+  diseaseIds?: string[];
+  pestIds?: string[];
+  reentryIntervalTicks?: number;
+  preHarvestIntervalTicks?: number;
+}
+
+export interface AppliedTreatmentRecord {
+  optionId: string;
+  target: HealthTarget;
+  plantIds: string[];
+  appliedTick: number;
+  reentryRestrictedUntilTick?: number;
+  preHarvestRestrictedUntilTick?: number;
+}
+
+export interface ZoneHealthState {
+  plantHealth: Record<string, PlantHealthState>;
+  pendingTreatments: PendingTreatmentApplication[];
+  appliedTreatments: AppliedTreatmentRecord[];
+  reentryRestrictedUntilTick?: number;
+  preHarvestRestrictedUntilTick?: number;
+}
+
 export interface ZoneState {
   id: string;
   roomId: string;
@@ -133,6 +220,7 @@ export interface ZoneState {
   plants: PlantState[];
   devices: DeviceInstanceState[];
   metrics: ZoneMetricState;
+  health: ZoneHealthState;
   activeTaskIds: string[];
 }
 
