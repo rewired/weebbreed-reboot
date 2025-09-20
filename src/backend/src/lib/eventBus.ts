@@ -1,4 +1,4 @@
-import { Observable, Subject, bufferTime, filter as rxFilter, share } from 'rxjs';
+import { Observable, OperatorFunction, Subject, bufferTime, filter as rxFilter, share } from 'rxjs';
 
 type MaybeArray<T> = T | T[];
 
@@ -122,8 +122,13 @@ export class EventBus {
   buffered(options?: EventBufferOptions): Observable<SimulationEvent[]> {
     const { timeMs = 250, maxBufferSize, filter } = options ?? {};
     const stream = this.events(filter);
+    const bufferOperator: OperatorFunction<SimulationEvent, SimulationEvent[]> =
+      typeof maxBufferSize === 'number'
+        ? bufferTime<SimulationEvent>(timeMs, undefined, maxBufferSize)
+        : bufferTime<SimulationEvent>(timeMs);
+
     return stream.pipe(
-      bufferTime(timeMs, undefined, maxBufferSize),
+      bufferOperator,
       rxFilter((batch) => batch.length > 0),
     );
   }
