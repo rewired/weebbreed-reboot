@@ -301,6 +301,12 @@ export interface DeviceStockEntry {
 
 export type HarvestStage = 'fresh' | 'drying' | 'cured' | 'waste';
 
+export interface HarvestCoolingState {
+  enabled: boolean;
+  enabledAtTick?: number;
+  temperatureC?: number;
+}
+
 export interface HarvestBatch {
   id: string;
   strainId: string;
@@ -309,6 +315,10 @@ export interface HarvestBatch {
   stage: HarvestStage;
   harvestedAtTick: number;
   notes?: string;
+  decayRatePerHour?: number;
+  maxStorageTimeInHours?: number;
+  qualityUpdatedAtTick?: number;
+  cooling?: HarvestCoolingState;
 }
 
 export interface GlobalInventoryState {
