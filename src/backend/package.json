@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "chokidar": "^3.5.3",
+    "rxjs": "^7.8.2",
     "zod": "^3.23.8"
   }
 }
