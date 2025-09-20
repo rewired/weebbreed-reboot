@@ -8,6 +8,9 @@ export const createNavigationSlice: StateCreator<AppStoreState, [], [], Navigati
 ) => ({
   currentView: 'overview',
   history: [],
+  selectedStructureId: undefined,
+  selectedRoomId: undefined,
+  selectedZoneId: undefined,
   setCurrentView: (view: NavigationView) =>
     set((state) => {
       if (state.currentView === view) {
@@ -22,6 +25,9 @@ export const createNavigationSlice: StateCreator<AppStoreState, [], [], Navigati
       return {
         currentView: view,
         history: nextHistory,
+        ...(view !== 'world'
+          ? { selectedStructureId: undefined, selectedRoomId: undefined, selectedZoneId: undefined }
+          : {}),
       };
     }),
   goBack: () =>
@@ -36,7 +42,49 @@ export const createNavigationSlice: StateCreator<AppStoreState, [], [], Navigati
       return {
         currentView: previous,
         history: nextHistory,
+        ...(previous !== 'world'
+          ? { selectedStructureId: undefined, selectedRoomId: undefined, selectedZoneId: undefined }
+          : {}),
       };
     }),
   clearHistory: () => set(() => ({ history: [] })),
+  selectStructure: (structureId) =>
+    set(() => ({
+      selectedStructureId: structureId,
+      selectedRoomId: undefined,
+      selectedZoneId: undefined,
+      currentView: 'world',
+    })),
+  selectRoom: (roomId) =>
+    set((state) => {
+      if (!roomId) {
+        return { selectedRoomId: undefined, selectedZoneId: undefined };
+      }
+      const room = state.rooms[roomId];
+      return {
+        selectedStructureId: room?.structureId ?? state.selectedStructureId,
+        selectedRoomId: roomId,
+        selectedZoneId: undefined,
+        currentView: 'world',
+      };
+    }),
+  selectZone: (zoneId) =>
+    set((state) => {
+      if (!zoneId) {
+        return { selectedZoneId: undefined };
+      }
+      const zone = state.zones[zoneId];
+      return {
+        selectedStructureId: zone?.structureId ?? state.selectedStructureId,
+        selectedRoomId: zone?.roomId ?? state.selectedRoomId,
+        selectedZoneId: zoneId,
+        currentView: 'world',
+      };
+    }),
+  resetSelection: () =>
+    set(() => ({
+      selectedStructureId: undefined,
+      selectedRoomId: undefined,
+      selectedZoneId: undefined,
+    })),
 });

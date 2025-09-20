@@ -202,6 +202,8 @@ const createTestState = (): GameState => {
 const simulationUpdates: Array<{ updates: { tick: number }[] }> = [];
 const domainEvents: SimulationEvent[][] = [];
 
+type IntentResponse = CommandResult<unknown> & { requestId?: string };
+
 class StubFacade {
   public readonly eventBus = new EventBus();
 
@@ -226,6 +228,60 @@ class StubFacade {
   public setSpeedInvocations = 0;
 
   public setTickLengthInvocations = 0;
+
+  public intentInvocations: Array<{ domain: string; action: string; payload: unknown }> = [];
+
+  public readonly world = {
+    rentStructure: (payload: unknown) => this.resolveIntent('world', 'rentStructure', payload),
+    createRoom: (payload: unknown) => this.resolveIntent('world', 'createRoom', payload),
+    updateRoom: (payload: unknown) => this.resolveIntent('world', 'updateRoom', payload),
+    deleteRoom: (payload: unknown) => this.resolveIntent('world', 'deleteRoom', payload),
+    createZone: (payload: unknown) => this.resolveIntent('world', 'createZone', payload),
+    updateZone: (payload: unknown) => this.resolveIntent('world', 'updateZone', payload),
+    deleteZone: (payload: unknown) => this.resolveIntent('world', 'deleteZone', payload),
+  };
+
+  public readonly devices = {
+    installDevice: (payload: unknown) => this.resolveIntent('devices', 'installDevice', payload),
+    updateDevice: (payload: unknown) => this.resolveIntent('devices', 'updateDevice', payload),
+    moveDevice: (payload: unknown) => this.resolveIntent('devices', 'moveDevice', payload),
+    removeDevice: (payload: unknown) => this.resolveIntent('devices', 'removeDevice', payload),
+  };
+
+  public readonly plants = {
+    addPlanting: (payload: unknown) => this.resolveIntent('plants', 'addPlanting', payload),
+    cullPlanting: (payload: unknown) => this.resolveIntent('plants', 'cullPlanting', payload),
+    harvestPlanting: (payload: unknown) => this.resolveIntent('plants', 'harvestPlanting', payload),
+    applyIrrigation: (payload: unknown) => this.resolveIntent('plants', 'applyIrrigation', payload),
+    applyFertilizer: (payload: unknown) => this.resolveIntent('plants', 'applyFertilizer', payload),
+  };
+
+  public readonly health = {
+    scheduleScouting: (payload: unknown) =>
+      this.resolveIntent('health', 'scheduleScouting', payload),
+    applyTreatment: (payload: unknown) => this.resolveIntent('health', 'applyTreatment', payload),
+    quarantineZone: (payload: unknown) => this.resolveIntent('health', 'quarantineZone', payload),
+  };
+
+  public readonly workforce = {
+    refreshCandidates: (payload: unknown) =>
+      this.resolveIntent('workforce', 'refreshCandidates', payload),
+    hire: (payload: unknown) => this.resolveIntent('workforce', 'hire', payload),
+    fire: (payload: unknown) => this.resolveIntent('workforce', 'fire', payload),
+    setOvertimePolicy: (payload: unknown) =>
+      this.resolveIntent('workforce', 'setOvertimePolicy', payload),
+    assignStructure: (payload: unknown) =>
+      this.resolveIntent('workforce', 'assignStructure', payload),
+    enqueueTask: (payload: unknown) => this.resolveIntent('workforce', 'enqueueTask', payload),
+  };
+
+  public readonly finance = {
+    sellInventory: (payload: unknown) => this.resolveIntent('finance', 'sellInventory', payload),
+    setUtilityPrices: (payload: unknown) =>
+      this.resolveIntent('finance', 'setUtilityPrices', payload),
+    setMaintenancePolicy: (payload: unknown) =>
+      this.resolveIntent('finance', 'setMaintenancePolicy', payload),
+  };
 
   private readonly listeners: Unsubscribe[] = [];
 
@@ -336,6 +392,15 @@ class StubFacade {
     for (const unsubscribe of this.listeners.splice(0)) {
       unsubscribe();
     }
+  }
+
+  private resolveIntent(
+    domain: string,
+    action: string,
+    payload: unknown,
+  ): Promise<CommandResult<unknown>> {
+    this.intentInvocations.push({ domain, action, payload });
+    return Promise.resolve({ ok: true, data: payload });
   }
 }
 
@@ -482,5 +547,41 @@ describe('SocketGateway', () => {
 
     expect(unsupported.ok).toBe(false);
     expect(unsupported.errors?.[0].code).toBe('ERR_INVALID_STATE');
+  });
+
+  it('routes facade intents to the correct service handler', async () => {
+    const intentPayload = {
+      structureId: 'structure-1',
+      room: { name: 'Aux', purpose: 'grow', area: 10 },
+    };
+
+    const response = await new Promise<IntentResponse>((resolve) => {
+      client.emit(
+        'facade.intent',
+        { requestId: 'intent-1', domain: 'world', action: 'createRoom', payload: intentPayload },
+        (payload: IntentResponse) => resolve(payload),
+      );
+    });
+
+    expect(response.ok).toBe(true);
+    await waitFor(() => facade.intentInvocations.length === 1);
+    expect(facade.intentInvocations[0]).toEqual({
+      domain: 'world',
+      action: 'createRoom',
+      payload: intentPayload,
+    });
+  });
+
+  it('validates unknown facade intent domains', async () => {
+    const response = await new Promise<IntentResponse>((resolve) => {
+      client.emit(
+        'facade.intent',
+        { requestId: 'intent-2', domain: 'unknown', action: 'noop' },
+        (payload: IntentResponse) => resolve(payload),
+      );
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.errors?.[0].code).toBe('ERR_VALIDATION');
   });
 });

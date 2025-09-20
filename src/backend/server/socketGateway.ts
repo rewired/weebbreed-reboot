@@ -15,10 +15,15 @@ import type {
 import type { SimulationEvent } from '../src/lib/eventBus.js';
 import type { TickCompletedPayload } from '../src/sim/loop.js';
 import type {
+  ApplicantState,
+  DeviceInstanceState,
+  EmployeeState,
   GameState,
   PlantState,
+  StructureState,
   ZoneEnvironmentState,
   ZoneMetricState,
+  ZoneResourceState,
 } from '../src/state/models.js';
 
 const DEFAULT_SIMULATION_BATCH_INTERVAL_MS = 120;
@@ -83,24 +88,64 @@ interface SimulationEventEnvelope<T = unknown> {
   snapshot: SimulationSnapshot;
 }
 
-interface SimulationSnapshot {
-  tick: number;
-  clock: {
-    tick: number;
-    isPaused: boolean;
-    targetTickRate: number;
-  };
-  zones: ZoneSnapshot[];
+interface StructureSnapshot {
+  id: string;
+  name: string;
+  status: StructureState['status'];
+  footprint: StructureState['footprint'];
+  rentPerTick: number;
+  roomIds: string[];
+}
+
+interface RoomSnapshot {
+  id: string;
+  name: string;
+  structureId: string;
+  structureName: string;
+  purposeId: string;
+  area: number;
+  height: number;
+  volume: number;
+  cleanliness: number;
+  maintenanceLevel: number;
+  zoneIds: string[];
+}
+
+interface DeviceSnapshot {
+  id: string;
+  blueprintId: string;
+  kind: string;
+  name: string;
+  zoneId: string;
+  status: DeviceInstanceState['status'];
+  efficiency: number;
+  runtimeHours: number;
+  maintenance: DeviceInstanceState['maintenance'];
+  settings: Record<string, unknown>;
+}
+
+interface ZoneHealthSnapshot {
+  diseases: number;
+  pests: number;
+  pendingTreatments: number;
+  appliedTreatments: number;
+  reentryRestrictedUntilTick?: number;
+  preHarvestRestrictedUntilTick?: number;
 }
 
 interface ZoneSnapshot {
   id: string;
   name: string;
   structureId: string;
+  structureName: string;
   roomId: string;
+  roomName: string;
   environment: ZoneEnvironmentState;
+  resources: ZoneResourceState;
   metrics: ZoneMetricState;
+  devices: DeviceSnapshot[];
   plants: PlantSnapshot[];
+  health: ZoneHealthSnapshot;
 }
 
 interface PlantSnapshot {
@@ -111,6 +156,54 @@ interface PlantSnapshot {
   stress: number;
   biomassDryGrams: number;
   yieldDryGrams: number;
+}
+
+interface EmployeeSnapshot {
+  id: string;
+  name: string;
+  role: EmployeeState['role'];
+  salaryPerTick: number;
+  morale: number;
+  energy: number;
+  status: EmployeeState['status'];
+  assignedStructureId?: string;
+}
+
+interface ApplicantSnapshot {
+  id: string;
+  name: string;
+  desiredRole: ApplicantState['desiredRole'];
+  expectedSalary: number;
+}
+
+interface PersonnelSnapshot {
+  employees: EmployeeSnapshot[];
+  applicants: ApplicantSnapshot[];
+  overallMorale: number;
+}
+
+interface FinanceSummarySnapshot {
+  cashOnHand: number;
+  reservedCash: number;
+  totalRevenue: number;
+  totalExpenses: number;
+  netIncome: number;
+  lastTickRevenue: number;
+  lastTickExpenses: number;
+}
+
+interface SimulationSnapshot {
+  tick: number;
+  clock: {
+    tick: number;
+    isPaused: boolean;
+    targetTickRate: number;
+  };
+  structures: StructureSnapshot[];
+  rooms: RoomSnapshot[];
+  zones: ZoneSnapshot[];
+  personnel: PersonnelSnapshot;
+  finance: FinanceSummarySnapshot;
 }
 
 interface SimulationUpdateEntry {
@@ -181,6 +274,27 @@ const configUpdateSchema = requestMetadataSchema.and(
   ]),
 );
 
+type FacadeDomain = 'world' | 'devices' | 'plants' | 'health' | 'workforce' | 'finance';
+
+interface FacadeIntentCommand {
+  domain: FacadeDomain;
+  action: string;
+  payload?: unknown;
+  requestId?: string;
+}
+
+const FACADE_DOMAINS: readonly FacadeDomain[] = [
+  'world',
+  'devices',
+  'plants',
+  'health',
+  'workforce',
+  'finance',
+] as const;
+
+const isFacadeDomain = (value: unknown): value is FacadeDomain =>
+  typeof value === 'string' && (FACADE_DOMAINS as readonly string[]).includes(value);
+
 export interface SocketGatewayOptions {
   httpServer: HttpServer;
   facade: SimulationFacade;
@@ -202,19 +316,73 @@ const sanitizeEvent = (event: SimulationEvent): SimulationEvent => ({
   tags: event.tags ? [...event.tags] : undefined,
 });
 
+const summarizeHealth = (
+  zone: GameState['structures'][number]['rooms'][number]['zones'][number],
+): ZoneHealthSnapshot => {
+  const plantHealthEntries = Object.values(zone.health.plantHealth ?? {});
+  const diseaseCount = plantHealthEntries.reduce(
+    (accumulator, item) => accumulator + (item?.diseases?.length ?? 0),
+    0,
+  );
+  const pestCount = plantHealthEntries.reduce(
+    (accumulator, item) => accumulator + (item?.pests?.length ?? 0),
+    0,
+  );
+
+  return {
+    diseases: diseaseCount,
+    pests: pestCount,
+    pendingTreatments: zone.health.pendingTreatments.length,
+    appliedTreatments: zone.health.appliedTreatments.length,
+    reentryRestrictedUntilTick: zone.health.reentryRestrictedUntilTick,
+    preHarvestRestrictedUntilTick: zone.health.preHarvestRestrictedUntilTick,
+  };
+};
+
+const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
+  waterLiters: resources.waterLiters,
+  nutrientSolutionLiters: resources.nutrientSolutionLiters,
+  nutrientStrength: resources.nutrientStrength,
+  substrateHealth: resources.substrateHealth,
+  reservoirLevel: resources.reservoirLevel,
+});
+
 const buildSnapshot = (state: GameState): SimulationSnapshot => {
+  const structures: StructureSnapshot[] = [];
+  const rooms: RoomSnapshot[] = [];
   const zones: ZoneSnapshot[] = [];
 
   for (const structure of state.structures) {
+    const roomIds: string[] = [];
+
     for (const room of structure.rooms) {
+      roomIds.push(room.id);
+      const zoneIds: string[] = [];
+
       for (const zone of room.zones) {
+        zoneIds.push(zone.id);
         zones.push({
           id: zone.id,
           name: zone.name,
           structureId: structure.id,
+          structureName: structure.name,
           roomId: room.id,
+          roomName: room.name,
           environment: { ...zone.environment },
+          resources: cloneResources(zone.resources),
           metrics: { ...zone.metrics },
+          devices: zone.devices.map((device) => ({
+            id: device.id,
+            blueprintId: device.blueprintId,
+            kind: device.kind,
+            name: device.name,
+            zoneId: device.zoneId,
+            status: device.status,
+            efficiency: device.efficiency,
+            runtimeHours: device.runtimeHours,
+            maintenance: { ...device.maintenance },
+            settings: { ...device.settings },
+          })),
           plants: zone.plants.map((plant) => ({
             id: plant.id,
             strainId: plant.strainId,
@@ -224,10 +392,64 @@ const buildSnapshot = (state: GameState): SimulationSnapshot => {
             biomassDryGrams: plant.biomassDryGrams,
             yieldDryGrams: plant.yieldDryGrams,
           })),
+          health: summarizeHealth(zone),
         });
       }
+
+      rooms.push({
+        id: room.id,
+        name: room.name,
+        structureId: structure.id,
+        structureName: structure.name,
+        purposeId: room.purposeId,
+        area: room.area,
+        height: room.height,
+        volume: room.volume,
+        cleanliness: room.cleanliness,
+        maintenanceLevel: room.maintenanceLevel,
+        zoneIds,
+      });
     }
+
+    structures.push({
+      id: structure.id,
+      name: structure.name,
+      status: structure.status,
+      footprint: { ...structure.footprint },
+      rentPerTick: structure.rentPerTick,
+      roomIds,
+    });
   }
+
+  const personnel: PersonnelSnapshot = {
+    employees: state.personnel.employees.map((employee) => ({
+      id: employee.id,
+      name: employee.name,
+      role: employee.role,
+      salaryPerTick: employee.salaryPerTick,
+      morale: employee.morale,
+      energy: employee.energy,
+      status: employee.status,
+      assignedStructureId: employee.assignedStructureId,
+    })),
+    applicants: state.personnel.applicants.map((applicant) => ({
+      id: applicant.id,
+      name: applicant.name,
+      desiredRole: applicant.desiredRole,
+      expectedSalary: applicant.expectedSalary,
+    })),
+    overallMorale: state.personnel.overallMorale,
+  };
+
+  const finance: FinanceSummarySnapshot = {
+    cashOnHand: state.finances.cashOnHand,
+    reservedCash: state.finances.reservedCash,
+    totalRevenue: state.finances.summary.totalRevenue,
+    totalExpenses: state.finances.summary.totalExpenses,
+    netIncome: state.finances.summary.netIncome,
+    lastTickRevenue: state.finances.summary.lastTickRevenue,
+    lastTickExpenses: state.finances.summary.lastTickExpenses,
+  };
 
   return {
     tick: state.clock.tick,
@@ -236,7 +458,11 @@ const buildSnapshot = (state: GameState): SimulationSnapshot => {
       isPaused: state.clock.isPaused,
       targetTickRate: state.clock.targetTickRate,
     },
+    structures,
+    rooms,
     zones,
+    personnel,
+    finance,
   };
 };
 
@@ -341,6 +567,9 @@ export class SocketGateway {
     );
     socket.on('config.update', (payload, ack) =>
       this.handleConfigUpdate(socket, payload, ack as AckCallback<TimeStatus> | undefined),
+    );
+    socket.on('facade.intent', (payload, ack) =>
+      this.handleFacadeIntent(socket, payload, ack as AckCallback<unknown> | undefined),
     );
   }
 
@@ -501,6 +730,78 @@ export class SocketGateway {
     );
   }
 
+  private async handleFacadeIntent(
+    socket: Socket,
+    payload: unknown,
+    ack?: AckCallback<unknown>,
+  ): Promise<void> {
+    const requestId = this.extractRequestId(payload);
+
+    if (typeof payload !== 'object' || payload === null) {
+      const response = this.buildIntentValidationError(
+        'Payload must be an object.',
+        ['facade.intent'],
+        requestId,
+      );
+      this.emitCommandResponse(socket, 'facade.intent.result', response, ack);
+      return;
+    }
+
+    const command = payload as FacadeIntentCommand;
+    if (!isFacadeDomain(command.domain)) {
+      const response = this.buildIntentValidationError(
+        `Unsupported intent domain: ${String((payload as FacadeIntentCommand).domain)}`,
+        ['facade.intent', 'domain'],
+        requestId,
+      );
+      this.emitCommandResponse(socket, 'facade.intent.result', response, ack);
+      return;
+    }
+
+    if (typeof command.action !== 'string' || command.action.trim().length === 0) {
+      const response = this.buildIntentValidationError(
+        'Intent action must be a non-empty string.',
+        ['facade.intent', 'action'],
+        requestId,
+      );
+      this.emitCommandResponse(socket, 'facade.intent.result', response, ack);
+      return;
+    }
+
+    const service = this.facade[command.domain];
+    const handler = (service as Record<string, unknown>)[command.action];
+
+    if (typeof handler !== 'function') {
+      const response = this.buildIntentValidationError(
+        `Unsupported action ${command.domain}.${command.action}.`,
+        ['facade.intent', 'action'],
+        requestId,
+      );
+      this.emitCommandResponse(socket, 'facade.intent.result', response, ack);
+      return;
+    }
+
+    let result: CommandResult<unknown>;
+    try {
+      const execution = (
+        handler as (intent?: unknown) => Promise<CommandResult<unknown>> | CommandResult<unknown>
+      )(command.payload);
+      result = await Promise.resolve(execution);
+    } catch (error) {
+      result = this.buildInternalError(`${command.domain}.${command.action}`, error);
+    }
+
+    this.emitCommandResponse(
+      socket,
+      `${command.domain}.intent.result`,
+      {
+        requestId,
+        ...result,
+      },
+      ack,
+    );
+  }
+
   private async executeSimulationControl(
     command: SimulationControlCommand,
   ): Promise<CommandResult<TimeStatus>> {
@@ -595,7 +896,25 @@ export class SocketGateway {
     } satisfies CommandResponse<TimeStatus>;
   }
 
-  private buildInternalError(command: string, error: unknown): CommandResult<TimeStatus> {
+  private buildIntentValidationError(
+    message: string,
+    path: string[],
+    requestId?: string,
+  ): CommandResponse<unknown> {
+    return {
+      ok: false,
+      requestId,
+      errors: [
+        {
+          code: 'ERR_VALIDATION',
+          message,
+          path,
+        },
+      ],
+    } satisfies CommandResponse<unknown>;
+  }
+
+  private buildInternalError<T>(command: string, error: unknown): CommandResult<T> {
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
@@ -606,14 +925,14 @@ export class SocketGateway {
           path: [command],
         },
       ],
-    } satisfies CommandResult<TimeStatus>;
+    } satisfies CommandResult<T>;
   }
 
-  private emitCommandResponse(
+  private emitCommandResponse<T>(
     socket: Socket,
     channel: string,
-    response: CommandResponse<TimeStatus>,
-    ack?: AckCallback<TimeStatus>,
+    response: CommandResponse<T>,
+    ack?: AckCallback<T>,
   ): void {
     if (ack) {
       ack(response);

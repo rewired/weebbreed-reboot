@@ -6,6 +6,7 @@ import styles from './SimulationOverview.module.css';
 export const SimulationOverview = () => {
   const { t } = useTranslation('simulation');
   const snapshot = useAppStore((state) => state.lastSnapshot);
+  const snapshotTimestamp = useAppStore((state) => state.lastSnapshotTimestamp);
   const lastTick = useAppStore((state) => state.lastTickCompleted);
   const plantCount = useAppStore((state) => Object.keys(state.plants).length);
   const zones = useAppStore((state) => state.zones);
@@ -17,11 +18,13 @@ export const SimulationOverview = () => {
       return [];
     }
 
-    const formatter = new Intl.DateTimeFormat(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    });
+    const formatter = snapshotTimestamp
+      ? new Intl.DateTimeFormat(undefined, {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        })
+      : null;
 
     return [
       {
@@ -32,7 +35,7 @@ export const SimulationOverview = () => {
       {
         key: 'timestamp',
         label: t('labels.kpis.timestamp'),
-        value: formatter.format(snapshot.ts),
+        value: formatter && snapshotTimestamp ? formatter.format(snapshotTimestamp) : '—',
       },
       {
         key: 'plants',
@@ -48,7 +51,7 @@ export const SimulationOverview = () => {
           : undefined,
       },
     ];
-  }, [lastTick, plantCount, snapshot, t]);
+  }, [lastTick, plantCount, snapshot, snapshotTimestamp, t]);
 
   if (!snapshot) {
     return (
@@ -83,31 +86,34 @@ export const SimulationOverview = () => {
       </div>
 
       <div className={styles.zoneGrid}>
-        {zoneEntries.map((env) => (
-          <article key={env.zoneId} className={styles.zoneCard}>
+        {zoneEntries.map((zone) => (
+          <article key={zone.id} className={styles.zoneCard}>
             <header className={styles.zoneHeader}>
-              <h3>{t('labels.zoneTitle', { zoneId: env.zoneId })}</h3>
+              <h3>{zone.name}</h3>
+              <p className={styles.zoneMeta}>
+                {t('labels.zonePath', { room: zone.roomName, structure: zone.structureName })}
+              </p>
             </header>
             <dl className={styles.zoneMetrics}>
               <div>
                 <dt>{t('labels.temperature')}</dt>
-                <dd>{env.temperature.toFixed(1)} °C</dd>
+                <dd>{zone.environment.temperature.toFixed(1)} °C</dd>
               </div>
               <div>
                 <dt>{t('labels.humidity')}</dt>
-                <dd>{(env.humidity * 100).toFixed(0)}%</dd>
+                <dd>{(zone.environment.relativeHumidity * 100).toFixed(0)}%</dd>
               </div>
               <div>
                 <dt>{t('labels.co2')}</dt>
-                <dd>{env.co2.toLocaleString()} ppm</dd>
+                <dd>{zone.environment.co2.toLocaleString()} ppm</dd>
               </div>
               <div>
                 <dt>{t('labels.ppfd')}</dt>
-                <dd>{env.ppfd.toFixed(0)} µmol·m⁻²·s⁻¹</dd>
+                <dd>{zone.environment.ppfd.toFixed(0)} µmol·m⁻²·s⁻¹</dd>
               </div>
               <div>
                 <dt>{t('labels.vpd')}</dt>
-                <dd>{env.vpd?.toFixed(2) ?? '—'} kPa</dd>
+                <dd>{zone.environment.vpd.toFixed(2)} kPa</dd>
               </div>
             </dl>
           </article>

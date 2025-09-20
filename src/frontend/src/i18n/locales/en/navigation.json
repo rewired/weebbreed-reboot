@@ -1,8 +1,8 @@
 {
   "overview": "Overview",
-  "zones": "Zones",
-  "plants": "Plants",
-  "devices": "Devices",
+  "world": "World",
+  "personnel": "Personnel",
+  "finance": "Finance",
   "settings": "Settings",
   "goBack": "Back"
 }
