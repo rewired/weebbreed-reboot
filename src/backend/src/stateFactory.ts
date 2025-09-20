@@ -333,6 +333,7 @@ const createDeviceInstances = (
       lastServiceTick: 0,
       nextDueTick: 24 * 30,
       condition: Math.min(1, Math.max(0, device.quality ?? 1)),
+      runtimeHoursAtLastService: 0,
       degradation: 0,
     },
     settings: cloneSettings(device.settings),

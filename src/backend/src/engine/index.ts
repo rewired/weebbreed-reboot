@@ -1,4 +1,5 @@
 export * from './environment/deviceEffects.js';
+export * from './environment/deviceDegradation.js';
 export * from './environment/zoneEnvironment.js';
 export * from './economy/costAccounting.js';
 export * from './economy/inventoryLots.js';

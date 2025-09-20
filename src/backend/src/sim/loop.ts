@@ -3,6 +3,7 @@ import {
   ZoneEnvironmentService,
   type ZoneEnvironmentOptions,
 } from '../engine/environment/zoneEnvironment.js';
+import { DeviceDegradationService } from '../engine/environment/deviceDegradation.js';
 import type { GameState } from '../state/models.js';
 import type { EventCollector, SimulationEvent } from '../lib/eventBus.js';
 import { EventBus, createEventCollector } from '../lib/eventBus.js';
@@ -128,6 +129,8 @@ export class SimulationLoop {
 
   private readonly environmentService?: ZoneEnvironmentService;
 
+  private readonly degradationService: DeviceDegradationService;
+
   private readonly phaseHandlers: Record<NonCommitPhase, SimulationPhaseHandler>;
 
   private readonly commitHook?: SimulationPhaseHandler;
@@ -138,9 +141,11 @@ export class SimulationLoop {
     this.state = options.state;
     this.eventBus = options.eventBus;
     const phases = options.phases ?? {};
+    this.degradationService = new DeviceDegradationService();
     if (!phases.applyDevices && !phases.deriveEnvironment) {
       this.environmentService = new ZoneEnvironmentService(options.environment);
     }
+    const accountingHandler = phases.accounting ?? NOOP_PHASE;
     this.phaseHandlers = {
       applyDevices:
         phases.applyDevices ??
@@ -153,7 +158,10 @@ export class SimulationLoop {
       irrigationAndNutrients: phases.irrigationAndNutrients ?? NOOP_PHASE,
       updatePlants: phases.updatePlants ?? NOOP_PHASE,
       harvestAndInventory: phases.harvestAndInventory ?? NOOP_PHASE,
-      accounting: phases.accounting ?? NOOP_PHASE,
+      accounting: async (context) => {
+        this.degradationService.process(context.state, context.tick, context.tickLengthMinutes);
+        await accountingHandler(context);
+      },
     };
     this.commitHook = phases.commit;
   }

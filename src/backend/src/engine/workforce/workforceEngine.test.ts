@@ -260,6 +260,7 @@ describe('WorkforceEngine', () => {
         lastServiceTick: 0,
         nextDueTick: 1,
         condition: 0.4,
+        runtimeHoursAtLastService: 0,
         degradation: 0.6,
       },
       settings: {},

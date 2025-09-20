@@ -60,6 +60,7 @@ const createDevice = (
     lastServiceTick: 0,
     nextDueTick: 1000,
     condition: 1,
+    runtimeHoursAtLastService: 0,
     degradation: 0,
   },
   settings,
