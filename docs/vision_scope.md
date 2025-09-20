@@ -4,167 +4,169 @@
 
 ## 1. Vision
 
-**Elevator Pitch.** *Weed Breed* ist eine modulare, deterministische Pflanzen‑/Grow‑Simulation als Spiel. Spieler\:innen planen Strukturen (Gebäude → Räume → Zonen → Pflanzen), steuern Klima und Geräte, balancieren Kosten und Ertrag und erleben vollständige Anbauzyklen – von Saat bis Ernte und Nachernte. Das System ist offen, erweiterbar und inhaltlich datengetrieben (Blueprint‑JSONs), sodass Community, Modder und Forschende Inhalte leicht ergänzen können.
+**Elevator Pitch.** *Weed Breed* is a modular, deterministic plant/grow simulation as a game. Players plan structures (Buildings → Rooms → Zones → Plants), control climate and devices, balance cost and yield, and experience complete cultivation cycles—from seeding to harvest and post-harvest. The system is open, extensible, and content-driven (blueprint JSONs) so that community, modders, and researchers can easily contribute content.
 
-**Warum jetzt?** Es gibt reichlich „Tycoon“-Spiele, aber kaum Titel, die **physikalisch plausibles Klima & Pflanzenphysiologie** mit **ökonomischem Gameplay** und **Determinismus** verbinden. *Weed Breed* schließt diese Lücke.
+**Why now?** There are plenty of “tycoon” games, but few that combine **physically plausible climate & plant physiology** with **economic gameplay** and **determinism**. *Weed Breed* fills this gap.
 
 **Guiding Principles.**
 
-1. **Determinismus vor Optik.** Reproduzierbare Läufe schlagen visuelle Effekte.
-2. **Spielbarkeit vor Realismus.** Plausibel statt strikt wissenschaftlich – wo nötig mit klaren Vereinfachungen.
-3. **Offene Architektur.** Daten‑/Modding‑First, klare Schnittstellen, stabile Formate.
-4. **Transparenz.** Sichtbare Metriken, nachvollziehbare Entscheidungen (Logs, Audits, Replays).
-5. **Kleine, starke Schleifen.** Spaß entsteht durch sinnvolle Mikro‑Entscheidungen im Tagesbetrieb.
+1. **Determinism over visuals.** Reproducible runs beat visual effects.
+2. **Playability over realism.** Plausible rather than strictly scientific—with explicit simplifications where needed.
+3. **Open architecture.** Data/modding first, clear interfaces, stable formats.
+4. **Transparency.** Visible metrics, explainable decisions (logs, audits, replays).
+5. **Tight feedback loops.** Fun comes from meaningful micro-decisions in day-to-day operations.
 
-**Nicht‑Ziele (Anti‑Scope).**
+**Non-Goals (Anti-Scope).**
 
-* Kein politisches/regulatorisches Simulationssystem; rechtliche Aspekte bleiben abstrahiert.
-* Keine Shooter/Action‑Mechaniken.
-* Keine exakten wissenschaftlichen Wachstumsmodelle mit Laborgenauigkeit; Fokus bleibt „plausibel & spielbar“.
+* No political/regulatory simulation; legal aspects remain abstracted.
+* No shooter/action mechanics.
+* No exact lab-grade growth models; the focus remains “plausible & playable.”
 
-**Erlebnis‑Pfeiler.**
+**Experience Pillars.**
 
-* **Planen & Optimieren:** Klima, Licht, CO₂, Geräte‑Upgrades.
-* **Risikomanagement:** Schädlinge/Krankheiten, Ressourcen‑Engpässe, Geräteverschleiß.
-* **Wirtschaft:** Opex/Capex, Cashflow, Break‑even, Preis/Qualität.
-
----
-
-## 2. Zielgruppen & Stakeholder
-
-**Primäre Personas.**
-
-* *Der/Die Optimierer\:in* – liebt Tabellen, will Kennzahlen verbessern (PPFD, VPD, €/g).
-* *Der/Die Gestalter\:in* – baut schöne, effiziente Setups, mag Upgrades & Layout.
-* *Der/Die Lernende* – will Zusammenhänge zwischen Klima, Pflanze, Ertrag verstehen.
-
-**Stakeholder & Entscheidungshoheit (RACI‑light).**
-
-* *Product/Design:* Vision, Prioritäten, Balancing‑Leitplanken.
-* *Engineering:* Architektur, Qualität, deterministische Simulationsbasis.
-* *Content:* Blueprints (Strains/Devices/Methods), Datenqualität, Quellen.
-
-**Nutzungsumfeld.** Solo‑Spiel, optional Sandbox/Editor‑Modus. Streaming‑tauglich (klare Visuals, lesbare KPIs).
+* **Planning & Optimization:** Climate, light, CO₂, device upgrades.
+* **Risk Management:** Pests/diseases, resource bottlenecks, device wear.
+* **Economy:** OpEx/CapEx, cash flow, break-even, price/quality.
 
 ---
 
-## 3. Erfolgskriterien
+## 2. Target Audiences & Stakeholders
 
-**Outcome‑KPIs (Ziele).**
+**Primary Personas.**
 
-* **First Harvest Time:** Erste Ernte < **30 Minuten** Spielzeit (MVP‑Default‑Setup). *(OPEN: validieren)*
-* **Retention‑Proxy:** 70 % der Spieler\:innen erreichen Tag 7 einer Sandbox‑Save. *(OPEN: messen)*
-* **Determinismus‑Score:** Referenz‑Run (200 Tage) reproduzierbar innerhalb **±0,5 %** bei Kernmetriken.
+* **The Optimizer** — loves spreadsheets, wants to improve KPIs (PPFD, VPD, €/g).
+* **The Builder** — creates beautiful, efficient setups; enjoys upgrades & layout.
+* **The Learner** — wants to understand the relationship between climate, plant, and yield.
 
-**Qualitätsziele/SLOs.**
+**Stakeholders & Decision Authority (RACI-light).**
 
-* **Performance:** Referenz‑Szenario (s. unten) läuft bei **1× Geschwindigkeit** stabil mit **≥ 1 Tick/s** (1 In‑Game‑Tag in ≤ 24 s). Pro‑Tick‑Budget ≤ **50 ms** CPU‑Zeit.
-* **Stabilität:** Keine Sim‑Deadlocks; Recovery nach Crash ohne Datenverlust (< 1 Tick).
-* **Speicherziel:** Referenz‑Szenario < **1,0 GB RAM**. *(OPEN: finalisieren)*
+* **Product/Design:** Vision, priorities, balancing guardrails.
+* **Engineering:** Architecture, quality, deterministic simulation foundation.
+* **Content:** Blueprints (strains/devices/methods), data quality, sources.
 
-**Referenz‑Szenario (Leistungs‑Benchmark & Balancing‑Grundlage).**
-
-* **Struktur:** 1 mittleres Lager.
-* **Räume 1:** 2 Zuchträume
-  * **Zonen:** 5 Zonen mit unterschiedlichen **cultivationMethods** und **MAX** Pflanzen pro Zone. 10.000l Wasser und 100kg Nutrient.
-* **Räume 2:** 1 Break Room für 8 Mitarbeiter:
-  * **Zonen:** keine für den Break Room nötig
-* **Personal:** 8 Mitarbeitende (mind. 4× Gardener, 2× Technician, 2× Janitor).
-* **Startkapital:** 100.000.000.
-* **Ziel:** Dieses Szenario dient als feste Lastvorgabe für Performance‑Messungen (≥ 1 Tick/s bei 1×) und als Grundlage für Balancing‑Pässe.
+**Usage Context.** Solo play, optional sandbox/editor mode. Streaming-friendly (clear visuals, readable KPIs).
 
 ---
 
-## 4. Domänenmodell (kanonisch)
+## 3. Success Criteria
 
-**Kern‑Entitäten & Beziehungen.**
+**Outcome KPIs (Goals).**
 
-* **Structure → Room → Zone → Plant** (hierarchisch).
-* **Devices** (z. B. Lamp, ClimateUnit, CO₂‑Injector, Dehumidifier) werden **Zonen** zugewiesen.
-* **Strains** (JSON‑Blueprints) definieren Photoperiode, DLI/PPFD‑Fenster, NPK/Wasser‑Kurven, Stress‑Toleranzen.
-* **CultivationMethods** (z. B. SOG/SCROG) setzen Topologie, Pflanzdichte und Arbeitsaufwand.
-* **Pests/Diseases** als Ereignisse/Status mit Eintrittswahrscheinlichkeit, Fortschritt, Effekten & Treatments.
+* **First Harvest Time:** First harvest in **< 30 minutes** of play (MVP default setup). *(OPEN: validate)*
+* **Retention Proxy:** 70% of players reach day 7 of a sandbox save. *(OPEN: measure)*
+* **Determinism Score:** Reference run (200 days) reproducible within **±0.5%** on core metrics.
 
-**Lebenszyklen.**
+**Quality Goals/SLOs.**
 
-* **Pflanze:** Saat → Vegetativ → Blüte → Ernte → Nachernte (Trocknung/Reifung).
-* **Gerät:** Effizienz‑Degeneration, Wartung, Austausch‑Trigger (Opex vs Capex‑Kippunkte).
+* **Performance:** Reference scenario (see below) runs at **1× speed** with **≥ 1 tick/s** (1 in-game day in ≤ 24 s). Per-tick CPU budget ≤ **50 ms**.
+* **Stability:** No sim deadlocks; crash recovery without data loss (< 1 tick).
+* **Memory Target:** Reference scenario uses < **1.0 GB RAM**. *(OPEN: finalize)*
 
-\*\*Zeitskala. Tick‑basiert mit fester Tickdauer: **1 Tick = 1 In‑Game‑Stunde**; **24 Ticks = 1 In‑Game‑Tag**, **7×24 Ticks = 1 In‑Game‑Woche**. Ticks werden in Tages‑/Wochen‑Aggregationen zusammengefasst; Replays/Logs referenzieren Tick‑IDs. *(OPEN: Standard‑Tickdauer, z. B. 1 min)*
+**Reference Scenario (Performance Benchmark & Balancing Baseline).**
 
-**Begriffslexikon (Auszug).**
+* **Structure:** 1 medium warehouse.
+* **Rooms 1:** 2 grow rooms
 
-* **PPFD** (µmol·m⁻²·s⁻¹), **DLI** (mol·m⁻²·d⁻¹), **VPD** (kPa), **Photoperiode**, **Stress**, **Biomasse**, **Bud‑Yield**.
+  * **Zones:** 5 zones with different **cultivationMethods** and **MAX** plants per zone. 10,000 L water and 100 kg nutrients.
+* **Rooms 2:** 1 break room for 8 employees
 
----
-
-## 5. Simulations‑Philosophie
-
-* **Realismusgrade:** Klima \[plausibel], Wachstum \[semi‑empirisch], Ökonomie \[spielerisch‑plausibel].
-* **Determinismus & RNG:** Globaler Seed; alle Zufallsquellen seedbar; deterministische Reihenfolge.
-* **Kalibrierung:** Literaturwerte + expertenbasierte Plausibilisierung; Golden‑Runs als Referenz.
-* **Balancing:** Kurven/Blueprint‑Parameter; Editor‑gestützte Feinjustierung; automatisierte Smokes (Tages‑Audits).
+  * **Zones:** none required for the break room
+* **Staff:** 8 employees (at least 4× Gardener, 2× Technician, 2× Janitor).
+* **Starting Capital:** 100,000,000.
+* **Goal:** Fixed load profile for performance measurements (≥ 1 tick/s at 1×) and baseline for balancing passes.
 
 ---
 
-## 6. Progression & Ökonomie
+## 4. Canonical Domain Model
 
-**Makro‑Schleife (Expansion/CapEx).** Strukturen mieten/ausbauen, Geräte kaufen/tauschen, Methoden freischalten.
-**Mikro‑Schleife (Tagesbetrieb/Opex).** Klima steuern, Bewässern/NPK, Schädlingskontrolle, Personal/Tasks.
+**Core Entities & Relationships.**
 
-**Kostenlogik.**
+* **Structure → Room → Zone → Plant** (hierarchical).
+* **Devices** (e.g., Lamp, ClimateUnit, CO₂ Injector, Dehumidifier) are assigned to **zones**.
+* **Strains** (JSON blueprints) define photoperiod, DLI/PPFD ranges, NPK/water curves, stress tolerances.
+* **CultivationMethods** (e.g., SOG/SCROG) set topology, plant density, and labor requirements.
+* **Pests/Diseases** as events/states with incidence probability, progression, effects & treatments.
 
-* **CapEx:** Anschaffungskosten pro Gerät, Abschreibung/Restwert.
-* **OpEx:** Energie, Wasser, Nährstoffe, Wartung (**steigend**), Verbrauchsmaterial.
-* **Austausch‑Kippunkt:** Wenn Wartung + Effizienzverlust > Einsparung durch Upgrade → **Agent schlägt Tausch vor**.
+**Lifecycles.**
 
-**Erlöse.** Qualität × Menge × Marktpreis (Balancing‑Matrix).
+* **Plant:** Seed → Vegetative → Flowering → Harvest → Post-harvest (drying/curing).
+* **Device:** Efficiency degradation, maintenance, replacement triggers (OpEx vs CapEx tipping points).
+
+**Time Scale.** Tick-based with fixed tick duration: **1 tick = 1 in-game hour**; **24 ticks = 1 in-game day**, **7×24 ticks = 1 in-game week**. Ticks are aggregated into day/week summaries; replays/logs reference tick IDs. *(OPEN: standard wall-clock tick duration, e.g., 1 min)*
+
+**Glossary (Excerpt).**
+
+* **PPFD** (µmol·m⁻²·s⁻¹), **DLI** (mol·m⁻²·d⁻¹), **VPD** (kPa), **Photoperiod**, **Stress**, **Biomass**, **Bud Yield**.
 
 ---
 
-## 6a. Qualitätsgrade & Preisfunktionen
+## 5. Simulation Philosophy
 
-**Numerischer Qualitätsbegriff.**
+* **Realism Levels:** Climate \[plausible], growth \[semi-empirical], economy \[playfully plausible].
+* **Determinism & RNG:** Global seed; all randomness is seedable; deterministic ordering.
+* **Calibration:** Literature values + expert plausibility checks; golden runs as reference.
+* **Balancing:** Curves/blueprint parameters; editor-assisted fine-tuning; automated smokes (daily audits).
 
-* Qualität wird **numerisch** auf einer Skala **0–100** geführt (ganzzahlig), wobei **70** der markttechnische **Baseline‑Wert** ist (Listenpreis ohne Zu-/Abschlag).
-* **Gerätequalität (Blueprint‑Feld `quality`)** beeinflusst **Anfangshaltbarkeit** und **Anfangseffizienz** eines Geräts.
+---
 
-**Gerätequalität → Haltbarkeit/Effizienz.**
+## 6. Progression & Economy
 
-* *Haltbarkeit:* `baseMTBF = spec.MTBF * (1 + (quality-70)/100)`
-* *Effizienz:* `baseEfficiency = spec.efficiency * (1 + (quality-70)/200)`
-  (Beide Formeln sind Platzhalter‑Kurven und können pro Gerätetyp differenziert werden.)
+**Macro Loop (Expansion/CapEx).** Rent/expand structures, purchase/replace devices, unlock methods.
+**Micro Loop (Daily Ops/OpEx).** Control climate, irrigation/NPK, pest control, staffing/tasks.
 
-**Erntequalität (Pseudocode).**
+**Cost Logic.**
+
+* **CapEx:** Device purchase price, depreciation/residual value.
+* **OpEx:** Energy, water, nutrients, maintenance (**increasing**), consumables.
+* **Replacement Tipping Point:** If maintenance + efficiency loss > savings from upgrade → **agent proposes replacement**.
+
+**Revenue.** Quality × quantity × market price (balancing matrix).
+
+---
+
+## 6a. Quality Grades & Price Functions
+
+**Numeric Quality Concept.**
+
+* Quality is tracked **numerically** on a **0–100** integer scale, where **70** is the market **baseline** (list price without premium/discount).
+* **Device quality (blueprint field `quality`)** affects **initial durability** and **initial efficiency** of a device.
+
+**Device Quality → Durability/Efficiency.**
+
+* *Durability:* `baseMTBF = spec.MTBF * (1 + (quality - 70) / 100)`
+* *Efficiency:* `baseEfficiency = spec.efficiency * (1 + (quality - 70) / 200)`
+  (Both are placeholder curves and may be differentiated per device type.)
+
+**Harvest Quality (Pseudocode).**
 
 ```pseudo
 function calculateHarvestQuality(finalHealth /*0..1*/, avgStress /*0..1*/, geneticQuality /*0..100*/, methodModifier /*~0.9..1.1*/): int {
-  // Basiskomponenten normalisieren
+  // Normalize base components
   let healthScore   = clamp01(finalHealth)
   let stressPenalty = clamp01(avgStress)
 
-  // Gewichte (Summe ≈ 1.0)
+  // Weights (sum ≈ 1.0)
   const W_HEALTH = 0.55
   const W_STRESS = 0.25
   const W_GENET  = 0.20
 
-  // Qualitätsrohwert 0..100
+  // Raw quality 0..100
   let q = 100 * (
       W_HEALTH * healthScore
     + W_GENET  * (geneticQuality / 100)
     + W_STRESS * (1 - stressPenalty)
   )
 
-  // Methode (SOG/SCROG etc.) wirkt leicht multiplicativ
+  // Method (SOG/SCROG etc.) acts mildly multiplicatively
   q = q * methodModifier
 
-  // Soft‑Caps und Clamps
-  if (q > 95) q = 95 + 0.5 * (q - 95)   // abflachen nahe Maximum
+  // Soft caps and clamps
+  if (q > 95) q = 95 + 0.5 * (q - 95)   // flatten near maximum
   return round(clamp(q, 0, 100))
 }
 ```
 
-**Preisfunktion (nicht‑linear, Pseudocode).**
+**Price Function (Non-linear, Pseudocode).**
 
 ```pseudo
 function calculateSalePrice(basePrice, quality /*0..100*/): number {
@@ -172,126 +174,126 @@ function calculateSalePrice(basePrice, quality /*0..100*/): number {
   const q = clamp(quality, 0, 100)
 
   if (q >= BASELINE) {
-    // Überdurchschnittliche Qualität wird überproportional belohnt
-    // Exponent > 1 verstärkt den Bonus
+    // Above-average quality is rewarded disproportionately
+    // Exponent > 1 amplifies the bonus
     const alpha = 1.25
     const factor = Math.pow(q / BASELINE, alpha)
     return basePrice * factor
   } else {
-    // Unterdurchschnittliche Qualität führt zu starkem Abschlag (konvex)
+    // Below-average quality receives a strong discount (convex)
     const beta = 1.5
     const factor = Math.pow(q / BASELINE, beta) // 0..1
-    // Zusätzlicher Penalty‑Knick unter 50
+    // Additional penalty kink below 50
     const kink = (q < 50) ? 0.85 : 1.0
     return basePrice * factor * kink
   }
 }
 ```
 
-**Design‑Intention.**
+**Design Intent.**
 
-* **Exzellenz lohnt sich stark** (exponentieller Bonus), **Mittelmaß ist neutral**, **schwache Qualität wird hart bestraft**. Dadurch entsteht ein klarer Anreiz, Klima/Methoden/Personal und Gerätequalität zu optimieren.
-
----
-
-## 7. Automatisierung & Agenten
-
-**Agentenrollen (Beispiele).**
-
-* **Auto‑Replant‑Agent:** Trigger „Zone ready“ → Setzling einsetzen; Priorität *hoch*; Fallback: Manual‑Task‑Queue.
-* **Harvest‑Scheduler:** Reifegrad‑Erkennung, Slot‑Planung, Puffer für Nachernte‑Kapazität.
-* **Climate‑Controller:** Zielkorridor halten (Temp/RH/CO₂/PPFD), Kosten‑sensitiv (Energiepreise).
-* **Maintenance‑Advisor:** Degeneration/MTBF beobachten, Wartungsfenster planen, Tausch empfehlen.
-* **Pest/Disease‑Manager:** Risikoabschätzung, Behandlung planen (Kosten/Nutzen/Qualitätseinfluss).
-
-**Konfliktlösung & Prioritäten.** Zentraler **Task‑Arbiter** vergibt Slots nach Wichtigkeit (Pflanzenschutz > Ernte > Replant > Komfort).
-**Fehlerzustände.** Ressourcen‑Mangel → degrade‑Modus (sichere Defaults); Dead‑Device → Notabschaltung & Alarm.
+* **Excellence pays off strongly** (exponential bonus), **average is neutral**, **poor quality is penalized hard**. This creates a clear incentive to optimize climate/methods/staff and device quality.
 
 ---
 
-## 8. Inhalte & Datenstrategie
+## 7. Automation & Agents
 
-* **v1‑Umfang (Zielwerte):** \~8–12 Strains, \~10–15 Devices, 2–3 CultivationMethods, Basis‑Pests/Diseases, Treatments. *(OPEN: finale Liste)*
-* **Quellen/Lizenzen:** Dokumentation der Datenherkünfte, Attribution, OS‑freundliche Lizenzen.
-* **Modding/Editoren:** JSON‑Formate stabil (SemVer); In‑Game‑Editoren für Strains/Devices/Methods geplant.
+**Agent Roles (Examples).**
 
----
+* **Auto-Replant Agent:** Trigger “zone ready” → plant seedling; priority *high*; fallback: manual task queue.
+* **Harvest Scheduler:** Ripeness detection, slot planning, buffer for post-harvest capacity.
+* **Climate Controller:** Keep target corridor (temp/RH/CO₂/PPFD), cost-sensitive (energy prices).
+* **Maintenance Advisor:** Monitor degradation/MTBF, plan maintenance windows, recommend replacement.
+* **Pest/Disease Manager:** Risk assessment, plan treatments (cost/benefit/quality impact).
 
-## 9. UX‑ & Präsentations‑Vision (technologieagnostisch)
-
-* **Schlüssel‑Screens:** Start (New/Load/Import), Dashboard (Zeit/Tick, Energie/Wasser/€), Struktur‑Explorer (Structure → Room → Zone → Plant), Detail‑Pane mit KPIs & Stress‑Breakdown, Shop/Research, Logs/Audits.
-* **Informationshierarchie:** Oben: Tick/Zeit, Tageskosten, Energie/Wasser, Kontostand; Mitte: aktive Zone/Plant KPIs; Unten: Ereignisse/Tasks.
-* **Zugänglichkeit:** Einheiten strikt SI, klare Tooltips, Farbschwächen‑freundliche Paletten, skalierbare Typografie.
-
----
-
-## 10. Persistenz & Kompatibilität
-
-* **Save/Load‑Versprechen:** Vorwärts‑Migration mit Schema‑Versionen (SemVer), Migrationsskripte; Crash‑sichere Saves.
-* **Export/Replay:** JSONL‑Logs pro Tag/Ernte; deterministische Replays aus Seed + Input‑Stream.
+**Conflict Resolution & Priorities.** Central **task arbiter** allocates slots by importance (plant protection > harvest > replant > comfort).
+**Failure States.** Resource shortage → degrade mode (safe defaults); dead device → emergency shutdown & alarm.
 
 ---
 
-## 11. Telemetrie, Validierung & Tests
+## 8. Content & Data Strategy
 
-* **Sim‑Audits:** Tages‑Summaries (Biomasse, Wasser, NPK, Energie, Kosten, Stress), Ernte‑Summaries (Yield, Qualität, €/g).
-* **Deterministische Testläufe:** Referenz‑Seeds (z. B. `WB_SEED=golden-200d`), Golden‑Files, Toleranzen.
-* **Observability:** Event‑Bus‑Proben, Tick‑Latenz, Dropped‑Tasks, OOM‑Wächter.
-
----
-
-## 12. Nicht‑funktionale Anforderungen (NFR)
-
-* **Performance:** Ziel‑Ticks/s je Referenz‑Szenario (s. §3); lineare Skalierung je Zone/Plant mit Obergrenzen.
-* **Robustheit:** Safe‑Defaults bei Parameterfehlern; Validierung aller Blueprints beim Laden (Schema).
-* **Sicherheit/Privacy:** Lokale Saves per Default; keine personenbezogenen Daten.
-* **Internationalisierung:** Sprache DE/EN, SI‑Einheiten; Dezimal‑/Datumsformat konfigurierbar.
+* **v1 Scope (Targets):** \~8–12 strains, \~10–15 devices, 2–3 cultivation methods, basic pests/diseases, treatments. *(OPEN: finalize list)*
+* **Sources/Licenses:** Document data provenance, attribution, OSS-friendly licenses.
+* **Modding/Editors:** JSON formats stable (SemVer); in-game editors for strains/devices/methods planned.
 
 ---
 
-## 13. Recht & Ethik
+## 9. UX & Presentation Vision (Technology-Agnostic)
 
-* **Darstellung:** Neutrale, sachliche Darstellung; keine Glorifizierung; Altersfreigabe beachten.
-* **Open‑Source‑Strategie:** Lizenzmodell (z. B. AGPL/Polyform?); Beiträge via PR‑Policy, CLA *(OPEN: festlegen)*.
+* **Key Screens:** Start (New/Load/Import), Dashboard (time/tick, energy/water/€), Structure Explorer (Structure → Room → Zone → Plant), detail pane with KPIs & stress breakdown, Shop/Research, Logs/Audits.
+* **Information Hierarchy:** Top: tick/time, daily costs, energy/water, balance; middle: active zone/plant KPIs; bottom: events/tasks.
+* **Accessibility:** Strict SI units, clear tooltips, color-vision-friendly palettes, scalable typography.
 
 ---
 
-## 14. Roadmap & Releasekriterien
+## 10. Persistence & Compatibility
+
+* **Save/Load Promise:** Forward migrations with schema versions (SemVer), migration scripts; crash-safe saves.
+* **Export/Replay:** JSONL logs per day/harvest; deterministic replays from seed + input stream.
+
+---
+
+## 11. Telemetry, Validation & Tests
+
+* **Sim Audits:** Daily summaries (biomass, water, NPK, energy, costs, stress), harvest summaries (yield, quality, €/g).
+* **Deterministic Test Runs:** Reference seeds (e.g., `WB_SEED=golden-200d`), golden files, tolerances.
+* **Observability:** Event bus probes, tick latency, dropped tasks, OOM guard.
+
+---
+
+## 12. Non-Functional Requirements (NFR)
+
+* **Performance:** Target ticks/s per reference scenario (see §3); linear scaling per zone/plant with upper bounds.
+* **Robustness:** Safe defaults on parameter errors; validate all blueprints at load time (schema).
+* **Security/Privacy:** Local saves by default; no personal data.
+* **Internationalization:** Languages DE/EN, SI units; configurable decimal/date formats.
+
+---
+
+## 13. Legal & Ethics
+
+* **Portrayal:** Neutral, factual representation; no glorification; respect age ratings.
+* **Open-Source Strategy:** License model (e.g., AGPL/Polyform?); contributions via PR policy, CLA. *(OPEN: decide)*
+
+---
+
+## 14. Roadmap & Release Criteria
 
 **Milestones.**
 
-1. **MVP**: Eine Struktur, einfache Klima‑Kontrolle, 1–2 Strains, 1 Methode, Basis‑Ökonomie, Save/Load, deterministischer 30‑Tage‑Run.
-2. **Alpha**: Pests/Diseases + Treatments, Geräte‑Degeneration/Wartung, Shop/Research‑Loop, Editor‑v1.
-3. **Beta**: Balancing‑Pass, Golden‑Runs (200 Tage), Stabilitäts‑SLOs erreicht, Localization EN/DE.
-4. **1.0**: Inhaltspolitur, Modding‑Docs, Replay‑Exporter, Performance‑Tuning.
+1. **MVP:** One structure, basic climate control, 1–2 strains, 1 method, basic economy, save/load, deterministic 30-day run.
+2. **Alpha:** Pests/diseases + treatments, device degradation/maintenance, shop/research loop, editor v1.
+3. **Beta:** Balancing pass, golden runs (200 days), stability SLOs met, localization EN/DE.
+4. **1.0:** Content polish, modding docs, replay exporter, performance tuning.
 
 **Definition of Done (MVP).**
 
-* Erste Ernte < 30 Min im Default‑Szenario.
-* Reproduzierbarer Referenz‑Run (±0,5 %).
-* Schema‑Versionierung & Migration vorhanden.
-* Crash‑sichere Saves & Wiederanlauf.
+* First harvest < 30 min in the default scenario.
+* Reproducible reference run (±0.5%).
+* Schema versioning & migrations present.
+* Crash-safe saves & restart.
 
 ---
 
-## 15. Risiken & Annahmen
+## 15. Risks & Assumptions
 
-**Top‑Risiken.**
+**Top Risks.**
 
-* **Balancing‑Komplexität:** Multiplikationseffekte aus Klima×Strain×Geräten.
-* **Agenten‑Patts:** „Niemand fühlt sich zuständig“ → Deadlocks.
-* **Datenqualität:** Unvollständige/uneinheitliche Blueprints.
+* **Balancing complexity:** Multiplicative effects from climate × strain × devices.
+* **Agent standoffs:** “No one feels responsible” → deadlocks.
+* **Data quality:** Incomplete/inconsistent blueprints.
 
-**Gegenmaßnahmen.**
+**Mitigations.**
 
-* Strikte Audit‑Metriken, schrittweise Freischaltung von Systemen (Feature Flags).
-* Zentraler Task‑Arbiter, Deadlock‑Detektor, Fallback‑Tasks.
-* Schema‑Validierung, Content‑Reviews, Test‑Seeds.
+* Strict audit metrics, phased system enablement (feature flags).
+* Central task arbiter, deadlock detector, fallback tasks.
+* Schema validation, content reviews, test seeds.
 
-**Annahmen.**
+**Assumptions.**
 
-* Community will Modding; deterministische Replays sind Kernnutzen; SI‑Einheiten sind akzeptiert.
+* The community wants modding; deterministic replays are core value; SI units are acceptable.
 
 ---
 
-> **Hinweis:** Dieses Dokument ist **technologieagnostisch**. Die konkrete Tech‑Ausprägung (Engine, UI‑Stack etc.) wird separat in „Architecture & Implementation Choices“ dokumentiert.
+> **Note:** This document is **technology-agnostic**. Concrete technology choices (engine, UI stack, etc.) are ore have to be documented separately in “Architecture & Implementation Choices.”
