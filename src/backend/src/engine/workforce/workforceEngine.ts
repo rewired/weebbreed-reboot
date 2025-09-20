@@ -28,6 +28,25 @@ const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
 };
 
+const PRIORITY_STEP = 10;
+const PRIORITY_MIN = 30;
+const PRIORITY_MAX = 100;
+
+const normalizePriority = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return PRIORITY_MIN;
+  }
+  const snapped = Math.round(value / PRIORITY_STEP) * PRIORITY_STEP;
+  return clamp(snapped, PRIORITY_MIN, PRIORITY_MAX);
+};
+
+const compareTasksByCreation = (left: TaskState, right: TaskState): number => {
+  if (left.createdAtTick !== right.createdAtTick) {
+    return left.createdAtTick - right.createdAtTick;
+  }
+  return left.id.localeCompare(right.id);
+};
+
 const DEFAULT_POLICIES: WorkforcePolicies = {
   energy: {
     minEnergyToClaim: 0.35,
@@ -108,6 +127,7 @@ interface TaskCreationContext {
   tick: number;
   definitionId: string;
   fallbackPriority: number;
+  priorityDelta?: number;
   events: EventCollector;
   metadata: Record<string, unknown>;
   safety?: TaskSafetyRequirements;
@@ -129,6 +149,8 @@ export class WorkforceEngine {
   private readonly policies: WorkforcePolicies;
 
   private readonly runtime = new Map<string, WorkforceEmployeeRuntimeState>();
+
+  private readonly priorityRotation = new Map<number, string>();
 
   private sequence = 0;
 
@@ -237,14 +259,16 @@ export class WorkforceEngine {
       zone.resources.reservoirLevel < generationPolicy.reservoirLevelThreshold &&
       !this.hasOpenTask(taskSystem, zone.id, 'refill_supplies_water')
     ) {
-      const priorityBoost = Math.round((1 - clamp(zone.resources.reservoirLevel, 0, 1)) * 4);
+      const priorityBoost =
+        Math.round((1 - clamp(zone.resources.reservoirLevel, 0, 1)) * 4) * PRIORITY_STEP;
       this.queueTask({
         structure,
         zone,
         taskSystem,
         tick,
         definitionId: 'refill_supplies_water',
-        fallbackPriority: 7 + priorityBoost,
+        fallbackPriority: 80,
+        priorityDelta: priorityBoost,
         events,
         metadata: {
           zoneName: zone.name,
@@ -260,14 +284,16 @@ export class WorkforceEngine {
       zone.resources.nutrientStrength < generationPolicy.nutrientStrengthThreshold &&
       !this.hasOpenTask(taskSystem, zone.id, 'refill_supplies_nutrients')
     ) {
-      const priorityBoost = Math.round((1 - clamp(zone.resources.nutrientStrength, 0, 1)) * 4);
+      const priorityBoost =
+        Math.round((1 - clamp(zone.resources.nutrientStrength, 0, 1)) * 4) * PRIORITY_STEP;
       this.queueTask({
         structure,
         zone,
         taskSystem,
         tick,
         definitionId: 'refill_supplies_nutrients',
-        fallbackPriority: 6 + priorityBoost,
+        fallbackPriority: 80,
+        priorityDelta: priorityBoost,
         events,
         metadata: {
           zoneName: zone.name,
@@ -284,14 +310,15 @@ export class WorkforceEngine {
       !this.hasOpenTask(taskSystem, zone.id, 'clean_zone')
     ) {
       const dirtiness = 1 - clamp(room.cleanliness, 0, 1);
-      const priorityBoost = Math.round(dirtiness * 5);
+      const priorityBoost = Math.round(dirtiness * 5) * PRIORITY_STEP;
       this.queueTask({
         structure,
         zone,
         taskSystem,
         tick,
         definitionId: 'clean_zone',
-        fallbackPriority: 5 + priorityBoost,
+        fallbackPriority: 60,
+        priorityDelta: priorityBoost,
         events,
         metadata: {
           zoneName: zone.name,
@@ -316,7 +343,7 @@ export class WorkforceEngine {
         taskSystem,
         tick,
         definitionId: 'harvest_plants',
-        fallbackPriority: 9,
+        fallbackPriority: 90,
         events,
         metadata: {
           zoneName: zone.name,
@@ -341,7 +368,7 @@ export class WorkforceEngine {
             taskSystem,
             tick,
             definitionId: 'maintain_device',
-            fallbackPriority: 6,
+            fallbackPriority: 60,
             events,
             metadata: {
               zoneName: zone.name,
@@ -363,7 +390,7 @@ export class WorkforceEngine {
             taskSystem,
             tick,
             definitionId: 'repair_device',
-            fallbackPriority: 10,
+            fallbackPriority: 100,
             events,
             metadata: {
               zoneName: zone.name,
@@ -398,7 +425,7 @@ export class WorkforceEngine {
         taskSystem,
         tick,
         definitionId: 'apply_treatment',
-        fallbackPriority: 10,
+        fallbackPriority: 100,
         events,
         metadata: {
           zoneName: zone.name,
@@ -444,7 +471,9 @@ export class WorkforceEngine {
 
   private queueTask(context: TaskCreationContext): void {
     const definition = this.definitions[context.definitionId];
-    const priority = definition?.priority ?? context.fallbackPriority;
+    const basePriority = definition ? definition.priority : context.fallbackPriority;
+    const adjustedPriority = basePriority + (context.priorityDelta ?? 0);
+    const normalizedPriority = normalizePriority(adjustedPriority);
     const metadata: WorkforceTaskMetadata = {
       ...context.metadata,
       estimatedWorkHours: this.estimateWorkHours(definition, context.metadata),
@@ -460,9 +489,9 @@ export class WorkforceEngine {
       id: this.generateTaskId(context.tick),
       definitionId: context.definitionId,
       status: 'pending',
-      priority: Math.max(1, Math.round(priority)),
+      priority: normalizedPriority,
       createdAtTick: context.tick,
-      dueTick: this.computeDueTick(priority, context.tick),
+      dueTick: this.computeDueTick(normalizedPriority, context.tick),
       location: {
         structureId: context.structure.id,
         roomId: context.zone.roomId,
@@ -490,8 +519,38 @@ export class WorkforceEngine {
   }
 
   private assignTasks(state: GameState, tick: number, tickLengthMinutes: number): void {
-    const backlog = state.tasks.backlog.filter((task) => task.status === 'pending');
-    backlog.sort((left, right) => right.priority - left.priority);
+    const pendingTasks = state.tasks.backlog.filter((task) => task.status === 'pending');
+    if (pendingTasks.length === 0) {
+      return;
+    }
+
+    const priorityGroups = new Map<number, TaskState[]>();
+    for (const task of pendingTasks) {
+      const group = priorityGroups.get(task.priority);
+      if (group) {
+        group.push(task);
+      } else {
+        priorityGroups.set(task.priority, [task]);
+      }
+    }
+
+    const orderedPriorities = Array.from(priorityGroups.keys()).sort((left, right) => right - left);
+    const roundRobinOrder: TaskState[] = [];
+    const groupOrders = new Map<number, TaskState[]>();
+    const groupStarts = new Map<number, string | undefined>();
+
+    for (const priority of orderedPriorities) {
+      const group = priorityGroups.get(priority);
+      if (!group) {
+        continue;
+      }
+      group.sort(compareTasksByCreation);
+      const startId = this.priorityRotation.get(priority);
+      const rotated = this.rotateGroup(group, startId);
+      groupOrders.set(priority, rotated);
+      groupStarts.set(priority, rotated[0]?.id);
+      roundRobinOrder.push(...rotated);
+    }
 
     const availableEmployees = state.personnel.employees.filter((employee) => {
       if (employee.status !== 'idle') {
@@ -503,7 +562,9 @@ export class WorkforceEngine {
       return true;
     });
 
-    for (const task of backlog) {
+    const lastAssignedByPriority = new Map<number, string>();
+
+    for (const task of roundRobinOrder) {
       const definition = this.definitions[task.definitionId];
       const best = this.selectEmployeeForTask(availableEmployees, task, definition);
       if (!best) {
@@ -537,6 +598,62 @@ export class WorkforceEngine {
       if (employeeIndex >= 0) {
         availableEmployees.splice(employeeIndex, 1);
       }
+      lastAssignedByPriority.set(task.priority, task.id);
+    }
+
+    const pendingAfter = state.tasks.backlog.filter((task) => task.status === 'pending');
+    const pendingIdSet = new Set(pendingAfter.map((task) => task.id));
+
+    const prioritiesToUpdate = new Set<number>();
+    for (const priority of groupOrders.keys()) {
+      prioritiesToUpdate.add(priority);
+    }
+    for (const task of pendingAfter) {
+      prioritiesToUpdate.add(task.priority);
+    }
+    for (const priority of this.priorityRotation.keys()) {
+      prioritiesToUpdate.add(priority);
+    }
+
+    for (const priority of prioritiesToUpdate) {
+      const rotated = groupOrders.get(priority);
+      const pendingInOrder = rotated
+        ? rotated.filter((task) => pendingIdSet.has(task.id))
+        : pendingAfter.filter((task) => task.priority === priority).sort(compareTasksByCreation);
+
+      if (pendingInOrder.length === 0) {
+        this.priorityRotation.delete(priority);
+        continue;
+      }
+
+      const referenceId =
+        lastAssignedByPriority.get(priority) ?? groupStarts.get(priority) ?? undefined;
+
+      let nextId: string | undefined;
+      const searchOrder = rotated && rotated.length > 0 ? rotated : pendingInOrder;
+      if (referenceId) {
+        const startIndex = searchOrder.findIndex((task) => task.id === referenceId);
+        if (startIndex >= 0) {
+          for (let offset = 1; offset <= searchOrder.length; offset += 1) {
+            const candidate = searchOrder[(startIndex + offset) % searchOrder.length];
+            if (pendingIdSet.has(candidate.id)) {
+              nextId = candidate.id;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!nextId) {
+        const existingId = this.priorityRotation.get(priority);
+        if (existingId && pendingIdSet.has(existingId)) {
+          nextId = existingId;
+        } else {
+          nextId = pendingInOrder[0].id;
+        }
+      }
+
+      this.priorityRotation.set(priority, nextId);
     }
   }
 
@@ -589,7 +706,7 @@ export class WorkforceEngine {
     }
 
     const weights = this.policies.utility.weights;
-    const priorityScore = clamp(task.priority / 10, 0, 1);
+    const priorityScore = clamp(task.priority / PRIORITY_MAX, 0, 1);
     const skillScore = definition
       ? clamp(toNumber(employee.skills?.[definition.requiredSkill]) / 10, 0, 1)
       : 0.5;
@@ -776,9 +893,24 @@ export class WorkforceEngine {
     return Math.max(minutes / 60, MIN_ESTIMATED_HOURS);
   }
 
+  private rotateGroup(tasks: TaskState[], startId: string | undefined): TaskState[] {
+    if (tasks.length === 0) {
+      return [];
+    }
+    if (!startId) {
+      return tasks.slice();
+    }
+    const index = tasks.findIndex((task) => task.id === startId);
+    if (index <= 0) {
+      return tasks.slice();
+    }
+    return tasks.slice(index).concat(tasks.slice(0, index));
+  }
+
   private computeDueTick(priority: number, tick: number): number {
-    const clamped = clamp(priority, 1, 10);
-    const horizon = Math.max(3, Math.round(16 / clamped));
+    const normalized = normalizePriority(priority);
+    const bucket = Math.max(PRIORITY_MIN / PRIORITY_STEP, Math.round(normalized / PRIORITY_STEP));
+    const horizon = Math.max(3, Math.round(16 / bucket));
     return tick + horizon;
   }
 

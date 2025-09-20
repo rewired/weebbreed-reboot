@@ -6,6 +6,7 @@ import type {
   GameState,
   PendingTreatmentApplication,
   TaskDefinitionMap,
+  TaskState,
   TreatmentCategory,
   ZoneState,
 } from '../../state/models.js';
@@ -210,7 +211,7 @@ describe('WorkforceEngine', () => {
       apply_treatment: {
         id: 'apply_treatment',
         costModel: { basis: 'perPlant', laborMinutes: 4 },
-        priority: 9,
+        priority: 90,
         requiredRole: 'Gardener',
         requiredSkill: 'Gardening',
         minSkillLevel: 2,
@@ -280,7 +281,7 @@ describe('WorkforceEngine', () => {
       maintain_device: {
         id: 'maintain_device',
         costModel: { basis: 'perAction', laborMinutes: 180 },
-        priority: 6,
+        priority: 60,
         requiredRole: 'Technician',
         requiredSkill: 'Maintenance',
         minSkillLevel: 3,
@@ -312,5 +313,122 @@ describe('WorkforceEngine', () => {
     expect(updatedTech.overtimeHours).toBeCloseTo(1.5, 5);
     expect(updatedTech.hoursWorkedToday).toBeCloseTo(2, 5);
     expect(updatedTech.energy).toBeCloseTo(0.78, 2);
+  });
+
+  it('applies dynamic priority boosts in 10-point increments', () => {
+    const state = createBaseState();
+    const room = state.structures[0].rooms[0];
+    const zone = room.zones[0];
+    zone.resources.reservoirLevel = 0.2;
+    room.cleanliness = 0.55;
+
+    const definitions: TaskDefinitionMap = {
+      refill_supplies_water: {
+        id: 'refill_supplies_water',
+        costModel: { basis: 'perAction', laborMinutes: 15 },
+        priority: 80,
+        requiredRole: 'Gardener',
+        requiredSkill: 'Gardening',
+        minSkillLevel: 0,
+        description: 'Refill water',
+      },
+      clean_zone: {
+        id: 'clean_zone',
+        costModel: { basis: 'perSquareMeter', laborMinutes: 1 },
+        priority: 60,
+        requiredRole: 'Janitor',
+        requiredSkill: 'Cleanliness',
+        minSkillLevel: 0,
+        description: 'Clean zone',
+      },
+    };
+
+    const engine = new WorkforceEngine(definitions);
+    const events: SimulationEvent[] = [];
+    const collector = createEventCollector(events, 1);
+
+    engine.processTick(state, 1, state.metadata.tickLengthMinutes, collector);
+
+    const backlog = state.tasks.backlog.filter((task) => task.status === 'pending');
+    const waterTask = backlog.find((task) => task.definitionId === 'refill_supplies_water');
+    const cleanTask = backlog.find((task) => task.definitionId === 'clean_zone');
+
+    expect(waterTask?.priority).toBe(100);
+    expect(cleanTask?.priority).toBe(80);
+  });
+
+  it('rotates equal-priority tasks in a round-robin order', () => {
+    const state = createBaseState();
+    const structure = state.structures[0];
+    const room = structure.rooms[0];
+    const zone = room.zones[0];
+
+    const createTask = (id: string, createdAt: number): TaskState => ({
+      id,
+      definitionId: 'clean_zone',
+      status: 'pending',
+      priority: 60,
+      createdAtTick: createdAt,
+      dueTick: createdAt + 5,
+      location: { structureId: structure.id, roomId: room.id, zoneId: zone.id },
+      metadata: { estimatedWorkHours: 0.25, taskKey: id },
+    });
+
+    state.tasks.backlog.push(
+      createTask('task-a', 1),
+      createTask('task-b', 2),
+      createTask('task-c', 3),
+    );
+
+    const definitions: TaskDefinitionMap = {
+      clean_zone: {
+        id: 'clean_zone',
+        costModel: { basis: 'perSquareMeter', laborMinutes: 1 },
+        priority: 60,
+        requiredRole: 'Janitor',
+        requiredSkill: 'Cleanliness',
+        minSkillLevel: 1,
+        description: 'Clean zone',
+      },
+    };
+
+    const engine = new WorkforceEngine(definitions);
+    const events: SimulationEvent[] = [];
+    const collector = createEventCollector(events, 1);
+    let processedEvents = 0;
+
+    engine.processTick(state, 1, 60, collector);
+    const tick1Events = events.slice(processedEvents);
+    processedEvents = events.length;
+    expect(tick1Events.some((event) => event.type === 'task.completed')).toBe(false);
+
+    const janitor = createEmployee({
+      id: 'janitor-1',
+      role: 'Janitor',
+      skills: { Cleanliness: 4 },
+      experience: { Cleanliness: 4 },
+    });
+    state.personnel.employees.push(janitor);
+
+    engine.processTick(state, 2, 60, collector);
+    const tick2Events = events.slice(processedEvents);
+    processedEvents = events.length;
+    const completedTick2 = tick2Events.filter((event) => event.type === 'task.completed');
+    expect(completedTick2).toHaveLength(1);
+    expect(completedTick2[0]?.payload.taskId).toBe('task-b');
+
+    janitor.energy = 1;
+    janitor.status = 'idle';
+
+    engine.processTick(state, 3, 60, collector);
+    const tick3Events = events.slice(processedEvents);
+    processedEvents = events.length;
+    const completedTick3 = tick3Events.filter((event) => event.type === 'task.completed');
+    expect(completedTick3).toHaveLength(1);
+    expect(completedTick3[0]?.payload.taskId).toBe('task-c');
+
+    const remainingPending = state.tasks.backlog.filter((task) => task.status === 'pending');
+    expect(remainingPending).toHaveLength(1);
+    expect(remainingPending[0]?.id).toBe('task-a');
   });
 });
