@@ -4,6 +4,7 @@ import type {
   UtilityPrices,
 } from '../../../data/schemas/index.js';
 import type { EconomicsSettings } from '../../state/models.js';
+import type { RngService } from '../../lib/rng.js';
 
 export interface PriceCatalog {
   devicePrices: ReadonlyMap<string, DevicePriceEntry>;
@@ -18,6 +19,7 @@ export interface HarvestSaleResult {
   basePricePerGram: number;
   adjustedPricePerGram: number;
   appliedMultiplier: number;
+  marketIndex: number;
   totalRevenue: number;
 }
 
@@ -42,6 +44,10 @@ const QUALITY_BETA = 1.5;
 const LOW_QUALITY_KINK_THRESHOLD = 50;
 const LOW_QUALITY_KINK_MULTIPLIER = 0.85;
 
+const MARKET_INDEX_MIN = 0.85;
+const MARKET_INDEX_MAX = 1.15;
+const DEFAULT_MARKET_STREAM_ID = 'market';
+
 const computeQualityFactor = (quality: number): number => {
   const q = clamp(quality, 0, 100);
   if (q >= BASELINE_QUALITY) {
@@ -55,7 +61,15 @@ const computeQualityFactor = (quality: number): number => {
 };
 
 export class PricingService {
-  constructor(private readonly catalog: PriceCatalog) {}
+  private readonly marketStreamId: string;
+
+  constructor(
+    private readonly catalog: PriceCatalog,
+    private readonly rng?: RngService,
+    marketStreamId = DEFAULT_MARKET_STREAM_ID,
+  ) {
+    this.marketStreamId = marketStreamId;
+  }
 
   getDevicePrice(deviceId: string): DevicePriceEntry | undefined {
     return this.catalog.devicePrices.get(deviceId);
@@ -78,6 +92,7 @@ export class PricingService {
     const strainPrice = this.getStrainPrice(strainId);
     const sanitizedGrams = Math.max(Number.isFinite(grams) ? grams : 0, 0);
     const basePricePerGram = strainPrice?.harvestPricePerGram ?? 0;
+    const economicsMultiplier = economics.harvestPriceMultiplier ?? 1;
 
     if (sanitizedGrams <= 0 || basePricePerGram <= 0) {
       return {
@@ -86,14 +101,16 @@ export class PricingService {
         quality,
         basePricePerGram,
         adjustedPricePerGram: 0,
-        appliedMultiplier: economics.harvestPriceMultiplier ?? 1,
+        appliedMultiplier: economicsMultiplier,
+        marketIndex: 1,
         totalRevenue: 0,
       };
     }
 
     const qualityFactor = computeQualityFactor(quality);
     const adjustedPricePerGram = basePricePerGram * qualityFactor;
-    const multiplier = economics.harvestPriceMultiplier ?? 1;
+    const marketIndex = this.computeMarketIndex();
+    const multiplier = economicsMultiplier * marketIndex;
     const totalRevenue = sanitizedGrams * adjustedPricePerGram * multiplier;
 
     return {
@@ -103,7 +120,19 @@ export class PricingService {
       basePricePerGram,
       adjustedPricePerGram,
       appliedMultiplier: multiplier,
+      marketIndex,
       totalRevenue,
     };
+  }
+
+  private computeMarketIndex(): number {
+    if (!this.rng) {
+      return 1;
+    }
+
+    const stream = this.rng.getStream(this.marketStreamId);
+    const value = stream.nextFloat();
+    const marketIndex = MARKET_INDEX_MIN + (MARKET_INDEX_MAX - MARKET_INDEX_MIN) * value;
+    return clamp(marketIndex, MARKET_INDEX_MIN, MARKET_INDEX_MAX);
   }
 }
