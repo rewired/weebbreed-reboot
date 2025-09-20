@@ -85,7 +85,7 @@ A "Company Policies" section provides a toggle switch to set the company's overt
 
 *Job Market Tab:*
 A dropdown menu to filter available candidates by role.
-A grid of candidate cards, identical in layout to the employee cards but with a "Hire" button at the bottom.
+A grid of candidate cards, identical in layout to the employee cards but with a "Hire" button at the bottom. The content of the grid can be filtered by role of the candidates.
 ## 4. Modals (Pop-ups)
 *Important rule for modals:* If a modal is shown the simulation must be paused. After the modal is closed the simulation must be resumed (if the simulation ran before modal activation).
 
