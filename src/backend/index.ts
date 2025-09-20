@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { loadBlueprintRegistry } from './data/loader.js';
 import { createInitialWorldState } from './data/worldFactory.js';
@@ -6,6 +7,8 @@ import { SocketGateway } from './server/socketGateway.js';
 import { SaveLoadService } from './services/saveLoadService.js';
 import { logger } from './lib/logger.js';
 
+const savesDirectory = fileURLToPath(new URL('../../saves', import.meta.url));
+
 async function bootstrap(): Promise<void> {
   try {
     logger.info('Loading blueprints');
@@ -13,7 +16,7 @@ async function bootstrap(): Promise<void> {
     const state = createInitialWorldState(registry);
     const simulation = new SimulationEngine(state);
     const gateway = new SocketGateway(simulation);
-    const saveService = new SaveLoadService(new URL('../../saves', import.meta.url).pathname);
+    const saveService = new SaveLoadService(savesDirectory);
 
     await gateway.start(config.socketPort);
     simulation.play();
