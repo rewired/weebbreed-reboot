@@ -5,8 +5,11 @@ import { BlueprintRepository } from '../data/index.js';
 
 export * from './state/models.js';
 export * from './lib/rng.js';
+export * from './lib/eventBus.js';
 export * from './state/serialization.js';
 export * from './stateFactory.js';
+export * from './sim/loop.js';
+export * from './sim/simScheduler.js';
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
