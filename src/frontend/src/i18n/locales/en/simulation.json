@@ -1,0 +1,58 @@
+{
+  "labels": {
+    "controls": "Simulation controls",
+    "connectionStatus": "Connection",
+    "overview": "Latest snapshot",
+    "latestTick": "Tick {{tick}}",
+    "tickTimestamp": "Timestamp",
+    "plantCount": "Tracked plants",
+    "tickDuration": "Tick duration",
+    "zoneTitle": "Zone {{zoneId}}",
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "co2": "CO₂",
+    "ppfd": "PPFD",
+    "vpd": "VPD",
+    "eventLog": "Event log",
+    "totalEvents": "{{count}} events",
+    "noData": "No telemetry received yet.",
+    "inDevelopment": "Work in progress",
+    "tickTimestampShort": "Tick timestamp"
+  },
+  "connection": {
+    "idle": "Idle",
+    "connecting": "Connecting",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "error": "Error"
+  },
+  "controls": {
+    "play": "Play",
+    "pause": "Pause",
+    "step": "Step",
+    "fastForward": "Fast forward",
+    "openSettings": "Set setpoints",
+    "tickLength": "Tick length (min)",
+    "apply": "Apply",
+    "connect": "Connect",
+    "disconnect": "Disconnect"
+  },
+  "events": {
+    "empty": "No events yet."
+  },
+  "views": {
+    "zonesComingSoon": "Detailed zone analytics dashboards are coming soon.",
+    "plantsComingSoon": "Plant inventory and lifecycle tooling are under construction.",
+    "devicesComingSoon": "Device diagnostics and maintenance controls are coming soon.",
+    "settingsDescription": "Tune run-time parameters and advanced controls from this panel."
+  },
+  "modals": {
+    "settingsTitle": "Adjust setpoints",
+    "settingsDescription": "Send a command to the simulation bridge to update the active zone setpoints.",
+    "setpointTarget": "Target",
+    "setpointValue": "Value",
+    "cancel": "Cancel",
+    "apply": "Apply",
+    "close": "Close"
+  }
+}
