@@ -406,6 +406,10 @@ export interface EmployeeState {
   skills: EmployeeSkills;
   experience: EmployeeSkills;
   traits: string[];
+  certifications: string[];
+  hoursWorkedToday: number;
+  overtimeHours: number;
+  lastShiftResetTick?: number;
   assignedStructureId?: string;
   assignedRoomId?: string;
   assignedZoneId?: string;
