@@ -173,6 +173,13 @@ const createEmployee = (overrides: Partial<EmployeeState>): EmployeeState => ({
   experience: { Gardening: 4 },
   traits: [],
   certifications: [],
+  shift: {
+    shiftId: 'shift.test',
+    name: 'Test Shift',
+    startHour: 0,
+    durationHours: 24,
+    overlapMinutes: 0,
+  },
   hoursWorkedToday: 0,
   overtimeHours: 0,
   lastShiftResetTick: 0,
