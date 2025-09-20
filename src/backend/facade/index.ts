@@ -593,7 +593,7 @@ export class SimulationFacade {
 
   private readonly schedulerConfig: SchedulerConfiguration;
 
-  private readonly tickIntervalMs: number;
+  private tickIntervalMs: number;
 
   private readonly externalSchedulerErrorHandler?: (error: unknown) => void;
 
@@ -793,6 +793,58 @@ export class SimulationFacade {
 
   setSpeed(intent: SetSpeedIntent): Promise<CommandResult<TimeStatus>> {
     return this.time.setSpeed(intent);
+  }
+
+  setTickLength(minutes: number): CommandResult<TimeStatus> {
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      return this.createFailure(
+        'ERR_VALIDATION',
+        'Tick length must be greater than zero.',
+        'time.setTickLength',
+      );
+    }
+    const tickIntervalMs = minutes * 60 * 1000;
+    if (Math.abs(tickIntervalMs - this.tickIntervalMs) < Number.EPSILON) {
+      return {
+        ok: true,
+        data: this.getTimeStatus(),
+        warnings: ['Tick length unchanged.'],
+      };
+    }
+
+    const wasRunning = this.scheduler.isRunning();
+    const wasPaused = this.scheduler.isPaused();
+
+    this.scheduler.stop();
+
+    this.tickIntervalMs = tickIntervalMs;
+    this.state.metadata.tickLengthMinutes = minutes;
+
+    this.scheduler = this.createScheduler({
+      maxTicksPerFrame: this.schedulerConfig.maxTicksPerFrame,
+      speed: this.schedulerConfig.speed,
+    });
+
+    if (wasRunning) {
+      this.scheduler.start();
+      if (wasPaused) {
+        this.scheduler.pause();
+      }
+    }
+
+    const status = this.getTimeStatus();
+    this.eventBus.emit({
+      type: 'sim.tickLengthChanged',
+      level: 'info',
+      tick: this.state.clock.tick,
+      payload: {
+        minutes,
+        tickIntervalMs,
+        status,
+      },
+    });
+
+    return { ok: true, data: status };
   }
 
   updateServices(services: Partial<EngineServices>): void {
@@ -1307,7 +1359,7 @@ export class SimulationFacade {
     return { code, message, path };
   }
 
-  private getTimeStatus(): TimeStatus {
+  public getTimeStatus(): TimeStatus {
     return {
       running: this.scheduler.isRunning(),
       paused: this.scheduler.isPaused(),
