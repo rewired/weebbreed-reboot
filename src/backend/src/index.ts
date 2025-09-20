@@ -1,4 +1,4 @@
-import { access } from 'fs/promises';
+import { stat } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { BlueprintRepository } from '../data/index.js';
@@ -16,20 +16,59 @@ export * from '../server/socketGateway.js';
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
+const expectedBlueprintSubdirectories: string[][] = [
+  ['blueprints', 'strains'],
+  ['blueprints', 'devices'],
+  ['blueprints', 'cultivationMethods'],
+  ['prices'],
+];
+
+const isDirectory = async (target: string): Promise<boolean> => {
+  try {
+    const stats = await stat(target);
+    return stats.isDirectory();
+  } catch (error) {
+    return false;
+  }
+};
+
+const isValidDataDirectory = async (candidate: string): Promise<boolean> => {
+  if (!(await isDirectory(candidate))) {
+    return false;
+  }
+
+  for (const segments of expectedBlueprintSubdirectories) {
+    if (!(await isDirectory(path.join(candidate, ...segments)))) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const resolveDataDirectory = async (): Promise<string> => {
+  const envOverride = process.env.WEEBBREED_DATA_DIR
+    ? path.resolve(process.env.WEEBBREED_DATA_DIR)
+    : undefined;
+
   const candidates = [
-    process.env.WEEBBREED_DATA_DIR,
+    envOverride,
+    path.resolve(moduleDirectory, '../../..', 'data'),
     path.resolve(moduleDirectory, '../../../..', 'data'),
     path.resolve(process.cwd(), 'data'),
     path.resolve(process.cwd(), '..', 'data'),
   ].filter(Boolean) as string[];
 
+  const checked = new Set<string>();
+
   for (const candidate of candidates) {
-    try {
-      await access(candidate);
+    if (checked.has(candidate)) {
+      continue;
+    }
+    checked.add(candidate);
+
+    if (await isValidDataDirectory(candidate)) {
       return candidate;
-    } catch (error) {
-      // continue searching
     }
   }
 
