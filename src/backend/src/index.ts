@@ -12,6 +12,7 @@ export * from './stateFactory.js';
 export * from './sim/loop.js';
 export * from './sim/simScheduler.js';
 export * from '../facade/index.js';
+export * from '../server/socketGateway.js';
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
