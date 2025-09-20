@@ -239,6 +239,12 @@ const deviceStockEntrySchema = z.object({
   condition: z.number(),
 });
 
+const harvestCoolingSchema = z.object({
+  enabled: z.boolean(),
+  enabledAtTick: z.number().int().nonnegative().optional(),
+  temperatureC: z.number().optional(),
+});
+
 const harvestBatchSchema = z.object({
   id: nonEmptyString,
   strainId: nonEmptyString,
@@ -247,6 +253,10 @@ const harvestBatchSchema = z.object({
   stage: z.enum(['fresh', 'drying', 'cured', 'waste']),
   harvestedAtTick: z.number().int().nonnegative(),
   notes: z.string().optional(),
+  decayRatePerHour: z.number().nonnegative().optional(),
+  maxStorageTimeInHours: z.number().nonnegative().optional(),
+  qualityUpdatedAtTick: z.number().int().nonnegative().optional(),
+  cooling: harvestCoolingSchema.optional(),
 });
 
 const globalInventorySchema = z.object({

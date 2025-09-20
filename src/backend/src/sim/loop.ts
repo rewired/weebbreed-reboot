@@ -4,6 +4,10 @@ import {
   type ZoneEnvironmentOptions,
 } from '../engine/environment/zoneEnvironment.js';
 import { DeviceDegradationService } from '../engine/environment/deviceDegradation.js';
+import {
+  HarvestQualityService,
+  type HarvestQualityOptions,
+} from '../engine/harvest/harvestQualityService.js';
 import type { GameState } from '../state/models.js';
 import type { EventCollector, SimulationEvent } from '../lib/eventBus.js';
 import { EventBus, createEventCollector } from '../lib/eventBus.js';
@@ -120,6 +124,7 @@ export interface SimulationLoopOptions {
   eventBus: EventBus;
   phases?: SimulationPhaseHandlers;
   environment?: ZoneEnvironmentOptions;
+  harvestQuality?: HarvestQualityOptions;
 }
 
 export class SimulationLoop {
@@ -130,6 +135,8 @@ export class SimulationLoop {
   private readonly environmentService?: ZoneEnvironmentService;
 
   private readonly degradationService: DeviceDegradationService;
+
+  private readonly harvestQualityService: HarvestQualityService;
 
   private readonly phaseHandlers: Record<NonCommitPhase, SimulationPhaseHandler>;
 
@@ -142,6 +149,7 @@ export class SimulationLoop {
     this.eventBus = options.eventBus;
     const phases = options.phases ?? {};
     this.degradationService = new DeviceDegradationService();
+    this.harvestQualityService = new HarvestQualityService(options.harvestQuality);
     if (!phases.applyDevices && !phases.deriveEnvironment) {
       this.environmentService = new ZoneEnvironmentService(options.environment);
     }
@@ -157,7 +165,14 @@ export class SimulationLoop {
         NOOP_PHASE,
       irrigationAndNutrients: phases.irrigationAndNutrients ?? NOOP_PHASE,
       updatePlants: phases.updatePlants ?? NOOP_PHASE,
-      harvestAndInventory: phases.harvestAndInventory ?? NOOP_PHASE,
+      harvestAndInventory:
+        phases.harvestAndInventory ??
+        ((context) =>
+          this.harvestQualityService.process(
+            context.state,
+            context.tick,
+            context.tickLengthMinutes,
+          )),
       accounting: async (context) => {
         this.degradationService.process(context.state, context.tick, context.tickLengthMinutes);
         await accountingHandler(context);
