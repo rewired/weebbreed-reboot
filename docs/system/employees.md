@@ -7,7 +7,7 @@ Employees are the heart of automation in Weedbreed.AI. They are **autonomous age
 ---
 ## 1) Candidate Generation & External Name Provider
 
-To keep the labor market dynamic and credible, the game continuously injects new, unique candidates. Rather than relying only on a fixed local name list, the game **optionally** queries a **seedable external name provider** (e.g., an API that returns first/last names) and falls back to local data if unavailable.
+To keep the labor market dynamic and credible, the game continuously injects new, unique candidates. Rather than relying only on a fixed local name list, the game **optionally** queries a **seedable external name provider** (e.g., an API that returns first/last names) and falls back to local data if unavailable. An free and open provider is https://randomuser.me/. For detailed information about the API, check the providers documentation.
 
 - **Periodic refresh**  
     Once per in-game week (e.g., every **168 ticks** if 1 tick = 1 hour), refresh the candidate pool.
@@ -17,7 +17,8 @@ To keep the labor market dynamic and credible, the game continuously injects new
         `apiSeed = "{gameSeed}-week-{weekIndex}"`  
         This guarantees **reproducible candidates** for identical runs.
 - **Privacy-aware payload**  
-    Request **first/last names only**; no other personal data.
+    Request **first/last names, age, gender and password only**; no other personal data. The age should range between `[18;65]`. For employee the age should play am altering role for random skill creation.
+    A random password will be mapped as "personal" RNG seed. For the ease of use request the password with `password=number,8` as additional parameter from API. The attribute in our Employee-Object is called `personalSeed`, not `password`.
 - **Offline-safe fallback**  
     If the external provider is unreachable or disabled, **fallback** to `/data/personnel/` local lists to synthesize names.
 - **Profile synthesis**  
