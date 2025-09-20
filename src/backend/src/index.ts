@@ -3,6 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { BlueprintRepository } from '../data/index.js';
 
+export * from './state/models.js';
+export * from './lib/rng.js';
+export * from './state/serialization.js';
+export * from './stateFactory.js';
+
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 const resolveDataDirectory = async (): Promise<string> => {
