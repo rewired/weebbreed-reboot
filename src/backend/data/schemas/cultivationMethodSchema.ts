@@ -2,6 +2,20 @@ import { z } from 'zod';
 
 const rangeTuple = z.tuple([z.number(), z.number()]);
 
+export const strainTraitThresholdSchema = z
+  .object({
+    min: z.number().optional(),
+    max: z.number().optional(),
+  })
+  .passthrough();
+
+export const strainTraitCompatibilitySchema = z
+  .object({
+    preferred: z.record(z.string(), strainTraitThresholdSchema).optional(),
+    conflicting: z.record(z.string(), strainTraitThresholdSchema).optional(),
+  })
+  .passthrough();
+
 export const cultivationMethodSchema = z
   .object({
     id: z.string().uuid(),
@@ -31,7 +45,7 @@ export const cultivationMethodSchema = z
       })
       .passthrough()
       .optional(),
-    strainTraitCompatibility: z.record(z.string(), z.number()).optional(),
+    strainTraitCompatibility: strainTraitCompatibilitySchema.optional(),
     idealConditions: z
       .object({
         idealTemperature: rangeTuple.optional(),
@@ -52,3 +66,5 @@ export const cultivationMethodSchema = z
   .passthrough();
 
 export type CultivationMethodBlueprint = z.infer<typeof cultivationMethodSchema>;
+export type StrainTraitCompatibility = z.infer<typeof strainTraitCompatibilitySchema>;
+export type StrainTraitThreshold = z.infer<typeof strainTraitThresholdSchema>;
