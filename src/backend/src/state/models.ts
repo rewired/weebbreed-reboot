@@ -176,6 +176,7 @@ export interface DeviceMaintenanceState {
 export interface DeviceInstanceState {
   id: string;
   blueprintId: string;
+  kind: string;
   name: string;
   zoneId: string;
   status: DeviceStatus;

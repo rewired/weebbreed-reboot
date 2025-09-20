@@ -321,6 +321,7 @@ const createDeviceInstances = (
   return blueprints.map((device) => ({
     id: generateId(idStream, 'device'),
     blueprintId: device.id,
+    kind: device.kind,
     name: device.name,
     zoneId,
     status: 'operational',
