@@ -331,6 +331,14 @@ const employeeSkillsSchema = z
   )
   .partial();
 
+const employeeShiftSchema = z.object({
+  shiftId: nonEmptyString,
+  name: nonEmptyString,
+  startHour: z.number(),
+  durationHours: z.number(),
+  overlapMinutes: z.number(),
+});
+
 const employeeStateSchema = z.object({
   id: nonEmptyString,
   name: nonEmptyString,
@@ -343,6 +351,7 @@ const employeeStateSchema = z.object({
   experience: employeeSkillsSchema,
   traits: z.array(nonEmptyString),
   certifications: z.array(nonEmptyString),
+  shift: employeeShiftSchema,
   hoursWorkedToday: z.number(),
   overtimeHours: z.number(),
   lastShiftResetTick: z.number().int().nonnegative().optional(),

@@ -15,6 +15,7 @@ import {
   EmployeeRole,
   EmployeeState,
   EmployeeSkills,
+  EmployeeShiftAssignment,
   FinanceState,
   FinancialSummary,
   FootprintDimensions,
@@ -56,11 +57,30 @@ const DEFAULT_SALARY_BY_ROLE: Record<EmployeeRole, number> = {
   Manager: 35,
 };
 const DEFAULT_EMPLOYEE_COUNTS: Record<EmployeeRole, number> = {
-  Gardener: 3,
-  Technician: 1,
+  Gardener: 4,
+  Technician: 2,
   Janitor: 1,
-  Operator: 0,
+  Operator: 1,
   Manager: 0,
+};
+
+const MINUTES_PER_DAY = 24 * 60;
+
+const SHIFT_TEMPLATES: readonly EmployeeShiftAssignment[] = [
+  { shiftId: 'shift.day', name: 'Day Shift', startHour: 6, durationHours: 12, overlapMinutes: 60 },
+  {
+    shiftId: 'shift.night',
+    name: 'Night Shift',
+    startHour: 18,
+    durationHours: 12,
+    overlapMinutes: 60,
+  },
+];
+
+const ROLE_SHIFT_PREFERENCES: Partial<Record<EmployeeRole, string>> = {
+  Janitor: 'shift.night',
+  Operator: 'shift.day',
+  Manager: 'shift.day',
 };
 
 const DIFFICULTY_ECONOMICS: Record<DifficultyLevel, EconomicsSettings> = {
@@ -567,6 +587,26 @@ const createInventory = (
   };
 };
 
+const isShiftActiveAtMinute = (shift: EmployeeShiftAssignment, minuteOfDay: number): boolean => {
+  if (!Number.isFinite(shift.startHour) || !Number.isFinite(shift.durationHours)) {
+    return true;
+  }
+  const overlap = Math.max(shift.overlapMinutes, 0);
+  const startMinutes =
+    (((shift.startHour * 60 - overlap) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const durationMinutes = Math.max(shift.durationHours * 60, 0);
+  if (durationMinutes >= MINUTES_PER_DAY) {
+    return true;
+  }
+  const endMinutes = (startMinutes + overlap + durationMinutes) % MINUTES_PER_DAY;
+  // Allow the overlap window before the nominal start. The calculation above already
+  // shifted the start to include the overlap, so we simply check the wrapped interval.
+  if (startMinutes < endMinutes) {
+    return minuteOfDay >= startMinutes && minuteOfDay < endMinutes;
+  }
+  return minuteOfDay >= startMinutes || minuteOfDay < endMinutes;
+};
+
 const createPersonnel = (
   structureId: string,
   counts: Record<EmployeeRole, number>,
@@ -581,6 +621,58 @@ const createPersonnel = (
   const traitStream = rng.getStream('personnel-traits');
   const moraleStream = rng.getStream('personnel-morale');
   const employees: EmployeeState[] = [];
+  const shiftCounts = new Map<string, number>();
+  let shiftCursor = 0;
+
+  const recordShift = (shift: EmployeeShiftAssignment) => {
+    const current = shiftCounts.get(shift.shiftId) ?? 0;
+    shiftCounts.set(shift.shiftId, current + 1);
+  };
+
+  const chooseBalancedShift = (): EmployeeShiftAssignment => {
+    const templates = SHIFT_TEMPLATES.map((template) => ({
+      template,
+      count: shiftCounts.get(template.shiftId) ?? 0,
+    }));
+    if (templates.length === 0) {
+      return {
+        shiftId: 'shift.default',
+        name: 'Default Shift',
+        startHour: 0,
+        durationHours: 24,
+        overlapMinutes: 0,
+      } satisfies EmployeeShiftAssignment;
+    }
+    const minCount = Math.min(...templates.map((entry) => entry.count));
+    for (let offset = 0; offset < templates.length; offset += 1) {
+      const index = (shiftCursor + offset) % templates.length;
+      const entry = templates[index];
+      if (entry.count === minCount) {
+        shiftCursor = (index + 1) % templates.length;
+        recordShift(entry.template);
+        return { ...entry.template } satisfies EmployeeShiftAssignment;
+      }
+    }
+    const fallback = templates[0];
+    shiftCursor = (shiftCursor + 1) % templates.length;
+    recordShift(fallback.template);
+    return { ...fallback.template } satisfies EmployeeShiftAssignment;
+  };
+
+  const assignShift = (role: EmployeeRole): EmployeeShiftAssignment => {
+    const preferredId = ROLE_SHIFT_PREFERENCES[role];
+    if (preferredId) {
+      const template =
+        SHIFT_TEMPLATES.find((item) => item.shiftId === preferredId) ?? SHIFT_TEMPLATES[0];
+      const index = SHIFT_TEMPLATES.findIndex((item) => item.shiftId === template.shiftId);
+      if (index >= 0) {
+        shiftCursor = (index + 1) % SHIFT_TEMPLATES.length;
+      }
+      recordShift(template);
+      return { ...template } satisfies EmployeeShiftAssignment;
+    }
+    return chooseBalancedShift();
+  };
 
   for (const role of Object.keys(counts) as EmployeeRole[]) {
     const count = counts[role] ?? 0;
@@ -594,18 +686,21 @@ const createPersonnel = (
         traits.length > 0 ? 1 + Number(traitStream.nextBoolean(0.35)) : 0,
         traitStream,
       ).map((trait) => trait.id);
+      const shift = assignShift(role);
+      const isActiveAtStart = isShiftActiveAtMinute(shift, 0);
       employees.push({
         id: generateId(idStream, 'emp'),
         name: fullName,
         role,
         salaryPerTick: DEFAULT_SALARY_BY_ROLE[role] ?? 20,
-        status: 'idle',
+        status: isActiveAtStart ? 'idle' : 'offShift',
         morale: 0.82 + moraleStream.nextRange(0, 0.08),
         energy: 1,
         skills,
         experience: createExperienceStub(skills),
         traits: employeeTraits,
         certifications: [],
+        shift,
         hoursWorkedToday: 0,
         overtimeHours: 0,
         lastShiftResetTick: 0,

@@ -141,7 +141,47 @@ interface WorkHoursAllocation {
 }
 
 const HOURS_PER_DAY = 24;
+const MINUTES_PER_DAY = HOURS_PER_DAY * 60;
 const MIN_ESTIMATED_HOURS = 0.25;
+
+const normaliseMinuteOfDay = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  const wrapped = Math.floor(value % MINUTES_PER_DAY);
+  return wrapped < 0 ? wrapped + MINUTES_PER_DAY : wrapped;
+};
+
+const computeShiftStartMinute = (shift: EmployeeState['shift']): number => {
+  const overlap = Math.max(shift.overlapMinutes, 0);
+  return normaliseMinuteOfDay(shift.startHour * 60 - overlap);
+};
+
+const computeShiftEndMinute = (shift: EmployeeState['shift']): number => {
+  const start = computeShiftStartMinute(shift);
+  const duration = Math.max(shift.durationHours * 60, 0);
+  const overlap = Math.max(shift.overlapMinutes, 0);
+  return normaliseMinuteOfDay(start + duration + overlap);
+};
+
+const isShiftActiveAtMinute = (
+  shift: EmployeeState['shift'] | undefined,
+  minuteOfDay: number,
+): boolean => {
+  if (!shift) {
+    return true;
+  }
+  const duration = Math.max(shift.durationHours * 60, 0);
+  if (duration >= MINUTES_PER_DAY) {
+    return true;
+  }
+  const start = computeShiftStartMinute(shift);
+  const end = computeShiftEndMinute(shift);
+  if (start < end) {
+    return minuteOfDay >= start && minuteOfDay < end;
+  }
+  return minuteOfDay >= start || minuteOfDay < end;
+};
 
 export class WorkforceEngine {
   private readonly definitions: TaskDefinitionMap;
@@ -183,10 +223,13 @@ export class WorkforceEngine {
       1,
       Math.round((HOURS_PER_DAY * 60) / Math.max(tickLengthMinutes, 1)),
     );
+    const minuteOfDay = this.computeMinutesIntoDay(tick, tickLengthMinutes);
     this.ensureRuntimeState(state.personnel.employees);
     this.resetDailyCounters(state.personnel.employees, tick, ticksPerDay);
+    this.handleShiftTransitions(state, minuteOfDay);
+    this.updateShiftStatuses(state.personnel.employees, minuteOfDay);
     this.generateTasks(state, tick, events);
-    this.assignTasks(state, tick, tickLengthMinutes);
+    this.assignTasks(state, tick, tickLengthMinutes, minuteOfDay);
     this.advanceActiveTasks(state, tick, tickLengthMinutes, events);
     this.recoverIdleEmployees(state.personnel.employees, tickLengthMinutes);
   }
@@ -222,6 +265,68 @@ export class WorkforceEngine {
         employee.overtimeHours = 0;
       }
     }
+  }
+
+  private handleShiftTransitions(state: GameState, minuteOfDay: number): void {
+    for (let index = state.tasks.active.length - 1; index >= 0; index -= 1) {
+      const task = state.tasks.active[index];
+      const assignment = task.assignment;
+      if (!assignment) {
+        continue;
+      }
+      const employee = state.personnel.employees.find((item) => item.id === assignment.employeeId);
+      if (!employee) {
+        continue;
+      }
+      if (this.isEmployeeOnDuty(employee, minuteOfDay)) {
+        continue;
+      }
+      if (task.definitionId === 'harvest_plants') {
+        employee.status = 'assigned';
+        continue;
+      }
+      state.tasks.active.splice(index, 1);
+      task.assignment = undefined;
+      task.status = 'pending';
+      if (employee.currentTaskId === task.id) {
+        employee.currentTaskId = undefined;
+      }
+      const zone = this.findZone(state, task.location);
+      if (zone) {
+        zone.activeTaskIds = zone.activeTaskIds.filter((id) => id !== task.id);
+      }
+      employee.status = 'offShift';
+      state.tasks.backlog.push(task);
+    }
+  }
+
+  private updateShiftStatuses(employees: EmployeeState[], minuteOfDay: number): void {
+    for (const employee of employees) {
+      if (employee.status === 'training') {
+        continue;
+      }
+      if (employee.currentTaskId) {
+        employee.status = 'assigned';
+        continue;
+      }
+      if (this.isEmployeeOnDuty(employee, minuteOfDay)) {
+        employee.status = 'idle';
+      } else {
+        employee.status = 'offShift';
+      }
+    }
+  }
+
+  private computeMinutesIntoDay(tick: number, tickLengthMinutes: number): number {
+    const minutes = Math.max(tick, 0) * Math.max(tickLengthMinutes, 0);
+    return normaliseMinuteOfDay(minutes);
+  }
+
+  private isEmployeeOnDuty(employee: EmployeeState, minuteOfDay: number): boolean {
+    if (employee.status === 'training') {
+      return false;
+    }
+    return isShiftActiveAtMinute(employee.shift, minuteOfDay);
   }
 
   private recoverIdleEmployees(employees: EmployeeState[], tickLengthMinutes: number): void {
@@ -518,7 +623,12 @@ export class WorkforceEngine {
     context.taskSystem.backlog.push(task);
   }
 
-  private assignTasks(state: GameState, tick: number, tickLengthMinutes: number): void {
+  private assignTasks(
+    state: GameState,
+    tick: number,
+    tickLengthMinutes: number,
+    minuteOfDay: number,
+  ): void {
     const pendingTasks = state.tasks.backlog.filter((task) => task.status === 'pending');
     if (pendingTasks.length === 0) {
       return;
@@ -554,6 +664,9 @@ export class WorkforceEngine {
 
     const availableEmployees = state.personnel.employees.filter((employee) => {
       if (employee.status !== 'idle') {
+        return false;
+      }
+      if (!this.isEmployeeOnDuty(employee, minuteOfDay)) {
         return false;
       }
       if (employee.energy < this.policies.energy.minEnergyToClaim) {

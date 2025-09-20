@@ -393,6 +393,14 @@ export type EmployeeSkills = Partial<Record<SkillName, number>>;
 
 export type EmployeeStatus = 'idle' | 'assigned' | 'offShift' | 'training';
 
+export interface EmployeeShiftAssignment {
+  shiftId: string;
+  name: string;
+  startHour: number;
+  durationHours: number;
+  overlapMinutes: number;
+}
+
 export interface PersonnelTrait {
   id: string;
   name: string;
@@ -418,6 +426,7 @@ export interface EmployeeState {
   experience: EmployeeSkills;
   traits: string[];
   certifications: string[];
+  shift: EmployeeShiftAssignment;
   hoursWorkedToday: number;
   overtimeHours: number;
   lastShiftResetTick?: number;
