@@ -5,9 +5,9 @@ export const growthModelSchema = z
     maxBiomassDry_g: z.number().optional(),
     baseLUE_gPerMol: z.number().optional(),
     maintenanceFracPerDay: z.number().optional(),
-    dryMatterFraction: z.record(z.number()).optional(),
-    harvestIndex: z.record(z.number()).optional(),
-    phaseCapMultiplier: z.record(z.number()).optional(),
+    dryMatterFraction: z.record(z.string(), z.number()).optional(),
+    harvestIndex: z.record(z.string(), z.number()).optional(),
+    phaseCapMultiplier: z.record(z.string(), z.number()).optional(),
     temperature: z
       .object({
         Q10: z.number().optional(),
@@ -24,6 +24,7 @@ const nutrientDemandSchema = z
   .object({
     dailyNutrientDemand: z
       .record(
+        z.string(),
         z.object({
           nitrogen: z.number().nullable().optional(),
           phosphorus: z.number().nullable().optional(),
@@ -38,7 +39,7 @@ const nutrientDemandSchema = z
 
 const waterDemandSchema = z
   .object({
-    dailyWaterUsagePerSquareMeter: z.record(z.number()).optional(),
+    dailyWaterUsagePerSquareMeter: z.record(z.string(), z.number()).optional(),
     minimumFractionRequired: z.number().optional()
   })
   .partial();
@@ -75,9 +76,9 @@ export const strainSchema = z
     slug: z.string().optional(),
     generalResilience: z.number().optional(),
     growthModel: growthModelSchema.optional(),
-    morphology: z.record(z.number()).optional(),
+    morphology: z.record(z.string(), z.number()).optional(),
     environment: environmentSchema.optional(),
-    environmentalPreferences: z.record(z.any()).optional(),
+    environmentalPreferences: z.record(z.string(), z.any()).optional(),
     nutrientDemand: nutrientDemandSchema.optional(),
     waterDemand: waterDemandSchema.optional(),
     photoperiod: photoperiodSchema.optional()

@@ -28,7 +28,7 @@ const deviceSchema = z.object({
     id: z.string(),
     name: z.string(),
     kind: z.string(),
-    settings: z.record(z.any())
+    settings: z.record(z.string(), z.any())
   })
 });
 
