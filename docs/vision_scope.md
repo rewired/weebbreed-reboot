@@ -296,4 +296,100 @@ function calculateSalePrice(basePrice, quality /*0..100*/): number {
 
 ---
 
+## 16. Binding Rules & Technical Guardrails (Coding‑Ready)
+
+> These rules are **technology‑agnostic** and intended to be consumed verbatim by a Coding‑AI. They define deterministic behavior, validation, and acceptance thresholds for the simulation.
+
+### 16.1 Units & Numerics (SI policy, rounding, tolerances)
+
+* Store **all physical quantities in SI units**.
+* Display formats are **UI‑only**.
+* Internal representation: **float64**.
+* Persistence: **JSON number** with **max 6 decimal places**.
+* Audit comparisons use tolerances **ε\_rel = 1e‑6** and **ε\_abs = 1e‑9**.
+
+### 16.2 Seed policy & RNG sources
+
+* **All randomness** must go through **RNG(seed, streamId)**.
+* **No** use of `Math.random` or system RNG in the sim core.
+* Each subsystem (Pests, Events, Loot, Market, …) uses a **fixed `streamId`**.
+
+### 16.3 Time scaling & pause semantics
+
+* Time acceleration changes **only** the UI scheduler / loop frequency, **not** tick semantics.
+* **One tick equals exactly one in‑game hour**.
+* Pause = **stop ticking**. No half‑ticks or sub‑ticks (for now).
+
+### 16.4 Task arbiter – deterministic priorities & fairness
+
+* Priority order: **Plant‑Protection (100) > Harvest (90) > Replant (80) > Climate‑Comfort (70) > Maintenance (60) > Housekeeping (30)**.
+* Within the same priority: **stable round‑robin**.
+* Hard deadline classes (e.g., harvest windows) may **boost once** by **+10**.
+
+### 16.5 Device degradation & maintenance
+
+* Efficiency decay over runtime hours:
+
+  * **Efficiency(t) = baseEfficiency × (1 – λ\_deg × runtime\_hours^k)**
+  * Defaults: **λ\_deg = 1e‑5**, **k = 0.9** (sub‑linear).
+* Maintenance resets efficiency to **min(0.98, 1 – wear\_residual)**.
+* Maintenance costs increase **linearly** with the number of maintenances × device maintenance factor.
+
+### 16.6 Market / price baseline
+
+* `basePrice` originates from **`strainPrices.json`** (quality baseline **70**).
+* Optional market modifier **`marketIndex(t)` ∈ \[0.85, 1.15]**, deterministic via RNG stream **"market"**.
+
+### 16.7 Storage & post‑harvest quality decay
+
+* Post‑harvest quality decays **starting on day 7**:
+
+  * **Q(t) = Q0 × exp(–ρ × daysOver7)**
+  * Default **ρ = 0.02 / day** without cooling; **cold storage halves ρ**.
+
+### 16.8 Pest/disease treatments – side effects
+
+* Each treatment option specifies **efficacy**, a **stress spike** (+ΔStress for **24–72 h**), and a **quality penalty** (**0–3 points**).
+* The arbiter schedules treatments only if **net benefit > 0**.
+
+### 16.9 Savegame schema & migrations
+
+* Every savegame carries **`schemaVersion` (SemVer)**.
+* Migrations are **pure functions** from v → v+1.
+* Golden‑replay validates **Load → Run → Export** equality within **±ε**.
+
+### 16.10 Audit metrics – definitions & thresholds
+
+* Daily audit must record: **energy\_kWh, water\_L, npk\_g, biomass\_kg, stress\_avg, quality\_avg, opex\_eur, capex\_eur, tasks\_dropped**.
+* Golden‑run thresholds in the reference scenario: **tasks\_dropped = 0**, **stress\_avg ≤ 0.35**, **quality\_avg ≥ 72**.
+
+### 16.11 Maximum plants per zone – binding formula
+
+* **`maxPlants = floor(zone.area_m2 / method.plantArea_m2)`**.
+* Additional constraints must hold: **PPFD\_uniformity ≥ 0.7 (min/avg)** and minimum spacing of the cultivation method.
+
+### 16.12 Climate controller – control strategy
+
+* Use a **PI controller per variable** (Temperature / RH / CO₂) with **anti‑windup**.
+* Actuators are **discrete device power levels (0–100%)**.
+* Cost‑aware objective: **J = w\_err · Σ|e| + w\_cost · energy\_kWh** with **w\_err = 1.0**, **w\_cost = 0.1**.
+
+### 16.13 Staff shift model
+
+* **8 staff** members in a **2×12 h** shift system with **1 h overlap**.
+* Task time: **`setup_time + per_plant_time × N`**.
+* Tasks may be **preempted**, except **Harvest** (atomic).
+
+### 16.14 Device conflict / capacity rules
+
+* Exactly **one active climate controller per zone** controls devices.
+* Conflicting actuators (heating vs cooling) must **not** run simultaneously **> 10%**; apply **0.5 K hysteresis**.
+
+### 16.15 Failure & degrade‑mode matrix
+
+* **Sensor failure:** use **last‑known‑good** for **6 h**, then **safe defaults**.
+* **OOM** or **tick overrun (> 50 ms for 60 consecutive ticks):** engage **slow‑mode (0.5× UI speed)** and raise a warning; audit marks **`throttled = true`**.
+
+---
+
 > **Note:** This document is **technology-agnostic**. Concrete technology choices (engine, UI stack, etc.) are ore have to be documented separately in “Architecture & Implementation Choices.”
