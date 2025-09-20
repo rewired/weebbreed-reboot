@@ -3,7 +3,7 @@ import type { PlantState, ZoneEnvironmentState } from '../../state/models.js';
 import type { StrainBlueprint } from '../../../data/schemas/strainsSchema.js';
 import { createInitialPhenologyState, createPhenologyConfig } from './phenology.js';
 import type { PhenologyState } from './phenology.js';
-import { updatePlantGrowth } from './growthModel.js';
+import { computeVpd, updatePlantGrowth } from './growthModel.js';
 
 const createTestStrain = (): StrainBlueprint => ({
   id: 'strain-test',
@@ -226,5 +226,49 @@ describe('updatePlantGrowth', () => {
 
     expect(result.plant.stage).toBe('vegetative');
     expect(result.events.some((event) => event.type === 'plant.stageChanged')).toBe(true);
+  });
+
+  it('reduces biomass and health when water supply is constrained', () => {
+    const strain = createTestStrain();
+    const config = createPhenologyConfig(strain);
+    const plant = createPlant({ stage: 'vegetative', biomassDryGrams: 32, health: 0.85 });
+
+    const environment = createEnvironment({ ppfd: 620, temperature: 25, relativeHumidity: 0.6 });
+
+    const ample = updatePlantGrowth({
+      plant,
+      strain,
+      environment,
+      tickHours: 2,
+      phenology: createInitialPhenologyState('vegetative'),
+      phenologyConfig: config,
+      resourceSupply: { waterSupplyFraction: 1, nutrientSupplyFraction: 1 },
+    });
+
+    const limited = updatePlantGrowth({
+      plant,
+      strain,
+      environment,
+      tickHours: 2,
+      phenology: createInitialPhenologyState('vegetative'),
+      phenologyConfig: config,
+      resourceSupply: { waterSupplyFraction: 0.35, nutrientSupplyFraction: 1 },
+    });
+
+    expect(limited.metrics.water.stress).toBeGreaterThan(ample.metrics.water.stress);
+    expect(limited.biomassDelta).toBeLessThan(ample.biomassDelta);
+    expect(limited.plant.health).toBeLessThan(ample.plant.health);
+  });
+});
+
+describe('computeVpd', () => {
+  it('returns zero at saturation humidity', () => {
+    expect(computeVpd(26, 1)).toBe(0);
+  });
+
+  it('increases when relative humidity decreases at constant temperature', () => {
+    const warmHumid = computeVpd(27, 0.68);
+    const warmDry = computeVpd(27, 0.45);
+    expect(warmDry).toBeGreaterThan(warmHumid);
   });
 });

@@ -208,4 +208,40 @@ describe('CostAccountingService', () => {
     expect(state.finances.summary.totalMaintenance).toBeCloseTo(totalMaintenance, 6);
     expect(state.finances.cashOnHand).toBeCloseTo(1000 - totalMaintenance, 6);
   });
+
+  it('records capital expenditure when purchasing devices', () => {
+    const catalog = createPriceCatalog();
+    const service = new CostAccountingService(catalog);
+    const state = createBaseState();
+    const accumulator = service.createAccumulator();
+    const events: SimulationEvent[] = [];
+    const collector = createEventCollector(events, 5);
+    const timestamp = '2025-01-01T08:00:00.000Z';
+
+    const cost = service.recordDevicePurchase(
+      state,
+      DEVICE_BLUEPRINT_ID,
+      2,
+      5,
+      timestamp,
+      accumulator,
+      collector,
+      'Install lights',
+    );
+
+    expect(cost).toBeGreaterThan(0);
+    expect(state.finances.cashOnHand).toBeCloseTo(1000 - cost, 6);
+    expect(state.finances.ledger).toHaveLength(1);
+    expect(state.finances.ledger[0].category).toBe('device');
+    expect(accumulator.capex).toBeCloseTo(cost, 6);
+    expect(accumulator.expenses).toBeCloseTo(cost, 6);
+
+    const capexEvent = events.find((event) => event.type === 'finance.capex');
+    expect(capexEvent).toBeDefined();
+    expect(capexEvent?.payload).toMatchObject({
+      amount: cost,
+      blueprintId: DEVICE_BLUEPRINT_ID,
+      quantity: 2,
+    });
+  });
 });

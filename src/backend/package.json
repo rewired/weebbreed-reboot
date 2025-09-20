@@ -9,7 +9,9 @@
     "dev": "ts-node --esm src/index.ts",
     "build": "tsc --project tsconfig.json",
     "lint": "eslint --ext .ts src data",
-    "test": "vitest --run --passWithNoTests"
+    "test": "vitest --run --passWithNoTests",
+    "test:coverage": "vitest --run --coverage",
+    "bench": "tsx src/bench.ts"
   },
   "dependencies": {
     "chokidar": "^3.5.3",
