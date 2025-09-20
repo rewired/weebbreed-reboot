@@ -1,4 +1,8 @@
 import { performance } from 'node:perf_hooks';
+import {
+  ZoneEnvironmentService,
+  type ZoneEnvironmentOptions,
+} from '../engine/environment/zoneEnvironment.js';
 import type { GameState } from '../state/models.js';
 import type { EventCollector, SimulationEvent } from '../lib/eventBus.js';
 import { EventBus, createEventCollector } from '../lib/eventBus.js';
@@ -114,12 +118,15 @@ export interface SimulationLoopOptions {
   state: GameState;
   eventBus: EventBus;
   phases?: SimulationPhaseHandlers;
+  environment?: ZoneEnvironmentOptions;
 }
 
 export class SimulationLoop {
   private readonly state: GameState;
 
   private readonly eventBus: EventBus;
+
+  private readonly environmentService?: ZoneEnvironmentService;
 
   private readonly phaseHandlers: Record<NonCommitPhase, SimulationPhaseHandler>;
 
@@ -131,9 +138,18 @@ export class SimulationLoop {
     this.state = options.state;
     this.eventBus = options.eventBus;
     const phases = options.phases ?? {};
+    if (!phases.applyDevices && !phases.deriveEnvironment) {
+      this.environmentService = new ZoneEnvironmentService(options.environment);
+    }
     this.phaseHandlers = {
-      applyDevices: phases.applyDevices ?? NOOP_PHASE,
-      deriveEnvironment: phases.deriveEnvironment ?? NOOP_PHASE,
+      applyDevices:
+        phases.applyDevices ??
+        this.environmentService?.createApplyDevicePhaseHandler() ??
+        NOOP_PHASE,
+      deriveEnvironment:
+        phases.deriveEnvironment ??
+        this.environmentService?.createNormalizationPhaseHandler() ??
+        NOOP_PHASE,
       irrigationAndNutrients: phases.irrigationAndNutrients ?? NOOP_PHASE,
       updatePlants: phases.updatePlants ?? NOOP_PHASE,
       harvestAndInventory: phases.harvestAndInventory ?? NOOP_PHASE,

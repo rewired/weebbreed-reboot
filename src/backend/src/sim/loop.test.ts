@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { EventBus } from '../lib/eventBus.js';
-import type { GameState } from '../state/models.js';
+import type {
+  DeviceInstanceState,
+  GameState,
+  StructureState,
+  ZoneEnvironmentState,
+  ZoneMetricState,
+  ZoneResourceState,
+  ZoneState,
+} from '../state/models.js';
 import { SimulationLoop, TICK_PHASES, type SimulationPhaseContext } from './loop.js';
 
 const createGameState = (): GameState => {
@@ -74,6 +82,132 @@ const createGameState = (): GameState => {
   };
 };
 
+const createGameStateWithZone = (): GameState => {
+  const state = createGameState();
+  state.metadata.tickLengthMinutes = 15;
+
+  const environment: ZoneEnvironmentState = {
+    temperature: 25,
+    relativeHumidity: 0.65,
+    co2: 800,
+    ppfd: 0,
+    vpd: 1,
+  };
+
+  const createDevice = (
+    id: string,
+    kind: string,
+    settings: Record<string, unknown>,
+    efficiency = 1,
+  ): DeviceInstanceState => ({
+    id,
+    blueprintId: `${kind}-blueprint`,
+    kind,
+    name: `${kind} Device`,
+    zoneId: 'zone-1',
+    status: 'operational',
+    efficiency,
+    runtimeHours: 0,
+    maintenance: {
+      lastServiceTick: 0,
+      nextDueTick: 1000,
+      condition: 1,
+      degradation: 0,
+    },
+    settings,
+  });
+
+  const zone: ZoneState = {
+    id: 'zone-1',
+    roomId: 'room-1',
+    name: 'Zone 1',
+    cultivationMethodId: 'method-1',
+    strainId: 'strain-1',
+    environment,
+    resources: {
+      waterLiters: 500,
+      nutrientSolutionLiters: 250,
+      nutrientStrength: 1,
+      substrateHealth: 1,
+      reservoirLevel: 0.6,
+    } satisfies ZoneResourceState,
+    plants: [],
+    devices: [
+      createDevice(
+        'lamp-1',
+        'Lamp',
+        {
+          power: 0.6,
+          heatFraction: 0.3,
+          coverageArea: 1.2,
+          ppfd: 800,
+        },
+        0.9,
+      ),
+      createDevice(
+        'hvac-1',
+        'ClimateUnit',
+        {
+          coolingCapacity: 1.6,
+          airflow: 350,
+          targetTemperature: 24,
+          targetTemperatureRange: [23, 25],
+          fullPowerAtDeltaK: 2,
+        },
+        0.9,
+      ),
+      createDevice('co2-1', 'CO2Injector', {
+        targetCO2: 1100,
+        targetCO2Range: [400, 1500],
+        hysteresis: 50,
+        pulsePpmPerTick: 150,
+      }),
+    ],
+    metrics: {
+      averageTemperature: environment.temperature,
+      averageHumidity: environment.relativeHumidity,
+      averageCo2: environment.co2,
+      averagePpfd: environment.ppfd,
+      stressLevel: 0.2,
+      lastUpdatedTick: 0,
+    } satisfies ZoneMetricState,
+    activeTaskIds: [],
+  } satisfies ZoneState;
+
+  const room: StructureState['rooms'][number] = {
+    id: 'room-1',
+    structureId: 'structure-1',
+    name: 'Grow Room',
+    purposeId: 'growroom',
+    area: 40,
+    height: 3,
+    volume: 120,
+    zones: [zone],
+    cleanliness: 0.9,
+    maintenanceLevel: 0.9,
+  };
+
+  const structure: StructureState = {
+    id: 'structure-1',
+    blueprintId: 'structure-blueprint',
+    name: 'Structure One',
+    status: 'active',
+    footprint: {
+      length: 10,
+      width: 4,
+      height: 3,
+      area: 40,
+      volume: 120,
+    },
+    rooms: [room],
+    rentPerTick: 0,
+    upfrontCostPaid: 0,
+  };
+
+  state.structures = [structure];
+  return state;
+};
+
 describe('SimulationLoop', () => {
   it('executes phases in order and emits events after commit', async () => {
     const state = createGameState();
@@ -144,5 +278,19 @@ describe('SimulationLoop', () => {
     expect(ticks).toEqual([1, 2]);
 
     subscription.unsubscribe();
+  });
+
+  it('applies default environment handling when not overridden', async () => {
+    const state = createGameStateWithZone();
+    const bus = new EventBus();
+    const loop = new SimulationLoop({ state, eventBus: bus });
+
+    await loop.processTick();
+
+    const zone = state.structures[0]?.rooms[0]?.zones[0];
+    expect(zone?.environment.temperature).toBeCloseTo(24.28, 2);
+    expect(zone?.environment.relativeHumidity).toBeCloseTo(0.63, 2);
+    expect(zone?.environment.co2).toBeCloseTo(890, 0);
+    expect(zone?.environment.ppfd).toBeCloseTo(21.6, 4);
   });
 });
