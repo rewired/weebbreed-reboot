@@ -1,0 +1,14 @@
+{
+  "name": "@weebbreed/backend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "ts-node --esm src/index.ts",
+    "build": "tsc --project tsconfig.json",
+    "lint": "eslint --ext .ts src",
+    "test": "vitest --run --passWithNoTests"
+  }
+}
