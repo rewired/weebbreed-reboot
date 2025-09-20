@@ -1,78 +1,94 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
-import type { SimulationEnvironmentSnapshot } from '../types/simulation';
 import styles from './SimulationOverview.module.css';
-
-const formatTimestamp = (timestamp: number) => {
-  try {
-    return new Date(timestamp).toLocaleString();
-  } catch (error) {
-    return String(timestamp);
-  }
-};
-
-const normalizeEnv = (
-  env?: SimulationEnvironmentSnapshot | SimulationEnvironmentSnapshot[],
-): SimulationEnvironmentSnapshot[] => {
-  if (!env) {
-    return [];
-  }
-
-  return Array.isArray(env) ? env : [env];
-};
 
 export const SimulationOverview = () => {
   const { t } = useTranslation('simulation');
   const snapshot = useAppStore((state) => state.lastSnapshot);
   const lastTick = useAppStore((state) => state.lastTickCompleted);
   const plantCount = useAppStore((state) => Object.keys(state.plants).length);
+  const zones = useAppStore((state) => state.zones);
 
-  const environments = useMemo(() => normalizeEnv(snapshot?.env), [snapshot]);
+  const zoneEntries = useMemo(() => Object.values(zones), [zones]);
+
+  const kpis = useMemo(() => {
+    if (!snapshot) {
+      return [];
+    }
+
+    const formatter = new Intl.DateTimeFormat(undefined, {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
+
+    return [
+      {
+        key: 'tick',
+        label: t('labels.kpis.tick'),
+        value: snapshot.tick.toLocaleString(),
+      },
+      {
+        key: 'timestamp',
+        label: t('labels.kpis.timestamp'),
+        value: formatter.format(snapshot.ts),
+      },
+      {
+        key: 'plants',
+        label: t('labels.kpis.plants'),
+        value: plantCount.toLocaleString(),
+      },
+      {
+        key: 'duration',
+        label: t('labels.kpis.tickDuration'),
+        value: lastTick?.durationMs ? `${lastTick.durationMs.toFixed(1)} ms` : '—',
+        hint: lastTick?.queuedTicks
+          ? t('labels.kpis.queuedTicks', { count: lastTick.queuedTicks })
+          : undefined,
+      },
+    ];
+  }, [lastTick, plantCount, snapshot, t]);
 
   if (!snapshot) {
     return (
-      <section className={styles.card}>
+      <section className={styles.dashboard}>
         <header className={styles.header}>
-          <h2>{t('labels.overview')}</h2>
+          <div>
+            <h2>{t('labels.overview')}</h2>
+            <p className={styles.meta}>{t('labels.noData')}</p>
+          </div>
         </header>
-        <p className={styles.placeholder}>{t('labels.noData')}</p>
       </section>
     );
   }
 
   return (
-    <section className={styles.card}>
+    <section className={styles.dashboard}>
       <header className={styles.header}>
         <div>
           <h2>{t('labels.overview')}</h2>
           <p className={styles.meta}>{t('labels.latestTick', { tick: snapshot.tick })}</p>
         </div>
-        <div className={styles.metrics}>
-          <div>
-            <span className={styles.metricLabel}>{t('labels.tickTimestamp')}</span>
-            <span className={styles.metricValue}>{formatTimestamp(snapshot.ts)}</span>
-          </div>
-          <div>
-            <span className={styles.metricLabel}>{t('labels.plantCount')}</span>
-            <span className={styles.metricValue}>{plantCount}</span>
-          </div>
-          {lastTick?.durationMs ? (
-            <div>
-              <span className={styles.metricLabel}>{t('labels.tickDuration')}</span>
-              <span className={styles.metricValue}>{lastTick.durationMs.toFixed(1)} ms</span>
-            </div>
-          ) : null}
-        </div>
       </header>
 
-      <div className={styles.environments}>
-        {environments.map((env) => (
-          <article key={env.zoneId} className={styles.environmentCard}>
-            <header className={styles.environmentHeader}>
+      <div className={styles.kpiGrid}>
+        {kpis.map((kpi) => (
+          <article key={kpi.key} className={styles.kpiCard} aria-live="polite">
+            <p className={styles.kpiLabel}>{kpi.label}</p>
+            <p className={styles.kpiValue}>{kpi.value}</p>
+            {kpi.hint ? <p className={styles.kpiHint}>{kpi.hint}</p> : null}
+          </article>
+        ))}
+      </div>
+
+      <div className={styles.zoneGrid}>
+        {zoneEntries.map((env) => (
+          <article key={env.zoneId} className={styles.zoneCard}>
+            <header className={styles.zoneHeader}>
               <h3>{t('labels.zoneTitle', { zoneId: env.zoneId })}</h3>
             </header>
-            <dl className={styles.environmentMetrics}>
+            <dl className={styles.zoneMetrics}>
               <div>
                 <dt>{t('labels.temperature')}</dt>
                 <dd>{env.temperature.toFixed(1)} °C</dd>

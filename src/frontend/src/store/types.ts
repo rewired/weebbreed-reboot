@@ -19,6 +19,8 @@ export interface SimulationTimelineEntry {
   temperature?: number;
   humidity?: number;
   vpd?: number;
+  co2?: number;
+  ppfd?: number;
 }
 
 export interface SimulationSlice {
@@ -30,6 +32,8 @@ export interface SimulationSlice {
   events: SimulationEvent[];
   timeline: SimulationTimelineEntry[];
   lastTickCompleted?: SimulationTickEvent;
+  lastRequestedTickLength?: number;
+  lastSetpoints: Record<string, number | undefined>;
   setConnectionStatus: (status: ConnectionStatus, errorMessage?: string) => void;
   ingestSnapshot: (snapshot: SimulationSnapshot) => void;
   appendEvents: (events: SimulationEvent[]) => void;
@@ -37,6 +41,9 @@ export interface SimulationSlice {
   resetSimulation: () => void;
   sendControlCommand?: (command: SimulationControlCommand) => void;
   sendConfigUpdate?: (update: SimulationConfigUpdate) => void;
+  issueControlCommand: (command: SimulationControlCommand) => void;
+  requestTickLength: (minutes: number) => void;
+  sendSetpoint: (target: string, value: number) => void;
   setCommandHandlers: (
     control: (command: SimulationControlCommand) => void,
     config: (update: SimulationConfigUpdate) => void,
