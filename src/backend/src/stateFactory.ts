@@ -1,11 +1,8 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import type { BlueprintRepository } from '../data/blueprintRepository.js';
 import type {
   CultivationMethodBlueprint,
   DeviceBlueprint,
   StrainBlueprint,
-  DevicePriceEntry,
 } from '../data/schemas/index.js';
 import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
 import {
@@ -13,74 +10,50 @@ import {
   DifficultyLevel,
   EconomicsSettings,
   EmployeeRole,
-  EmployeeState,
-  EmployeeSkills,
-  EmployeeShiftAssignment,
-  FinanceState,
-  FinancialSummary,
   FootprintDimensions,
   GameMetadata,
   GameState,
   GlobalInventoryState,
   HarvestBatch,
-  LedgerEntry,
   PersonnelNameDirectory,
-  PersonnelRoster,
+  PlantHealthState,
   PlantState,
   ResourceInventory,
   SeedStockEntry,
-  SkillName,
   StructureBlueprint,
   StructureState,
-  TaskDefinition,
   TaskDefinitionMap,
-  TaskState,
-  TaskSystemState,
   ZoneEnvironmentState,
-  ZoneMetricState,
   ZoneHealthState,
+  ZoneMetricState,
   ZoneResourceState,
-  PlantHealthState,
 } from './state/models.js';
 import { RngService, RngStream } from './lib/rng.js';
+import { generateId } from './state/initialization/common.js';
+import {
+  chooseDeviceBlueprints,
+  loadStructureBlueprints,
+  selectBlueprint,
+} from './state/initialization/blueprints.js';
+import { createFinanceState } from './state/initialization/finance.js';
+import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
+import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
+
+export { loadStructureBlueprints } from './state/initialization/blueprints.js';
+export { loadPersonnelDirectory } from './state/initialization/personnel.js';
+export { loadTaskDefinitions } from './state/initialization/tasks.js';
 
 const DEFAULT_TICK_LENGTH_MINUTES = 60;
 const DEFAULT_TARGET_TICK_RATE = 1;
 const DEFAULT_ZONE_RESERVOIR_LEVEL = 0.75;
 const DEFAULT_ZONE_WATER_LITERS = 800;
 const DEFAULT_ZONE_NUTRIENT_LITERS = 400;
-const DEFAULT_SALARY_BY_ROLE: Record<EmployeeRole, number> = {
-  Gardener: 24,
-  Technician: 28,
-  Janitor: 18,
-  Operator: 22,
-  Manager: 35,
-};
 const DEFAULT_EMPLOYEE_COUNTS: Record<EmployeeRole, number> = {
   Gardener: 4,
   Technician: 2,
   Janitor: 1,
   Operator: 1,
   Manager: 0,
-};
-
-const MINUTES_PER_DAY = 24 * 60;
-
-const SHIFT_TEMPLATES: readonly EmployeeShiftAssignment[] = [
-  { shiftId: 'shift.day', name: 'Day Shift', startHour: 6, durationHours: 12, overlapMinutes: 60 },
-  {
-    shiftId: 'shift.night',
-    name: 'Night Shift',
-    startHour: 18,
-    durationHours: 12,
-    overlapMinutes: 60,
-  },
-];
-
-const ROLE_SHIFT_PREFERENCES: Partial<Record<EmployeeRole, string>> = {
-  Janitor: 'shift.night',
-  Operator: 'shift.day',
-  Manager: 'shift.day',
 };
 
 const DIFFICULTY_ECONOMICS: Record<DifficultyLevel, EconomicsSettings> = {
@@ -115,9 +88,6 @@ interface StructureCreationResult {
   plantCount: number;
 }
 
-const generateId = (stream: RngStream, prefix: string, length = 10) =>
-  `${prefix}_${stream.nextString(length)}`;
-
 const computeFootprint = (blueprint: StructureBlueprint): FootprintDimensions => {
   const area = blueprint.footprint.length * blueprint.footprint.width;
   const volume = area * blueprint.footprint.height;
@@ -127,43 +97,6 @@ const computeFootprint = (blueprint: StructureBlueprint): FootprintDimensions =>
     volume,
   };
 };
-
-const readJsonFile = async <T>(filePath: string): Promise<T | undefined> => {
-  try {
-    const raw = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(raw) as T;
-  } catch (error) {
-    const cause = error as NodeJS.ErrnoException;
-    if (cause.code === 'ENOENT') {
-      return undefined;
-    }
-    throw new Error(`Failed to read JSON file at ${filePath}: ${cause.message}`);
-  }
-};
-
-interface RawStructureBlueprint {
-  id: string;
-  name: string;
-  footprint: {
-    length_m: number;
-    width_m: number;
-    height_m: number;
-  };
-  rentalCostPerSqmPerMonth: number;
-  upfrontFee: number;
-}
-
-const normaliseStructureBlueprint = (blueprint: RawStructureBlueprint): StructureBlueprint => ({
-  id: blueprint.id,
-  name: blueprint.name,
-  footprint: {
-    length: blueprint.footprint.length_m,
-    width: blueprint.footprint.width_m,
-    height: blueprint.footprint.height_m,
-  },
-  rentalCostPerSqmPerMonth: blueprint.rentalCostPerSqmPerMonth,
-  upfrontFee: blueprint.upfrontFee,
-});
 
 export interface StateFactoryContext {
   repository: BlueprintRepository;
@@ -183,150 +116,6 @@ export interface StateFactoryOptions {
   employeeCountByRole?: Partial<Record<EmployeeRole, number>>;
   zonePlantCount?: number;
 }
-
-export const loadStructureBlueprints = async (
-  dataDirectory: string,
-): Promise<StructureBlueprint[]> => {
-  const directory = path.join(dataDirectory, 'blueprints', 'structures');
-  let entries: string[] = [];
-  try {
-    entries = await fs.readdir(directory);
-  } catch (error) {
-    const cause = error as NodeJS.ErrnoException;
-    if (cause.code === 'ENOENT') {
-      return [];
-    }
-    throw new Error(`Failed to read structure blueprints directory: ${cause.message}`);
-  }
-
-  const blueprints: StructureBlueprint[] = [];
-  for (const entry of entries) {
-    if (!entry.endsWith('.json')) {
-      continue;
-    }
-    const filePath = path.join(directory, entry);
-    const raw = await readJsonFile<RawStructureBlueprint>(filePath);
-    if (!raw) {
-      continue;
-    }
-    blueprints.push(normaliseStructureBlueprint(raw));
-  }
-  return blueprints;
-};
-
-export const loadPersonnelDirectory = async (
-  dataDirectory: string,
-): Promise<PersonnelNameDirectory> => {
-  const personnelDir = path.join(dataDirectory, 'personnel');
-  const [firstNames, lastNames, traits] = await Promise.all([
-    readJsonFile<string[]>(path.join(personnelDir, 'firstNames.json')),
-    readJsonFile<string[]>(path.join(personnelDir, 'lastNames.json')),
-    readJsonFile<PersonnelNameDirectory['traits']>(path.join(personnelDir, 'traits.json')),
-  ]);
-
-  return {
-    firstNames: firstNames ?? [],
-    lastNames: lastNames ?? [],
-    traits: traits ?? [],
-  };
-};
-
-interface RawTaskDefinition {
-  costModel: {
-    basis: string;
-    laborMinutes: number;
-  };
-  priority: number;
-  requiredRole: string;
-  requiredSkill: string;
-  minSkillLevel: number;
-  description: string;
-}
-
-export const loadTaskDefinitions = async (dataDirectory: string): Promise<TaskDefinitionMap> => {
-  const configFile = path.join(dataDirectory, 'configs', 'task_definitions.json');
-  const raw = await readJsonFile<Record<string, RawTaskDefinition>>(configFile);
-
-  if (!raw) {
-    return {};
-  }
-
-  const definitions: TaskDefinitionMap = {};
-  for (const [id, value] of Object.entries(raw)) {
-    const basis = value.costModel?.basis as TaskDefinition['costModel']['basis'] | undefined;
-    definitions[id] = {
-      id,
-      costModel: {
-        basis: basis ?? 'perAction',
-        laborMinutes: value.costModel?.laborMinutes ?? 0,
-      },
-      priority: value.priority,
-      requiredRole: value.requiredRole as EmployeeRole,
-      requiredSkill: value.requiredSkill as SkillName,
-      minSkillLevel: value.minSkillLevel,
-      description: value.description,
-    } satisfies TaskDefinition;
-  }
-
-  return definitions;
-};
-
-const sortBlueprints = <T extends { id: string; name?: string }>(items: readonly T[]): T[] => {
-  return [...items].sort((a, b) => {
-    const left = a.name ?? a.id;
-    const right = b.name ?? b.id;
-    return left.localeCompare(right);
-  });
-};
-
-const selectBlueprint = <T extends { id: string; name?: string }>(
-  items: readonly T[],
-  stream: RngStream,
-  preferredId?: string,
-): T => {
-  if (items.length === 0) {
-    throw new Error('No blueprints available for selection.');
-  }
-  if (preferredId) {
-    const match = items.find((item) => item.id === preferredId);
-    if (match) {
-      return match;
-    }
-  }
-  if (items.length === 1) {
-    return items[0];
-  }
-  const sorted = sortBlueprints(items);
-  const index = stream.nextInt(sorted.length);
-  return sorted[index];
-};
-
-const chooseDeviceBlueprints = (
-  devices: DeviceBlueprint[],
-  stream: RngStream,
-): DeviceBlueprint[] => {
-  const byKind = new Map<string, DeviceBlueprint[]>();
-  for (const device of devices) {
-    const kindEntries = byKind.get(device.kind) ?? [];
-    kindEntries.push(device);
-    byKind.set(device.kind, kindEntries);
-  }
-
-  const selected: DeviceBlueprint[] = [];
-  const desiredKinds = ['Lamp', 'ClimateUnit', 'Dehumidifier'];
-  for (const kind of desiredKinds) {
-    const options = byKind.get(kind);
-    if (options && options.length > 0) {
-      selected.push(selectBlueprint(options, stream));
-    }
-  }
-
-  if (selected.length === 0 && devices.length > 0) {
-    selected.push(selectBlueprint(devices, stream));
-  }
-
-  return selected;
-};
 
 const cloneSettings = (settings: DeviceBlueprint['settings'] | undefined) => {
   if (!settings) {
@@ -399,41 +188,6 @@ const createZoneHealth = (plants: PlantState[]): ZoneHealthState => {
     pendingTreatments: [],
     appliedTreatments: [],
   } satisfies ZoneHealthState;
-};
-
-const drawUnique = <T>(items: readonly T[], count: number, stream: RngStream): T[] => {
-  if (items.length === 0 || count <= 0) {
-    return [];
-  }
-  const pool = [...items];
-  const picks = Math.min(count, pool.length);
-  const result: T[] = [];
-  for (let index = 0; index < picks; index += 1) {
-    const chosenIndex = stream.nextInt(pool.length);
-    result.push(pool.splice(chosenIndex, 1)[0]);
-  }
-  return result;
-};
-
-const createEmployeeSkills = (role: EmployeeRole): EmployeeSkills => {
-  switch (role) {
-    case 'Gardener':
-      return { Gardening: 4, Cleanliness: 2 };
-    case 'Technician':
-      return { Maintenance: 4, Logistics: 2 };
-    case 'Janitor':
-      return { Cleanliness: 4, Logistics: 1 };
-    case 'Operator':
-      return { Logistics: 3, Administration: 2 };
-    case 'Manager':
-      return { Administration: 4, Logistics: 2 };
-    default:
-      return {};
-  }
-};
-
-const createExperienceStub = (skills: EmployeeSkills): EmployeeSkills => {
-  return Object.fromEntries(Object.keys(skills).map((skill) => [skill, 0])) as EmployeeSkills;
 };
 
 const createPlants = (
@@ -584,272 +338,6 @@ const createInventory = (
       filters: 12,
       labels: 500,
     },
-  };
-};
-
-const isShiftActiveAtMinute = (shift: EmployeeShiftAssignment, minuteOfDay: number): boolean => {
-  if (!Number.isFinite(shift.startHour) || !Number.isFinite(shift.durationHours)) {
-    return true;
-  }
-  const overlap = Math.max(shift.overlapMinutes, 0);
-  const startMinutes =
-    (((shift.startHour * 60 - overlap) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
-  const durationMinutes = Math.max(shift.durationHours * 60, 0);
-  if (durationMinutes >= MINUTES_PER_DAY) {
-    return true;
-  }
-  const endMinutes = (startMinutes + overlap + durationMinutes) % MINUTES_PER_DAY;
-  // Allow the overlap window before the nominal start. The calculation above already
-  // shifted the start to include the overlap, so we simply check the wrapped interval.
-  if (startMinutes < endMinutes) {
-    return minuteOfDay >= startMinutes && minuteOfDay < endMinutes;
-  }
-  return minuteOfDay >= startMinutes || minuteOfDay < endMinutes;
-};
-
-const createPersonnel = (
-  structureId: string,
-  counts: Record<EmployeeRole, number>,
-  directory: PersonnelNameDirectory | undefined,
-  rng: RngService,
-  idStream: RngStream,
-): PersonnelRoster => {
-  const firstNames = directory?.firstNames ?? [];
-  const lastNames = directory?.lastNames ?? [];
-  const traits = directory?.traits ?? [];
-  const nameStream = rng.getStream('personnel-names');
-  const traitStream = rng.getStream('personnel-traits');
-  const moraleStream = rng.getStream('personnel-morale');
-  const employees: EmployeeState[] = [];
-  const shiftCounts = new Map<string, number>();
-  let shiftCursor = 0;
-
-  const recordShift = (shift: EmployeeShiftAssignment) => {
-    const current = shiftCounts.get(shift.shiftId) ?? 0;
-    shiftCounts.set(shift.shiftId, current + 1);
-  };
-
-  const chooseBalancedShift = (): EmployeeShiftAssignment => {
-    const templates = SHIFT_TEMPLATES.map((template) => ({
-      template,
-      count: shiftCounts.get(template.shiftId) ?? 0,
-    }));
-    if (templates.length === 0) {
-      return {
-        shiftId: 'shift.default',
-        name: 'Default Shift',
-        startHour: 0,
-        durationHours: 24,
-        overlapMinutes: 0,
-      } satisfies EmployeeShiftAssignment;
-    }
-    const minCount = Math.min(...templates.map((entry) => entry.count));
-    for (let offset = 0; offset < templates.length; offset += 1) {
-      const index = (shiftCursor + offset) % templates.length;
-      const entry = templates[index];
-      if (entry.count === minCount) {
-        shiftCursor = (index + 1) % templates.length;
-        recordShift(entry.template);
-        return { ...entry.template } satisfies EmployeeShiftAssignment;
-      }
-    }
-    const fallback = templates[0];
-    shiftCursor = (shiftCursor + 1) % templates.length;
-    recordShift(fallback.template);
-    return { ...fallback.template } satisfies EmployeeShiftAssignment;
-  };
-
-  const assignShift = (role: EmployeeRole): EmployeeShiftAssignment => {
-    const preferredId = ROLE_SHIFT_PREFERENCES[role];
-    if (preferredId) {
-      const template =
-        SHIFT_TEMPLATES.find((item) => item.shiftId === preferredId) ?? SHIFT_TEMPLATES[0];
-      const index = SHIFT_TEMPLATES.findIndex((item) => item.shiftId === template.shiftId);
-      if (index >= 0) {
-        shiftCursor = (index + 1) % SHIFT_TEMPLATES.length;
-      }
-      recordShift(template);
-      return { ...template } satisfies EmployeeShiftAssignment;
-    }
-    return chooseBalancedShift();
-  };
-
-  for (const role of Object.keys(counts) as EmployeeRole[]) {
-    const count = counts[role] ?? 0;
-    for (let index = 0; index < count; index += 1) {
-      const firstName = firstNames.length > 0 ? nameStream.pick(firstNames) : `Crew${index + 1}`;
-      const lastName = lastNames.length > 0 ? nameStream.pick(lastNames) : role;
-      const fullName = `${firstName} ${lastName}`;
-      const skills = createEmployeeSkills(role);
-      const employeeTraits = drawUnique(
-        traits,
-        traits.length > 0 ? 1 + Number(traitStream.nextBoolean(0.35)) : 0,
-        traitStream,
-      ).map((trait) => trait.id);
-      const shift = assignShift(role);
-      const isActiveAtStart = isShiftActiveAtMinute(shift, 0);
-      employees.push({
-        id: generateId(idStream, 'emp'),
-        name: fullName,
-        role,
-        salaryPerTick: DEFAULT_SALARY_BY_ROLE[role] ?? 20,
-        status: isActiveAtStart ? 'idle' : 'offShift',
-        morale: 0.82 + moraleStream.nextRange(0, 0.08),
-        energy: 1,
-        skills,
-        experience: createExperienceStub(skills),
-        traits: employeeTraits,
-        certifications: [],
-        shift,
-        hoursWorkedToday: 0,
-        overtimeHours: 0,
-        lastShiftResetTick: 0,
-        assignedStructureId: structureId,
-      });
-    }
-  }
-
-  const morale =
-    employees.length > 0
-      ? employees.reduce((sum, employee) => sum + employee.morale, 0) / employees.length
-      : 1;
-
-  return {
-    employees,
-    applicants: [],
-    trainingPrograms: [],
-    overallMorale: morale,
-  };
-};
-
-const sumDeviceCapitalCosts = (
-  devices: DeviceBlueprint[],
-  priceLookup: (id: string) => DevicePriceEntry | undefined,
-): number => {
-  return devices.reduce((sum, device) => {
-    const price = priceLookup(device.id);
-    return sum + (price?.capitalExpenditure ?? 0);
-  }, 0);
-};
-
-const createFinanceState = (
-  createdAt: string,
-  economics: EconomicsSettings,
-  blueprint: StructureBlueprint,
-  installedDevices: DeviceBlueprint[],
-  repository: BlueprintRepository,
-  idStream: RngStream,
-): FinanceState => {
-  const ledgerEntries: LedgerEntry[] = [];
-  const addEntry = (
-    entry: Omit<LedgerEntry, 'id' | 'tick' | 'timestamp'> & { tick?: number; timestamp?: string },
-  ) => {
-    ledgerEntries.push({
-      id: generateId(idStream, 'ledger'),
-      tick: entry.tick ?? 0,
-      timestamp: entry.timestamp ?? createdAt,
-      amount: entry.amount,
-      type: entry.type,
-      category: entry.category,
-      description: entry.description,
-    });
-  };
-
-  addEntry({
-    amount: economics.initialCapital,
-    type: 'income',
-    category: 'capital',
-    description: 'Initial capital injection',
-  });
-
-  if (blueprint.upfrontFee > 0) {
-    addEntry({
-      amount: -blueprint.upfrontFee,
-      type: 'expense',
-      category: 'structure',
-      description: `Lease upfront payment for ${blueprint.name}`,
-    });
-  }
-
-  const deviceCosts = sumDeviceCapitalCosts(installedDevices, (id) =>
-    repository.getDevicePrice(id),
-  );
-  if (deviceCosts > 0) {
-    addEntry({
-      amount: -deviceCosts,
-      type: 'expense',
-      category: 'device',
-      description: 'Initial device purchases',
-    });
-  }
-
-  const cashOnHand = economics.initialCapital - blueprint.upfrontFee - deviceCosts;
-  const totalExpenses = blueprint.upfrontFee + deviceCosts;
-
-  const summary: FinancialSummary = {
-    totalRevenue: economics.initialCapital,
-    totalExpenses,
-    totalPayroll: 0,
-    totalMaintenance: 0,
-    netIncome: economics.initialCapital - totalExpenses,
-    lastTickRevenue: economics.initialCapital,
-    lastTickExpenses: totalExpenses,
-  };
-
-  return {
-    cashOnHand,
-    reservedCash: 0,
-    outstandingLoans: [],
-    ledger: ledgerEntries,
-    summary,
-  };
-};
-
-const createTasks = (
-  structure: StructureState,
-  room: StructureState['rooms'][number],
-  zone: StructureState['rooms'][number]['zones'][number],
-  plantCount: number,
-  definitions: TaskDefinitionMap | undefined,
-  idStream: RngStream,
-): TaskSystemState => {
-  const backlog: TaskState[] = [];
-  const createTask = (
-    definitionId: string,
-    fallbackPriority: number,
-    metadata: Record<string, unknown>,
-  ) => {
-    const definition = definitions?.[definitionId];
-    backlog.push({
-      id: generateId(idStream, 'task'),
-      definitionId,
-      status: 'pending',
-      priority: definition?.priority ?? fallbackPriority,
-      createdAtTick: 0,
-      dueTick: definition ? Math.round(definition.priority * 4) : undefined,
-      location: {
-        structureId: structure.id,
-        roomId: room.id,
-        zoneId: zone.id,
-      },
-      metadata: {
-        zoneName: zone.name,
-        structureName: structure.name,
-        ...(definition ? { description: definition.description } : {}),
-        ...metadata,
-      },
-    });
-  };
-
-  createTask('execute_planting_plan', 5, { plantCount });
-  createTask('refill_supplies_water', 4, {});
-  createTask('maintain_device', 3, { deviceCount: zone.devices.length });
-
-  return {
-    backlog,
-    active: [],
-    completed: [],
-    cancelled: [],
   };
 };
 
