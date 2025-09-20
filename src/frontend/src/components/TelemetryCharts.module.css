@@ -1,0 +1,84 @@
+.telemetry {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: rgba(15, 23, 42, 0.68);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-soft);
+  display: grid;
+  gap: var(--space-4);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.header h2 {
+  margin: 0;
+  font-size: clamp(1.2rem, 2vw, 1.4rem);
+  color: var(--color-text-secondary);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.placeholder {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.zoneCharts {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.zoneChartCard {
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  display: grid;
+  gap: var(--space-3);
+}
+
+.zoneChartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.zoneChartHeader h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+}
+
+.zoneSampleCount {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.chartGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.chartWrapper {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.chartWrapper h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

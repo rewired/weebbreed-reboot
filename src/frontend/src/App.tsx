@@ -6,6 +6,8 @@ import { ModalRoot } from './components/ModalRoot';
 import { NavigationTabs } from './components/NavigationTabs';
 import { SimulationControls } from './components/SimulationControls';
 import { SimulationOverview } from './components/SimulationOverview';
+import { TelemetryCharts } from './components/TelemetryCharts';
+import { TelemetryTable } from './components/TelemetryTable';
 import { useSimulationBridge } from './hooks/useSimulationBridge';
 import { useAppStore } from './store';
 
@@ -48,6 +50,8 @@ const App = () => {
           <Fragment>
             <SimulationControls bridge={bridge} />
             <SimulationOverview />
+            <TelemetryCharts />
+            <TelemetryTable />
             <EventLog />
           </Fragment>
         ) : null}

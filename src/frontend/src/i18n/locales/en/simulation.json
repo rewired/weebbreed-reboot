@@ -17,7 +17,14 @@
     "totalEvents": "{{count}} events",
     "noData": "No telemetry received yet.",
     "inDevelopment": "Work in progress",
-    "tickTimestampShort": "Tick timestamp"
+    "tickTimestampShort": "Tick timestamp",
+    "kpis": {
+      "tick": "Tick",
+      "timestamp": "Local time",
+      "plants": "Tracked plants",
+      "tickDuration": "Last tick duration",
+      "queuedTicks": "{{count}} queued"
+    }
   },
   "connection": {
     "idle": "Idle",
@@ -32,13 +39,71 @@
     "step": "Step",
     "fastForward": "Fast forward",
     "openSettings": "Set setpoints",
-    "tickLength": "Tick length (min)",
+    "tickLength": "Tick length",
+    "tickLengthValue": "{{minutes}} min/tick",
     "apply": "Apply",
     "connect": "Connect",
-    "disconnect": "Disconnect"
+    "disconnect": "Disconnect",
+    "setpointHeader": "Zone setpoints",
+    "setpoints": {
+      "temperature": "Air temperature",
+      "humidity": "Relative humidity",
+      "co2": "CO₂ concentration",
+      "ppfd": "PPFD"
+    },
+    "units": {
+      "temperature": "°C",
+      "humidity": "%",
+      "co2": "ppm",
+      "ppfd": "µmol·m⁻²·s⁻¹"
+    }
   },
   "events": {
-    "empty": "No events yet."
+    "empty": "No events yet.",
+    "columns": {
+      "severity": "Severity",
+      "type": "Type",
+      "message": "Message",
+      "tick": "Tick",
+      "timestamp": "Timestamp"
+    },
+    "severity": {
+      "debug": "Debug",
+      "info": "Info",
+      "warning": "Warning",
+      "error": "Error"
+    }
+  },
+  "charts": {
+    "title": "Telemetry trends",
+    "subtitle": "Latest time-series telemetry per zone (throttled)",
+    "noData": "Waiting for telemetry samples...",
+    "zoneTitle": "Zone {{zoneId}}",
+    "samples": "{{count}} samples",
+    "temperatureHumidity": "Temperature & humidity",
+    "vpdLight": "VPD & light",
+    "axis": {
+      "temperature": "Temperature (°C)",
+      "humidity": "Humidity (%)",
+      "vpd": "VPD (kPa)",
+      "ppfd": "PPFD"
+    },
+    "tooltip": {
+      "tick": "at"
+    }
+  },
+  "telemetry": {
+    "title": "Latest zone telemetry",
+    "totalZones": "{{count}} zones",
+    "empty": "No zones reported telemetry yet.",
+    "columns": {
+      "zone": "Zone",
+      "temperature": "Temperature",
+      "humidity": "Humidity",
+      "co2": "CO₂",
+      "ppfd": "PPFD",
+      "vpd": "VPD"
+    }
   },
   "views": {
     "zonesComingSoon": "Detailed zone analytics dashboards are coming soon.",

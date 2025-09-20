@@ -29,6 +29,8 @@ const mapTimelineEntries = (snapshot: SimulationSnapshot): SimulationTimelineEnt
     temperature: env.temperature,
     humidity: env.humidity,
     vpd: env.vpd,
+    co2: env.co2,
+    ppfd: env.ppfd,
   }));
 };
 
@@ -40,6 +42,7 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
   plants: {},
   events: [],
   timeline: [],
+  lastSetpoints: {},
   setConnectionStatus: (status, errorMessage) =>
     set((state) => ({
       connectionStatus: status,
@@ -98,4 +101,19 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
       sendControlCommand: control,
       sendConfigUpdate: config,
     })),
+  issueControlCommand: (command) =>
+    set((state) => {
+      state.sendControlCommand?.(command);
+      return {};
+    }),
+  requestTickLength: (minutes) =>
+    set((state) => {
+      state.sendControlCommand?.({ action: 'setTickLength', minutes });
+      return { lastRequestedTickLength: minutes };
+    }),
+  sendSetpoint: (target, value) =>
+    set((state) => {
+      state.sendControlCommand?.({ action: 'setSetpoint', target, value });
+      return { lastSetpoints: { ...state.lastSetpoints, [target]: value } };
+    }),
 });

@@ -1,9 +1,9 @@
 .controls {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-5);
   padding: var(--space-5);
-  border-radius: var(--radius-md);
-  background: rgba(15, 23, 42, 0.65);
+  border-radius: var(--radius-lg);
+  background: rgba(15, 23, 42, 0.7);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-soft);
 }
@@ -20,6 +20,8 @@
   margin: 0;
   font-size: 1.15rem;
   color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .connectionActions {
@@ -48,7 +50,7 @@
 }
 
 .actions button {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.85), rgba(37, 99, 235, 0.82));
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.82));
   color: var(--color-text-primary);
   box-shadow: 0 12px 28px -18px rgba(59, 130, 246, 0.85);
 }
@@ -80,7 +82,13 @@
 
 .tickLength {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
+}
+
+.tickLengthHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
 .tickLength label {
@@ -90,14 +98,73 @@
   letter-spacing: 0.08em;
 }
 
+.tickLengthValue {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tickLength input[type='range'] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
 .tickLengthInputRow {
   display: flex;
   gap: var(--space-2);
   align-items: center;
 }
 
-.tickLength input {
+.tickLength input[type='number'] {
   max-width: 6rem;
+}
+
+.setpoints {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.setpoints h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.setpointGrid {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.setpointCard {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.setpointCard label {
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+
+.setpointInputRow {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.unit {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 0.85rem;
 }
 
 .primary {
