@@ -1,6 +1,6 @@
 import { stat } from 'fs/promises';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { BlueprintRepository } from '../data/index.js';
 
 export * from './state/models.js';
@@ -15,6 +15,22 @@ export * from '../facade/index.js';
 export * from '../server/socketGateway.js';
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
+
+const getNormalizedEntryPointHref = (): string | undefined => {
+  const entryPointArgument = process.argv[1];
+
+  if (!entryPointArgument) {
+    return undefined;
+  }
+
+  const entryUrl = entryPointArgument.startsWith('file:')
+    ? new URL(entryPointArgument)
+    : pathToFileURL(path.resolve(entryPointArgument));
+
+  const normalizedEntryPath = fileURLToPath(entryUrl);
+
+  return pathToFileURL(normalizedEntryPath).href;
+};
 
 const expectedBlueprintSubdirectories: string[][] = [
   ['blueprints', 'strains'],
@@ -100,7 +116,9 @@ export const bootstrap = async () => {
   return repository;
 };
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+const normalizedEntryPointHref = getNormalizedEntryPointHref();
+
+if (normalizedEntryPointHref && import.meta.url === normalizedEntryPointHref) {
   bootstrap().catch((error) => {
     console.error('Backend simulation bootstrap failed', error);
     process.exitCode = 1;
