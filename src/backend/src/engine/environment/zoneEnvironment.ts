@@ -1,5 +1,10 @@
 import { computeZoneDeviceDeltas, type ZoneGeometry } from './deviceEffects.js';
-import type { GameState, RoomState } from '../../state/models.js';
+import {
+  ClimateController,
+  type ClimateControllerOptions,
+  type ClimateControlSetpoints,
+} from './climateController.js';
+import type { GameState, RoomState, ZoneState } from '../../state/models.js';
 import type { SimulationPhaseContext } from '../../sim/loop.js';
 
 export interface AmbientEnvironment {
@@ -31,6 +36,8 @@ export interface ZoneEnvironmentOptions {
   ambient?: AmbientEnvironment;
   safety?: Partial<SafetyClamps>;
   normalization?: Partial<NormalizationFactors>;
+  setpoints?: Partial<ClimateControlSetpoints>;
+  controller?: ClimateControllerOptions;
 }
 
 interface DeviceEffectCacheEntry {
@@ -61,6 +68,16 @@ const DEFAULT_NORMALIZATION: NormalizationFactors = {
   airflowCo2Factor: 0.45,
   passiveAirChangesPerHour: 0.15,
 };
+
+const DEFAULT_SETPOINTS: ClimateControlSetpoints = {
+  temperature: DEFAULT_AMBIENT.temperature,
+  humidity: DEFAULT_AMBIENT.relativeHumidity,
+  co2: DEFAULT_AMBIENT.co2,
+};
+
+const TEMPERATURE_DEVICE_KINDS = new Set(['ClimateUnit', 'HVAC']);
+const HUMIDITY_DEVICE_KINDS = new Set(['HumidityControlUnit', 'Dehumidifier']);
+const CO2_DEVICE_KINDS = new Set(['CO2Injector']);
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -109,6 +126,12 @@ export class ZoneEnvironmentService {
 
   private readonly normalization: NormalizationFactors;
 
+  private readonly baseSetpoints: ClimateControlSetpoints;
+
+  private readonly controllerOptions: ClimateControllerOptions;
+
+  private readonly controllers = new Map<string, ClimateController>();
+
   private readonly deviceEffects = new Map<string, DeviceEffectCacheEntry>();
 
   constructor(options: ZoneEnvironmentOptions = {}) {
@@ -126,6 +149,13 @@ export class ZoneEnvironmentService {
       ...DEFAULT_NORMALIZATION,
       ...options.normalization,
     } as NormalizationFactors;
+
+    this.baseSetpoints = {
+      ...DEFAULT_SETPOINTS,
+      ...options.setpoints,
+    } satisfies ClimateControlSetpoints;
+
+    this.controllerOptions = options.controller ?? {};
   }
 
   applyDeviceDeltas(state: GameState, tickLengthMinutes: number): void {
@@ -135,7 +165,21 @@ export class ZoneEnvironmentService {
       for (const room of structure.rooms) {
         for (const zone of room.zones) {
           const geometry = computeZoneGeometry(room);
-          const effect = computeZoneDeviceDeltas(zone, geometry, { tickHours });
+          const controller = this.getController(zone.id);
+          const setpoints = this.resolveSetpoints(zone);
+          const powerLevels = controller.update(
+            setpoints,
+            {
+              temperature: zone.environment.temperature,
+              humidity: zone.environment.relativeHumidity,
+              co2: zone.environment.co2,
+            },
+            tickLengthMinutes,
+          );
+          const effect = computeZoneDeviceDeltas(zone, geometry, {
+            tickHours,
+            powerLevels,
+          });
 
           zone.environment.temperature += effect.temperatureDelta;
           zone.environment.relativeHumidity += effect.humidityDelta;
@@ -201,6 +245,91 @@ export class ZoneEnvironmentService {
     }
 
     this.deviceEffects.clear();
+  }
+
+  private getController(zoneId: string): ClimateController {
+    let controller = this.controllers.get(zoneId);
+    if (!controller) {
+      controller = new ClimateController(this.controllerOptions);
+      this.controllers.set(zoneId, controller);
+    }
+    return controller;
+  }
+
+  private resolveSetpoints(zone: ZoneState): ClimateControlSetpoints {
+    let temperature = this.baseSetpoints.temperature;
+    let humidity = this.baseSetpoints.humidity;
+    let co2 = this.baseSetpoints.co2;
+
+    for (const device of zone.devices) {
+      if (device.status !== 'operational') {
+        continue;
+      }
+
+      const settings = device.settings ?? {};
+
+      if (TEMPERATURE_DEVICE_KINDS.has(device.kind)) {
+        const targetTemperature = this.extractNumeric(settings.targetTemperature);
+        if (targetTemperature !== undefined) {
+          temperature = targetTemperature;
+        } else {
+          const range = this.extractTuple(settings.targetTemperatureRange);
+          if (range) {
+            const [low, high] = range;
+            temperature = (low + high) / 2;
+          }
+        }
+      }
+
+      if (HUMIDITY_DEVICE_KINDS.has(device.kind)) {
+        const targetHumidity = this.extractNumeric(settings.targetHumidity);
+        if (targetHumidity !== undefined) {
+          humidity = targetHumidity;
+        }
+      }
+
+      if (CO2_DEVICE_KINDS.has(device.kind)) {
+        const targetCo2 = this.extractNumeric(settings.targetCO2);
+        if (targetCo2 !== undefined) {
+          co2 = targetCo2;
+        } else {
+          const range = this.extractTuple(settings.targetCO2Range);
+          if (range) {
+            const [, upper] = range;
+            if (upper !== undefined) {
+              co2 = upper;
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      temperature,
+      humidity,
+      co2,
+    };
+  }
+
+  private extractNumeric(value: unknown): number | undefined {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return undefined;
+    }
+    return value;
+  }
+
+  private extractTuple(value: unknown): [number, number] | undefined {
+    if (!Array.isArray(value) || value.length !== 2) {
+      return undefined;
+    }
+    const [first, second] = value;
+    if (typeof first !== 'number' || typeof second !== 'number') {
+      return undefined;
+    }
+    if (!Number.isFinite(first) || !Number.isFinite(second)) {
+      return undefined;
+    }
+    return [first, second];
   }
 
   createApplyDevicePhaseHandler() {

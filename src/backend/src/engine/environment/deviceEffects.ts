@@ -1,4 +1,5 @@
 import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '../../state/models.js';
+import type { ClimateControlOutput } from './climateController.js';
 
 export interface ZoneGeometry {
   area: number;
@@ -15,6 +16,7 @@ export interface DeviceEffect {
 
 export interface DeviceEffectContext {
   tickHours: number;
+  powerLevels?: ClimateControlOutput;
 }
 
 const DEFAULT_DEVICE_EFFECT: DeviceEffect = {
@@ -167,17 +169,27 @@ const computeHvacTemperatureEffect = (
     ? Math.max(targetTemperature - environment.temperature, lowerBound - environment.temperature)
     : Math.min(targetTemperature - environment.temperature, upperBound - environment.temperature);
 
+  const controlLevel = context.powerLevels
+    ? needsCooling
+      ? context.powerLevels.temperatureCooling
+      : context.powerLevels.temperatureHeating
+    : undefined;
+
   const energy = capacityKw * context.tickHours;
   const baseDelta = energyToTemperatureDelta(energy, geometry.volume);
   const fullPowerDelta = Math.max(
     toNumber(settings.fullPowerAtDeltaK, DEFAULT_FULL_POWER_DELTA_K),
     0.0001,
   );
-  const modulation = clamp(Math.abs(temperatureDifference) / fullPowerDelta, 0, 1);
+  const modulation =
+    controlLevel !== undefined
+      ? clamp(controlLevel / 100, 0, 1)
+      : clamp(Math.abs(temperatureDifference) / fullPowerDelta, 0, 1);
   const potentialDelta = baseDelta * HVAC_HEAT_TRANSFER_COEFFICIENT * efficiency * modulation;
 
   const appliedDelta = Math.sign(desiredDelta) * Math.min(Math.abs(desiredDelta), potentialDelta);
-  const airflow = Math.max(toNumber(settings.airflow, 0), 0) * efficiency;
+  const airflowModulation = controlLevel !== undefined ? clamp(controlLevel / 100, 0, 1) : 1;
+  const airflow = Math.max(toNumber(settings.airflow, 0), 0) * efficiency * airflowModulation;
 
   return {
     temperatureDelta: appliedDelta,
@@ -217,7 +229,9 @@ const computeCo2Effect = (
     return { ...DEFAULT_DEVICE_EFFECT };
   }
 
-  const appliedIncrease = Math.min(desiredIncrease, scaledPulse) * efficiency;
+  const modulation =
+    context.powerLevels !== undefined ? clamp(context.powerLevels.co2Injection / 100, 0, 1) : 1;
+  const appliedIncrease = Math.min(desiredIncrease, scaledPulse) * efficiency * modulation;
   const safetyLimited = Math.min(appliedIncrease, Math.max(0, maxCo2 - environment.co2));
 
   return {
