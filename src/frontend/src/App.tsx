@@ -8,6 +8,9 @@ import { SimulationControls } from './components/SimulationControls';
 import { SimulationOverview } from './components/SimulationOverview';
 import { TelemetryCharts } from './components/TelemetryCharts';
 import { TelemetryTable } from './components/TelemetryTable';
+import { WorldExplorer } from './components/WorldExplorer';
+import { PersonnelView } from './components/PersonnelView';
+import { FinanceView } from './components/FinanceView';
 import { useSimulationBridge } from './hooks/useSimulationBridge';
 import { useAppStore } from './store';
 
@@ -56,24 +59,18 @@ const App = () => {
           </Fragment>
         ) : null}
 
-        {currentView === 'zones' ? (
-          <PlaceholderView translationKey="views.zonesComingSoon" />
-        ) : null}
+        {currentView === 'world' ? <WorldExplorer /> : null}
 
-        {currentView === 'plants' ? (
-          <PlaceholderView translationKey="views.plantsComingSoon" />
-        ) : null}
+        {currentView === 'personnel' ? <PersonnelView /> : null}
 
-        {currentView === 'devices' ? (
-          <PlaceholderView translationKey="views.devicesComingSoon" />
-        ) : null}
+        {currentView === 'finance' ? <FinanceView /> : null}
 
         {currentView === 'settings' ? (
           <PlaceholderView translationKey="views.settingsDescription" />
         ) : null}
       </main>
 
-      <ModalRoot bridge={bridge} />
+      <ModalRoot />
     </div>
   );
 };

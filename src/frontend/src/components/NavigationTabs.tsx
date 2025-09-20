@@ -3,7 +3,7 @@ import { useAppStore } from '../store';
 import type { NavigationView } from '../store';
 import styles from './NavigationTabs.module.css';
 
-const tabs: NavigationView[] = ['overview', 'zones', 'plants', 'devices', 'settings'];
+const tabs: NavigationView[] = ['overview', 'world', 'personnel', 'finance', 'settings'];
 
 export const NavigationTabs = () => {
   const { t } = useTranslation('navigation');

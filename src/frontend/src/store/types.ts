@@ -1,16 +1,24 @@
 import type {
+  DeviceSnapshot,
+  FacadeIntentCommand,
+  FinanceSummarySnapshot,
+  PlantSnapshot,
+  PersonnelSnapshot,
   SimulationConfigUpdate,
   SimulationControlCommand,
   SimulationEvent,
   SimulationSnapshot,
   SimulationTickEvent,
-  SimulationEnvironmentSnapshot,
-  SimulationPlantSnapshot,
+  SimulationTimeStatus,
+  SimulationUpdateEntry,
+  StructureSnapshot,
+  RoomSnapshot,
+  ZoneSnapshot,
 } from '../types/simulation';
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
-export type NavigationView = 'overview' | 'zones' | 'plants' | 'devices' | 'settings';
+export type NavigationView = 'overview' | 'world' | 'personnel' | 'finance' | 'settings';
 
 export interface SimulationTimelineEntry {
   tick: number;
@@ -23,48 +31,108 @@ export interface SimulationTimelineEntry {
   ppfd?: number;
 }
 
+export interface FinanceTickEntry {
+  tick: number;
+  ts: number;
+  revenue: number;
+  expenses: number;
+  netIncome: number;
+  capex: number;
+  opex: number;
+  utilities: {
+    totalCost: number;
+    energy: number;
+    water: number;
+    nutrients: number;
+  };
+  maintenanceTotal: number;
+  maintenanceDetails: MaintenanceExpenseEntry[];
+}
+
+export interface MaintenanceExpenseEntry {
+  deviceId: string;
+  blueprintId: string;
+  totalCost: number;
+  degradationMultiplier: number;
+}
+
 export interface SimulationSlice {
   connectionStatus: ConnectionStatus;
   lastError?: string;
   lastSnapshot?: SimulationSnapshot;
-  zones: Record<string, SimulationEnvironmentSnapshot>;
-  plants: Record<string, SimulationPlantSnapshot>;
+  lastSnapshotTimestamp?: number;
+  structures: Record<string, StructureSnapshot>;
+  rooms: Record<string, RoomSnapshot>;
+  zones: Record<string, ZoneSnapshot>;
+  devices: Record<string, DeviceSnapshot>;
+  plants: Record<string, PlantSnapshot>;
   events: SimulationEvent[];
   timeline: SimulationTimelineEntry[];
   lastTickCompleted?: SimulationTickEvent;
   lastRequestedTickLength?: number;
   lastSetpoints: Record<string, number | undefined>;
+  timeStatus?: SimulationTimeStatus;
+  personnel?: PersonnelSnapshot;
+  financeSummary?: FinanceSummarySnapshot;
+  financeHistory: FinanceTickEntry[];
+  hrEvents: SimulationEvent[];
   setConnectionStatus: (status: ConnectionStatus, errorMessage?: string) => void;
-  ingestSnapshot: (snapshot: SimulationSnapshot) => void;
+  ingestUpdate: (update: SimulationUpdateEntry) => void;
   appendEvents: (events: SimulationEvent[]) => void;
+  recordFinanceTick: (entry: FinanceTickEntry) => void;
+  recordHREvent: (event: SimulationEvent) => void;
   registerTickCompleted: (event: SimulationTickEvent) => void;
   resetSimulation: () => void;
   sendControlCommand?: (command: SimulationControlCommand) => void;
   sendConfigUpdate?: (update: SimulationConfigUpdate) => void;
+  sendFacadeIntent?: (intent: FacadeIntentCommand) => void;
   issueControlCommand: (command: SimulationControlCommand) => void;
   requestTickLength: (minutes: number) => void;
-  sendSetpoint: (target: string, value: number) => void;
+  sendSetpoint: (
+    zoneId: string,
+    metric: 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd' | 'vpd',
+    value: number,
+  ) => void;
   setCommandHandlers: (
     control: (command: SimulationControlCommand) => void,
     config: (update: SimulationConfigUpdate) => void,
   ) => void;
+  setIntentHandler: (handler: (intent: FacadeIntentCommand) => void) => void;
+  issueFacadeIntent: (intent: FacadeIntentCommand) => void;
 }
 
 export interface NavigationSlice {
   currentView: NavigationView;
   history: NavigationView[];
+  selectedStructureId?: string;
+  selectedRoomId?: string;
+  selectedZoneId?: string;
   setCurrentView: (view: NavigationView) => void;
   goBack: () => void;
   clearHistory: () => void;
+  selectStructure: (structureId?: string) => void;
+  selectRoom: (roomId?: string) => void;
+  selectZone: (zoneId?: string) => void;
+  resetSelection: () => void;
 }
 
-export type ModalKind = 'settings' | 'snapshot' | 'custom';
+export type ModalKind =
+  | 'settings'
+  | 'installDevice'
+  | 'planting'
+  | 'automationPlan'
+  | 'treatment'
+  | 'createEntity'
+  | 'updateEntity'
+  | 'deleteEntity'
+  | 'custom';
 
 export interface ModalDescriptor {
   kind: ModalKind;
   title?: string;
   description?: string;
   payload?: Record<string, unknown>;
+  autoPause?: boolean;
 }
 
 export interface ModalSlice {

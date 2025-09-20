@@ -1,16 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import type {
+  FacadeIntentCommand,
   SimulationConfigUpdate,
   SimulationControlCommand,
   SimulationEvent,
-  SimulationSnapshot,
   SimulationTickEvent,
+  SimulationUpdateEntry,
+  SimulationUpdateMessage,
 } from '../types/simulation';
 import { useAppStore } from '../store';
 import type { ConnectionStatus } from '../store';
+import type { FinanceTickEntry } from '../store/types';
 
 type AnyHandler = (...args: unknown[]) => void;
+
+type DomainEventsMessage = { events?: SimulationEvent[] };
+
+type FinanceTickPayload = {
+  tick?: number;
+  timestamp?: string;
+  revenue?: number;
+  expenses?: number;
+  netIncome?: number;
+  capex?: number;
+  opex?: number;
+  utilities?: {
+    totalCost?: number;
+    energy?: { totalCost?: number };
+    water?: { totalCost?: number };
+    nutrients?: { totalCost?: number };
+  };
+  maintenance?: unknown;
+};
 
 interface PendingSubscription {
   event: string;
@@ -30,6 +52,7 @@ export interface SimulationBridgeHandle {
   disconnect: () => void;
   sendControlCommand: (command: SimulationControlCommand) => void;
   sendConfigUpdate: (update: SimulationConfigUpdate) => void;
+  sendFacadeIntent: (intent: FacadeIntentCommand) => void;
   subscribe: <TPayload = unknown>(
     event: string,
     handler: (payload: TPayload) => void,
@@ -48,15 +71,113 @@ const toSimulationEvent = (payload: unknown): SimulationEvent => {
   };
 };
 
+const mapFinanceTick = (payload: unknown): FinanceTickEntry | undefined => {
+  if (!payload || typeof payload !== 'object') {
+    return undefined;
+  }
+  const data = payload as FinanceTickPayload;
+  const maintenance = Array.isArray(data.maintenance) ? data.maintenance : [];
+  const maintenanceDetails = maintenance
+    .map((entry) => {
+      if (!entry || typeof entry !== 'object') {
+        return undefined;
+      }
+      const record = entry as {
+        deviceId?: string;
+        blueprintId?: string;
+        totalCost?: number;
+        degradationMultiplier?: number;
+      };
+      if (!record.deviceId || !record.blueprintId || typeof record.totalCost !== 'number') {
+        return undefined;
+      }
+      return {
+        deviceId: record.deviceId,
+        blueprintId: record.blueprintId,
+        totalCost: record.totalCost,
+        degradationMultiplier: record.degradationMultiplier ?? 1,
+      };
+    })
+    .filter((entry): entry is FinanceTickEntry['maintenanceDetails'][number] => Boolean(entry));
+
+  const ts = data.timestamp ? Date.parse(data.timestamp) : Date.now();
+  return {
+    tick: data.tick ?? 0,
+    ts,
+    revenue: data.revenue ?? 0,
+    expenses: data.expenses ?? 0,
+    netIncome: data.netIncome ?? 0,
+    capex: data.capex ?? 0,
+    opex: data.opex ?? 0,
+    utilities: {
+      totalCost: data.utilities?.totalCost ?? 0,
+      energy: data.utilities?.energy?.totalCost ?? 0,
+      water: data.utilities?.water?.totalCost ?? 0,
+      nutrients: data.utilities?.nutrients?.totalCost ?? 0,
+    },
+    maintenanceTotal: maintenanceDetails.reduce((sum, item) => sum + item.totalCost, 0),
+    maintenanceDetails,
+  } satisfies FinanceTickEntry;
+};
+
+const toArray = <T>(input: T | T[] | undefined): T[] => {
+  if (!input) {
+    return [];
+  }
+
+  return Array.isArray(input) ? input : [input];
+};
+
+const processSimulationUpdates = (
+  message: SimulationUpdateMessage,
+  ingestUpdate: (update: SimulationUpdateEntry) => void,
+) => {
+  if (!message || !Array.isArray(message.updates)) {
+    return;
+  }
+
+  for (const update of message.updates) {
+    ingestUpdate(update);
+  }
+};
+
+const processDomainEvents = (
+  message: DomainEventsMessage,
+  appendEvents: (events: SimulationEvent[]) => void,
+  recordHREvent: (event: SimulationEvent) => void,
+  recordFinanceTick: (entry: FinanceTickEntry) => void,
+) => {
+  const events = toArray(message?.events);
+  if (!events.length) {
+    return;
+  }
+  appendEvents(events);
+
+  for (const event of events) {
+    if (event.type.startsWith('hr.')) {
+      recordHREvent(event);
+    }
+    if (event.type === 'finance.tick') {
+      const entry = mapFinanceTick(event.payload);
+      if (entry) {
+        recordFinanceTick(entry);
+      }
+    }
+  }
+};
+
 export const useSimulationBridge = (
   options: UseSimulationBridgeOptions = {},
 ): SimulationBridgeHandle => {
   const { url = '/socket.io', autoConnect = true, debug = false } = options;
   const setConnectionStatus = useAppStore((state) => state.setConnectionStatus);
-  const ingestSnapshot = useAppStore((state) => state.ingestSnapshot);
+  const ingestUpdate = useAppStore((state) => state.ingestUpdate);
   const appendEvents = useAppStore((state) => state.appendEvents);
   const registerTickCompleted = useAppStore((state) => state.registerTickCompleted);
+  const recordFinanceTick = useAppStore((state) => state.recordFinanceTick);
+  const recordHREvent = useAppStore((state) => state.recordHREvent);
   const setCommandHandlers = useAppStore((state) => state.setCommandHandlers);
+  const setIntentHandler = useAppStore((state) => state.setIntentHandler);
   const status = useAppStore((state) => state.connectionStatus);
 
   const socketRef = useRef<Socket | null>(null);
@@ -83,9 +204,26 @@ export const useSimulationBridge = (
     socket.emit('config.update', update);
   }, []);
 
+  const sendFacadeIntent = useCallback((intent: FacadeIntentCommand) => {
+    const socket = socketRef.current;
+    if (!socket || !socket.connected) {
+      console.warn('[useSimulationBridge] No active socket to send facade intent', intent);
+      return;
+    }
+
+    socket.emit('facade.intent', intent);
+  }, []);
+
   useEffect(() => {
     setCommandHandlers(sendControlCommand, sendConfigUpdate);
-  }, [sendConfigUpdate, sendControlCommand, setCommandHandlers]);
+    setIntentHandler(sendFacadeIntent);
+  }, [
+    sendConfigUpdate,
+    sendControlCommand,
+    sendFacadeIntent,
+    setCommandHandlers,
+    setIntentHandler,
+  ]);
 
   const subscribe = useCallback(<TPayload>(event: string, handler: (payload: TPayload) => void) => {
     const wrapped: AnyHandler = (payload: unknown) => handler(payload as TPayload);
@@ -141,12 +279,23 @@ export const useSimulationBridge = (
       setConnectionStatus('error', error.message);
     };
 
-    const handleSimulationUpdate = (payload: SimulationSnapshot) => {
-      ingestSnapshot(payload);
+    const handleSimulationUpdate = (payload: SimulationUpdateMessage) => {
+      processSimulationUpdates(payload, ingestUpdate);
     };
 
     const handleTickCompleted = (payload: SimulationTickEvent) => {
       registerTickCompleted(payload);
+    };
+
+    const handleDomainEvents = (payload: DomainEventsMessage) => {
+      processDomainEvents(payload, appendEvents, recordHREvent, recordFinanceTick);
+    };
+
+    const handleFinanceTick = (payload: unknown) => {
+      const entry = mapFinanceTick(payload);
+      if (entry) {
+        recordFinanceTick(entry);
+      }
     };
 
     const handleDomainEvent = (payload: unknown) => {
@@ -159,6 +308,8 @@ export const useSimulationBridge = (
     socket.on('error', handleConnectError);
     socket.on('simulationUpdate', handleSimulationUpdate);
     socket.on('sim.tickCompleted', handleTickCompleted);
+    socket.on('domainEvents', handleDomainEvents);
+    socket.on('finance.tick', handleFinanceTick);
     socket.on('domain.event', handleDomainEvent);
     socket.on('simulation.event', handleDomainEvent);
 
@@ -193,40 +344,25 @@ export const useSimulationBridge = (
     appendEvents,
     autoConnect,
     debug,
-    ingestSnapshot,
+    ingestUpdate,
+    recordFinanceTick,
+    recordHREvent,
     registerTickCompleted,
     setConnectionStatus,
     url,
   ]);
 
-  const connect = useCallback(() => {
-    const socket = socketRef.current;
-    if (!socket) {
-      return;
-    }
-
-    if (socket.connected) {
-      return;
-    }
-
-    setConnectionStatus('connecting');
-    socket.connect();
-  }, [setConnectionStatus]);
-
-  const disconnect = useCallback(() => {
-    socketRef.current?.disconnect();
-  }, []);
-
   return useMemo(
     () => ({
       status,
       socketId,
-      connect,
-      disconnect,
+      connect: () => socketRef.current?.connect(),
+      disconnect: () => socketRef.current?.disconnect(),
       sendControlCommand,
       sendConfigUpdate,
+      sendFacadeIntent,
       subscribe,
     }),
-    [connect, disconnect, sendConfigUpdate, sendControlCommand, socketId, status, subscribe],
+    [sendConfigUpdate, sendControlCommand, sendFacadeIntent, socketId, status, subscribe],
   );
 };
