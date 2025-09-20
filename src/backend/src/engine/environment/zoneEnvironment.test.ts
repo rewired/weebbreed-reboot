@@ -7,6 +7,7 @@ import type {
   RoomState,
   StructureState,
   ZoneEnvironmentState,
+  ZoneHealthState,
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
@@ -38,6 +39,12 @@ const createMetrics = (environment: ZoneEnvironmentState): ZoneMetricState => ({
   averagePpfd: environment.ppfd,
   stressLevel: 0.2,
   lastUpdatedTick: 0,
+});
+
+const createHealth = (): ZoneHealthState => ({
+  plantHealth: {},
+  pendingTreatments: [],
+  appliedTreatments: [],
 });
 
 const createDevice = (
@@ -77,6 +84,7 @@ const createZone = (
   plants: [],
   devices,
   metrics: createMetrics(environment),
+  health: createHealth(),
   activeTaskIds: [],
 });
 
