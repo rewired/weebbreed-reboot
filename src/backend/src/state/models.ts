@@ -258,6 +258,7 @@ export interface DeviceMaintenanceState {
   lastServiceTick: number;
   nextDueTick: number;
   condition: number;
+  runtimeHoursAtLastService: number;
   degradation: number;
 }
 

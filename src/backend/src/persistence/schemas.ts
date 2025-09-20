@@ -123,6 +123,7 @@ const deviceMaintenanceSchema = z.object({
   lastServiceTick: z.number().int().nonnegative(),
   nextDueTick: z.number().int().nonnegative(),
   condition: z.number(),
+  runtimeHoursAtLastService: z.number().nonnegative(),
   degradation: z.number(),
 });
 

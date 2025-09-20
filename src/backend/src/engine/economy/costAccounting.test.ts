@@ -157,6 +157,7 @@ describe('CostAccountingService', () => {
         lastServiceTick: 0,
         nextDueTick: 0,
         condition: 1,
+        runtimeHoursAtLastService: 0,
         degradation: 0.3,
       },
       settings: {},
