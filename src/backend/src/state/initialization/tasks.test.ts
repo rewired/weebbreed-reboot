@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 import { RngService } from '../../lib/rng.js';
+import { ROOM_PURPOSE_IDS } from '../../engine/roomPurposeIds.js';
 import type {
   StructureState,
   ZoneHealthState,
@@ -112,7 +113,7 @@ describe('state/initialization/tasks', () => {
       id: 'room-1',
       structureId: 'structure-1',
       name: 'Room Test',
-      purposeId: 'growroom',
+      purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
       area: 60,
       height: 4,
       volume: 240,

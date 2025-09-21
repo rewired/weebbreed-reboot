@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ROOM_PURPOSE_IDS } from '@/engine/roomPurposeIds';
 import type { RoomSnapshot } from '../../types/simulation';
 import styles from './HierarchyGrid.module.css';
 
@@ -21,8 +22,8 @@ interface RoomGridProps {
 }
 
 const PURPOSE_LABELS: Record<string, string> = {
-  lab: 'labels.roomPurposeLab',
-  growroom: 'labels.roomPurposeGrow',
+  [ROOM_PURPOSE_IDS.LABORATORY]: 'labels.roomPurposeLab',
+  [ROOM_PURPOSE_IDS.GROW_ROOM]: 'labels.roomPurposeGrow',
 };
 
 export const RoomGrid = ({
@@ -87,7 +88,10 @@ export const RoomGrid = ({
             const isEditing = editingId === room.id;
             const isActive = selectedRoomId === room.id;
             return (
-              <article key={room.id} className={`${styles.card} ${isActive ? styles.cardActive : ''}`.trim()}>
+              <article
+                key={room.id}
+                className={`${styles.card} ${isActive ? styles.cardActive : ''}`.trim()}
+              >
                 <header className={styles.cardHeader}>
                   <div className={styles.cardTitleGroup}>
                     {isEditing ? (
@@ -123,7 +127,9 @@ export const RoomGrid = ({
                       <span>
                         {t('labels.roomArea', {
                           defaultValue: '{{value}} m²',
-                          value: room.area?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ?? '—',
+                          value:
+                            room.area?.toLocaleString(undefined, { maximumFractionDigits: 1 }) ??
+                            '—',
                         })}
                       </span>
                     </span>
@@ -154,7 +160,11 @@ export const RoomGrid = ({
                       type="button"
                       className={`${styles.iconButton} ${styles.iconButtonDanger}`}
                       onClick={() => {
-                        if (window.confirm(t('labels.confirmDeleteRoom', { defaultValue: 'Delete this room?' }))) {
+                        if (
+                          window.confirm(
+                            t('labels.confirmDeleteRoom', { defaultValue: 'Delete this room?' }),
+                          )
+                        ) {
                           onDelete(room.id);
                         }
                       }}

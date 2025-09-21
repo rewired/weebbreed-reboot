@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ROOM_PURPOSE_IDS } from '@/engine/roomPurposeIds';
 import { useAppStore } from '../store';
 import type { DeviceSnapshot, PlantSnapshot, ZoneSnapshot } from '../types/simulation';
 import { BreedingStationPlaceholder } from './world-explorer/BreedingStationPlaceholder';
@@ -111,7 +112,10 @@ export const WorldExplorer = () => {
           .map((zoneId) => zones[zoneId])
           .filter((zone): zone is NonNullable<typeof zone> => Boolean(zone));
         const resolvedPlants = roomZones.flatMap((zone) => groupPlantsByZone(zone, plants));
-        const totalYield = resolvedPlants.reduce((sum, plant) => sum + (plant.yieldDryGrams ?? 0), 0);
+        const totalYield = resolvedPlants.reduce(
+          (sum, plant) => sum + (plant.yieldDryGrams ?? 0),
+          0,
+        );
         return {
           room,
           zoneCount: roomZones.length,
@@ -122,7 +126,7 @@ export const WorldExplorer = () => {
   }, [activeStructure, rooms, zones, plants]);
 
   const activeRoom = selectedRoomId ? rooms[selectedRoomId] : undefined;
-  const isLabRoom = activeRoom?.purposeId === 'lab';
+  const isLabRoom = activeRoom?.purposeId === ROOM_PURPOSE_IDS.LABORATORY;
 
   const zoneSummaries: ZoneSummary[] = useMemo(() => {
     if (!activeRoom || isLabRoom) {
@@ -132,10 +136,13 @@ export const WorldExplorer = () => {
       .map((zoneId) => zones[zoneId])
       .filter((zone): zone is NonNullable<typeof zone> => Boolean(zone))
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map((zone) => ({
-        zone,
-        plants: groupPlantsByZone(zone, plants),
-      } satisfies ZoneSummary));
+      .map(
+        (zone) =>
+          ({
+            zone,
+            plants: groupPlantsByZone(zone, plants),
+          }) satisfies ZoneSummary,
+      );
   }, [activeRoom, zones, plants, isLabRoom]);
 
   const activeZone = selectedZoneId ? zones[selectedZoneId] : undefined;
@@ -291,7 +298,9 @@ export const WorldExplorer = () => {
             disabled={isLabRoom}
             emptyState={
               isLabRoom
-                ? t('labels.labNoZones', { defaultValue: 'Laboratories use breeding stations instead of zones.' })
+                ? t('labels.labNoZones', {
+                    defaultValue: 'Laboratories use breeding stations instead of zones.',
+                  })
                 : undefined
             }
           />
@@ -342,7 +351,9 @@ export const WorldExplorer = () => {
               }
               onHarvestPlant={(plantId) => harvestPlanting(plantId)}
               onHarvestAll={(plantIds) => harvestPlantings(plantIds)}
-              onToggleDeviceGroup={(kind, enabled) => toggleDeviceGroup(resolvedZone.zone.id, kind, enabled)}
+              onToggleDeviceGroup={(kind, enabled) =>
+                toggleDeviceGroup(resolvedZone.zone.id, kind, enabled)
+              }
               onTogglePlan={(enabled) => togglePlantingPlan(resolvedZone.zone.id, enabled)}
             />
           ) : (

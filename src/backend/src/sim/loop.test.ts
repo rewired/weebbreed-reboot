@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EventBus } from '../lib/eventBus.js';
+import { ROOM_PURPOSE_IDS } from '../engine/roomPurposeIds.js';
 import type {
   DeviceInstanceState,
   GameState,
@@ -185,7 +186,7 @@ const createGameStateWithZone = (): GameState => {
     id: 'room-1',
     structureId: 'structure-1',
     name: 'Grow Room',
-    purposeId: 'growroom',
+    purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
     area: 40,
     height: 3,
     volume: 120,

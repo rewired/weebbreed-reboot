@@ -38,6 +38,7 @@ import {
 import { createFinanceState } from './state/initialization/finance.js';
 import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
+import { ROOM_PURPOSE_IDS } from './engine/roomPurposeIds.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';
@@ -262,7 +263,7 @@ const buildStructureState = (
     id: growRoomId,
     structureId,
     name: 'Grow Room Alpha',
-    purposeId: 'growroom',
+    purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
     area: growRoomArea,
     height: footprint.height,
     volume: growRoomArea * footprint.height,
@@ -275,7 +276,7 @@ const buildStructureState = (
     id: generateId(idStream, 'room'),
     structureId,
     name: 'Support Room',
-    purposeId: 'breakroom',
+    purposeId: ROOM_PURPOSE_IDS.BREAK_ROOM,
     area: supportRoomArea,
     height: footprint.height,
     volume: supportRoomArea * footprint.height,
