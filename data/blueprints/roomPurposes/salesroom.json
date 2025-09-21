@@ -1,5 +1,6 @@
 {
   "id": "salesroom",
+  "kind": "RoomPurpose",
   "name": "Sales Room",
   "description": "A commercial space for selling harvested products."
 }

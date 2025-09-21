@@ -1,5 +1,6 @@
 {
   "id": "growroom",
+  "kind": "RoomPurpose",
   "name": "Grow Room",
   "description": "A room designed for cultivating plants under controlled conditions."
 }

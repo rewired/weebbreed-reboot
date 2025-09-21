@@ -1,5 +1,6 @@
 {
   "id": "breakroom",
+  "kind": "RoomPurpose",
   "name": "Break Room",
   "description": "A space for employees to rest and recover energy."
 }
