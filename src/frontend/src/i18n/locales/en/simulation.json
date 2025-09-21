@@ -73,8 +73,6 @@
     "duplicateRoom": "Duplicate room",
     "confirmDeleteRoom": "Delete this room?",
     "deleteRoom": "Delete room",
-    "roomPurposeLab": "Laboratory",
-    "roomPurposeGrow": "Grow room",
     "roomPurposeGeneric": "General",
     "roomArea": "{{value}} m²",
     "renameZone": "Rename zone",

@@ -104,7 +104,9 @@ interface RoomSnapshot {
   structureId: string;
   structureName: string;
   purposeId: string;
+  purposeKind: string;
   purposeName: string;
+  purposeFlags?: Record<string, boolean>;
   area: number;
   height: number;
   volume: number;
@@ -402,13 +404,17 @@ const buildSnapshot = (
         });
       }
 
+      const purpose = requireRoomPurpose(roomPurposeSource, room.purposeId, { by: 'id' });
+
       rooms.push({
         id: room.id,
         name: room.name,
         structureId: structure.id,
         structureName: structure.name,
         purposeId: room.purposeId,
-        purposeName: requireRoomPurpose(roomPurposeSource, room.purposeId, { by: 'id' }).name,
+        purposeKind: purpose.kind,
+        purposeName: purpose.name,
+        purposeFlags: purpose.flags ? { ...purpose.flags } : undefined,
         area: room.area,
         height: room.height,
         volume: room.volume,

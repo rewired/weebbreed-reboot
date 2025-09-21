@@ -36,6 +36,12 @@ describe('roomPurposes module', () => {
     expect(growRoom.name).toBe('Grow Room');
   });
 
+  it('exposes laboratory metadata by slug', () => {
+    const laboratory = requireRoomPurpose(repository, 'lab', { by: 'kind' });
+    expect(laboratory.kind).toBe('lab');
+    expect(laboratory.name).toBe('Laboratory');
+  });
+
   it('throws when requiring an unknown purpose', () => {
     expect(() => requireRoomPurpose(repository, 'Unknown Purpose', { by: 'name' })).toThrow(
       /Unknown room purpose name/i,
