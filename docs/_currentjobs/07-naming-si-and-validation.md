@@ -1,8 +1,8 @@
-# Prompt: Naming-/SI-Konformität + AJV-Validation
+# Naming-/SI-Konformität + Validation
 
 ## Aufgabe (Frage an Codex)
 
-Setze Benennungs- & SI-Konventionen durch und validiere alle Blueprints mit AJV 2020.
+Setze Benennungs- & SI-Konventionen durch und validiere alle Blueprints mit der bisherigen Methode.
 
 ## Ziele
 
