@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import type { DeviceBlueprint } from '../../../data/schemas/index.js';
+import type { RoomPurposeSlug } from '../../../../engine/roomPurposes/index.js';
 import type { StructureBlueprint } from '../models.js';
 import type { RngStream } from '../../lib/rng.js';
 import { readJsonFile } from './common.js';
@@ -91,12 +92,31 @@ export const selectBlueprint = <T extends { id: string; name?: string }>(
   return sorted[index];
 };
 
+const normalizeSlug = (value: string): string => value.trim().toLowerCase();
+
+export const isDeviceCompatibleWithRoomPurpose = (
+  device: DeviceBlueprint,
+  roomPurpose: RoomPurposeSlug,
+): boolean => {
+  const compatibility = device.roomPurposes;
+  if (!compatibility || compatibility === '*') {
+    return true;
+  }
+  const normalizedRoomPurpose = normalizeSlug(roomPurpose);
+  return compatibility.some((slug) => normalizeSlug(slug) === normalizedRoomPurpose);
+};
+
 export const chooseDeviceBlueprints = (
   devices: DeviceBlueprint[],
   stream: RngStream,
+  roomPurpose: RoomPurposeSlug,
 ): DeviceBlueprint[] => {
+  const compatibleDevices = devices.filter((device) =>
+    isDeviceCompatibleWithRoomPurpose(device, roomPurpose),
+  );
+
   const byKind = new Map<string, DeviceBlueprint[]>();
-  for (const device of devices) {
+  for (const device of compatibleDevices) {
     const kindEntries = byKind.get(device.kind) ?? [];
     kindEntries.push(device);
     byKind.set(device.kind, kindEntries);
@@ -111,8 +131,8 @@ export const chooseDeviceBlueprints = (
     }
   }
 
-  if (selected.length === 0 && devices.length > 0) {
-    selected.push(selectBlueprint(devices, stream));
+  if (selected.length === 0 && compatibleDevices.length > 0) {
+    selected.push(selectBlueprint(compatibleDevices, stream));
   }
 
   return selected;

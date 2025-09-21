@@ -32,13 +32,15 @@ import { RngService, RngStream } from './lib/rng.js';
 import { generateId } from './state/initialization/common.js';
 import {
   chooseDeviceBlueprints,
+  isDeviceCompatibleWithRoomPurpose,
   loadStructureBlueprints,
   selectBlueprint,
 } from './state/initialization/blueprints.js';
 import { createFinanceState } from './state/initialization/finance.js';
 import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
-import { resolveRoomPurposeId } from '../../engine/roomPurposes/index.js';
+import { resolveRoomPurposeId, requireRoomPurposeByName } from '../../engine/roomPurposes/index.js';
+import type { RoomPurpose, RoomPurposeSlug } from '../../engine/roomPurposes/index.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';
@@ -129,25 +131,34 @@ const createDeviceInstances = (
   blueprints: DeviceBlueprint[],
   zoneId: string,
   idStream: RngStream,
+  roomPurpose: RoomPurposeSlug,
 ): DeviceInstanceState[] => {
-  return blueprints.map((device) => ({
-    id: generateId(idStream, 'device'),
-    blueprintId: device.id,
-    kind: device.kind,
-    name: device.name,
-    zoneId,
-    status: 'operational',
-    efficiency: device.quality ?? 1,
-    runtimeHours: 0,
-    maintenance: {
-      lastServiceTick: 0,
-      nextDueTick: 24 * 30,
-      condition: Math.min(1, Math.max(0, device.quality ?? 1)),
-      runtimeHoursAtLastService: 0,
-      degradation: 0,
-    },
-    settings: cloneSettings(device.settings),
-  }));
+  return blueprints.map((device) => {
+    if (!isDeviceCompatibleWithRoomPurpose(device, roomPurpose)) {
+      throw new Error(
+        `Device blueprint ${device.id} (${device.kind}) is not compatible with room purpose "${roomPurpose}".`,
+      );
+    }
+
+    return {
+      id: generateId(idStream, 'device'),
+      blueprintId: device.id,
+      kind: device.kind,
+      name: device.name,
+      zoneId,
+      status: 'operational',
+      efficiency: device.quality ?? 1,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: 24 * 30,
+        condition: Math.min(1, Math.max(0, device.quality ?? 1)),
+        runtimeHoursAtLastService: 0,
+        degradation: 0,
+      },
+      settings: cloneSettings(device.settings),
+    };
+  });
 };
 
 const createZoneEnvironment = (): ZoneEnvironmentState => ({
@@ -229,6 +240,7 @@ const buildStructureState = (
   deviceBlueprints: DeviceBlueprint[],
   idStream: RngStream,
   rng: RngService,
+  growRoomPurpose: RoomPurpose,
   plantCountOverride?: number,
 ): StructureCreationResult => {
   const footprint = computeFootprint(blueprint);
@@ -237,12 +249,17 @@ const buildStructureState = (
   const supportRoomArea = Math.max(0, totalArea - growRoomArea);
   const plantStream = rng.getStream('plants');
   const zoneId = generateId(idStream, 'zone');
-  const deviceInstances = createDeviceInstances(deviceBlueprints, zoneId, idStream);
+  const deviceInstances = createDeviceInstances(
+    deviceBlueprints,
+    zoneId,
+    idStream,
+    growRoomPurpose.kind,
+  );
   const capacity = Math.max(1, Math.floor(growRoomArea / Math.max(0.1, method.areaPerPlant)));
   const plantCount = Math.min(capacity, plantCountOverride ?? Math.min(12, capacity));
   const plants = createPlants(plantCount, zoneId, strain, idStream, plantStream);
   const environment = createZoneEnvironment();
-  const growRoomPurposeId = resolveRoomPurposeId(context.repository, 'Grow Room');
+  const growRoomPurposeId = growRoomPurpose.id;
   const zone: StructureCreationResult['growZone'] = {
     id: zoneId,
     roomId: '',
@@ -389,11 +406,16 @@ export const createInitialState = async (
     options.preferredCultivationMethodId,
   );
 
+  const growRoomPurpose = requireRoomPurposeByName(context.repository, 'Grow Room');
   const devices = context.repository.listDevices();
   if (devices.length === 0) {
     throw new Error('Blueprint repository has no device blueprints.');
   }
-  const deviceBlueprints = chooseDeviceBlueprints(devices, context.rng.getStream('devices'));
+  const deviceBlueprints = chooseDeviceBlueprints(
+    devices,
+    context.rng.getStream('devices'),
+    growRoomPurpose.kind,
+  );
 
   const structureId = generateId(idStream, 'structure');
   const structureResult = buildStructureState(
@@ -405,6 +427,7 @@ export const createInitialState = async (
     deviceBlueprints,
     idStream,
     context.rng,
+    growRoomPurpose,
     options.zonePlantCount,
   );
 

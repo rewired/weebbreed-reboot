@@ -4,7 +4,12 @@ import path from 'path';
 import { describe, expect, it } from 'vitest';
 import { createDeviceBlueprint, createStructureBlueprint } from '../../testing/fixtures.js';
 import { RngService } from '../../lib/rng.js';
-import { chooseDeviceBlueprints, loadStructureBlueprints, selectBlueprint } from './blueprints.js';
+import {
+  chooseDeviceBlueprints,
+  isDeviceCompatibleWithRoomPurpose,
+  loadStructureBlueprints,
+  selectBlueprint,
+} from './blueprints.js';
 
 describe('state/initialization/blueprints', () => {
   it('selects the preferred blueprint when available', () => {
@@ -27,6 +32,7 @@ describe('state/initialization/blueprints', () => {
     const selected = chooseDeviceBlueprints(
       [lamp, climate, dehumidifier, misc],
       rng.getStream('devices'),
+      'growroom',
     );
     const kinds = selected.map((device) => device.kind);
 
@@ -70,5 +76,46 @@ describe('state/initialization/blueprints', () => {
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
+  });
+
+  it('filters devices that do not support the requested room purpose', () => {
+    const rng = new RngService('device-compat');
+    const growLamp = createDeviceBlueprint({ kind: 'Lamp', roomPurposes: ['growroom'] });
+    const breakRoomFan = createDeviceBlueprint({
+      kind: 'Ventilation',
+      roomPurposes: ['breakroom'],
+    });
+
+    const selected = chooseDeviceBlueprints(
+      [growLamp, breakRoomFan],
+      rng.getStream('devices'),
+      'breakroom',
+    );
+
+    expect(selected).not.toContain(growLamp);
+    expect(
+      selected.every((device) => {
+        const { roomPurposes } = device;
+        return (
+          roomPurposes === '*' ||
+          (Array.isArray(roomPurposes) && roomPurposes.includes('breakroom'))
+        );
+      }),
+    ).toBe(true);
+  });
+
+  it('treats wildcard room compatibility as matching any purpose', () => {
+    const rng = new RngService('device-wildcard');
+    const wildcardDevice = createDeviceBlueprint({ kind: 'ClimateUnit', roomPurposes: '*' });
+
+    const selected = chooseDeviceBlueprints(
+      [wildcardDevice],
+      rng.getStream('devices'),
+      'breakroom',
+    );
+
+    expect(selected).toContain(wildcardDevice);
+    expect(isDeviceCompatibleWithRoomPurpose(wildcardDevice, 'growroom')).toBe(true);
+    expect(isDeviceCompatibleWithRoomPurpose(wildcardDevice, 'breakroom')).toBe(true);
   });
 });

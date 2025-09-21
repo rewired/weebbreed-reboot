@@ -1,4 +1,3 @@
-
 {
   "id": "f5d5c5a0-1b2c-4d3e-8f9a-0b1c2d3e4f5a",
   "kind": "Ventilation",
@@ -6,6 +5,7 @@
   "quality": 0.7,
   "complexity": 0.1,
   "lifespanInHours": 17520,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.05,
     "airflow": 170
