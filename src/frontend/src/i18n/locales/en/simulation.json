@@ -129,6 +129,24 @@
     "disconnected": "Disconnected",
     "error": "Error"
   },
+  "dashboard": {
+    "capital": "Capital",
+    "cumulativeYield": "Cumulative yield",
+    "clock": "In-game time",
+    "tickLabel": "Tick {{value}}",
+    "playbackLabel": "Playback controls",
+    "speedLabel": "Simulation speed",
+    "viewsLabel": "Switch view",
+    "notifications": "Notifications",
+    "noNotifications": "No notifications yet.",
+    "menuLabel": "Game menu",
+    "menu": {
+      "save": "Save",
+      "load": "Load",
+      "export": "Export",
+      "reset": "Reset"
+    }
+  },
   "controls": {
     "play": "Play",
     "pause": "Pause",
