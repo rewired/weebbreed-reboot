@@ -11,6 +11,7 @@ import { WorldExplorer } from './components/WorldExplorer';
 import { PersonnelView } from './components/PersonnelView';
 import { FinanceView } from './components/FinanceView';
 import { Dashboard } from './components/Dashboard';
+import { NavigationTabs } from './components/NavigationTabs';
 import { useSimulationBridge } from './hooks/useSimulationBridge';
 import { SOCKET_URL } from './config/socket';
 import { useAppStore } from './store';
@@ -33,6 +34,7 @@ const App = () => {
   return (
     <div className={styles.app}>
       <Dashboard bridge={bridge} />
+      <NavigationTabs />
 
       <main className={styles.main}>
         {currentView === 'overview' ? (
