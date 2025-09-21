@@ -1,13 +1,10 @@
 import type { StateCreator } from 'zustand';
 import type { AppStoreState, NavigationSlice, NavigationView } from '../types';
 
-const HISTORY_LIMIT = 10;
-
 export const createNavigationSlice: StateCreator<AppStoreState, [], [], NavigationSlice> = (
   set,
 ) => ({
   currentView: 'overview',
-  history: [],
   selectedStructureId: undefined,
   selectedRoomId: undefined,
   selectedZoneId: undefined,
@@ -17,37 +14,37 @@ export const createNavigationSlice: StateCreator<AppStoreState, [], [], Navigati
         return {};
       }
 
-      const nextHistory = [...state.history, state.currentView];
-      if (nextHistory.length > HISTORY_LIMIT) {
-        nextHistory.shift();
-      }
-
       return {
         currentView: view,
-        history: nextHistory,
         ...(view !== 'world'
           ? { selectedStructureId: undefined, selectedRoomId: undefined, selectedZoneId: undefined }
           : {}),
       };
     }),
-  goBack: () =>
+  navigateUp: () =>
     set((state) => {
-      if (state.history.length === 0) {
-        return {};
+      if (state.currentView !== 'world') {
+        return { currentView: 'overview' };
       }
 
-      const nextHistory = [...state.history];
-      const previous = nextHistory.pop() ?? 'overview';
+      if (state.selectedZoneId) {
+        return { selectedZoneId: undefined };
+      }
 
-      return {
-        currentView: previous,
-        history: nextHistory,
-        ...(previous !== 'world'
-          ? { selectedStructureId: undefined, selectedRoomId: undefined, selectedZoneId: undefined }
-          : {}),
-      };
+      if (state.selectedRoomId) {
+        return { selectedRoomId: undefined, selectedZoneId: undefined };
+      }
+
+      if (state.selectedStructureId) {
+        return {
+          selectedStructureId: undefined,
+          selectedRoomId: undefined,
+          selectedZoneId: undefined,
+        };
+      }
+
+      return {};
     }),
-  clearHistory: () => set(() => ({ history: [] })),
   selectStructure: (structureId) =>
     set(() => ({
       selectedStructureId: structureId,

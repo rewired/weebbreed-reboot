@@ -103,13 +103,11 @@ export interface SimulationSlice {
 
 export interface NavigationSlice {
   currentView: NavigationView;
-  history: NavigationView[];
   selectedStructureId?: string;
   selectedRoomId?: string;
   selectedZoneId?: string;
   setCurrentView: (view: NavigationView) => void;
-  goBack: () => void;
-  clearHistory: () => void;
+  navigateUp: () => void;
   selectStructure: (structureId?: string) => void;
   selectRoom: (roomId?: string) => void;
   selectZone: (zoneId?: string) => void;

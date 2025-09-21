@@ -67,3 +67,18 @@ export const selectAlertCount = (state: AppStoreState): number => {
     return count + (event.severity === 'warning' || event.severity === 'error' ? 1 : 0);
   }, 0);
 };
+
+export const selectSelectedStructure = (state: AppStoreState) => {
+  const structureId = state.selectedStructureId;
+  return structureId ? state.structures[structureId] : undefined;
+};
+
+export const selectSelectedRoom = (state: AppStoreState) => {
+  const roomId = state.selectedRoomId;
+  return roomId ? state.rooms[roomId] : undefined;
+};
+
+export const selectSelectedZone = (state: AppStoreState) => {
+  const zoneId = state.selectedZoneId;
+  return zoneId ? state.zones[zoneId] : undefined;
+};
