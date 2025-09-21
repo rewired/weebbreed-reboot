@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch server/devServer.ts",
     "build": "tsc --project tsconfig.json",
     "lint": "eslint --ext .ts src data",
     "test": "vitest --run --passWithNoTests",
