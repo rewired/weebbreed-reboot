@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { PlantHealthEngine } from './healthEngine.js';
 import type { DiseaseBalancingConfig, PestBalancingConfig, TreatmentOption } from './models.js';
 import { createEventCollector, type SimulationEvent } from '../../lib/eventBus.js';
+import { ROOM_PURPOSE_IDS } from '../roomPurposeIds.js';
 import type {
   DiseaseState,
   GameState,
@@ -184,7 +185,7 @@ const createGameState = (): GameState => {
     id: 'room-1',
     structureId: 'structure-1',
     name: 'Grow Room',
-    purposeId: 'growroom',
+    purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
     area: 40,
     height: 3,
     volume: 120,
