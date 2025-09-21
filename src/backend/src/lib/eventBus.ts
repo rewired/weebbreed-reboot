@@ -1,4 +1,7 @@
 import { Observable, OperatorFunction, Subject, bufferTime, filter as rxFilter, share } from 'rxjs';
+import type { Level } from 'pino';
+
+import { logger } from '../../../runtime/logger.js';
 
 type MaybeArray<T> = T | T[];
 
@@ -39,6 +42,43 @@ export interface EventCollector {
   queue: EventQueueFunction;
   queueMany(events: Iterable<SimulationEvent>): void;
 }
+
+const eventBusLogger = logger.child({ component: 'eventBus' });
+
+const levelMapping: Record<EventLevel | 'info', Level> = {
+  debug: 'debug',
+  info: 'info',
+  warning: 'warn',
+  error: 'error',
+};
+
+const logSimulationEvent = (event: SimulationEvent): void => {
+  const severity = event.level ?? 'info';
+  const level = levelMapping[severity] ?? 'info';
+
+  if (!eventBusLogger.isLevelEnabled(level)) {
+    return;
+  }
+
+  const payloadShouldBeLogged =
+    event.payload !== undefined && (level === 'debug' || level === 'warn' || level === 'error');
+  const logContext: Record<string, unknown> = {
+    eventType: event.type,
+    tick: event.tick ?? null,
+    severity,
+    ts: event.ts,
+  };
+
+  if (event.tags?.length) {
+    logContext.tags = event.tags;
+  }
+
+  if (payloadShouldBeLogged) {
+    logContext.payload = event.payload;
+  }
+
+  eventBusLogger[level](logContext, 'Telemetry event emitted');
+};
 
 const STAR_PLACEHOLDER = '__WB_STAR__';
 
@@ -129,6 +169,7 @@ export class EventBus {
       ...eventOrType,
       ts: eventOrType.ts ?? Date.now(),
     };
+    logSimulationEvent(enriched);
     this.subject.next(enriched);
   }
 

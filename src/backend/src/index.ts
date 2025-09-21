@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inspect } from 'node:util';
 import { BlueprintRepository } from '../data/index.js';
 import { DataLoaderError, type DataLoadSummary } from '../data/dataLoader.js';
+import { logger } from '../../runtime/logger.js';
 
 export * from './state/models.js';
 export * from './lib/rng.js';
@@ -31,6 +32,10 @@ export * from '../../engine/roomPurposes/index.js';
 const moduleFilePath = fileURLToPath(import.meta.url);
 const moduleHref = pathToFileURL(moduleFilePath).href;
 const defaultModuleDirectory = path.dirname(moduleFilePath);
+
+const startupLogger = logger.child({ component: 'backend.startup' });
+const dataLoaderLogger = startupLogger.child({ scope: 'dataLoader' });
+const hotReloadLogger = startupLogger.child({ scope: 'hotReload' });
 
 const formatError = (error: unknown): string => {
   if (error instanceof Error) {
@@ -141,17 +146,22 @@ export interface BootstrapResult {
 }
 
 const logDataLoaderIssues = (error: DataLoaderError) => {
-  console.error('[startup] Blueprint validation failed.');
+  dataLoaderLogger.error({ issueCount: error.issues.length }, 'Blueprint validation failed.');
 
   if (error.issues.length === 0) {
-    console.error('- No issue details were provided by the data loader.');
+    dataLoaderLogger.error('No issue details were provided by the data loader.');
     return;
   }
 
   for (const issue of error.issues) {
-    const location = issue.file ?? '<unknown file>';
-    const details = issue.details ? ` | details: ${inspect(issue.details, { depth: 3 })}` : '';
-    console.error(`- [${issue.level.toUpperCase()}] ${location}: ${issue.message}${details}`);
+    const context: Record<string, unknown> = {
+      level: issue.level,
+      file: issue.file ?? '<unknown file>',
+    };
+    if (issue.details) {
+      context.details = inspect(issue.details, { depth: 3 });
+    }
+    dataLoaderLogger.error(context, issue.message);
   }
 };
 
@@ -165,13 +175,17 @@ export const bootstrap = async (
   if (process.env.NODE_ENV !== 'production') {
     repository.onHotReload(
       async (result) => {
-        console.info(
-          `[hot-reload] Blueprint data reloaded (${result.summary.loadedFiles} files validated).`,
+        hotReloadLogger.info(
+          { loadedFiles: result.summary.loadedFiles },
+          'Blueprint data reloaded.',
         );
       },
       {
         onHotReloadError: (error) => {
-          console.error('[hot-reload] Blueprint data reload failed:', formatError(error));
+          hotReloadLogger.error(
+            { err: error, details: formatError(error) },
+            'Blueprint data reload failed.',
+          );
         },
       },
     );
@@ -182,20 +196,27 @@ export const bootstrap = async (
 
 const registerFatalProcessHandlers = () => {
   process.on('unhandledRejection', (reason) => {
-    console.error('[startup] Unhandled promise rejection:', formatError(reason));
+    startupLogger.error(
+      { err: reason, details: formatError(reason) },
+      'Unhandled promise rejection.',
+    );
     process.exit(1);
   });
 
   process.on('uncaughtException', (error) => {
-    console.error('[startup] Uncaught exception:', formatError(error));
+    startupLogger.error({ err: error, details: formatError(error) }, 'Uncaught exception.');
     process.exit(1);
   });
 };
 
 const main = async (): Promise<BootstrapResult> => {
   const result = await bootstrap();
-  console.log(
-    `[startup] Backend ready (blueprints: ${result.summary.loadedFiles} files from ${result.dataDirectory})`,
+  startupLogger.info(
+    {
+      loadedFiles: result.summary.loadedFiles,
+      dataDirectory: result.dataDirectory,
+    },
+    'Backend ready.',
   );
   return result;
 };
@@ -210,7 +231,7 @@ if (normalizedEntryPointHref && normalizedEntryPointHref === moduleHref) {
       logDataLoaderIssues(error);
     }
 
-    console.error('[startup] Boot failed:', formatError(error));
+    startupLogger.error({ err: error, details: formatError(error) }, 'Boot failed.');
     process.exit(1);
   });
 }

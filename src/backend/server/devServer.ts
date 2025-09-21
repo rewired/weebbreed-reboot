@@ -13,9 +13,12 @@ import {
   createUiStream,
 } from '../src/index.js';
 import { buildSimulationSnapshot } from '../src/lib/uiSnapshot.js';
+import { logger } from '../../runtime/logger.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';
+
+const devLogger = logger.child({ component: 'backend.devServer' });
 
 const resolvePort = (value: string | undefined): number => {
   if (!value) {
@@ -24,8 +27,9 @@ const resolvePort = (value: string | undefined): number => {
 
   const parsed = Number.parseInt(value, 10);
   if (Number.isNaN(parsed) || parsed <= 0) {
-    console.warn(
-      `Invalid WEEBBREED_BACKEND_PORT value '${value}', falling back to ${DEFAULT_PORT}.`,
+    devLogger.warn(
+      { providedPort: value, defaultPort: DEFAULT_PORT },
+      'Invalid WEEBBREED_BACKEND_PORT value; falling back to default.',
     );
     return DEFAULT_PORT;
   }
@@ -57,8 +61,9 @@ const formatTimeStatus = (status: TimeStatus | undefined): string => {
 
 const main = async (): Promise<void> => {
   const { repository, dataDirectory, summary } = await bootstrap();
-  console.info(
-    `[devServer] Loaded blueprint repository from ${dataDirectory} (${summary.loadedFiles} files).`,
+  devLogger.info(
+    { dataDirectory, loadedFiles: summary.loadedFiles },
+    'Loaded blueprint repository.',
   );
 
   const rngSeed = process.env.WEEBBREED_BACKEND_SEED ?? process.env.WEEBBREED_SEED ?? DEFAULT_SEED;
@@ -70,7 +75,7 @@ const main = async (): Promise<void> => {
   };
 
   const state = await createInitialState(context);
-  console.info('[devServer] Initial game state created.');
+  devLogger.info('Initial game state created.');
 
   const server = createServer();
   const facade = new SimulationFacade({ state });
@@ -93,15 +98,15 @@ const main = async (): Promise<void> => {
 
   const port = resolvePort(process.env.WEEBBREED_BACKEND_PORT);
   await startHttpServer(server, port);
-  console.info(`[devServer] Listening on http://localhost:${port}.`);
+  devLogger.info({ port }, 'Listening for HTTP connections.');
 
   const startResult = await facade.time.start();
   if (!startResult.ok) {
     const details = startResult.errors?.map((error) => error.message).join(', ') ?? 'unknown error';
-    console.error(`[devServer] Failed to start simulation clock: ${details}`);
+    devLogger.error({ details }, 'Failed to start simulation clock.');
   } else {
     const statusDescription = formatTimeStatus(startResult.data);
-    console.info(`[devServer] Simulation clock started (${statusDescription}).`);
+    devLogger.info({ status: startResult.data, statusDescription }, 'Simulation clock started.');
   }
 
   let shuttingDown = false;
@@ -110,37 +115,37 @@ const main = async (): Promise<void> => {
       return;
     }
     shuttingDown = true;
-    console.info(`[devServer] Received ${signal}, shutting down...`);
+    devLogger.info({ signal }, 'Received shutdown signal.');
 
     try {
       gateway.close();
       sseGateway.close();
     } catch (error) {
-      console.error('[devServer] Error while closing gateway:', error);
+      devLogger.error({ err: error }, 'Error while closing gateway.');
     }
 
     try {
       await new Promise<void>((resolve) => {
         server.close((closeError) => {
           if (closeError) {
-            console.error('[devServer] Error while closing HTTP server:', closeError);
+            devLogger.error({ err: closeError }, 'Error while closing HTTP server.');
           }
           resolve();
         });
       });
     } catch (error) {
-      console.error('[devServer] Unexpected error while closing HTTP server:', error);
+      devLogger.error({ err: error }, 'Unexpected error while closing HTTP server.');
     }
 
     if (startResult.ok) {
       try {
         await facade.time.pause();
       } catch (error) {
-        console.error('[devServer] Error while pausing simulation during shutdown:', error);
+        devLogger.error({ err: error }, 'Error while pausing simulation during shutdown.');
       }
     }
 
-    console.info('[devServer] Shutdown complete.');
+    devLogger.info('Shutdown complete.');
   };
 
   const handleSignal = (signal: NodeJS.Signals) => {
@@ -152,6 +157,6 @@ const main = async (): Promise<void> => {
 };
 
 main().catch((error) => {
-  console.error('[devServer] Fatal error during startup:', error);
+  devLogger.error({ err: error }, 'Fatal error during startup.');
   process.exit(1);
 });

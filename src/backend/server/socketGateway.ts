@@ -20,6 +20,7 @@ import {
   type UiStreamPacket,
 } from '../../runtime/eventBus.js';
 import { buildSimulationSnapshot, type SimulationSnapshot } from '../src/lib/uiSnapshot.js';
+import { logger } from '../../runtime/logger.js';
 
 export type { SimulationSnapshot } from '../src/lib/uiSnapshot.js';
 
@@ -80,6 +81,8 @@ interface CommandResponse<T> extends CommandResult<T> {
 export type SimulationUpdateEntry = UiSimulationUpdateEntry<SimulationSnapshot, TimeStatus>;
 
 type SimulationUpdateMessage = UiSimulationUpdateMessage<SimulationSnapshot, TimeStatus>;
+
+const gatewayLogger = logger.child({ component: 'backend.socketGateway' });
 
 const requestMetadataSchema = z.object({
   requestId: z.string().trim().min(1).optional(),
@@ -213,7 +216,7 @@ export class SocketGateway {
       next: (packet) => this.forwardUiPacket(packet),
       error: (error) => {
         if (!this.disposed) {
-          console.error('[SocketGateway] ui stream error:', error);
+          gatewayLogger.error({ err: error }, 'UI stream error.');
         }
       },
     });
