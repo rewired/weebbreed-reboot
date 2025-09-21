@@ -74,14 +74,15 @@ export class BlueprintHotReloadManager {
       if (!result) {
         return;
       }
-      context.events.queue({
-        type: 'sim.hotReloaded',
-        level: 'info',
-        payload: {
+      context.events.queue(
+        'sim.hotReloaded',
+        {
           appliedTick: context.tick,
           summary: normaliseSummary(result),
         },
-      });
+        context.tick,
+        'info',
+      );
     };
   }
 

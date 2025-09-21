@@ -13,7 +13,7 @@ import type {
   SetSpeedIntent,
   Unsubscribe,
 } from '../facade/index.js';
-import type { SimulationEvent } from '../src/lib/eventBus.js';
+import type { SimulationEvent } from '../../runtime/eventBus.js';
 import type { TickCompletedPayload } from '../src/sim/loop.js';
 import type {
   ApplicantState,

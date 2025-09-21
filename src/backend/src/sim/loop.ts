@@ -9,8 +9,13 @@ import {
   type HarvestQualityOptions,
 } from '../engine/harvest/harvestQualityService.js';
 import type { GameState } from '../state/models.js';
-import type { EventCollector, SimulationEvent } from '../lib/eventBus.js';
-import { EventBus, createEventCollector } from '../lib/eventBus.js';
+import { eventBus as telemetryEventBus } from '../../../runtime/eventBus.js';
+import {
+  EventBus,
+  createEventCollector,
+  type EventCollector,
+  type SimulationEvent,
+} from '../lib/eventBus.js';
 
 export const TICK_PHASES = [
   'applyDevices',
@@ -121,7 +126,7 @@ class TickStateMachine {
 
 export interface SimulationLoopOptions {
   state: GameState;
-  eventBus: EventBus;
+  eventBus?: EventBus;
   phases?: SimulationPhaseHandlers;
   environment?: ZoneEnvironmentOptions;
   harvestQuality?: HarvestQualityOptions;
@@ -146,7 +151,7 @@ export class SimulationLoop {
 
   constructor(options: SimulationLoopOptions) {
     this.state = options.state;
-    this.eventBus = options.eventBus;
+    this.eventBus = options.eventBus ?? telemetryEventBus;
     const phases = options.phases ?? {};
     this.degradationService = new DeviceDegradationService();
     this.harvestQualityService = new HarvestQualityService(options.harvestQuality);

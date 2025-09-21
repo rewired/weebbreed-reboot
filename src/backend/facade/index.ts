@@ -6,6 +6,7 @@ import {
   type EventCollector,
   createEventCollector,
 } from '../src/lib/eventBus.js';
+import { eventBus as telemetryEventBus } from '../../runtime/eventBus.js';
 import type { GameState, SimulationClockState } from '../src/state/models.js';
 import { SimulationLoop } from '../src/sim/loop.js';
 import { SimulationScheduler } from '../src/sim/simScheduler.js';
@@ -627,7 +628,7 @@ export class SimulationFacade {
 
   constructor(options: SimulationFacadeOptions) {
     this.state = options.state;
-    this.eventBus = options.eventBus ?? new EventBus();
+    this.eventBus = options.eventBus ?? telemetryEventBus;
     this.loop =
       options.loop ??
       new SimulationLoop({
@@ -833,16 +834,12 @@ export class SimulationFacade {
     }
 
     const status = this.getTimeStatus();
-    this.eventBus.emit({
-      type: 'sim.tickLengthChanged',
-      level: 'info',
-      tick: this.state.clock.tick,
-      payload: {
-        minutes,
-        tickIntervalMs,
-        status,
-      },
-    });
+    this.eventBus.emit(
+      'sim.tickLengthChanged',
+      { minutes, tickIntervalMs, status },
+      this.state.clock.tick,
+      'info',
+    );
 
     return { ok: true, data: status };
   }
@@ -1109,12 +1106,7 @@ export class SimulationFacade {
 
     this.scheduler.start();
     const status = this.getTimeStatus();
-    context.events.queue({
-      type: 'sim.resumed',
-      level: 'info',
-      payload: status,
-      tick: context.tick,
-    });
+    context.events.queue('sim.resumed', status, context.tick, 'info');
     return { ok: true, data: status };
   }
 
@@ -1131,12 +1123,7 @@ export class SimulationFacade {
     }
     this.scheduler.pause();
     const status = this.getTimeStatus();
-    context.events.queue({
-      type: 'sim.paused',
-      level: 'info',
-      payload: status,
-      tick: context.tick,
-    });
+    context.events.queue('sim.paused', status, context.tick, 'info');
     return { ok: true, data: status };
   }
 
@@ -1152,12 +1139,7 @@ export class SimulationFacade {
         warnings: ['Simulation is already running.'],
       };
     }
-    context.events.queue({
-      type: 'sim.resumed',
-      level: 'info',
-      payload: status,
-      tick: context.tick,
-    });
+    context.events.queue('sim.resumed', status, context.tick, 'info');
     return { ok: true, data: status };
   }
 
@@ -1182,12 +1164,7 @@ export class SimulationFacade {
     this.scheduler.setSpeed(intent.multiplier);
     this.schedulerConfig.speed = this.scheduler.getSpeed();
     const status = this.getTimeStatus();
-    context.events.queue({
-      type: 'sim.speedChanged',
-      level: 'info',
-      payload: status,
-      tick: context.tick,
-    });
+    context.events.queue('sim.speedChanged', status, context.tick, 'info');
     return { ok: true, data: status };
   }
 
@@ -1398,12 +1375,7 @@ export class SimulationFacade {
 
   private emitSchedulerError(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
-    this.eventBus.emit({
-      type: 'sim.schedulerError',
-      level: 'error',
-      payload: { message },
-      tick: this.state.clock.tick,
-    });
+    this.eventBus.emit('sim.schedulerError', { message }, this.state.clock.tick, 'error');
     if (this.externalSchedulerErrorHandler) {
       this.externalSchedulerErrorHandler(error);
     }

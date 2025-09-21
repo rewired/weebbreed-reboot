@@ -20,7 +20,7 @@ describe('EventBus', () => {
     const subscriptionA = bus.events().subscribe((event) => receivedA.push(event));
     const subscriptionB = bus.events().subscribe((event) => receivedB.push(event));
 
-    bus.emit({ type: 'sim.tickCompleted', tick: 1 });
+    bus.emit('sim.tickCompleted', undefined, 1);
 
     expect(receivedA).toHaveLength(1);
     expect(receivedB).toHaveLength(1);
@@ -35,8 +35,8 @@ describe('EventBus', () => {
     const received: SimulationEvent[] = [];
     const subscription = bus.events({ type: 'plant.*' }).subscribe((event) => received.push(event));
 
-    bus.emit({ type: 'plant.stageChanged', tick: 2 });
-    bus.emit({ type: 'sim.tickCompleted', tick: 2 });
+    bus.emit('plant.stageChanged', undefined, 2);
+    bus.emit('sim.tickCompleted', undefined, 2);
 
     expect(received).toHaveLength(1);
     expect(received[0].type).toBe('plant.stageChanged');
@@ -49,8 +49,8 @@ describe('EventBus', () => {
     const batches: SimulationEvent[][] = [];
     const subscription = bus.buffered({ timeMs: 100 }).subscribe((batch) => batches.push(batch));
 
-    bus.emit({ type: 'plant.stageChanged', tick: 3 });
-    bus.emit({ type: 'plant.harvested', tick: 3 });
+    bus.emit('plant.stageChanged', undefined, 3);
+    bus.emit('plant.harvested', undefined, 3);
 
     await vi.advanceTimersByTimeAsync(100);
 

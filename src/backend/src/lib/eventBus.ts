@@ -29,9 +29,14 @@ export interface EventBufferOptions {
   filter?: EventFilter;
 }
 
+export type EventQueueFunction = {
+  <T>(event: SimulationEvent<T>): void;
+  <T>(type: SimulationEvent<T>['type'], payload?: T, tick?: number, level?: EventLevel): void;
+};
+
 export interface EventCollector {
   readonly size: number;
-  queue(event: SimulationEvent): void;
+  queue: EventQueueFunction;
   queueMany(events: Iterable<SimulationEvent>): void;
 }
 
@@ -100,10 +105,29 @@ export class EventBus {
     .asObservable()
     .pipe(share({ resetOnError: false, resetOnComplete: false, resetOnRefCountZero: false }));
 
-  emit(event: SimulationEvent): void {
+  emit<T>(event: SimulationEvent<T>): void;
+  emit<T>(type: SimulationEvent<T>['type'], payload?: T, tick?: number, level?: EventLevel): void;
+  emit<T>(
+    eventOrType: SimulationEvent<T> | SimulationEvent<T>['type'],
+    payload?: T,
+    tick?: number,
+    level?: EventLevel,
+  ): void {
+    if (typeof eventOrType === 'string') {
+      const event: SimulationEvent<T> = { type: eventOrType, payload };
+      if (tick !== undefined) {
+        event.tick = tick;
+      }
+      if (level !== undefined) {
+        event.level = level;
+      }
+      this.emit(event);
+      return;
+    }
+
     const enriched: SimulationEvent = {
-      ...event,
-      ts: event.ts ?? Date.now(),
+      ...eventOrType,
+      ts: eventOrType.ts ?? Date.now(),
     };
     this.subject.next(enriched);
   }
@@ -143,22 +167,39 @@ export class EventBus {
 }
 
 export const createEventCollector = (buffer: SimulationEvent[], tick: number): EventCollector => {
+  const queue: EventQueueFunction = ((
+    eventOrType: SimulationEvent | SimulationEvent['type'],
+    payload?: unknown,
+    overrideTick?: number,
+    level?: EventLevel,
+  ) => {
+    if (typeof eventOrType === 'string') {
+      const event: SimulationEvent = { type: eventOrType, payload };
+      const resolvedTick = overrideTick ?? tick;
+      if (resolvedTick !== undefined) {
+        event.tick = resolvedTick;
+      }
+      if (level !== undefined) {
+        event.level = level;
+      }
+      buffer.push(event);
+      return;
+    }
+
+    buffer.push({
+      ...eventOrType,
+      tick: eventOrType.tick ?? tick,
+    });
+  }) as EventQueueFunction;
+
   return {
     get size() {
       return buffer.length;
     },
-    queue: (event: SimulationEvent) => {
-      buffer.push({
-        ...event,
-        tick: event.tick ?? tick,
-      });
-    },
+    queue,
     queueMany: (events: Iterable<SimulationEvent>) => {
       for (const event of events) {
-        buffer.push({
-          ...event,
-          tick: event.tick ?? tick,
-        });
+        queue(event);
       }
     },
   };

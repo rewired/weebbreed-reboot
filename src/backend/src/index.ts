@@ -8,6 +8,15 @@ import { DataLoaderError, type DataLoadSummary } from '../data/dataLoader.js';
 export * from './state/models.js';
 export * from './lib/rng.js';
 export * from './lib/eventBus.js';
+export {
+  eventBus as telemetryEventBus,
+  emit,
+  emitEvent,
+  emitMany,
+  events as runtimeEvents,
+  bufferedEvents,
+  events$ as runtimeEvents$,
+} from '../../runtime/eventBus.js';
 export * from './persistence/saveGame.js';
 export * from './persistence/hotReload.js';
 export * from './stateFactory.js';
