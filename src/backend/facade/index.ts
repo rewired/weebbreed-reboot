@@ -74,7 +74,7 @@ const uuid = z.string().uuid();
 const nonEmptyString = z.string().trim().min(1, { message: 'Value must not be empty.' });
 const finiteNumber = z
   .number({ invalid_type_error: 'Value must be a number.' })
-  .refine((value) => Number.isFinite(value), { message: 'Value must be finite.' });
+  .finite({ message: 'Value must be finite.' });
 const positiveNumber = finiteNumber.gt(0, { message: 'Value must be greater than zero.' });
 const nonNegativeNumber = finiteNumber.min(0, {
   message: 'Value must be greater than or equal to zero.',
