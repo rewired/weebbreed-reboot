@@ -5,7 +5,23 @@
   max-width: var(--layout-max-width);
   display: flex;
   flex-direction: column;
+}
+
+.contentArea {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-6);
+  transition: filter 180ms ease;
+}
+
+.blurred {
+  filter: blur(3px);
+  pointer-events: none;
+}
+
+:global(.content-area.blurred) {
+  filter: blur(3px);
+  pointer-events: none;
 }
 
 .main {

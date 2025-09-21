@@ -29,34 +29,42 @@ const PlaceholderView = ({ translationKey }: { translationKey: string }) => {
 
 const App = () => {
   const currentView = useAppStore((state) => state.currentView);
+  const activeModal = useAppStore((state) => state.activeModal);
   const bridge = useSimulationBridge({ autoConnect: true, url: SOCKET_URL });
+
+  const contentAreaClasses = [styles.contentArea, 'content-area'];
+  if (activeModal) {
+    contentAreaClasses.push(styles.blurred, 'blurred');
+  }
 
   return (
     <div className={styles.app}>
-      <Dashboard bridge={bridge} />
-      <NavigationTabs />
+      <div className={contentAreaClasses.join(' ')}>
+        <Dashboard bridge={bridge} />
+        <NavigationTabs />
 
-      <main className={styles.main}>
-        {currentView === 'overview' ? (
-          <Fragment>
-            <SimulationControls bridge={bridge} />
-            <SimulationOverview />
-            <TelemetryCharts />
-            <TelemetryTable />
-            <EventLog />
-          </Fragment>
-        ) : null}
+        <main className={styles.main}>
+          {currentView === 'overview' ? (
+            <Fragment>
+              <SimulationControls bridge={bridge} />
+              <SimulationOverview />
+              <TelemetryCharts />
+              <TelemetryTable />
+              <EventLog />
+            </Fragment>
+          ) : null}
 
-        {currentView === 'world' ? <WorldExplorer /> : null}
+          {currentView === 'world' ? <WorldExplorer /> : null}
 
-        {currentView === 'personnel' ? <PersonnelView /> : null}
+          {currentView === 'personnel' ? <PersonnelView /> : null}
 
-        {currentView === 'finance' ? <FinanceView /> : null}
+          {currentView === 'finance' ? <FinanceView /> : null}
 
-        {currentView === 'settings' ? (
-          <PlaceholderView translationKey="views.settingsDescription" />
-        ) : null}
-      </main>
+          {currentView === 'settings' ? (
+            <PlaceholderView translationKey="views.settingsDescription" />
+          ) : null}
+        </main>
+      </div>
 
       <ModalRoot />
     </div>
