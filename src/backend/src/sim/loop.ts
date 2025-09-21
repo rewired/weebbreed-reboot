@@ -150,7 +150,7 @@ export class SimulationLoop {
     const phases = options.phases ?? {};
     this.degradationService = new DeviceDegradationService();
     this.harvestQualityService = new HarvestQualityService(options.harvestQuality);
-    if (!phases.applyDevices && !phases.deriveEnvironment) {
+    if (!phases.applyDevices || !phases.deriveEnvironment) {
       this.environmentService = new ZoneEnvironmentService(options.environment);
     }
     const accountingHandler = phases.accounting ?? NOOP_PHASE;
