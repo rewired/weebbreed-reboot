@@ -1,7 +1,7 @@
 .worldExplorer {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.75rem;
 }
 
 .header {
@@ -25,13 +25,13 @@
 .breadcrumbButton {
   background: transparent;
   border: none;
-  color: var(--wb-primary, #2563eb);
+  color: var(--wb-primary, #60a5fa);
   cursor: pointer;
   font-weight: 600;
 }
 
 .breadcrumbButton:hover,
-.breadcrumbButton:focus {
+.breadcrumbButton:focus-visible {
   text-decoration: underline;
 }
 
@@ -39,200 +39,40 @@
   font-weight: 600;
 }
 
-.columns {
+.layout {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) minmax(200px, 240px) minmax(200px, 240px) 1fr;
-  gap: 1rem;
+  grid-template-columns: minmax(300px, 360px) minmax(520px, 1fr);
+  gap: 1.5rem;
   align-items: start;
 }
 
-.column,
-.detailColumn {
-  background: var(--wb-surface, #111827);
-  border-radius: 0.75rem;
-  padding: 1rem;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+@media (max-width: 1280px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
 }
 
-.columnHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.count {
-  font-size: 0.85rem;
-  color: var(--wb-text-muted, #9ca3af);
-}
-
-.virtualContainer {
-  position: relative;
-  overflow: auto;
-  max-height: 320px;
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 0.5rem;
-  background: rgba(15, 23, 42, 0.35);
-}
-
-.listItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: transparent;
-  border: none;
-  color: inherit;
-  padding: 0.75rem 1rem;
-  text-align: left;
-  cursor: pointer;
-}
-
-.listItem:hover,
-.listItem:focus {
-  background: rgba(37, 99, 235, 0.1);
-}
-
-.active {
-  background: rgba(37, 99, 235, 0.2);
-  border-left: 3px solid var(--wb-primary, #2563eb);
-}
-
-.meta {
-  font-size: 0.8rem;
-  color: var(--wb-text-muted, #9ca3af);
-}
-
-.emptyState,
-.placeholder {
-  font-size: 0.9rem;
-  color: var(--wb-text-muted, #9ca3af);
-  margin: 0;
-}
-
-.buttonRow {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.actionButton {
-  background: rgba(37, 99, 235, 0.12);
-  border: 1px solid rgba(37, 99, 235, 0.4);
-  color: var(--wb-primary, #60a5fa);
-  font-weight: 600;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-}
-
-.actionButton:hover,
-.actionButton:focus {
-  background: rgba(37, 99, 235, 0.22);
-}
-
-.zoneDetail {
-  display: flex;
-  flex-direction: column;
+.hierarchyPanel {
+  display: grid;
   gap: 1.25rem;
 }
 
-.zoneDetailHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 1rem;
+.detailPanel {
+  background: var(--wb-surface, #0f172a);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.28);
+  min-height: 420px;
 }
 
-.zoneMeta {
+.detailPanelPlaceholder {
   margin: 0;
-  font-size: 0.85rem;
-  color: var(--wb-text-muted, #9ca3af);
+  font-size: 1rem;
+  color: var(--wb-text-muted, #94a3b8);
 }
 
-.zoneDetailGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 1rem;
-}
-
-.zoneDetailGrid dl {
-  margin: 0;
-  display: grid;
-  gap: 0.5rem;
-}
-
-.zoneDetailGrid dt {
-  font-size: 0.85rem;
-  color: var(--wb-text-muted, #9ca3af);
-}
-
-.zoneDetailGrid dd {
-  margin: 0;
-  font-weight: 600;
-}
-
-.deviceSection,
-.plantSection {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.deviceSection header,
-.plantSection header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.deviceCard,
-.plantCard {
-  background: rgba(15, 23, 42, 0.45);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 0.75rem;
-  padding: 0.75rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.deviceCard header,
-.plantCard header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.deviceCard dl,
-.plantCard dl {
-  display: grid;
-  gap: 0.4rem;
-  margin: 0;
-}
-
-.deviceStatus {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  background: rgba(34, 197, 94, 0.15);
-  color: #bbf7d0;
-  text-transform: uppercase;
-}
-
-.plantStage {
-  font-size: 0.75rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 9999px;
-  background: rgba(37, 99, 235, 0.18);
-  color: #bfdbfe;
-  text-transform: uppercase;
-}
-
-@media (max-width: 1200px) {
-  .columns {
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+@media (max-width: 768px) {
+  .detailPanel {
+    padding: 1rem;
   }
 }
