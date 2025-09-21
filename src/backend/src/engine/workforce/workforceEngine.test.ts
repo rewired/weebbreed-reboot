@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { createEventCollector } from '../../lib/eventBus.js';
 import type { SimulationEvent } from '../../lib/eventBus.js';
 import type {
@@ -11,6 +11,15 @@ import type {
   ZoneState,
 } from '../../state/models.js';
 import { WorkforceEngine } from './workforceEngine.js';
+import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+
+let growRoomPurposeId: string;
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+});
 
 const createBaseState = (): GameState => {
   const zone: ZoneState = {
@@ -103,7 +112,7 @@ const createBaseState = (): GameState => {
             id: 'room-1',
             structureId: 'structure-1',
             name: 'Grow Room',
-            purposeId: 'grow',
+            purposeId: growRoomPurposeId,
             area: 100,
             height: 4,
             volume: 400,

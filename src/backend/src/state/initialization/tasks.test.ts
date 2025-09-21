@@ -1,9 +1,10 @@
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { RngService } from '../../lib/rng.js';
-import { ROOM_PURPOSE_IDS } from '../../engine/roomPurposeIds.js';
+import { resolvePurposeIdByName } from '../../engine/roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
 import type {
   StructureState,
   ZoneHealthState,
@@ -15,6 +16,13 @@ import type {
 import { createTasks, loadTaskDefinitions } from './tasks.js';
 
 describe('state/initialization/tasks', () => {
+  let growRoomPurposeId: string;
+
+  beforeAll(async () => {
+    await loadTestRoomPurposes();
+    growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  });
+
   it('loads task definitions from configuration files', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-tasks-'));
     try {
@@ -113,7 +121,7 @@ describe('state/initialization/tasks', () => {
       id: 'room-1',
       structureId: 'structure-1',
       name: 'Room Test',
-      purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
+      purposeId: growRoomPurposeId,
       area: 60,
       height: 4,
       volume: 240,

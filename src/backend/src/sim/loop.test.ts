@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { EventBus } from '../lib/eventBus.js';
-import { ROOM_PURPOSE_IDS } from '../engine/roomPurposeIds.js';
+import { resolvePurposeIdByName } from '../engine/roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
 import type {
   DeviceInstanceState,
   GameState,
@@ -186,7 +187,7 @@ const createGameStateWithZone = (): GameState => {
     id: 'room-1',
     structureId: 'structure-1',
     name: 'Grow Room',
-    purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
+    purposeId: growRoomPurposeId,
     area: 40,
     height: 3,
     volume: 120,
@@ -215,6 +216,13 @@ const createGameStateWithZone = (): GameState => {
   state.structures = [structure];
   return state;
 };
+
+let growRoomPurposeId: string;
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+});
 
 describe('SimulationLoop', () => {
   it('executes phases in order and emits events after commit', async () => {

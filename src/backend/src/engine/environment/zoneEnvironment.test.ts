@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { ZoneEnvironmentService } from './zoneEnvironment.js';
-import { ROOM_PURPOSE_IDS } from '../roomPurposeIds.js';
+import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
 import type {
   DeviceInstanceState,
   FootprintDimensions,
@@ -46,6 +47,13 @@ const createHealth = (): ZoneHealthState => ({
   plantHealth: {},
   pendingTreatments: [],
   appliedTreatments: [],
+});
+
+let growRoomPurposeId: string;
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
 });
 
 const createDevice = (
@@ -94,7 +102,7 @@ const createRoom = (zone: ZoneState): RoomState => ({
   id: 'room-1',
   structureId: 'structure-1',
   name: 'Grow Room',
-  purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
+  purposeId: growRoomPurposeId,
   area: 40,
   height: 3,
   volume: 120,
