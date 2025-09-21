@@ -12,6 +12,7 @@ export interface DeviceEffect {
   co2Delta: number;
   ppfdDelta: number;
   airflow: number;
+  energyKwh: number;
 }
 
 export interface DeviceEffectContext {
@@ -25,6 +26,7 @@ const DEFAULT_DEVICE_EFFECT: DeviceEffect = {
   co2Delta: 0,
   ppfdDelta: 0,
   airflow: 0,
+  energyKwh: 0,
 };
 
 const SPECIFIC_HEAT_AIR_KWH_PER_M3K = 0.000336;
@@ -96,6 +98,7 @@ const computeGrowLightEffect = (
     return { ...DEFAULT_DEVICE_EFFECT };
   }
 
+  const totalEnergy = Math.max(powerKw, 0) * Math.max(context.tickHours, 0);
   const energy = powerKw * heatFraction * context.tickHours;
   const baseDelta = energyToTemperatureDelta(energy, geometry.volume);
   const temperatureDelta =
@@ -110,6 +113,7 @@ const computeGrowLightEffect = (
     co2Delta: 0,
     ppfdDelta,
     airflow: 0,
+    energyKwh: totalEnergy,
   };
 };
 
@@ -190,6 +194,7 @@ const computeHvacTemperatureEffect = (
   const appliedDelta = Math.sign(desiredDelta) * Math.min(Math.abs(desiredDelta), potentialDelta);
   const airflowModulation = controlLevel !== undefined ? clamp(controlLevel / 100, 0, 1) : 1;
   const airflow = Math.max(toNumber(settings.airflow, 0), 0) * efficiency * airflowModulation;
+  const totalEnergy = Math.max(capacityKw, 0) * Math.max(context.tickHours, 0) * modulation;
 
   return {
     temperatureDelta: appliedDelta,
@@ -197,6 +202,7 @@ const computeHvacTemperatureEffect = (
     co2Delta: 0,
     ppfdDelta: 0,
     airflow,
+    energyKwh: totalEnergy,
   };
 };
 
@@ -240,6 +246,7 @@ const computeCo2Effect = (
     co2Delta: Math.max(0, safetyLimited),
     ppfdDelta: 0,
     airflow: 0,
+    energyKwh: 0,
   };
 };
 
@@ -282,6 +289,7 @@ export const computeZoneDeviceDeltas = (
         co2Delta: accumulator.co2Delta + effect.co2Delta,
         ppfdDelta: accumulator.ppfdDelta + effect.ppfdDelta,
         airflow: accumulator.airflow + effect.airflow,
+        energyKwh: accumulator.energyKwh + effect.energyKwh,
       };
     },
     { ...DEFAULT_DEVICE_EFFECT },

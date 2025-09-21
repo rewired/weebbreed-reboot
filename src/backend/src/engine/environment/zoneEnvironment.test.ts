@@ -245,7 +245,7 @@ describe('ZoneEnvironmentService', () => {
 
     const service = new ZoneEnvironmentService();
 
-    service.applyDeviceDeltas(state, 15);
+    service.applyDeviceDeltas(state, 15, undefined);
 
     expect(zone.environment.temperature).toBeCloseTo(25.25, 2);
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);

@@ -8,7 +8,7 @@ import {
 } from '../src/lib/eventBus.js';
 import { eventBus as telemetryEventBus } from '../../runtime/eventBus.js';
 import type { GameState, SimulationClockState } from '../src/state/models.js';
-import { SimulationLoop } from '../src/sim/loop.js';
+import { SimulationLoop, type SimulationLoopAccountingOptions } from '../src/sim/loop.js';
 import { SimulationScheduler } from '../src/sim/simScheduler.js';
 import type { SimulationSchedulerOptions } from '../src/sim/simScheduler.js';
 import type { ZoneEnvironmentOptions } from '../src/engine/environment/zoneEnvironment.js';
@@ -455,6 +455,7 @@ export interface SimulationFacadeOptions {
   loop?: SimulationLoop;
   services?: EngineServices;
   scheduler?: SimulationFacadeSchedulerOptions;
+  accounting?: SimulationLoopAccountingOptions;
 }
 
 export interface TimeStatus {
@@ -635,6 +636,7 @@ export class SimulationFacade {
         state: this.state,
         eventBus: this.eventBus,
         environment: options.environment,
+        accounting: options.accounting,
       });
     this.services = {
       world: options.services?.world ? { ...options.services.world } : {},
