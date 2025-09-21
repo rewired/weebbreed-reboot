@@ -5,11 +5,14 @@ import {
   RngService,
   SimulationFacade,
   SocketGateway,
+  SseGateway,
   bootstrap,
   createInitialState,
   type StateFactoryContext,
   type TimeStatus,
+  createUiStream,
 } from '../src/index.js';
+import { buildSimulationSnapshot } from '../src/lib/uiSnapshot.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';
@@ -71,10 +74,21 @@ const main = async (): Promise<void> => {
 
   const server = createServer();
   const facade = new SimulationFacade({ state });
+  const uiStream$ = createUiStream({
+    snapshotProvider: () => facade.select((value) => buildSimulationSnapshot(value, repository)),
+    timeStatusProvider: () => facade.getTimeStatus(),
+  });
   const gateway = new SocketGateway({
     httpServer: server,
     facade,
     roomPurposeSource: repository,
+    uiStream$,
+  });
+  const sseGateway = new SseGateway({
+    httpServer: server,
+    facade,
+    roomPurposeSource: repository,
+    uiStream$,
   });
 
   const port = resolvePort(process.env.WEEBBREED_BACKEND_PORT);
@@ -100,6 +114,7 @@ const main = async (): Promise<void> => {
 
     try {
       gateway.close();
+      sseGateway.close();
     } catch (error) {
       console.error('[devServer] Error while closing gateway:', error);
     }

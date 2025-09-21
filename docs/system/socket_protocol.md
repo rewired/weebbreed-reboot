@@ -1,8 +1,30 @@
 # Socket Protocol — Simulation Gateway
 
-The Socket.IO gateway exposes the simulation façade over a bidirectional socket
-channel. The contract is intentionally small and optimised for realtime UI
-consumers. All payloads are JSON and use SI units unless stated otherwise.
+The backend exposes a shared UI event stream (`uiStream$`) that aggregates
+simulation telemetry and domain events with bounded buffers for downstream UI
+adapters. Both the Socket.IO gateway and the server-sent events (SSE) gateway
+subscribe to the same observable, ensuring identical payloads regardless of
+transport. All payloads are JSON and use SI units unless stated otherwise.
+
+## UI Stream (`uiStream$`)
+
+- `createUiStream` (from `runtime/eventBus.ts`) returns an observable of
+  `UiStreamPacket` objects. Adapter authors supply:
+  - `snapshotProvider`: typically `facade.select((state) =>
+buildSimulationSnapshot(state, repository))`.
+  - `timeStatusProvider`: usually `() => facade.getTimeStatus()`.
+- Default backpressure:
+  - Simulation batches: **120 ms** window, max **5** ticks.
+  - Domain events: **250 ms** window, max **25** events.
+- Events are sanitised to `{ type, payload, tick, ts, level?, tags? }` before
+  leaving the runtime.
+- Subscribers receive four packet kinds:
+  1. `{ channel: 'simulationUpdate', payload: SimulationUpdateMessage }`
+  2. `{ channel: 'sim.tickCompleted', payload: UiSimulationTickEvent }`
+  3. `{ channel: 'domainEvents', payload: UiDomainEventsMessage }`
+  4. `{ channel: <event.type>, payload: event.payload ?? null }`
+- The observable is hot (`share({ resetOnRefCountZero: false, … })`). Provide the
+  **same** instance to every transport adapter to reuse buffers and ordering.
 
 ## Connection & Handshake
 
@@ -155,6 +177,19 @@ including pests/diseases). Payload:
 - Default throttling window: **250 ms** with a maximum batch size of 25 events.
 - Every individual event is also re-emitted using the event’s `type` as the
   Socket.IO channel for legacy listeners (e.g. `plant.stageChanged`).
+
+## Server-Sent Events (`/events`)
+
+- Default endpoint: `/events` (configurable via `SseGatewayOptions.path`).
+- Methods: `GET` for the live stream, `OPTIONS` for CORS preflight. Responses
+  include `Access-Control-Allow-Origin: *` and disable proxy buffering.
+- Handshake events are identical to the socket gateway (`gateway.protocol`,
+  `time.status`, and an initial `simulationUpdate`).
+- Keep-alive comments (`: keep-alive`) are emitted every **15 s** by default.
+- Each packet from `uiStream$` is forwarded as an SSE event (`event: <channel>`
+  - `data: <json>`). Individual domain events keep their original event names.
+- Shut down via `SseGateway.close()` to unsubscribe all clients and stop the
+  keep-alive timer.
 
 ## Incoming Commands
 
