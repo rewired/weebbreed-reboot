@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ROOM_PURPOSE_IDS } from '@/engine/roomPurposeIds';
 import type { RoomSnapshot } from '../../types/simulation';
 import styles from './HierarchyGrid.module.css';
 
@@ -20,11 +19,6 @@ interface RoomGridProps {
   onDelete: (roomId: string) => void;
   onAddZone?: () => void;
 }
-
-const PURPOSE_LABELS: Record<string, string> = {
-  [ROOM_PURPOSE_IDS.LABORATORY]: 'labels.roomPurposeLab',
-  [ROOM_PURPOSE_IDS.GROW_ROOM]: 'labels.roomPurposeGrow',
-};
 
 export const RoomGrid = ({
   rooms,
@@ -48,9 +42,22 @@ export const RoomGrid = ({
     setDraftName(currentName);
   };
 
-  const purposeLabel = (purposeId: string) => {
-    const key = PURPOSE_LABELS[purposeId] ?? 'labels.roomPurposeGeneric';
-    return t(key, { defaultValue: purposeId });
+  const purposeLabel = (room: RoomSnapshot) => {
+    const slug = room.purposeKind?.trim().toLowerCase();
+    if (slug) {
+      const slugKey = `labels.roomPurposes.${slug}`;
+      const translated = t(slugKey, { defaultValue: room.purposeName ?? slug });
+      if (translated !== slugKey) {
+        return translated;
+      }
+    }
+
+    const name = room.purposeName?.trim();
+    if (name && name.length > 0) {
+      return name;
+    }
+
+    return t('labels.roomPurposeGeneric', { defaultValue: 'General' });
   };
 
   const commitRename = () => {
@@ -123,7 +130,7 @@ export const RoomGrid = ({
                       </button>
                     )}
                     <span className={styles.cardSubtitle}>
-                      <span className={styles.purposeBadge}>{purposeLabel(room.purposeId)}</span>
+                      <span className={styles.purposeBadge}>{purposeLabel(room)}</span>
                       <span>
                         {t('labels.roomArea', {
                           defaultValue: '{{value}} m²',
