@@ -165,7 +165,7 @@ export const createStructureBlueprint = (
 
 export const createRoomPurpose = (overrides: Partial<RoomPurpose> = {}): RoomPurpose => ({
   id: overrides.id ?? '2630459c-fc40-4e91-a69f-b47665b5a917',
-  kind: 'RoomPurpose',
+  kind: overrides.kind ?? 'growroom',
   name: overrides.name ?? 'Grow Room',
   description:
     overrides.description ?? 'A room designed for cultivating plants under controlled conditions.',
@@ -203,12 +203,14 @@ export const createBlueprintRepositoryStub = (
   const roomPurposes = options.roomPurposes ?? [
     createRoomPurpose({
       id: '2630459c-fc40-4e91-a69f-b47665b5a917',
+      kind: 'growroom',
       name: 'Grow Room',
       flags: { supportsCultivation: true },
       economy: { areaCost: 900, baseRentPerTick: 4.5 },
     }),
     createRoomPurpose({
       id: '5ab7d9ac-f14a-45d9-b5f9-908182ca4a02',
+      kind: 'breakroom',
       name: 'Break Room',
       flags: { supportsRest: true },
       economy: { areaCost: 250, baseRentPerTick: 1.2 },

@@ -82,6 +82,7 @@ const collectZodIssues = (error: ZodError): string[] =>
 
 const normalizeRoomPurposeId = (value: string): string => value.trim().toLowerCase();
 const normalizeRoomPurposeName = (value: string): string => value.trim().toLowerCase();
+const normalizeRoomPurposeKind = (value: string): string => value.trim().toLowerCase();
 
 const filterDuplicateRoomPurposeIds = (
   entries: CollectionEntry<RoomPurposeBlueprint>[],
@@ -129,6 +130,32 @@ const filterDuplicateRoomPurposeNames = (
       continue;
     }
     seen.set(normalizedName, entry.file);
+    filtered.push(entry);
+  }
+
+  return filtered;
+};
+
+const filterDuplicateRoomPurposeKinds = (
+  entries: CollectionEntry<RoomPurposeBlueprint>[],
+  issues: DataIssue[],
+): CollectionEntry<RoomPurposeBlueprint>[] => {
+  const filtered: CollectionEntry<RoomPurposeBlueprint>[] = [];
+  const seen = new Map<string, string>();
+
+  for (const entry of entries) {
+    const normalizedKind = normalizeRoomPurposeKind(entry.data.kind);
+    const previousFile = seen.get(normalizedKind);
+    if (previousFile) {
+      issues.push({
+        level: 'error',
+        message: `Duplicate room purpose kind '${entry.data.kind}' detected`,
+        file: entry.file,
+        details: { previousFile },
+      });
+      continue;
+    }
+    seen.set(normalizedKind, entry.file);
     filtered.push(entry);
   }
 
@@ -335,8 +362,11 @@ export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoad
   const strains = toMapWithDuplicateCheck(strainEntries, issues);
   const devices = toMapWithDuplicateCheck(deviceEntries, issues);
   const cultivationMethods = toMapWithDuplicateCheck(cultivationEntries, issues);
-  const filteredRoomPurposeEntries = filterDuplicateRoomPurposeNames(
-    filterDuplicateRoomPurposeIds(roomPurposeEntries, issues),
+  const filteredRoomPurposeEntries = filterDuplicateRoomPurposeKinds(
+    filterDuplicateRoomPurposeNames(
+      filterDuplicateRoomPurposeIds(roomPurposeEntries, issues),
+      issues,
+    ),
     issues,
   );
   const roomPurposes = toMapWithDuplicateCheck(filteredRoomPurposeEntries, issues);

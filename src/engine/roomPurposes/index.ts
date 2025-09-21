@@ -1,3 +1,5 @@
+export type RoomPurposeSlug = string;
+
 export interface RoomPurposeEconomy {
   areaCost?: number;
   baseRentPerTick?: number;
@@ -6,7 +8,7 @@ export interface RoomPurposeEconomy {
 
 export interface RoomPurpose {
   id: string;
-  kind: 'RoomPurpose';
+  kind: RoomPurposeSlug;
   name: string;
   description?: string;
   flags?: Record<string, boolean>;
@@ -19,7 +21,7 @@ export interface RoomPurposeSource {
   getRoomPurpose?(id: string): RoomPurpose | undefined;
 }
 
-export type RoomPurposeLookupMode = 'id' | 'name';
+export type RoomPurposeLookupMode = 'id' | 'name' | 'kind';
 
 export interface RoomPurposeLookupOptions {
   by?: RoomPurposeLookupMode;
@@ -27,6 +29,7 @@ export interface RoomPurposeLookupOptions {
 
 const normalizeId = (value: string): string => value.trim().toLowerCase();
 const normalizeName = (value: string): string => value.trim().toLowerCase();
+const normalizeKind = (value: string): string => value.trim().toLowerCase();
 
 const getRoomPurposes = (source: RoomPurposeSource): RoomPurpose[] => {
   const purposes = source.listRoomPurposes();
@@ -63,11 +66,16 @@ export const getRoomPurpose = (
   }
 
   const purposes = getRoomPurposes(source);
-  const matcher = mode === 'id' ? normalizeId : normalizeName;
+  const matcher = mode === 'id' ? normalizeId : mode === 'name' ? normalizeName : normalizeKind;
   const target = matcher(trimmed);
 
   for (const purpose of purposes) {
-    const candidate = mode === 'id' ? matcher(purpose.id) : matcher(purpose.name);
+    const candidate =
+      mode === 'id'
+        ? matcher(purpose.id)
+        : mode === 'name'
+          ? matcher(purpose.name)
+          : matcher(purpose.kind);
     if (candidate === target) {
       return purpose;
     }
@@ -84,7 +92,7 @@ export const requireRoomPurpose = (
   const mode: RoomPurposeLookupMode = options.by ?? 'id';
   const purpose = getRoomPurpose(source, value, options);
   if (!purpose) {
-    const descriptor = mode === 'name' ? 'name' : 'id';
+    const descriptor = mode === 'name' ? 'name' : mode === 'kind' ? 'slug' : 'id';
     throw new Error(`Unknown room purpose ${descriptor} "${value}".`);
   }
   return purpose;
@@ -109,3 +117,13 @@ export const requireRoomPurposeById = (source: RoomPurposeSource, id: string): R
 
 export const requireRoomPurposeByName = (source: RoomPurposeSource, name: string): RoomPurpose =>
   requireRoomPurpose(source, name, { by: 'name' });
+
+export const getRoomPurposeByKind = (
+  source: RoomPurposeSource,
+  kind: RoomPurposeSlug,
+): RoomPurpose | undefined => getRoomPurpose(source, kind, { by: 'kind' });
+
+export const requireRoomPurposeByKind = (
+  source: RoomPurposeSource,
+  kind: RoomPurposeSlug,
+): RoomPurpose => requireRoomPurpose(source, kind, { by: 'kind' });
