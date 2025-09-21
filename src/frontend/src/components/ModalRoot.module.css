@@ -134,6 +134,19 @@
     background 0.18s ease;
 }
 
+.cancel {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: var(--color-text-muted, #cbd5f5);
+}
+
+.cancel:hover,
+.cancel:focus-visible {
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--color-text-secondary, #e2e8f0);
+  outline: none;
+}
+
 .confirm {
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.9), rgba(139, 92, 246, 0.82));
   border: 1px solid rgba(124, 58, 237, 0.45);

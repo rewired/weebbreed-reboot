@@ -108,10 +108,7 @@ export interface SimulationSlice {
   removeRoom: (roomId: string) => void;
   removeZone: (zoneId: string) => void;
   applyWater: (zoneId: string, liters: number) => void;
-  applyNutrients: (
-    zoneId: string,
-    nutrients: { N: number; P: number; K: number },
-  ) => void;
+  applyNutrients: (zoneId: string, nutrients: { N: number; P: number; K: number }) => void;
   toggleDeviceGroup: (zoneId: string, deviceKind: string, enabled: boolean) => void;
   harvestPlanting: (plantingId: string) => void;
   harvestPlantings: (plantingIds: string[]) => void;
@@ -152,8 +149,10 @@ export interface ModalDescriptor {
 
 export interface ModalSlice {
   activeModal: ModalDescriptor | null;
+  wasRunningBeforeModal: boolean;
   openModal: (modal: ModalDescriptor) => void;
   closeModal: () => void;
+  setWasRunningBeforeModal: (wasRunning: boolean) => void;
 }
 
 export type AppStoreState = SimulationSlice & NavigationSlice & ModalSlice;

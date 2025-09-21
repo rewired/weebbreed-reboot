@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
+import type { ModalDescriptor } from '../store';
 import type { FacadeIntentCommand } from '../types/simulation';
 import styles from './ModalRoot.module.css';
 
@@ -11,6 +12,7 @@ type ModalRenderer = (
   payload: Record<string, unknown> | undefined,
   onSubmit: SubmitHandler,
   state: ModalRenderState,
+  onCancel: () => void,
 ) => JSX.Element | null;
 
 interface ModalRenderState {
@@ -29,7 +31,7 @@ const createIntent = (intent: FacadeIntentCommand, send: (intent: FacadeIntentCo
   send(intent);
 };
 
-const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state) => {
+const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
   const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
   return (
     <form className={styles.form} onSubmit={onSubmit}>
@@ -45,6 +47,9 @@ const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state) => {
       <input type="hidden" name="zoneId" value={zoneId ?? ''} />
 
       <footer className={styles.actions}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          {t('modals.cancel')}
+        </button>
         <button type="submit" className={styles.confirm}>
           {t('modals.apply')}
         </button>
@@ -53,7 +58,7 @@ const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state) => {
   );
 };
 
-const plantingModal: ModalRenderer = (t, payload, onSubmit, state) => {
+const plantingModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
   const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
   return (
     <form className={styles.form} onSubmit={onSubmit}>
@@ -66,6 +71,9 @@ const plantingModal: ModalRenderer = (t, payload, onSubmit, state) => {
       <input type="hidden" name="zoneId" value={zoneId ?? ''} />
 
       <footer className={styles.actions}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          {t('modals.cancel')}
+        </button>
         <button type="submit" className={styles.confirm}>
           {t('modals.apply')}
         </button>
@@ -74,7 +82,7 @@ const plantingModal: ModalRenderer = (t, payload, onSubmit, state) => {
   );
 };
 
-const automationPlanModal: ModalRenderer = (t, payload, onSubmit, state) => {
+const automationPlanModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
   const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
   return (
     <form className={styles.form} onSubmit={onSubmit}>
@@ -92,6 +100,9 @@ const automationPlanModal: ModalRenderer = (t, payload, onSubmit, state) => {
       <input type="hidden" name="zoneId" value={zoneId ?? ''} />
 
       <footer className={styles.actions}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          {t('modals.cancel')}
+        </button>
         <button type="submit" className={styles.confirm}>
           {t('modals.apply')}
         </button>
@@ -100,7 +111,7 @@ const automationPlanModal: ModalRenderer = (t, payload, onSubmit, state) => {
   );
 };
 
-const treatmentModal: ModalRenderer = (t, payload, onSubmit, state) => {
+const treatmentModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
   const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
   return (
     <form className={styles.form} onSubmit={onSubmit}>
@@ -116,6 +127,9 @@ const treatmentModal: ModalRenderer = (t, payload, onSubmit, state) => {
       <input type="hidden" name="zoneId" value={zoneId ?? ''} />
 
       <footer className={styles.actions}>
+        <button type="button" className={styles.cancel} onClick={onCancel}>
+          {t('modals.cancel')}
+        </button>
         <button type="submit" className={styles.confirm}>
           {t('modals.apply')}
         </button>
@@ -124,7 +138,7 @@ const treatmentModal: ModalRenderer = (t, payload, onSubmit, state) => {
   );
 };
 
-const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
+const createEntityModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
   const entity = payload?.entity as string | undefined;
   if (entity === 'room') {
     return (
@@ -151,6 +165,9 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
         <input id="room-height" name="height" type="number" min={1} step={0.1} defaultValue={3} />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -188,6 +205,9 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
         <input id="zone-target" name="targetPlantCount" type="number" min={1} defaultValue={8} />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -220,6 +240,9 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
         />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -238,6 +261,9 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
         <input id="training-hours" name="hours" type="number" min={1} defaultValue={4} />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -256,6 +282,9 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
         <input id="inventory-quantity" name="quantity" type="number" min={1} required />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -298,6 +327,9 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
         />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -309,7 +341,7 @@ const createEntityModal: ModalRenderer = (t, payload, onSubmit, state) => {
   return null;
 };
 
-const updateEntityModal: ModalRenderer = (t, payload, onSubmit) => {
+const updateEntityModal: ModalRenderer = (t, payload, onSubmit, _state, onCancel) => {
   const entity = payload?.entity as string | undefined;
   if (entity === 'room') {
     return (
@@ -325,6 +357,9 @@ const updateEntityModal: ModalRenderer = (t, payload, onSubmit) => {
         <input id="update-room-area" name="area" type="number" min={1} step={0.5} />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -344,6 +379,9 @@ const updateEntityModal: ModalRenderer = (t, payload, onSubmit) => {
         <input id="assignment-zone" name="zoneId" />
 
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.confirm}>
             {t('modals.apply')}
           </button>
@@ -355,7 +393,7 @@ const updateEntityModal: ModalRenderer = (t, payload, onSubmit) => {
   return null;
 };
 
-const deleteEntityModal: ModalRenderer = (t, payload, onSubmit) => {
+const deleteEntityModal: ModalRenderer = (t, payload, onSubmit, _state, onCancel) => {
   const entity = payload?.entity as string | undefined;
   if (entity === 'employee') {
     return (
@@ -363,6 +401,9 @@ const deleteEntityModal: ModalRenderer = (t, payload, onSubmit) => {
         <input type="hidden" name="employeeId" value={(payload?.employeeId as string) ?? ''} />
         <p>{t('modals.terminateEmployeeDescription')}</p>
         <footer className={styles.actions}>
+          <button type="button" className={styles.cancel} onClick={onCancel}>
+            {t('modals.cancel')}
+          </button>
           <button type="submit" className={styles.danger}>
             {t('modals.confirmDelete')}
           </button>
@@ -390,22 +431,47 @@ export const ModalRoot = () => {
   const issueFacadeIntent = useAppStore((state) => state.issueFacadeIntent);
   const issueControlCommand = useAppStore((state) => state.issueControlCommand);
   const timeStatus = useAppStore((state) => state.timeStatus);
+  const wasRunningBeforeModal = useAppStore((state) => state.wasRunningBeforeModal);
+  const setWasRunningBeforeModal = useAppStore((state) => state.setWasRunningBeforeModal);
   const stateRef = useRef<ModalRenderState>({});
-  const shouldResumeRef = useRef(false);
+  const previousModalRef = useRef<ModalDescriptor | null>(null);
 
   const renderer = activeModal ? MODAL_RENDERERS[activeModal.kind] : undefined;
 
   useEffect(() => {
-    if (activeModal?.autoPause && timeStatus && !timeStatus.paused) {
-      issueControlCommand({ action: 'pause' });
-      shouldResumeRef.current = true;
+    const previousModal = previousModalRef.current;
+    const hasNewModal = Boolean(activeModal && activeModal !== previousModal);
+    const hasClosedModal = Boolean(!activeModal && previousModal);
+
+    if (hasNewModal) {
+      const hadPreviousModal = Boolean(previousModal);
+      const wasRunning = Boolean(timeStatus?.running && !timeStatus?.paused);
+
+      if (!hadPreviousModal) {
+        setWasRunningBeforeModal(wasRunning);
+      }
+
+      if (activeModal?.autoPause && wasRunning) {
+        issueControlCommand({ action: 'pause' });
+      }
     }
 
-    if (!activeModal && shouldResumeRef.current) {
-      issueControlCommand({ action: 'resume' });
-      shouldResumeRef.current = false;
+    if (hasClosedModal) {
+      if (wasRunningBeforeModal) {
+        issueControlCommand({ action: 'resume' });
+      }
+
+      setWasRunningBeforeModal(false);
     }
-  }, [activeModal, issueControlCommand, timeStatus]);
+
+    previousModalRef.current = activeModal ?? null;
+  }, [
+    activeModal,
+    issueControlCommand,
+    setWasRunningBeforeModal,
+    timeStatus,
+    wasRunningBeforeModal,
+  ]);
 
   useEffect(() => {
     if (activeModal?.payload?.zoneId && typeof activeModal.payload.zoneId === 'string') {
@@ -416,6 +482,10 @@ export const ModalRoot = () => {
   if (!activeModal || !renderer) {
     return null;
   }
+
+  const handleCancel = () => {
+    closeModal();
+  };
 
   const handleSubmit: SubmitHandler = (event) => {
     event.preventDefault();
@@ -658,7 +728,7 @@ export const ModalRoot = () => {
   };
 
   return (
-    <div className={styles.backdrop} role="presentation" onClick={closeModal}>
+    <div className={styles.backdrop} role="presentation">
       <div
         className={styles.modal}
         role="dialog"
@@ -679,7 +749,7 @@ export const ModalRoot = () => {
         {activeModal.description ? (
           <p className={styles.description}>{activeModal.description}</p>
         ) : null}
-        {renderer(t, activeModal.payload, handleSubmit, stateRef.current)}
+        {renderer(t, activeModal.payload, handleSubmit, stateRef.current, handleCancel)}
       </div>
     </div>
   );
