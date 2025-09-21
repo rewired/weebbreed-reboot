@@ -1,7 +1,7 @@
 import { createServer, type Server as HttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { io as createClient, type Socket as ClientSocket } from 'socket.io-client';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type {
   CommandResult,
   EventFilter,
@@ -14,7 +14,9 @@ import type {
 import { EventBus, type SimulationEvent } from '../src/lib/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '../src/sim/loop.js';
 import type { GameState } from '../src/state/models.js';
-import { SocketGateway } from './socketGateway.js';
+import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
+import { resolvePurposeIdByName } from '../src/engine/roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../src/testing/loadTestRoomPurposes.js';
 
 const waitFor = async (predicate: () => boolean, timeoutMs = 1000): Promise<void> => {
   const start = Date.now();
@@ -48,6 +50,13 @@ const createPhaseTimings = (durationMs = 5): Record<(typeof TICK_PHASES)[number]
     {} as Record<(typeof TICK_PHASES)[number], PhaseTiming>,
   );
 };
+
+let growRoomPurposeId: string;
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+});
 
 const createTestState = (): GameState => {
   const timestamp = new Date(0).toISOString();
@@ -86,7 +95,7 @@ const createTestState = (): GameState => {
             id: 'room-1',
             structureId: 'structure-1',
             name: 'Room',
-            purposeId: 'grow',
+            purposeId: growRoomPurposeId,
             area: 100,
             height: 4,
             volume: 400,
@@ -199,7 +208,11 @@ const createTestState = (): GameState => {
   };
 };
 
-const simulationUpdates: Array<{ updates: { tick: number }[] }> = [];
+interface SimulationUpdatePayload {
+  updates: Array<{ tick: number; snapshot: SimulationSnapshot }>;
+}
+
+const simulationUpdates: SimulationUpdatePayload[] = [];
 const domainEvents: SimulationEvent[][] = [];
 
 type IntentResponse = CommandResult<unknown> & { requestId?: string };
@@ -437,6 +450,10 @@ describe('SocketGateway', () => {
     await new Promise<void>((resolve) => client.on('connect', () => resolve()));
     // Drain initial handshake update
     await waitFor(() => simulationUpdates.length > 0, 200).catch(() => undefined);
+    const handshake = simulationUpdates.shift();
+    if (handshake && handshake.updates[0]) {
+      expect(handshake.updates[0].snapshot.rooms[0]?.purposeName).toBe('Grow Room');
+    }
     simulationUpdates.length = 0;
     domainEvents.length = 0;
   });

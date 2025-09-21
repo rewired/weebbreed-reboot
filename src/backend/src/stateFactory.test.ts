@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import type { TaskDefinitionMap } from './state/models.js';
 import { createInitialState } from './stateFactory.js';
 import {
@@ -11,6 +11,11 @@ import {
   createStrainPriceMap,
   createStructureBlueprint,
 } from './testing/fixtures.js';
+import { loadTestRoomPurposes } from './testing/loadTestRoomPurposes.js';
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+});
 
 describe('createInitialState', () => {
   it('initialises backlog tasks using provided definitions', async () => {

@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { SAVEGAME_KIND, saveGameEnvelopeSchema } from './schemas.js';
 import { createInitialState } from '../stateFactory.js';
 import { createStateFactoryContext } from '../testing/fixtures.js';
+import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+});
 
 describe('saveGameEnvelopeSchema', () => {
   it('accepts a well-formed save game envelope', async () => {

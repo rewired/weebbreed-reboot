@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { DeviceDegradationService } from './deviceDegradation.js';
 import type {
   DeviceInstanceState,
@@ -7,6 +7,8 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
 } from '../../state/models.js';
+import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
 
 const LAMBDA = 1e-5;
 const EXPONENT = 0.9;
@@ -151,7 +153,7 @@ const createStateWithDevice = (device: DeviceInstanceState): GameState => {
           id: 'room-1',
           structureId: 'structure-1',
           name: 'Room 1',
-          purposeId: 'grow-room',
+          purposeId: growRoomPurposeId,
           area: 100,
           height: 4,
           volume: 400,
@@ -181,6 +183,13 @@ const createStateWithDevice = (device: DeviceInstanceState): GameState => {
   ];
   return state;
 };
+
+let growRoomPurposeId: string;
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+});
 
 const computeWear = (runtimeHours: number): number => {
   if (runtimeHours <= 0) {

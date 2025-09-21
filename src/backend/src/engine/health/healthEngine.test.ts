@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { PlantHealthEngine } from './healthEngine.js';
 import type { DiseaseBalancingConfig, PestBalancingConfig, TreatmentOption } from './models.js';
 import { createEventCollector, type SimulationEvent } from '../../lib/eventBus.js';
-import { ROOM_PURPOSE_IDS } from '../roomPurposeIds.js';
+import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
 import type {
   DiseaseState,
   GameState,
@@ -161,6 +162,13 @@ const createZoneHealth = (plants: PlantState[]): ZoneHealthState => {
   } satisfies ZoneHealthState;
 };
 
+let growRoomPurposeId: string;
+
+beforeAll(async () => {
+  await loadTestRoomPurposes();
+  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+});
+
 const createGameState = (): GameState => {
   const createdAt = '2024-01-01T00:00:00.000Z';
   const environment = createEnvironment();
@@ -185,7 +193,7 @@ const createGameState = (): GameState => {
     id: 'room-1',
     structureId: 'structure-1',
     name: 'Grow Room',
-    purposeId: ROOM_PURPOSE_IDS.GROW_ROOM,
+    purposeId: growRoomPurposeId,
     area: 40,
     height: 3,
     volume: 120,

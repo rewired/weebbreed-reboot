@@ -1,6 +1,7 @@
 import type { Server as HttpServer } from 'node:http';
 import { Server as IOServer, type ServerOptions as IOServerOptions, type Socket } from 'socket.io';
 import { z, type ZodError } from 'zod';
+import { requirePurposeById } from '../src/engine/roomPurposeRegistry.js';
 import type {
   CommandError,
   CommandResult,
@@ -103,6 +104,7 @@ interface RoomSnapshot {
   structureId: string;
   structureName: string;
   purposeId: string;
+  purposeName: string;
   area: number;
   height: number;
   volume: number;
@@ -192,7 +194,7 @@ interface FinanceSummarySnapshot {
   lastTickExpenses: number;
 }
 
-interface SimulationSnapshot {
+export interface SimulationSnapshot {
   tick: number;
   clock: {
     tick: number;
@@ -402,6 +404,7 @@ const buildSnapshot = (state: GameState): SimulationSnapshot => {
         structureId: structure.id,
         structureName: structure.name,
         purposeId: room.purposeId,
+        purposeName: requirePurposeById(room.purposeId).name,
         area: room.area,
         height: room.height,
         volume: room.volume,

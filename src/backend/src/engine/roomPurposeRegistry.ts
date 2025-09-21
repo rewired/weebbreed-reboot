@@ -54,6 +54,7 @@ const validateRoomPurpose = ajv.compile(roomPurposeSchema);
 
 const roomPurposesById = new Map<string, RoomPurpose>();
 const roomPurposesByName = new Map<string, RoomPurpose>();
+const purposeIdCacheByName = new Map<string, string>();
 
 const normalise = (value: string): string => value.trim().toLowerCase();
 const normaliseId = (value: string): string => value.toLowerCase();
@@ -129,6 +130,7 @@ export const loadRoomPurposes = async (
 
   roomPurposesById.clear();
   roomPurposesByName.clear();
+  purposeIdCacheByName.clear();
   for (const [id, blueprint] of nextById) {
     roomPurposesById.set(id, blueprint);
   }
@@ -145,4 +147,36 @@ export const getPurposeById = (id: string): RoomPurpose | undefined => {
 
 export const getPurposeByName = (name: string): RoomPurpose | undefined => {
   return roomPurposesByName.get(normalise(name));
+};
+
+export const requirePurposeById = (id: string): RoomPurpose => {
+  const purpose = getPurposeById(id);
+  if (!purpose) {
+    throw new Error(
+      `Unknown room purpose id "${id}". Ensure blueprints are loaded via loadRoomPurposes().`,
+    );
+  }
+  return purpose;
+};
+
+export const requirePurposeByName = (name: string): RoomPurpose => {
+  const purpose = getPurposeByName(name);
+  if (!purpose) {
+    throw new Error(
+      `Unknown room purpose "${name}". Ensure blueprints are loaded via loadRoomPurposes().`,
+    );
+  }
+  return purpose;
+};
+
+export const resolvePurposeIdByName = (name: string): string => {
+  const cacheKey = normalise(name);
+  const cached = purposeIdCacheByName.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const purpose = requirePurposeByName(name);
+  purposeIdCacheByName.set(cacheKey, purpose.id);
+  return purpose.id;
 };

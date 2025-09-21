@@ -8,6 +8,7 @@ const isoDateString = z
   });
 
 const nonEmptyString = z.string().min(1);
+const uuidString = z.string().uuid();
 
 const positiveNumber = z.number().positive();
 
@@ -186,7 +187,7 @@ const roomStateSchema = z.object({
   id: nonEmptyString,
   structureId: nonEmptyString,
   name: nonEmptyString,
-  purposeId: nonEmptyString,
+  purposeId: uuidString,
   area: z.number(),
   height: z.number(),
   volume: z.number(),
