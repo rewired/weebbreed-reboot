@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { EventBus } from '../lib/eventBus.js';
 import { resolveRoomPurposeId } from '../../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
@@ -296,6 +296,33 @@ describe('SimulationLoop', () => {
     expect(ticks).toEqual([1, 2]);
 
     subscription.unsubscribe();
+  });
+
+  it('normalizes environment when a custom applyDevices handler is provided', async () => {
+    const state = createGameStateWithZone();
+    const bus = new EventBus();
+    const applyDevices = vi.fn((context: SimulationPhaseContext) => {
+      // Intentionally empty to override only this phase while recording calls.
+      void context;
+    });
+    const loop = new SimulationLoop({
+      state,
+      eventBus: bus,
+      phases: {
+        applyDevices,
+      },
+    });
+
+    const initialTemperature =
+      state.structures[0]?.rooms[0]?.zones[0]?.environment.temperature ?? 0;
+
+    await loop.processTick();
+
+    expect(applyDevices).toHaveBeenCalledTimes(1);
+
+    const zone = state.structures[0]?.rooms[0]?.zones[0];
+    expect(zone?.environment.temperature).toBeLessThan(initialTemperature);
+    expect(zone?.environment.temperature).toBeCloseTo(24.81, 2);
   });
 
   it('applies default environment handling when not overridden', async () => {
