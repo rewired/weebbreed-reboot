@@ -18,6 +18,7 @@ export default defineConfig({
       '@/engine': path.resolve(__dirname, '../engine'),
       '@/ui': path.resolve(__dirname, '../frontend/src/ui'),
       rxjs: path.resolve(__dirname, 'node_modules/rxjs'),
+      pino: path.resolve(__dirname, 'src/testing/pinoStub.ts'),
     },
   },
 });

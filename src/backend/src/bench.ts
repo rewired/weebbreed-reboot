@@ -13,16 +13,20 @@ import { createPhenologyConfig } from './engine/plants/phenology.js';
 import type { PhenologyState } from './engine/plants/phenology.js';
 import { updatePlantGrowth } from './engine/plants/growthModel.js';
 import { createBlueprintRepositoryStub, createStateFactoryContext } from './testing/fixtures.js';
+import { logger } from '../../runtime/logger.js';
+
+const benchLogger = logger.child({ component: 'bench' });
+const dataLogger = benchLogger.child({ scope: 'data' });
 
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 
 process.on('uncaughtException', (error) => {
-  console.error('Benchmark run failed with an uncaught error:', error);
+  benchLogger.error({ err: error }, 'Benchmark run failed with an uncaught error.');
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
-  console.error('Benchmark run failed with an unhandled rejection:', reason);
+  benchLogger.error({ err: reason }, 'Benchmark run failed with an unhandled rejection.');
   process.exit(1);
 });
 
@@ -72,13 +76,23 @@ const reportDataIssues = (heading: string, issues: DataIssue[]): void => {
     return;
   }
 
-  console.warn(heading);
+  dataLogger.warn({ issueCount: issues.length }, heading);
   for (const issue of issues) {
-    const location = issue.file ? ` (${issue.file})` : '';
     const details = safeStringify(issue.details);
-    const suffix = details ? ` details=${details}` : '';
-    const logger = issue.level === 'error' ? console.error : console.warn;
-    logger(`  - [${issue.level.toUpperCase()}] ${issue.message}${location}${suffix}`);
+    const logMethod =
+      issue.level === 'error'
+        ? dataLogger.error.bind(dataLogger)
+        : dataLogger.warn.bind(dataLogger);
+    const context: Record<string, unknown> = {
+      issueLevel: issue.level,
+    };
+    if (issue.file) {
+      context.file = issue.file;
+    }
+    if (details) {
+      context.details = details;
+    }
+    logMethod(context, issue.message);
   }
 };
 
@@ -91,14 +105,18 @@ const loadStructureBlueprintsSafe = async (
   try {
     const blueprints = await loadStructureBlueprints(dataDirectory);
     if (blueprints.length === 0) {
-      console.warn(
-        `No structure blueprints found in ${dataDirectory}; using fixture structure blueprints instead.`,
+      dataLogger.warn(
+        { dataDirectory },
+        'No structure blueprints found; using fixture structure blueprints instead.',
       );
       return undefined;
     }
     return blueprints;
   } catch (error) {
-    console.warn(`Failed to load structure blueprints from ${dataDirectory}:`, error);
+    dataLogger.warn(
+      { dataDirectory, err: error },
+      'Failed to load structure blueprints; fixture data will be used.',
+    );
     return undefined;
   }
 };
@@ -162,7 +180,7 @@ const createPlantPhase = (
 };
 
 export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TICKS ?? '24')) => {
-  console.log('Preparing benchmark run...');
+  benchLogger.info('Preparing benchmark run.');
   const seed = process.env.WEEBBREED_BENCH_SEED ?? 'bench-reference';
 
   let dataDirectory: string | undefined;
@@ -170,7 +188,7 @@ export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TI
     dataDirectory = await resolveDataDirectory();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`Data directory resolution failed: ${message}`);
+    dataLogger.warn({ err: error, message }, 'Data directory resolution failed.');
   }
 
   let repository: BlueprintRepositoryType | undefined;
@@ -186,7 +204,10 @@ export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TI
           error.issues,
         );
       } else {
-        console.warn(`Failed to load blueprint repository from ${dataDirectory}:`, error);
+        dataLogger.warn(
+          { dataDirectory, err: error },
+          'Failed to load blueprint repository; fixture data will be used.',
+        );
       }
     }
   }
@@ -196,7 +217,7 @@ export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TI
   let usingFixtureRepository = false;
   if (!repository) {
     usingFixtureRepository = true;
-    console.warn('Using fixture repository data for benchmark run.');
+    dataLogger.warn('Using fixture repository data for benchmark run.');
     repository = createBlueprintRepositoryStub();
   }
 
@@ -226,7 +247,7 @@ export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TI
       : `data at ${dataDirectory}`
     : 'fixture data (no data directory found)';
 
-  console.log(`Running benchmark with seed "${seed}" for ${ticks} ticks using ${dataDescription}.`);
+  benchLogger.info({ seed, ticks, dataSource: dataDescription }, 'Starting benchmark run.');
   let totalDuration = 0;
   let totalEvents = 0;
 
@@ -241,21 +262,29 @@ export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TI
     const avgVpd = tickMetrics.avgVpd.toFixed(3);
     const avgHealth = tickMetrics.avgHealth.toFixed(3);
 
-    console.log(
-      `tick ${result.tick.toString().padStart(3, ' ')} | duration ${tickTiming.toFixed(
-        2,
-      )} ms | events ${result.events.length} | Δbiomass ${biomassDelta} g | avgVPD ${avgVpd} kPa | avgHealth ${avgHealth}`,
+    benchLogger.info(
+      {
+        tick: result.tick,
+        durationMs: Number(tickTiming.toFixed(2)),
+        eventCount: result.events.length,
+        biomassDelta: Number.parseFloat(biomassDelta),
+        avgVpd: Number.parseFloat(avgVpd),
+        avgHealth: Number.parseFloat(avgHealth),
+      },
+      'Benchmark tick processed.',
     );
   }
 
   const averageDuration = totalDuration / Math.max(ticks, 1);
-  console.log(`Average tick duration: ${averageDuration.toFixed(2)} ms`);
-  console.log(`Total events emitted: ${totalEvents}`);
+  benchLogger.info(
+    { averageTickDurationMs: Number(averageDuration.toFixed(2)), ticks, totalEvents },
+    'Benchmark run complete.',
+  );
 };
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   runBenchmark().catch((error) => {
-    console.error('Benchmark run failed:', error);
+    benchLogger.error({ err: error }, 'Benchmark run failed.');
     process.exitCode = 1;
   });
 }

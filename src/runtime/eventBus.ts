@@ -1,4 +1,4 @@
-import { Observable, bufferTime, filter as rxFilter, map, merge, share } from 'rxjs';
+import { Observable, bufferTime, filter as rxFilter, map, merge, share, tap } from 'rxjs';
 
 import {
   EventBus,
@@ -8,6 +8,7 @@ import {
   type EventLevel,
   type SimulationEvent,
 } from '../backend/src/lib/eventBus.js';
+import { logger } from './logger.js';
 import type { TickCompletedPayload } from '../backend/src/sim/loop.js';
 
 const telemetryEventBus = new EventBus();
@@ -88,6 +89,34 @@ const sanitizeEventForUi = (event: SimulationEvent): UiDomainEvent => ({
   level: event.level,
   tags: event.tags ? [...event.tags] : undefined,
 });
+
+const telemetryLogger = logger.child({ component: 'runtime.telemetry' });
+
+const logUiStreamPacket = <
+  Snapshot extends { tick: number },
+  TimeStatus,
+  Event extends UiDomainEvent = UiDomainEvent,
+>(
+  packet: UiStreamPacket<Snapshot, TimeStatus, Event>,
+): void => {
+  if (!telemetryLogger.isLevelEnabled('debug')) {
+    return;
+  }
+
+  const context: Record<string, unknown> = { channel: packet.channel };
+
+  if (packet.channel === 'simulationUpdate') {
+    context.batchSize = packet.payload.updates.length;
+    context.latestTick = packet.payload.updates.at(-1)?.tick;
+  } else if (packet.channel === 'sim.tickCompleted') {
+    context.tick = packet.payload.tick;
+    context.eventCount = packet.payload.events.length;
+  } else if (packet.channel === 'domainEvents') {
+    context.batchSize = packet.payload.events.length;
+  }
+
+  telemetryLogger.debug(context, 'UI stream packet dispatched');
+};
 
 interface ProcessedTick<Snapshot extends { tick: number }, TimeStatus> {
   update: UiSimulationUpdateEntry<Snapshot, TimeStatus>;
@@ -204,6 +233,7 @@ export const createUiStream = <Snapshot extends { tick: number }, TimeStatus>(
   );
 
   return merge(simulationUpdates$, tickEvents$, domainBatches$, domainFanout$).pipe(
+    tap((packet) => logUiStreamPacket(packet)),
     share({ resetOnError: false, resetOnComplete: false, resetOnRefCountZero: false }),
   );
 };
