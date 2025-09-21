@@ -3,6 +3,7 @@ import { createEventCollector } from '../../lib/eventBus.js';
 import type { SimulationEvent } from '../../lib/eventBus.js';
 import type { DeviceInstanceState, GameState, LedgerEntry } from '../../state/models.js';
 import { CostAccountingService } from './costAccounting.js';
+import { MissingDevicePriceError } from './devicePriceRegistry.js';
 import type { PriceCatalog } from './pricing.js';
 
 const DEVICE_BLUEPRINT_ID = '3b5f6ad7-672e-47cd-9a24-f0cc45c4101e';
@@ -244,5 +245,40 @@ describe('CostAccountingService', () => {
       blueprintId: DEVICE_BLUEPRINT_ID,
       quantity: 2,
     });
+  });
+
+  it('throws a descriptive error when purchasing a device without a price entry', () => {
+    const catalog: PriceCatalog = {
+      devicePrices: new Map(),
+      strainPrices: new Map(),
+      utilityPrices: {
+        pricePerKwh: 0.15,
+        pricePerLiterWater: 0.02,
+        pricePerGramNutrients: 0.1,
+      },
+    };
+    const service = new CostAccountingService(catalog);
+    const state = createBaseState();
+    const accumulator = service.createAccumulator();
+    const events: SimulationEvent[] = [];
+    const collector = createEventCollector(events, 5);
+
+    try {
+      service.recordDevicePurchase(
+        state,
+        'missing-device-blueprint',
+        1,
+        5,
+        '2025-01-01T09:00:00.000Z',
+        accumulator,
+        collector,
+      );
+      expect.fail('Expected recordDevicePurchase to throw when price is missing.');
+    } catch (error) {
+      expect(error).toBeInstanceOf(MissingDevicePriceError);
+      expect((error as Error).message).toContain(
+        'Missing device price entry for blueprint "missing-device-blueprint"',
+      );
+    }
   });
 });

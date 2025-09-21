@@ -1,5 +1,5 @@
 import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
-import type { DeviceBlueprint, DevicePriceEntry } from '../../../data/schemas/index.js';
+import type { DeviceBlueprint } from '../../../data/schemas/index.js';
 import type {
   EconomicsSettings,
   FinanceState,
@@ -8,15 +8,19 @@ import type {
   StructureBlueprint,
 } from '../models.js';
 import type { RngStream } from '../../lib/rng.js';
+import { DevicePriceRegistry } from '../../engine/economy/devicePriceRegistry.js';
 import { generateId } from './common.js';
 
 const sumDeviceCapitalCosts = (
   devices: DeviceBlueprint[],
-  priceLookup: (id: string) => DevicePriceEntry | undefined,
+  registry: DevicePriceRegistry,
 ): number => {
   return devices.reduce((sum, device) => {
-    const price = priceLookup(device.id);
-    return sum + (price?.capitalExpenditure ?? 0);
+    const price = registry.require(device.id, {
+      context: 'computing initial device capital expenditure',
+      blueprintName: device.name,
+    });
+    return sum + price.capitalExpenditure;
   }, 0);
 };
 
@@ -59,9 +63,8 @@ export const createFinanceState = (
     });
   }
 
-  const deviceCosts = sumDeviceCapitalCosts(installedDevices, (id) =>
-    repository.getDevicePrice(id),
-  );
+  const devicePriceRegistry = DevicePriceRegistry.fromRepository(repository);
+  const deviceCosts = sumDeviceCapitalCosts(installedDevices, devicePriceRegistry);
   if (deviceCosts > 0) {
     addEntry({
       amount: -deviceCosts,

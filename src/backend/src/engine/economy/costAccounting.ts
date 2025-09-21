@@ -7,6 +7,7 @@ import type {
   LedgerEntry,
 } from '../../state/models.js';
 import type { PriceCatalog } from './pricing.js';
+import { DevicePriceRegistry } from './devicePriceRegistry.js';
 
 export interface UtilityConsumption {
   energyKwh?: number;
@@ -88,7 +89,11 @@ const DEFAULT_DESCRIPTION = {
 };
 
 export class CostAccountingService {
-  constructor(private readonly prices: PriceCatalog) {}
+  private readonly devicePrices: DevicePriceRegistry;
+
+  constructor(private readonly prices: PriceCatalog) {
+    this.devicePrices = DevicePriceRegistry.fromCatalog(prices);
+  }
 
   createAccumulator(): TickAccumulator {
     return {
@@ -202,12 +207,16 @@ export class CostAccountingService {
     events: EventCollector,
     description = DEFAULT_DESCRIPTION.devicePurchase,
   ): number {
-    const entry = this.prices.devicePrices.get(blueprintId);
     const sanitizedQuantity = Math.max(Number.isFinite(quantity) ? quantity : 0, 0);
 
-    if (!entry || sanitizedQuantity <= 0) {
+    if (sanitizedQuantity <= 0) {
       return 0;
     }
+
+    const entry = this.devicePrices.require(blueprintId, {
+      context: 'recording device purchase',
+      quantity: sanitizedQuantity,
+    });
 
     const baseCost = entry.capitalExpenditure * sanitizedQuantity;
     const multiplier = state.metadata.economics.itemPriceMultiplier ?? 1;
@@ -400,7 +409,7 @@ export class CostAccountingService {
     device: DeviceInstanceState,
     tick: number,
   ): MaintenanceComputation | undefined {
-    const price = this.prices.devicePrices.get(device.blueprintId);
+    const price = this.devicePrices.get(device.blueprintId);
     if (!price) {
       return undefined;
     }
