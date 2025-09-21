@@ -133,6 +133,7 @@ export interface RoomSnapshot {
   purposeId: string;
   purposeKind: string;
   purposeName: string;
+  purposeFlags?: Record<string, boolean>;
   area: number;
   height: number;
   volume: number;

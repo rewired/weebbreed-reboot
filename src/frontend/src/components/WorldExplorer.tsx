@@ -125,7 +125,7 @@ export const WorldExplorer = () => {
   }, [activeStructure, rooms, zones, plants]);
 
   const activeRoom = selectedRoomId ? rooms[selectedRoomId] : undefined;
-  const isLabRoom = (activeRoom?.purposeKind ?? '').toLowerCase() === 'lab';
+  const isLabRoom = Boolean(activeRoom?.purposeFlags?.supportsResearch);
 
   const zoneSummaries: ZoneSummary[] = useMemo(() => {
     if (!activeRoom || isLabRoom) {

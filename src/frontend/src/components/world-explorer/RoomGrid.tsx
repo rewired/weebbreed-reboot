@@ -43,18 +43,14 @@ export const RoomGrid = ({
   };
 
   const purposeLabel = (room: RoomSnapshot) => {
-    const slug = room.purposeKind?.trim().toLowerCase();
-    if (slug) {
-      const slugKey = `labels.roomPurposes.${slug}`;
-      const translated = t(slugKey, { defaultValue: room.purposeName ?? slug });
-      if (translated !== slugKey) {
-        return translated;
-      }
+    const name = room.purposeName?.trim();
+    if (name) {
+      return name;
     }
 
-    const name = room.purposeName?.trim();
-    if (name && name.length > 0) {
-      return name;
+    const fallbackKind = room.purposeKind?.trim();
+    if (fallbackKind) {
+      return fallbackKind;
     }
 
     return t('labels.roomPurposeGeneric', { defaultValue: 'General' });

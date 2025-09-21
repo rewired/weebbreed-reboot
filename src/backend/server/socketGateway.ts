@@ -106,6 +106,7 @@ interface RoomSnapshot {
   purposeId: string;
   purposeKind: string;
   purposeName: string;
+  purposeFlags?: Record<string, boolean>;
   area: number;
   height: number;
   volume: number;
@@ -413,6 +414,7 @@ const buildSnapshot = (
         purposeId: room.purposeId,
         purposeKind: purpose.kind,
         purposeName: purpose.name,
+        purposeFlags: purpose.flags ? { ...purpose.flags } : undefined,
         area: room.area,
         height: room.height,
         volume: room.volume,
