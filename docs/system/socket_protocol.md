@@ -16,6 +16,14 @@ consumers. All payloads are JSON and use SI units unless stated otherwise.
      structure is identical to the regular update batches documented below and
      always contains exactly one entry.
 
+### Frontend Configuration
+
+- The Vite dashboard reads the socket endpoint from the `VITE_SOCKET_URL`
+  environment variable. Create a `.env` file next to the frontend package (see
+  `.env.example`) to point the UI at a different host/port during development.
+- When the variable is omitted the UI falls back to
+  `http://localhost:7331/socket.io`, matching the default backend dev server.
+
 ## Outgoing Events
 
 ### `simulationUpdate`

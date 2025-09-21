@@ -12,6 +12,7 @@ import { WorldExplorer } from './components/WorldExplorer';
 import { PersonnelView } from './components/PersonnelView';
 import { FinanceView } from './components/FinanceView';
 import { useSimulationBridge } from './hooks/useSimulationBridge';
+import { SOCKET_URL } from './config/socket';
 import { useAppStore } from './store';
 
 const PlaceholderView = ({ translationKey }: { translationKey: string }) => {
@@ -28,7 +29,7 @@ const PlaceholderView = ({ translationKey }: { translationKey: string }) => {
 const App = () => {
   const { t } = useTranslation(['common', 'simulation']);
   const currentView = useAppStore((state) => state.currentView);
-  const bridge = useSimulationBridge({ autoConnect: true });
+  const bridge = useSimulationBridge({ autoConnect: true, url: SOCKET_URL });
 
   return (
     <div className={styles.app}>
