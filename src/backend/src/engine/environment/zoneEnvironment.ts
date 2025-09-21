@@ -158,7 +158,11 @@ export class ZoneEnvironmentService {
     this.controllerOptions = options.controller ?? {};
   }
 
-  applyDeviceDeltas(state: GameState, tickLengthMinutes: number): void {
+  applyDeviceDeltas(
+    state: GameState,
+    tickLengthMinutes: number,
+    accounting?: SimulationPhaseContext['accounting'],
+  ): void {
     const tickHours = computeTickHours(tickLengthMinutes);
 
     for (const structure of state.structures) {
@@ -187,6 +191,9 @@ export class ZoneEnvironmentService {
           zone.environment.ppfd = Math.max(0, zone.environment.ppfd + effect.ppfdDelta);
 
           this.deviceEffects.set(zone.id, { airflow: effect.airflow });
+          if (accounting && effect.energyKwh > 0) {
+            accounting.recordUtility({ energyKwh: effect.energyKwh });
+          }
         }
       }
     }
@@ -334,7 +341,7 @@ export class ZoneEnvironmentService {
 
   createApplyDevicePhaseHandler() {
     return (context: SimulationPhaseContext) => {
-      this.applyDeviceDeltas(context.state, context.tickLengthMinutes);
+      this.applyDeviceDeltas(context.state, context.tickLengthMinutes, context.accounting);
     };
   }
 

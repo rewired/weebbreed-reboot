@@ -7,6 +7,7 @@ import {
   DataLoaderError,
   loadBlueprintData,
 } from './dataLoader.js';
+import type { DevicePriceEntry, StrainPriceEntry } from './schemas/index.js';
 
 export type HotReloadDisposition = 'commit' | 'defer';
 export type HotReloadHandler = (
@@ -80,6 +81,14 @@ export class BlueprintRepository {
 
   getUtilityPrices() {
     return this.data.prices.utility;
+  }
+
+  listDevicePrices(): Array<[string, DevicePriceEntry]> {
+    return Array.from(this.data.prices.devices.entries());
+  }
+
+  listStrainPrices(): Array<[string, StrainPriceEntry]> {
+    return Array.from(this.data.prices.strains.entries());
   }
 
   getSummary(): DataLoadSummary {

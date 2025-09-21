@@ -12,6 +12,8 @@ import {
   type TimeStatus,
   createUiStream,
 } from '../src/index.js';
+import { CostAccountingService } from '../src/engine/economy/costAccounting.js';
+import { createPriceCatalogFromRepository } from '../src/engine/economy/catalog.js';
 import { buildSimulationSnapshot } from '../src/lib/uiSnapshot.js';
 import { logger } from '../../runtime/logger.js';
 
@@ -65,6 +67,8 @@ const main = async (): Promise<void> => {
     { dataDirectory, loadedFiles: summary.loadedFiles },
     'Loaded blueprint repository.',
   );
+  const priceCatalog = createPriceCatalogFromRepository(repository);
+  const costAccountingService = new CostAccountingService(priceCatalog);
 
   const rngSeed = process.env.WEEBBREED_BACKEND_SEED ?? process.env.WEEBBREED_SEED ?? DEFAULT_SEED;
   const rng = new RngService(rngSeed);
@@ -78,7 +82,7 @@ const main = async (): Promise<void> => {
   devLogger.info('Initial game state created.');
 
   const server = createServer();
-  const facade = new SimulationFacade({ state });
+  const facade = new SimulationFacade({ state, accounting: { service: costAccountingService } });
   const uiStream$ = createUiStream({
     snapshotProvider: () => facade.select((value) => buildSimulationSnapshot(value, repository)),
     timeStatusProvider: () => facade.getTimeStatus(),

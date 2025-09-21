@@ -8,6 +8,12 @@ import {
   HarvestQualityService,
   type HarvestQualityOptions,
 } from '../engine/harvest/harvestQualityService.js';
+import {
+  CostAccountingService,
+  type TickAccumulator,
+  type UtilityConsumption,
+} from '../engine/economy/costAccounting.js';
+import type { PriceCatalog } from '../engine/economy/pricing.js';
 import type { GameState } from '../state/models.js';
 import { eventBus as telemetryEventBus } from '../../../runtime/eventBus.js';
 import {
@@ -51,12 +57,18 @@ export interface TickResult {
   phaseTimings: Record<TickPhase, PhaseTiming>;
 }
 
+export interface AccountingPhaseTools {
+  recordUtility(consumption: UtilityConsumption): void;
+  recordDevicePurchase(blueprintId: string, quantity: number, description?: string): void;
+}
+
 export interface SimulationPhaseContext {
   readonly state: GameState;
   readonly tick: number;
   readonly tickLengthMinutes: number;
   readonly phase: TickPhase;
   readonly events: EventCollector;
+  readonly accounting: AccountingPhaseTools;
 }
 
 export type SimulationPhaseHandler = (context: SimulationPhaseContext) => void | Promise<void>;
@@ -124,12 +136,36 @@ class TickStateMachine {
   }
 }
 
+export interface SimulationLoopAccountingOptions {
+  service?: CostAccountingService;
+  priceCatalog?: PriceCatalog;
+}
+
 export interface SimulationLoopOptions {
   state: GameState;
   eventBus?: EventBus;
   phases?: SimulationPhaseHandlers;
   environment?: ZoneEnvironmentOptions;
   harvestQuality?: HarvestQualityOptions;
+  accounting?: SimulationLoopAccountingOptions;
+}
+
+interface UtilityTotals {
+  energyKwh: number;
+  waterLiters: number;
+  nutrientsGrams: number;
+}
+
+interface PendingDevicePurchase {
+  blueprintId: string;
+  quantity: number;
+  description?: string;
+}
+
+interface AccountingRuntime {
+  accumulator: TickAccumulator;
+  utilities: UtilityTotals;
+  purchases: PendingDevicePurchase[];
 }
 
 export class SimulationLoop {
@@ -143,6 +179,12 @@ export class SimulationLoop {
 
   private readonly harvestQualityService: HarvestQualityService;
 
+  private readonly costAccountingService?: CostAccountingService;
+
+  private readonly accountingTools: AccountingPhaseTools;
+
+  private accountingRuntime: AccountingRuntime | null = null;
+
   private readonly phaseHandlers: Record<NonCommitPhase, SimulationPhaseHandler>;
 
   private readonly commitHook?: SimulationPhaseHandler;
@@ -155,6 +197,23 @@ export class SimulationLoop {
     const phases = options.phases ?? {};
     this.degradationService = new DeviceDegradationService();
     this.harvestQualityService = new HarvestQualityService(options.harvestQuality);
+    const accountingOptions = options.accounting ?? {};
+    if (accountingOptions.service) {
+      this.costAccountingService = accountingOptions.service;
+    } else if (accountingOptions.priceCatalog) {
+      this.costAccountingService = new CostAccountingService(accountingOptions.priceCatalog);
+    }
+    this.accountingTools = this.costAccountingService
+      ? {
+          recordUtility: (consumption: UtilityConsumption) =>
+            this.recordUtilityConsumption(consumption),
+          recordDevicePurchase: (blueprintId: string, quantity: number, description?: string) =>
+            this.recordDevicePurchase(blueprintId, quantity, description),
+        }
+      : {
+          recordUtility: () => undefined,
+          recordDevicePurchase: () => undefined,
+        };
     if (!phases.applyDevices || !phases.deriveEnvironment) {
       this.environmentService = new ZoneEnvironmentService(options.environment);
     }
@@ -181,6 +240,7 @@ export class SimulationLoop {
       accounting: async (context) => {
         this.degradationService.process(context.state, context.tick, context.tickLengthMinutes);
         await accountingHandler(context);
+        this.processAccountingPhase(context);
       },
     };
     this.commitHook = phases.commit;
@@ -200,6 +260,7 @@ export class SimulationLoop {
     const timings: Partial<Record<TickPhase, PhaseTiming>> = {};
     let commitTimestamp: number | undefined;
 
+    this.accountingRuntime = this.costAccountingService ? this.createAccountingRuntime() : null;
     this.machine.start(tickNumber);
 
     try {
@@ -212,6 +273,7 @@ export class SimulationLoop {
           tickLengthMinutes,
           phase,
           events: collector,
+          accounting: this.accountingTools,
         };
 
         if (phase === 'commit') {
@@ -233,6 +295,8 @@ export class SimulationLoop {
     } catch (error) {
       this.machine.fail(error);
       throw error;
+    } finally {
+      this.accountingRuntime = null;
     }
 
     const state = this.machine.getState();
@@ -288,6 +352,121 @@ export class SimulationLoop {
     this.eventBus.emit(tickCompletedEvent);
 
     return result;
+  }
+
+  private createAccountingRuntime(): AccountingRuntime {
+    if (!this.costAccountingService) {
+      throw new Error('Cost accounting service is not configured.');
+    }
+
+    return {
+      accumulator: this.costAccountingService.createAccumulator(),
+      utilities: {
+        energyKwh: 0,
+        waterLiters: 0,
+        nutrientsGrams: 0,
+      },
+      purchases: [],
+    };
+  }
+
+  private recordUtilityConsumption(consumption: UtilityConsumption): void {
+    if (!this.accountingRuntime || !consumption) {
+      return;
+    }
+
+    const utilities = this.accountingRuntime.utilities;
+    const addUtility = (value: number | undefined, key: keyof UtilityTotals) => {
+      if (typeof value !== 'number' || !Number.isFinite(value)) {
+        return;
+      }
+      const sanitized = Math.max(value, 0);
+      if (sanitized <= 0) {
+        return;
+      }
+      utilities[key] += sanitized;
+    };
+
+    addUtility(consumption.energyKwh, 'energyKwh');
+    addUtility(consumption.waterLiters, 'waterLiters');
+    addUtility(consumption.nutrientsGrams, 'nutrientsGrams');
+  }
+
+  private recordDevicePurchase(blueprintId: string, quantity: number, description?: string): void {
+    if (!this.accountingRuntime || typeof blueprintId !== 'string' || blueprintId.length === 0) {
+      return;
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return;
+    }
+
+    this.accountingRuntime.purchases.push({
+      blueprintId,
+      quantity,
+      description:
+        typeof description === 'string' && description.length > 0 ? description : undefined,
+    });
+  }
+
+  private processAccountingPhase(context: SimulationPhaseContext): void {
+    if (!this.costAccountingService || !this.accountingRuntime) {
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
+    const runtime = this.accountingRuntime;
+
+    const utilities = runtime.utilities;
+    if (utilities.energyKwh > 0 || utilities.waterLiters > 0 || utilities.nutrientsGrams > 0) {
+      this.costAccountingService.applyUtilityConsumption(
+        context.state,
+        utilities,
+        context.tick,
+        timestamp,
+        runtime.accumulator,
+        context.events,
+      );
+    }
+
+    for (const structure of context.state.structures) {
+      for (const room of structure.rooms) {
+        for (const zone of room.zones) {
+          for (const device of zone.devices) {
+            this.costAccountingService.applyMaintenanceExpense(
+              context.state,
+              device,
+              context.tick,
+              timestamp,
+              runtime.accumulator,
+              context.events,
+            );
+          }
+        }
+      }
+    }
+
+    for (const purchase of runtime.purchases) {
+      this.costAccountingService.recordDevicePurchase(
+        context.state,
+        purchase.blueprintId,
+        purchase.quantity,
+        context.tick,
+        timestamp,
+        runtime.accumulator,
+        context.events,
+        purchase.description,
+      );
+    }
+
+    this.costAccountingService.finalizeTick(
+      context.state,
+      runtime.accumulator,
+      context.tick,
+      timestamp,
+      context.events,
+    );
+
+    this.accountingRuntime = null;
   }
 
   private async executeCommit(context: SimulationPhaseContext, tick: number): Promise<number> {
