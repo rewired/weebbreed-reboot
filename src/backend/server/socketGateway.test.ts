@@ -1,7 +1,8 @@
 import { createServer, type Server as HttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { Subject } from 'rxjs';
 import { io as createClient, type Socket as ClientSocket } from 'socket.io-client';
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   CommandResult,
   EventFilter,
@@ -11,7 +12,7 @@ import type {
   SetSpeedIntent,
   Unsubscribe,
 } from '../facade/index.js';
-import { EventBus, type SimulationEvent } from '../../runtime/eventBus.js';
+import { EventBus, type SimulationEvent, type UiStreamPacket } from '../../runtime/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '../src/sim/loop.js';
 import type { GameState } from '../src/state/models.js';
 import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
@@ -58,6 +59,123 @@ let roomPurposeRepository: BlueprintRepository;
 beforeAll(async () => {
   roomPurposeRepository = await loadTestRoomPurposes();
   growRoomPurposeId = resolveRoomPurposeId(roomPurposeRepository, 'Grow Room');
+});
+
+describe('SocketGateway uiStream integration', () => {
+  let server: HttpServer;
+  let port: number;
+  let facade: StubFacade;
+  let gateway: SocketGateway;
+  let client: ClientSocket;
+  let uiStream$: Subject<UiStreamPacket<SimulationSnapshot, TimeStatus>>;
+  let subscribeSpy: ReturnType<typeof vi.spyOn>;
+  let handshake: SimulationUpdatePayload | undefined;
+
+  beforeEach(async () => {
+    server = createServer();
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    port = (server.address() as AddressInfo).port;
+    facade = new StubFacade(createTestState());
+    uiStream$ = new Subject<UiStreamPacket<SimulationSnapshot, TimeStatus>>();
+    subscribeSpy = vi.spyOn(uiStream$, 'subscribe');
+    gateway = new SocketGateway({
+      httpServer: server,
+      facade,
+      roomPurposeSource: roomPurposeRepository,
+      uiStream$,
+    });
+    client = createClient(`http://127.0.0.1:${port}`, {
+      transports: ['websocket'],
+      forceNew: true,
+    });
+    const handshakePromise = new Promise<SimulationUpdatePayload>((resolve) => {
+      client.once('simulationUpdate', (payload) => resolve(payload));
+    });
+    await new Promise<void>((resolve) => client.on('connect', () => resolve()));
+    handshake = await handshakePromise;
+  });
+
+  afterEach(async () => {
+    client.disconnect();
+    gateway.close();
+    facade.dispose();
+    subscribeSpy.mockRestore();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  });
+
+  it('subscribes to uiStream$ and forwards batched packets', async () => {
+    expect(handshake).toBeDefined();
+    expect(subscribeSpy).toHaveBeenCalledTimes(1);
+
+    const baseSnapshot: SimulationSnapshot = {
+      tick: 0,
+      structures: [],
+      rooms: [],
+      zones: [],
+      personnel: { employees: [], applicants: [], overallMorale: 1 },
+      finance: {
+        cashOnHand: 0,
+        reservedCash: 0,
+        totalRevenue: 0,
+        totalExpenses: 0,
+        netIncome: 0,
+        lastTickRevenue: 0,
+        lastTickExpenses: 0,
+      },
+    };
+    const baseTime = facade.getTimeStatus();
+
+    const updates = [
+      {
+        tick: 5,
+        ts: Date.now(),
+        durationMs: 12,
+        eventCount: 0,
+        events: [],
+        phaseTimings: createPhaseTimings(),
+        snapshot: { ...baseSnapshot, tick: 5 },
+        time: baseTime,
+      },
+      {
+        tick: 6,
+        ts: Date.now() + 5,
+        durationMs: 11,
+        eventCount: 0,
+        events: [],
+        phaseTimings: createPhaseTimings(),
+        snapshot: { ...baseSnapshot, tick: 6 },
+        time: baseTime,
+      },
+    ];
+
+    const updatePromise = new Promise<SimulationUpdatePayload>((resolve) => {
+      client.once('simulationUpdate', (payload) => resolve(payload));
+    });
+
+    uiStream$.next({
+      channel: 'simulationUpdate',
+      payload: { updates },
+    });
+
+    const receivedUpdate = await updatePromise;
+    expect(receivedUpdate.updates).toHaveLength(2);
+    expect(receivedUpdate.updates.map((update) => update.tick)).toEqual([5, 6]);
+
+    const domainBatch = [
+      { type: 'device.degraded', payload: { deviceId: 'device-1' }, tick: 6, ts: Date.now() },
+      { type: 'plant.stageChanged', payload: { plantId: 'plant-1' }, tick: 6, ts: Date.now() + 1 },
+    ];
+
+    const domainPromise = new Promise<SimulationEvent[]>((resolve) => {
+      client.once('domainEvents', (payload) => resolve(payload.events));
+    });
+
+    uiStream$.next({ channel: 'domainEvents', payload: { events: domainBatch } });
+
+    const receivedDomain = await domainPromise;
+    expect(receivedDomain).toHaveLength(2);
+    expect(receivedDomain[0]).toMatchObject({ type: 'device.degraded' });
+  });
 });
 
 const createTestState = (): GameState => {
