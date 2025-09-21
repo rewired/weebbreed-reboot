@@ -14,7 +14,13 @@ export * from './sim/simScheduler.js';
 export * from '../facade/index.js';
 export * from '../server/socketGateway.js';
 
-const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
+const defaultModuleDirectory = path.dirname(fileURLToPath(import.meta.url));
+
+export interface ResolveDataDirectoryOptions {
+  moduleDirectory?: string;
+  cwd?: string;
+  envOverride?: string | undefined;
+}
 
 const getNormalizedEntryPointHref = (): string | undefined => {
   const entryPointArgument = process.argv[1];
@@ -62,17 +68,24 @@ const isValidDataDirectory = async (candidate: string): Promise<boolean> => {
   return true;
 };
 
-const resolveDataDirectory = async (): Promise<string> => {
-  const envOverride = process.env.WEEBBREED_DATA_DIR
-    ? path.resolve(process.env.WEEBBREED_DATA_DIR)
-    : undefined;
+export const resolveDataDirectory = async (
+  options: ResolveDataDirectoryOptions = {},
+): Promise<string> => {
+  const moduleDirectory = options.moduleDirectory ?? defaultModuleDirectory;
+  const cwd = options.cwd ?? process.cwd();
+  const envCandidate = Object.prototype.hasOwnProperty.call(options, 'envOverride')
+    ? options.envOverride
+    : process.env.WEEBBREED_DATA_DIR;
+
+  const envOverride = envCandidate ? path.resolve(envCandidate) : undefined;
 
   const candidates = [
     envOverride,
+    path.resolve(moduleDirectory, '..', 'data'),
     path.resolve(moduleDirectory, '../../..', 'data'),
     path.resolve(moduleDirectory, '../../../..', 'data'),
-    path.resolve(process.cwd(), 'data'),
-    path.resolve(process.cwd(), '..', 'data'),
+    path.resolve(cwd, 'data'),
+    path.resolve(cwd, '..', 'data'),
   ].filter(Boolean) as string[];
 
   const checked = new Set<string>();
@@ -91,8 +104,8 @@ const resolveDataDirectory = async (): Promise<string> => {
   throw new Error('Unable to locate data directory. Set WEEBBREED_DATA_DIR to override.');
 };
 
-export const bootstrap = async () => {
-  const dataDirectory = await resolveDataDirectory();
+export const bootstrap = async (options?: ResolveDataDirectoryOptions) => {
+  const dataDirectory = await resolveDataDirectory(options);
   const repository = await BlueprintRepository.loadFrom(dataDirectory);
   const summary = repository.getSummary();
 
