@@ -132,6 +132,7 @@ export const createDeviceBlueprint = (
   quality: overrides.quality ?? 0.95,
   complexity: overrides.complexity ?? 0.5,
   lifespanInHours: overrides.lifespanInHours ?? 20_000,
+  roomPurposes: overrides.roomPurposes ?? ['growroom'],
   settings: clone({
     power: 0.8,
     coverageArea: 12,

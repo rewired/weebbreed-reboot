@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TaskDefinitionMap } from './state/models.js';
 import { createInitialState } from './stateFactory.js';
 import {
@@ -11,6 +11,11 @@ import {
   createStrainPriceMap,
   createStructureBlueprint,
 } from './testing/fixtures.js';
+import * as blueprintModule from './state/initialization/blueprints.js';
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('createInitialState', () => {
   it('initialises backlog tasks using provided definitions', async () => {
@@ -140,5 +145,27 @@ describe('createInitialState', () => {
     const firstDeviceIds = firstZone?.devices.map((device) => device.id);
     const secondDeviceIds = secondZone?.devices.map((device) => device.id);
     expect(firstDeviceIds).toEqual(secondDeviceIds);
+  });
+
+  it('rejects device installations that are incompatible with the grow room purpose', async () => {
+    const incompatibleDevice = createDeviceBlueprint({
+      kind: 'Lamp',
+      roomPurposes: ['breakroom'],
+    });
+    const repository = createBlueprintRepositoryStub({
+      devices: [incompatibleDevice],
+    });
+    const context = createStateFactoryContext('incompatible-device', {
+      repository,
+      structureBlueprints: [createStructureBlueprint()],
+    });
+
+    const spy = vi
+      .spyOn(blueprintModule, 'chooseDeviceBlueprints')
+      .mockReturnValue([incompatibleDevice]);
+
+    await expect(createInitialState(context)).rejects.toThrow(/not compatible with room purpose/i);
+
+    expect(spy).toHaveBeenCalled();
   });
 });

@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+const roomPurposeCompatibilitySchema = z.union([z.literal('*'), z.array(z.string().min(1)).min(1)]);
+
 const rangeTuple = z.tuple([z.number(), z.number()]);
 
 export const deviceSchema = z
@@ -10,6 +12,7 @@ export const deviceSchema = z
     quality: z.number(),
     complexity: z.number(),
     lifespanInHours: z.number(),
+    roomPurposes: roomPurposeCompatibilitySchema,
     settings: z
       .object({
         power: z.number().optional(),
@@ -34,4 +37,5 @@ export const deviceSchema = z
   })
   .passthrough();
 
+export type DeviceRoomPurposeCompatibility = z.infer<typeof roomPurposeCompatibilitySchema>;
 export type DeviceBlueprint = z.infer<typeof deviceSchema>;

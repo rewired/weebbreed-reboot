@@ -5,6 +5,7 @@
   "quality": 0.8,
   "complexity": 0.3,
   "lifespanInHours": 8760,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.35,
     "humidifyRateKgPerTick": 0.1,
@@ -14,14 +15,7 @@
   },
   "meta": {
     "description": "A standard unit to control humidity.",
-    "advantages": [
-      "Handles both humidification and dehumidification",
-      "Simple to operate"
-    ],
-    "disadvantages": [
-      "Limited capacity for large rooms",
-      "Requires regular maintenance"
-    ]
+    "advantages": ["Handles both humidification and dehumidification", "Simple to operate"],
+    "disadvantages": ["Limited capacity for large rooms", "Requires regular maintenance"]
   }
 }
-
