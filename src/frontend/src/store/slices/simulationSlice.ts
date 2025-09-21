@@ -338,6 +338,157 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
       state.sendFacadeIntent?.(intent);
       return {};
     }),
+  updateStructureName: (structureId, name) =>
+    set((state) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        return {};
+      }
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'updateStructure',
+        payload: { structureId, patch: { name: trimmed } },
+      });
+      return {};
+    }),
+  updateRoomName: (roomId, name) =>
+    set((state) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        return {};
+      }
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'updateRoom',
+        payload: { roomId, patch: { name: trimmed } },
+      });
+      return {};
+    }),
+  updateZoneName: (zoneId, name) =>
+    set((state) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        return {};
+      }
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'updateZone',
+        payload: { zoneId, patch: { name: trimmed } },
+      });
+      return {};
+    }),
+  duplicateRoom: (roomId) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'duplicateRoom',
+        payload: { roomId },
+      });
+      return {};
+    }),
+  duplicateZone: (zoneId) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'duplicateZone',
+        payload: { zoneId },
+      });
+      return {};
+    }),
+  removeStructure: (structureId) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'deleteStructure',
+        payload: { structureId },
+      });
+      return {};
+    }),
+  removeRoom: (roomId) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'deleteRoom',
+        payload: { roomId },
+      });
+      return {};
+    }),
+  removeZone: (zoneId) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'deleteZone',
+        payload: { zoneId },
+      });
+      return {};
+    }),
+  applyWater: (zoneId, liters) =>
+    set((state) => {
+      if (liters <= 0) {
+        return {};
+      }
+      state.sendFacadeIntent?.({
+        domain: 'plants',
+        action: 'applyIrrigation',
+        payload: { zoneId, liters },
+      });
+      return {};
+    }),
+  applyNutrients: (zoneId, nutrients) =>
+    set((state) => {
+      const payload = {
+        zoneId,
+        nutrients: {
+          N: Math.max(0, nutrients.N),
+          P: Math.max(0, nutrients.P),
+          K: Math.max(0, nutrients.K),
+        },
+      } as const;
+      state.sendFacadeIntent?.({
+        domain: 'plants',
+        action: 'applyFertilizer',
+        payload,
+      });
+      return {};
+    }),
+  toggleDeviceGroup: (zoneId, deviceKind, enabled) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'devices',
+        action: 'toggleDeviceGroup',
+        payload: { zoneId, kind: deviceKind, enabled },
+      });
+      return {};
+    }),
+  harvestPlanting: (plantingId) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'plants',
+        action: 'harvestPlanting',
+        payload: { plantingId },
+      });
+      return {};
+    }),
+  harvestPlantings: (plantingIds) =>
+    set((state) => {
+      for (const plantingId of plantingIds) {
+        state.sendFacadeIntent?.({
+          domain: 'plants',
+          action: 'harvestPlanting',
+          payload: { plantingId },
+        });
+      }
+      return {};
+    }),
+  togglePlantingPlan: (zoneId, enabled) =>
+    set((state) => {
+      state.sendFacadeIntent?.({
+        domain: 'plants',
+        action: 'togglePlantingPlan',
+        payload: { zoneId, enabled },
+      });
+      return {};
+    }),
   requestTickLength: (minutes) =>
     set((state) => {
       state.sendConfigUpdate?.({ type: 'tickLength', minutes });

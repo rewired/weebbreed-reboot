@@ -63,6 +63,8 @@ export interface ZoneSnapshot {
   structureName: string;
   roomId: string;
   roomName: string;
+  area?: number;
+  cultivationMethodId?: string;
   environment: SimulationEnvironmentState;
   resources: ZoneResourceSnapshot;
   metrics: {
@@ -76,6 +78,51 @@ export interface ZoneSnapshot {
   devices: DeviceSnapshot[];
   plants: PlantSnapshot[];
   health: ZoneHealthSnapshot;
+  lighting?: ZoneLightingSnapshot;
+  supplyStatus?: ZoneSupplyStatusSnapshot;
+  plantingGroups?: PlantingGroupSnapshot[];
+  plantingPlan?: ZonePlantingPlanSnapshot | null;
+  deviceGroups?: DeviceGroupSnapshot[];
+}
+
+export interface ZoneLightingSnapshot {
+  photoperiodHours?: { on: number; off: number };
+  coverageRatio?: number;
+  averagePpfd?: number;
+  dli?: number;
+}
+
+export interface ZoneSupplyStatusSnapshot {
+  dailyWaterConsumptionLiters?: number;
+  dailyNutrientConsumptionLiters?: number;
+}
+
+export interface PlantingGroupSnapshot {
+  id: string;
+  name: string;
+  strainId: string;
+  stage?: string;
+  harvestReadyCount?: number;
+  plantIds?: string[];
+}
+
+export interface ZonePlantingPlanSnapshot {
+  id: string;
+  name?: string;
+  strainId: string;
+  count: number;
+  autoReplant: boolean;
+  enabled: boolean;
+}
+
+export interface DeviceGroupSnapshot {
+  id: string;
+  kind: string;
+  label?: string;
+  deviceIds: string[];
+  status?: 'on' | 'off' | 'mixed' | 'broken';
+  supportsScheduling?: boolean;
+  supportsTuning?: boolean;
 }
 
 export interface RoomSnapshot {

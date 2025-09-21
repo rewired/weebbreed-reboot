@@ -99,6 +99,23 @@ export interface SimulationSlice {
   ) => void;
   setIntentHandler: (handler: (intent: FacadeIntentCommand) => void) => void;
   issueFacadeIntent: (intent: FacadeIntentCommand) => void;
+  updateStructureName: (structureId: string, name: string) => void;
+  updateRoomName: (roomId: string, name: string) => void;
+  updateZoneName: (zoneId: string, name: string) => void;
+  duplicateRoom: (roomId: string) => void;
+  duplicateZone: (zoneId: string) => void;
+  removeStructure: (structureId: string) => void;
+  removeRoom: (roomId: string) => void;
+  removeZone: (zoneId: string) => void;
+  applyWater: (zoneId: string, liters: number) => void;
+  applyNutrients: (
+    zoneId: string,
+    nutrients: { N: number; P: number; K: number },
+  ) => void;
+  toggleDeviceGroup: (zoneId: string, deviceKind: string, enabled: boolean) => void;
+  harvestPlanting: (plantingId: string) => void;
+  harvestPlantings: (plantingIds: string[]) => void;
+  togglePlantingPlan: (zoneId: string, enabled: boolean) => void;
 }
 
 export interface NavigationSlice {
