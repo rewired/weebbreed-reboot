@@ -433,6 +433,7 @@ describe('SocketGateway', () => {
       simulationBatchIntervalMs: 30,
       domainBatchIntervalMs: 30,
       roomPurposeSource: roomPurposeRepository,
+      eventBus: facade.eventBus,
     });
     client = createClient(`http://127.0.0.1:${port}`, {
       transports: ['websocket'],

@@ -17,6 +17,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src'),
       '@/engine': path.resolve(__dirname, '../engine'),
       '@/ui': path.resolve(__dirname, '../frontend/src/ui'),
+      rxjs: path.resolve(__dirname, 'node_modules/rxjs'),
     },
   },
 });

@@ -15,6 +15,9 @@ module.exports = {
   ],
   settings: {
     'import/resolver': {
+      node: {
+        moduleDirectory: ['node_modules', 'src/backend/node_modules']
+      },
       typescript: {
         project: [
           './tsconfig.base.json',
