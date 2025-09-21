@@ -605,9 +605,9 @@ export class WorkforceEngine {
       metadata,
     };
 
-    context.events.queue({
-      type: 'task.created',
-      payload: {
+    context.events.queue(
+      'task.created',
+      {
         taskId: task.id,
         definitionId: task.definitionId,
         priority: task.priority,
@@ -616,9 +616,9 @@ export class WorkforceEngine {
         zoneId: context.zone.id,
         safety: metadata.safety,
       },
-      tick: context.tick,
-      level: 'info',
-    });
+      context.tick,
+      'info',
+    );
 
     context.taskSystem.backlog.push(task);
   }
@@ -894,17 +894,17 @@ export class WorkforceEngine {
       employee.hoursWorkedToday += allocation.totalHours;
       employee.overtimeHours += allocation.overtimeHours;
       if (allocation.overtimeHours > 0) {
-        events.queue({
-          type: 'hr.overtimeAccrued',
-          payload: {
+        events.queue(
+          'hr.overtimeAccrued',
+          {
             employeeId: employee.id,
             hours: allocation.overtimeHours,
             totalOvertimeHours: employee.overtimeHours,
             taskId: task.id,
           },
           tick,
-          level: 'info',
-        });
+          'info',
+        );
       }
 
       const baseEnergyCost = allocation.totalHours * this.policies.energy.energyCostPerHour;
@@ -958,17 +958,17 @@ export class WorkforceEngine {
     if (zone) {
       zone.activeTaskIds = zone.activeTaskIds.filter((id) => id !== task.id);
     }
-    events.queue({
-      type: 'task.completed',
-      payload: {
+    events.queue(
+      'task.completed',
+      {
         taskId: task.id,
         definitionId: task.definitionId,
         employeeId: employee.id,
         zoneId: task.location?.zoneId,
       },
       tick,
-      level: 'info',
-    });
+      'info',
+    );
   }
 
   private allocateWorkHours(employee: EmployeeState, hoursPerTick: number): WorkHoursAllocation {

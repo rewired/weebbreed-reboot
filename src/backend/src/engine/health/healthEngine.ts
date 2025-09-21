@@ -162,16 +162,16 @@ export class PlantHealthEngine {
               if (pest.symptomTimerTicks <= 0 || pest.population >= PEST_DETECTION_THRESHOLD) {
                 pest.detected = true;
                 pest.detectionTick = tick;
-                context.events.queue({
-                  type: 'pest.detected',
-                  payload: {
+                context.events.queue(
+                  'pest.detected',
+                  {
                     zoneId: zone.id,
                     plantId: plant.id,
                     pestId: pest.pestId,
                     infestationId: pest.id,
                   },
                   tick,
-                });
+                );
               }
             }
 
@@ -367,9 +367,9 @@ export class PlantHealthEngine {
               };
               zoneHealth.appliedTreatments.push(record);
 
-              context.events.queue({
-                type: 'treatment.applied',
-                payload: {
+              context.events.queue(
+                'treatment.applied',
+                {
                   zoneId: zone.id,
                   plantIds: treatedPlants,
                   optionId: option.id,
@@ -377,8 +377,8 @@ export class PlantHealthEngine {
                   reentryRestrictedUntilTick: zoneHealth.reentryRestrictedUntilTick,
                   preHarvestRestrictedUntilTick: zoneHealth.preHarvestRestrictedUntilTick,
                 },
-                tick: context.tick,
-              });
+                context.tick,
+              );
             }
           }
 

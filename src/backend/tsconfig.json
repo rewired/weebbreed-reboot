@@ -19,7 +19,8 @@
     "data/**/*.ts",
     "facade/**/*.ts",
     "server/**/*.ts",
-    "../engine/**/*.ts"
+    "../engine/**/*.ts",
+    "../runtime/**/*.ts"
   ],
   "exclude": ["dist", "node_modules"]
 }

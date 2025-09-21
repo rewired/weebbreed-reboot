@@ -11,7 +11,7 @@ import type {
   SetSpeedIntent,
   Unsubscribe,
 } from '../facade/index.js';
-import { EventBus, type SimulationEvent } from '../src/lib/eventBus.js';
+import { EventBus, type SimulationEvent } from '../../runtime/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '../src/sim/loop.js';
 import type { GameState } from '../src/state/models.js';
 import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
@@ -394,13 +394,7 @@ class StubFacade {
       phaseTimings: createPhaseTimings(),
       events,
     };
-    this.eventBus.emit({
-      type: 'sim.tickCompleted',
-      tick,
-      ts: Date.now(),
-      level: 'info',
-      payload,
-    });
+    this.eventBus.emit('sim.tickCompleted', payload, tick, 'info');
   }
 
   dispose(): void {

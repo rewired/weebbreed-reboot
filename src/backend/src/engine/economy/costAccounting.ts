@@ -254,10 +254,9 @@ export class CostAccountingService {
     summary.lastTickExpenses = accumulator.expenses;
     summary.netIncome = summary.totalRevenue - summary.totalExpenses;
 
-    events.queue({
-      type: 'finance.tick',
-      level: 'info',
-      payload: {
+    events.queue(
+      'finance.tick',
+      {
         tick,
         timestamp,
         revenue: accumulator.revenue,
@@ -268,7 +267,9 @@ export class CostAccountingService {
         utilities: accumulator.utilities,
         maintenance: accumulator.maintenanceDetails,
       },
-    });
+      tick,
+      'info',
+    );
   }
 
   private clampUtilityConsumption(
@@ -463,17 +464,18 @@ export class CostAccountingService {
       accumulator.opex += amount;
     }
 
-    events.queue({
-      type: detailKind === 'capex' ? 'finance.capex' : 'finance.opex',
-      level: 'info',
-      payload: {
+    events.queue(
+      detailKind === 'capex' ? 'finance.capex' : 'finance.opex',
+      {
         tick,
         amount,
         category,
         description,
         ...metadata,
       },
-    });
+      tick,
+      'info',
+    );
   }
 
   private createLedgerEntry(finances: FinanceState, entry: Omit<LedgerEntry, 'id'>): LedgerEntry {

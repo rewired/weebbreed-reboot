@@ -237,12 +237,12 @@ describe('SimulationLoop', () => {
       phases: {
         applyDevices: (ctx) => {
           executed.push(ctx.phase);
-          ctx.events.queue({ type: 'device.applied', level: 'info' });
+          ctx.events.queue('device.applied', undefined, ctx.tick, 'info');
         },
         deriveEnvironment: (ctx) => executed.push(ctx.phase),
         irrigationAndNutrients: (ctx) => {
           executed.push(ctx.phase);
-          ctx.events.queue({ type: 'env.irrigated', payload: { liters: 10 } });
+          ctx.events.queue('env.irrigated', { liters: 10 }, ctx.tick);
         },
         updatePlants: (ctx) => executed.push(ctx.phase),
         harvestAndInventory: (ctx) => executed.push(ctx.phase),
@@ -272,10 +272,7 @@ describe('SimulationLoop', () => {
       eventBus: bus,
       phases: {
         applyDevices: (ctx: SimulationPhaseContext) => {
-          ctx.events.queue({
-            type: 'phase.entered',
-            payload: { phase: ctx.phase, tick: ctx.tick },
-          });
+          ctx.events.queue('phase.entered', { phase: ctx.phase, tick: ctx.tick }, ctx.tick);
         },
       },
     });
