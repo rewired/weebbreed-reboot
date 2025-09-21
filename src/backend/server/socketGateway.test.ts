@@ -15,8 +15,9 @@ import { EventBus, type SimulationEvent } from '../src/lib/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '../src/sim/loop.js';
 import type { GameState } from '../src/state/models.js';
 import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
-import { resolvePurposeIdByName } from '../src/engine/roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../src/testing/loadTestRoomPurposes.js';
+import type { BlueprintRepository } from '../data/blueprintRepository.js';
 
 const waitFor = async (predicate: () => boolean, timeoutMs = 1000): Promise<void> => {
   const start = Date.now();
@@ -52,10 +53,11 @@ const createPhaseTimings = (durationMs = 5): Record<(typeof TICK_PHASES)[number]
 };
 
 let growRoomPurposeId: string;
+let roomPurposeRepository: BlueprintRepository;
 
 beforeAll(async () => {
-  await loadTestRoomPurposes();
-  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  roomPurposeRepository = await loadTestRoomPurposes();
+  growRoomPurposeId = resolveRoomPurposeId(roomPurposeRepository, 'Grow Room');
 });
 
 const createTestState = (): GameState => {
@@ -436,6 +438,7 @@ describe('SocketGateway', () => {
       facade,
       simulationBatchIntervalMs: 30,
       domainBatchIntervalMs: 30,
+      roomPurposeSource: roomPurposeRepository,
     });
     client = createClient(`http://127.0.0.1:${port}`, {
       transports: ['websocket'],

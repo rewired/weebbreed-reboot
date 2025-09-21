@@ -1,19 +1,19 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadRoomPurposes } from '../engine/roomPurposeRegistry.js';
+import { BlueprintRepository } from '../../data/blueprintRepository.js';
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../../../..', import.meta.url)));
 const shippedDataDirectory = path.join(repoRoot, 'data');
 
-let loadPromise: Promise<void> | null = null;
+let loadPromise: Promise<BlueprintRepository> | null = null;
 
-export const loadTestRoomPurposes = async (): Promise<void> => {
+export const loadTestRoomPurposes = async (): Promise<BlueprintRepository> => {
   if (!loadPromise) {
-    loadPromise = loadRoomPurposes({ dataDirectory: shippedDataDirectory });
+    loadPromise = BlueprintRepository.loadFrom(shippedDataDirectory);
   }
 
-  await loadPromise;
+  return loadPromise;
 };
 
 export const getShippedRoomPurposeDirectory = (): string => shippedDataDirectory;

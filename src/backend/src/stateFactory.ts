@@ -38,7 +38,7 @@ import {
 import { createFinanceState } from './state/initialization/finance.js';
 import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
-import { resolvePurposeIdByName } from './engine/roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../engine/roomPurposes/index.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';
@@ -221,6 +221,7 @@ const createPlants = (
 };
 
 const buildStructureState = (
+  context: StateFactoryContext,
   blueprint: StructureBlueprint,
   structureId: string,
   strain: StrainBlueprint,
@@ -241,7 +242,7 @@ const buildStructureState = (
   const plantCount = Math.min(capacity, plantCountOverride ?? Math.min(12, capacity));
   const plants = createPlants(plantCount, zoneId, strain, idStream, plantStream);
   const environment = createZoneEnvironment();
-  const growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  const growRoomPurposeId = resolveRoomPurposeId(context.repository, 'Grow Room');
   const zone: StructureCreationResult['growZone'] = {
     id: zoneId,
     roomId: '',
@@ -273,7 +274,7 @@ const buildStructureState = (
     maintenanceLevel: 0.9,
   } satisfies StructureState['rooms'][number];
 
-  const breakRoomPurposeId = resolvePurposeIdByName('Break Room');
+  const breakRoomPurposeId = resolveRoomPurposeId(context.repository, 'Break Room');
   const supportRoom = {
     id: generateId(idStream, 'room'),
     structureId,
@@ -396,6 +397,7 @@ export const createInitialState = async (
 
   const structureId = generateId(idStream, 'structure');
   const structureResult = buildStructureState(
+    context,
     structureBlueprint,
     structureId,
     strain,

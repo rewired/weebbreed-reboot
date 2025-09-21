@@ -3,8 +3,9 @@ import os from 'os';
 import path from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { RngService } from '../../lib/rng.js';
-import { resolvePurposeIdByName } from '../../engine/roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
 import type {
   StructureState,
   ZoneHealthState,
@@ -17,10 +18,11 @@ import { createTasks, loadTaskDefinitions } from './tasks.js';
 
 describe('state/initialization/tasks', () => {
   let growRoomPurposeId: string;
+  let repository: BlueprintRepository;
 
   beforeAll(async () => {
-    await loadTestRoomPurposes();
-    growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+    repository = await loadTestRoomPurposes();
+    growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
   });
 
   it('loads task definitions from configuration files', async () => {

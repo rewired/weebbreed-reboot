@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { ZoneEnvironmentService } from './zoneEnvironment.js';
-import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
 import type {
   DeviceInstanceState,
   FootprintDimensions,
@@ -50,10 +51,11 @@ const createHealth = (): ZoneHealthState => ({
 });
 
 let growRoomPurposeId: string;
+let repository: BlueprintRepository;
 
 beforeAll(async () => {
-  await loadTestRoomPurposes();
-  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  repository = await loadTestRoomPurposes();
+  growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
 });
 
 const createDevice = (

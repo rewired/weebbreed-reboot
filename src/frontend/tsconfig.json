@@ -7,9 +7,9 @@
     "paths": {
       "@/*": ["*"],
       "@/ui/*": ["ui/*"],
-      "@/engine/*": ["../../backend/src/engine/*"]
+      "@/engine/*": ["../../engine/*"]
     }
   },
-  "include": ["src", "vite.config.ts"],
+  "include": ["src", "vite.config.ts", "../engine/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

@@ -61,6 +61,7 @@ describe('resolveDataDirectory', () => {
       ['blueprints', 'strains'],
       ['blueprints', 'devices'],
       ['blueprints', 'cultivationMethods'],
+      ['blueprints', 'roomPurposes'],
       ['prices'],
     ] as const;
 

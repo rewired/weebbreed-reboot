@@ -1,7 +1,7 @@
 import type { Server as HttpServer } from 'node:http';
 import { Server as IOServer, type ServerOptions as IOServerOptions, type Socket } from 'socket.io';
 import { z, type ZodError } from 'zod';
-import { requirePurposeById } from '../src/engine/roomPurposeRegistry.js';
+import { requireRoomPurpose, type RoomPurposeSource } from '../../engine/roomPurposes/index.js';
 import type {
   CommandError,
   CommandResult,
@@ -305,6 +305,7 @@ export interface SocketGatewayOptions {
   simulationBatchMaxSize?: number;
   domainBatchIntervalMs?: number;
   domainBatchMaxSize?: number;
+  roomPurposeSource: RoomPurposeSource;
 }
 
 type AckCallback<T> = (response: CommandResponse<T>) => void;
@@ -349,7 +350,10 @@ const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
   reservoirLevel: resources.reservoirLevel,
 });
 
-const buildSnapshot = (state: GameState): SimulationSnapshot => {
+const buildSnapshot = (
+  state: GameState,
+  roomPurposeSource: RoomPurposeSource,
+): SimulationSnapshot => {
   const structures: StructureSnapshot[] = [];
   const rooms: RoomSnapshot[] = [];
   const zones: ZoneSnapshot[] = [];
@@ -404,7 +408,7 @@ const buildSnapshot = (state: GameState): SimulationSnapshot => {
         structureId: structure.id,
         structureName: structure.name,
         purposeId: room.purposeId,
-        purposeName: requirePurposeById(room.purposeId).name,
+        purposeName: requireRoomPurpose(roomPurposeSource, room.purposeId, { by: 'id' }).name,
         area: room.area,
         height: room.height,
         volume: room.volume,
@@ -474,6 +478,8 @@ export class SocketGateway {
 
   private readonly io: IOServer;
 
+  private readonly roomPurposeSource: RoomPurposeSource;
+
   private readonly simulationBatchInterval: number;
 
   private readonly simulationBatchMaxSize: number;
@@ -496,6 +502,7 @@ export class SocketGateway {
 
   constructor(options: SocketGatewayOptions) {
     this.facade = options.facade;
+    this.roomPurposeSource = options.roomPurposeSource;
     this.simulationBatchInterval =
       options.simulationBatchIntervalMs ?? DEFAULT_SIMULATION_BATCH_INTERVAL_MS;
     this.simulationBatchMaxSize =
@@ -547,7 +554,7 @@ export class SocketGateway {
   }
 
   private handleConnection(socket: Socket): void {
-    const snapshot = this.facade.select((state) => buildSnapshot(state));
+    const snapshot = this.facade.select((state) => buildSnapshot(state, this.roomPurposeSource));
     const time = this.facade.getTimeStatus();
 
     socket.emit('gateway.protocol', { version: 1 });
@@ -580,7 +587,7 @@ export class SocketGateway {
     if (this.disposed) {
       return;
     }
-    const snapshot = this.facade.select((state) => buildSnapshot(state));
+    const snapshot = this.facade.select((state) => buildSnapshot(state, this.roomPurposeSource));
     this.simulationQueue.push({ event, snapshot });
 
     if (this.simulationQueue.length >= this.simulationBatchMaxSize) {

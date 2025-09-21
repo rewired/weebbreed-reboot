@@ -7,8 +7,9 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
 } from '../../state/models.js';
-import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
 
 const LAMBDA = 1e-5;
 const EXPONENT = 0.9;
@@ -185,10 +186,11 @@ const createStateWithDevice = (device: DeviceInstanceState): GameState => {
 };
 
 let growRoomPurposeId: string;
+let repository: BlueprintRepository;
 
 beforeAll(async () => {
-  await loadTestRoomPurposes();
-  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  repository = await loadTestRoomPurposes();
+  growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
 });
 
 const computeWear = (runtimeHours: number): number => {
