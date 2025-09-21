@@ -30,6 +30,12 @@ describe('roomPurposes module', () => {
     expect(getRoomPurpose(repository, upperId, { by: 'id' })).toMatchObject({ name: 'Grow Room' });
   });
 
+  it('resolves purposes by slug case-insensitively', () => {
+    const growRoom = requireRoomPurpose(repository, 'GROWROOM', { by: 'kind' });
+    expect(growRoom.kind).toBe('growroom');
+    expect(growRoom.name).toBe('Grow Room');
+  });
+
   it('throws when requiring an unknown purpose', () => {
     expect(() => requireRoomPurpose(repository, 'Unknown Purpose', { by: 'name' })).toThrow(
       /Unknown room purpose name/i,
