@@ -13,16 +13,16 @@ Prüfe das gesamte Repo auf **hardcodierte** `roomPurpose`/`roomPurposes`/Enums/
 
 ## Schritte (selbst ableiten & ausführen)
 
-1. Codebase durchsuchen (Enum/const/listen) und Stellen markieren, die Purposes hardcodieren.
-2. `src/engine/roomPurposeRegistry.(ts|mjs)` anlegen:
-   - Glob-Laden von `data/blueprints/roomPurposes/*.json`.
-   - AJV-Validation nach Schema (siehe unten).
-   - Exporte: `loadRoomPurposes()`, `getPurposeById(id)`, `getPurposeByName(name)`.
-3. Call-Sites refactoren (Rooms/Factories/Tests), damit sie nur noch via Registry arbeiten.
-4. Tests:
-   - Erfolgreiches Laden und Zugriff auf `id`/`name`.
-   - Validation-Fehler → Test erwartet Fehler.
-5. Doku: Kurze Readme in `/docs` zu Registry-Nutzung.
+- [ ] Codebase durchsuchen (Enum/const/listen) und Stellen markieren, die Purposes hardcodieren.
+- [x] `src/engine/roomPurposeRegistry.(ts|mjs)` anlegen:
+  - Glob-Laden von `data/blueprints/roomPurposes/*.json`.
+  - AJV-Validation nach Schema (siehe unten).
+  - Exporte: `loadRoomPurposes()`, `getPurposeById(id)`, `getPurposeByName(name)`.
+- [ ] Call-Sites refactoren (Rooms/Factories/Tests), damit sie nur noch via Registry arbeiten.
+- [x] Tests:
+  - Erfolgreiches Laden und Zugriff auf `id`/`name`.
+  - Validation-Fehler → Test erwartet Fehler.
+- [x] Doku: Kurze Readme in `/docs` zu Registry-Nutzung.
 
 ## JSON-Schema (Vorschlag)
 

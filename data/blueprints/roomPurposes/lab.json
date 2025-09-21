@@ -1,5 +1,6 @@
 {
   "id": "lab",
+  "kind": "RoomPurpose",
   "name": "Laboratory",
   "description": "A facility for research and breeding new plant strains."
 }
