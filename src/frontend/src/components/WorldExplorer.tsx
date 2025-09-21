@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ROOM_PURPOSE_IDS } from '@/engine/roomPurposeIds';
 import { useAppStore } from '../store';
 import type { DeviceSnapshot, PlantSnapshot, ZoneSnapshot } from '../types/simulation';
 import { BreedingStationPlaceholder } from './world-explorer/BreedingStationPlaceholder';
@@ -126,7 +125,7 @@ export const WorldExplorer = () => {
   }, [activeStructure, rooms, zones, plants]);
 
   const activeRoom = selectedRoomId ? rooms[selectedRoomId] : undefined;
-  const isLabRoom = activeRoom?.purposeId === ROOM_PURPOSE_IDS.LABORATORY;
+  const isLabRoom = (activeRoom?.purposeKind ?? '').toLowerCase() === 'lab';
 
   const zoneSummaries: ZoneSummary[] = useMemo(() => {
     if (!activeRoom || isLabRoom) {

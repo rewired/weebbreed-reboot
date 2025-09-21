@@ -455,7 +455,10 @@ describe('SocketGateway', () => {
     await waitFor(() => simulationUpdates.length > 0, 200).catch(() => undefined);
     const handshake = simulationUpdates.shift();
     if (handshake && handshake.updates[0]) {
-      expect(handshake.updates[0].snapshot.rooms[0]?.purposeName).toBe('Grow Room');
+      expect(handshake.updates[0].snapshot.rooms[0]).toMatchObject({
+        purposeName: 'Grow Room',
+        purposeKind: 'growroom',
+      });
     }
     simulationUpdates.length = 0;
     domainEvents.length = 0;

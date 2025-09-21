@@ -131,6 +131,8 @@ export interface RoomSnapshot {
   structureId: string;
   structureName: string;
   purposeId: string;
+  purposeKind: string;
+  purposeName: string;
   area: number;
   height: number;
   volume: number;
