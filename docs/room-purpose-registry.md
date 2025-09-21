@@ -9,7 +9,7 @@ the runtime helpers only need a source that implements `listRoomPurposes()` (the
 
 ## API
 
-The helpers live at `src/engine/roomPurposes/index.ts` and export repository-oriented utilities:
+The helpers live at `src/backend/src/engine/roomPurposes/index.ts` and export repository-oriented utilities:
 
 - `listRoomPurposes(source)` — Returns all known room purposes from a repository-like source.
 - `getRoomPurpose(source, value, { by })` — Retrieves a purpose by id (default), name, or slug
@@ -25,7 +25,7 @@ Example:
 
 ```ts
 import { BlueprintRepository } from './data/index.js';
-import { resolveRoomPurposeId } from '../engine/roomPurposes/index.js';
+import { resolveRoomPurposeId } from './engine/roomPurposes/index.js';
 
 const repository = await BlueprintRepository.loadFrom('/absolute/path/to/data');
 const growRoomId = resolveRoomPurposeId(repository, 'Grow Room');

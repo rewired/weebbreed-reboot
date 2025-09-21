@@ -16,7 +16,7 @@ import { EventBus, type SimulationEvent, type UiStreamPacket } from '../../runti
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '../src/sim/loop.js';
 import type { GameState } from '../src/state/models.js';
 import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
-import { resolveRoomPurposeId } from '../../engine/roomPurposes/index.js';
+import { resolveRoomPurposeId } from '../src/engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../src/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '../data/blueprintRepository.js';
 

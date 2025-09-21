@@ -27,7 +27,7 @@ export * from './sim/simScheduler.js';
 export * from '../facade/index.js';
 export * from '../server/socketGateway.js';
 export * from '../server/sseGateway.js';
-export * from '../../engine/roomPurposes/index.js';
+export * from './engine/roomPurposes/index.js';
 
 const moduleFilePath = fileURLToPath(import.meta.url);
 const moduleHref = pathToFileURL(moduleFilePath).href;

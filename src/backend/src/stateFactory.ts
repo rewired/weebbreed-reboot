@@ -39,8 +39,8 @@ import {
 import { createFinanceState } from './state/initialization/finance.js';
 import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
-import { resolveRoomPurposeId, requireRoomPurposeByName } from '../../engine/roomPurposes/index.js';
-import type { RoomPurpose, RoomPurposeSlug } from '../../engine/roomPurposes/index.js';
+import { resolveRoomPurposeId, requireRoomPurposeByName } from './engine/roomPurposes/index.js';
+import type { RoomPurpose, RoomPurposeSlug } from './engine/roomPurposes/index.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';

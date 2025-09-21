@@ -1,4 +1,4 @@
-import { requireRoomPurpose, type RoomPurposeSource } from '../../../engine/roomPurposes/index.js';
+import { requireRoomPurpose, type RoomPurposeSource } from '../engine/roomPurposes/index.js';
 import type {
   ApplicantState,
   DeviceInstanceState,

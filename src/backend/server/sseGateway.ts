@@ -2,7 +2,7 @@ import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'node
 import type { Observable, Subscription } from 'rxjs';
 
 import type { SimulationFacade, TimeStatus } from '../facade/index.js';
-import type { RoomPurposeSource } from '../../engine/roomPurposes/index.js';
+import type { RoomPurposeSource } from '../src/engine/roomPurposes/index.js';
 import {
   createUiStream,
   type EventBus,

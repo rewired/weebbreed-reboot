@@ -4,7 +4,7 @@ import {
   listRoomPurposes,
   requireRoomPurpose,
   resolveRoomPurposeId,
-} from '../../../engine/roomPurposes/index.js';
+} from './roomPurposes/index.js';
 import type { BlueprintRepository } from '../../data/blueprintRepository.js';
 import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
 
