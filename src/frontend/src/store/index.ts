@@ -11,3 +11,4 @@ export const useAppStore = create<AppStoreState>()((...args) => ({
 }));
 
 export * from './types';
+export * from './selectors';
