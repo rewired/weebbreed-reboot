@@ -2,6 +2,7 @@ import { stat } from 'fs/promises';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { BlueprintRepository } from '../data/index.js';
+import { DataLoaderError } from '../data/dataLoader.js';
 
 export * from './state/models.js';
 export * from './lib/rng.js';
@@ -132,8 +133,34 @@ export const bootstrap = async (options?: ResolveDataDirectoryOptions) => {
 const normalizedEntryPointHref = getNormalizedEntryPointHref();
 
 if (normalizedEntryPointHref && import.meta.url === normalizedEntryPointHref) {
+  if (process.env.NODE_ENV !== 'production' && process.listenerCount('unhandledRejection') === 0) {
+    const unhandledRejectionHandler = (reason: unknown) => {
+      console.error(
+        'Unhandled promise rejection detected during backend bootstrap context.',
+        reason,
+      );
+    };
+
+    process.on('unhandledRejection', unhandledRejectionHandler);
+  }
+
   bootstrap().catch((error) => {
-    console.error('Backend simulation bootstrap failed', error);
+    if (error instanceof DataLoaderError) {
+      console.error('Backend simulation bootstrap aborted due to data loading issues.');
+
+      if (error.issues.length === 0) {
+        console.error('No issue details were provided by the data loader.');
+      }
+
+      for (const issue of error.issues) {
+        const location = issue.file ?? '<unknown file>';
+        console.error(`- [${issue.level.toUpperCase()}] ${location}: ${issue.message}`);
+      }
+
+      console.error(error);
+    } else {
+      console.error('Backend simulation bootstrap aborted', error);
+    }
     process.exitCode = 1;
   });
 }
