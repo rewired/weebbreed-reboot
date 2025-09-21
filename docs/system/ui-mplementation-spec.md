@@ -1,4 +1,4 @@
-# Weedbreed.AI — Frontend Implementation Spec (English, File‑Agnostic)
+# Weedbreed.AI — Frontend Implementation Spec
 
 _Purpose: A precise, file‑agnostic specification for a coding AI to implement the UI. UI holds **no business logic**; it renders read‑only **snapshots** and sends **facade commands**. All entity references use `id` (UUID v4). Currency handling is neutral. Device placement must respect `allowedRoomPurposes`. Treatment modals must respect `reentryIntervalTicks` / `preHarvestIntervalTicks` policies. CSS snippets below justify UX decisions._
 
