@@ -4,7 +4,7 @@ import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SimulationFacade, TimeStatus } from '../facade/index.js';
-import type { RoomPurposeSource } from '../../engine/roomPurposes/index.js';
+import type { RoomPurposeSource } from '../src/engine/roomPurposes/index.js';
 import { SseGateway } from './sseGateway.js';
 import type { UiStreamPacket } from '../../runtime/eventBus.js';
 import type { SimulationSnapshot } from '../src/lib/uiSnapshot.js';

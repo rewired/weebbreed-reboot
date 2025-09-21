@@ -10,7 +10,7 @@ import type { BlueprintRepository } from '../../data/blueprintRepository.js';
 import type { StructureBlueprint } from '../state/models.js';
 import { RngService } from '../lib/rng.js';
 import type { StateFactoryContext } from '../stateFactory.js';
-import type { RoomPurpose } from '../../../engine/roomPurposes/index.js';
+import type { RoomPurpose } from '../engine/roomPurposes/index.js';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
