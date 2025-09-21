@@ -71,7 +71,11 @@ const main = async (): Promise<void> => {
 
   const server = createServer();
   const facade = new SimulationFacade({ state });
-  const gateway = new SocketGateway({ httpServer: server, facade });
+  const gateway = new SocketGateway({
+    httpServer: server,
+    facade,
+    roomPurposeSource: repository,
+  });
 
   const port = resolvePort(process.env.WEEBBREED_BACKEND_PORT);
   await startHttpServer(server, port);

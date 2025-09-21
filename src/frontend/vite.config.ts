@@ -24,7 +24,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, 'src'),
       '@/ui': path.resolve(__dirname, 'src/ui'),
-      '@/engine': path.resolve(__dirname, '../backend/src/engine'),
+      '@/engine': path.resolve(__dirname, '../engine'),
     },
   },
   server: socketProxyTarget

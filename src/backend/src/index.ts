@@ -4,7 +4,6 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { inspect } from 'node:util';
 import { BlueprintRepository } from '../data/index.js';
 import { DataLoaderError, type DataLoadSummary } from '../data/dataLoader.js';
-import { loadRoomPurposes } from './engine/roomPurposeRegistry.js';
 
 export * from './state/models.js';
 export * from './lib/rng.js';
@@ -16,7 +15,7 @@ export * from './sim/loop.js';
 export * from './sim/simScheduler.js';
 export * from '../facade/index.js';
 export * from '../server/socketGateway.js';
-export * from './engine/roomPurposeRegistry.js';
+export * from '../../engine/roomPurposes/index.js';
 
 const moduleFilePath = fileURLToPath(import.meta.url);
 const moduleHref = pathToFileURL(moduleFilePath).href;
@@ -61,6 +60,7 @@ const expectedBlueprintSubdirectories: string[][] = [
   ['blueprints', 'strains'],
   ['blueprints', 'devices'],
   ['blueprints', 'cultivationMethods'],
+  ['blueprints', 'roomPurposes'],
   ['prices'],
 ];
 
@@ -150,7 +150,6 @@ export const bootstrap = async (
   const dataDirectory = await resolveDataDirectory(options);
   const repository = await BlueprintRepository.loadFrom(dataDirectory);
   const summary = repository.getSummary();
-  await loadRoomPurposes({ dataDirectory });
 
   if (process.env.NODE_ENV !== 'production') {
     repository.onHotReload(
@@ -158,7 +157,6 @@ export const bootstrap = async (
         console.info(
           `[hot-reload] Blueprint data reloaded (${result.summary.loadedFiles} files validated).`,
         );
-        await loadRoomPurposes({ dataDirectory });
       },
       {
         onHotReloadError: (error) => {

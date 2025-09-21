@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { EventBus } from '../lib/eventBus.js';
-import { resolvePurposeIdByName } from '../engine/roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
+import type { BlueprintRepository } from '../../data/blueprintRepository.js';
 import type {
   DeviceInstanceState,
   GameState,
@@ -218,10 +219,11 @@ const createGameStateWithZone = (): GameState => {
 };
 
 let growRoomPurposeId: string;
+let repository: BlueprintRepository;
 
 beforeAll(async () => {
-  await loadTestRoomPurposes();
-  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  repository = await loadTestRoomPurposes();
+  growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
 });
 
 describe('SimulationLoop', () => {

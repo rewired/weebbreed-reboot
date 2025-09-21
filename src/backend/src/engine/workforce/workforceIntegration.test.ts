@@ -9,14 +9,16 @@ import type {
   ZoneState,
 } from '../../state/models.js';
 import { WorkforceEngine } from './workforceEngine.js';
-import { resolvePurposeIdByName } from '../roomPurposeRegistry.js';
+import { resolveRoomPurposeId } from '../../../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
 
 let growRoomPurposeId: string;
+let repository: BlueprintRepository;
 
 beforeAll(async () => {
-  await loadTestRoomPurposes();
-  growRoomPurposeId = resolvePurposeIdByName('Grow Room');
+  repository = await loadTestRoomPurposes();
+  growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
 });
 
 const createBaseState = (): GameState => {

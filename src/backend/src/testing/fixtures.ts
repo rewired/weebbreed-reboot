@@ -10,6 +10,7 @@ import type { BlueprintRepository } from '../../data/blueprintRepository.js';
 import type { StructureBlueprint } from '../state/models.js';
 import { RngService } from '../lib/rng.js';
 import type { StateFactoryContext } from '../stateFactory.js';
+import type { RoomPurpose } from '../../../engine/roomPurposes/index.js';
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
 
@@ -162,6 +163,17 @@ export const createStructureBlueprint = (
   upfrontFee: overrides.upfrontFee ?? 8000,
 });
 
+export const createRoomPurpose = (overrides: Partial<RoomPurpose> = {}): RoomPurpose => ({
+  id: overrides.id ?? '2630459c-fc40-4e91-a69f-b47665b5a917',
+  kind: 'RoomPurpose',
+  name: overrides.name ?? 'Grow Room',
+  description:
+    overrides.description ?? 'A room designed for cultivating plants under controlled conditions.',
+  flags: overrides.flags ?? {},
+  economy: overrides.economy ?? { areaCost: 500, baseRentPerTick: 2 },
+  ...overrides,
+});
+
 interface RepositoryStubOptions {
   strains?: StrainBlueprint[];
   cultivationMethods?: CultivationMethodBlueprint[];
@@ -169,6 +181,7 @@ interface RepositoryStubOptions {
   devicePrices?: Map<string, DevicePriceEntry>;
   strainPrices?: Map<string, StrainPriceEntry>;
   utilityPrices?: UtilityPrices;
+  roomPurposes?: RoomPurpose[];
 }
 
 const defaultUtilityPrices: UtilityPrices = {
@@ -186,6 +199,20 @@ export const createBlueprintRepositoryStub = (
     createDeviceBlueprint({ kind: 'Lamp' }),
     createDeviceBlueprint({ kind: 'ClimateUnit', settings: { coverageArea: 12 } }),
     createDeviceBlueprint({ kind: 'Dehumidifier' }),
+  ];
+  const roomPurposes = options.roomPurposes ?? [
+    createRoomPurpose({
+      id: '2630459c-fc40-4e91-a69f-b47665b5a917',
+      name: 'Grow Room',
+      flags: { supportsCultivation: true },
+      economy: { areaCost: 900, baseRentPerTick: 4.5 },
+    }),
+    createRoomPurpose({
+      id: '5ab7d9ac-f14a-45d9-b5f9-908182ca4a02',
+      name: 'Break Room',
+      flags: { supportsRest: true },
+      economy: { areaCost: 250, baseRentPerTick: 1.2 },
+    }),
   ];
 
   const devicePrices =
@@ -213,9 +240,11 @@ export const createBlueprintRepositoryStub = (
     getStrain: (id: string) => strains.find((strain) => strain.id === id),
     getDevice: (id: string) => devices.find((device) => device.id === id),
     getCultivationMethod: (id: string) => methods.find((method) => method.id === id),
+    getRoomPurpose: (id: string) => roomPurposes.find((purpose) => purpose.id === id),
     listStrains: () => strains.map((strain) => clone(strain)),
     listDevices: () => devices.map((device) => clone(device)),
     listCultivationMethods: () => methods.map((method) => clone(method)),
+    listRoomPurposes: () => roomPurposes.map((purpose) => clone(purpose)),
     getDevicePrice: (id: string) => devicePrices.get(id),
     getStrainPrice: (id: string) => strainPrices.get(id),
     getUtilityPrices: () => ({ ...utilityPrices }),

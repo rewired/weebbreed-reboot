@@ -15,7 +15,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-      '@/engine': path.resolve(__dirname, 'src/engine'),
+      '@/engine': path.resolve(__dirname, '../engine'),
       '@/ui': path.resolve(__dirname, '../frontend/src/ui'),
     },
   },

@@ -50,6 +50,10 @@ export class BlueprintRepository {
     return this.data.cultivationMethods.get(id);
   }
 
+  getRoomPurpose(id: string) {
+    return this.data.roomPurposes.get(id);
+  }
+
   listStrains() {
     return Array.from(this.data.strains.values());
   }
@@ -60,6 +64,10 @@ export class BlueprintRepository {
 
   listCultivationMethods() {
     return Array.from(this.data.cultivationMethods.values());
+  }
+
+  listRoomPurposes() {
+    return Array.from(this.data.roomPurposes.values());
   }
 
   getDevicePrice(id: string) {

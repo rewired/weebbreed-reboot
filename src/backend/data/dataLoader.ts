@@ -8,6 +8,8 @@ import {
   deviceSchema,
   CultivationMethodBlueprint,
   cultivationMethodSchema,
+  RoomPurposeBlueprint,
+  roomPurposeSchema,
   DevicePriceEntry,
   devicePricesSchema,
   StrainPriceEntry,
@@ -35,6 +37,7 @@ export interface BlueprintData {
   strains: Map<string, StrainBlueprint>;
   devices: Map<string, DeviceBlueprint>;
   cultivationMethods: Map<string, CultivationMethodBlueprint>;
+  roomPurposes: Map<string, RoomPurposeBlueprint>;
   prices: {
     devices: Map<string, DevicePriceEntry>;
     strains: Map<string, StrainPriceEntry>;
@@ -76,6 +79,61 @@ const collectZodIssues = (error: ZodError): string[] =>
     const location = issue.path.length > 0 ? issue.path.join('.') : '<root>';
     return `${location}: ${issue.message}`;
   });
+
+const normalizeRoomPurposeId = (value: string): string => value.trim().toLowerCase();
+const normalizeRoomPurposeName = (value: string): string => value.trim().toLowerCase();
+
+const filterDuplicateRoomPurposeIds = (
+  entries: CollectionEntry<RoomPurposeBlueprint>[],
+  issues: DataIssue[],
+): CollectionEntry<RoomPurposeBlueprint>[] => {
+  const filtered: CollectionEntry<RoomPurposeBlueprint>[] = [];
+  const seen = new Map<string, string>();
+
+  for (const entry of entries) {
+    const normalizedId = normalizeRoomPurposeId(entry.data.id);
+    const previousFile = seen.get(normalizedId);
+    if (previousFile) {
+      issues.push({
+        level: 'error',
+        message: `Duplicate room purpose id '${entry.data.id}' detected`,
+        file: entry.file,
+        details: { previousFile },
+      });
+      continue;
+    }
+    seen.set(normalizedId, entry.file);
+    filtered.push(entry);
+  }
+
+  return filtered;
+};
+
+const filterDuplicateRoomPurposeNames = (
+  entries: CollectionEntry<RoomPurposeBlueprint>[],
+  issues: DataIssue[],
+): CollectionEntry<RoomPurposeBlueprint>[] => {
+  const filtered: CollectionEntry<RoomPurposeBlueprint>[] = [];
+  const seen = new Map<string, string>();
+
+  for (const entry of entries) {
+    const normalizedName = normalizeRoomPurposeName(entry.data.name);
+    const previousFile = seen.get(normalizedName);
+    if (previousFile) {
+      issues.push({
+        level: 'error',
+        message: `Duplicate room purpose name '${entry.data.name}' detected`,
+        file: entry.file,
+        details: { previousFile },
+      });
+      continue;
+    }
+    seen.set(normalizedName, entry.file);
+    filtered.push(entry);
+  }
+
+  return filtered;
+};
 
 async function loadDirectoryCollection<T>(
   directory: string,
@@ -242,6 +300,7 @@ export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoad
   const strainDir = path.join(blueprintsDir, 'strains');
   const deviceDir = path.join(blueprintsDir, 'devices');
   const cultivationDir = path.join(blueprintsDir, 'cultivationMethods');
+  const roomPurposeDir = path.join(blueprintsDir, 'roomPurposes');
   const pricesDir = path.join(absoluteDataDir, 'prices');
 
   const strainEntries = await loadDirectoryCollection(
@@ -265,10 +324,22 @@ export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoad
     summary,
     issues,
   );
+  const roomPurposeEntries = await loadDirectoryCollection(
+    roomPurposeDir,
+    roomPurposeSchema,
+    absoluteDataDir,
+    summary,
+    issues,
+  );
 
   const strains = toMapWithDuplicateCheck(strainEntries, issues);
   const devices = toMapWithDuplicateCheck(deviceEntries, issues);
   const cultivationMethods = toMapWithDuplicateCheck(cultivationEntries, issues);
+  const filteredRoomPurposeEntries = filterDuplicateRoomPurposeNames(
+    filterDuplicateRoomPurposeIds(roomPurposeEntries, issues),
+    issues,
+  );
+  const roomPurposes = toMapWithDuplicateCheck(filteredRoomPurposeEntries, issues);
 
   const loadPriceFile = async <T>(
     fileName: string,
@@ -327,6 +398,7 @@ export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoad
     strains,
     devices,
     cultivationMethods,
+    roomPurposes,
     prices: {
       devices: devicePrices,
       strains: strainPrices,
