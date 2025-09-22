@@ -3,6 +3,7 @@ import { EventBus } from '@/lib/eventBus.js';
 import { SimulationLoop } from './loop.js';
 import type {
   DeviceInstanceState,
+  EmployeeState,
   GameState,
   StructureState,
   ZoneEnvironmentState,
@@ -181,6 +182,30 @@ const createAccountingTestState = (): GameState => {
   };
 };
 
+const createEmployee = (id: string, salaryPerTick: number): EmployeeState => ({
+  id,
+  name: `Employee ${id}`,
+  role: 'Gardener',
+  salaryPerTick,
+  status: 'idle',
+  morale: 0.75,
+  energy: 0.9,
+  maxMinutesPerTick: 60,
+  skills: {},
+  experience: {},
+  traits: [],
+  certifications: [],
+  shift: {
+    shiftId: 'shift-day',
+    name: 'Day Shift',
+    startHour: 8,
+    durationHours: 8,
+    overlapMinutes: 0,
+  },
+  hoursWorkedToday: 0,
+  overtimeHours: 0,
+});
+
 describe('SimulationLoop accounting integration', () => {
   it('applies utility, maintenance, and capex costs with finance events', async () => {
     const state = createAccountingTestState();
@@ -301,5 +326,49 @@ describe('SimulationLoop accounting integration', () => {
 
     expect(emittedTypes).toContain('finance.capex');
     expect(emittedTypes).toContain('finance.tick');
+  });
+
+  it('deducts payroll during the accounting phase and emits payroll events', async () => {
+    const state = createAccountingTestState();
+    state.structures = [];
+    state.finances.cashOnHand = 500;
+    state.personnel.employees = [createEmployee('emp-1', 15), createEmployee('emp-2', 10.5)];
+
+    const priceCatalog: PriceCatalog = {
+      devicePrices: new Map(),
+      strainPrices: new Map(),
+      utilityPrices: {
+        pricePerKwh: 0.5,
+        pricePerLiterWater: 0.1,
+        pricePerGramNutrients: 0.2,
+      },
+    };
+
+    const costService = new CostAccountingService(priceCatalog);
+    const loop = new SimulationLoop({
+      state,
+      accounting: { service: costService },
+      phases: {
+        accounting: () => undefined,
+      },
+    });
+
+    const result = await loop.processTick();
+
+    const payrollTotal = 25.5;
+    expect(state.finances.cashOnHand).toBeCloseTo(500 - payrollTotal, 6);
+    expect(state.finances.ledger).toHaveLength(1);
+    expect(state.finances.ledger[0]).toMatchObject({ category: 'payroll', amount: -payrollTotal });
+    expect(state.finances.summary.totalExpenses).toBeCloseTo(payrollTotal, 6);
+    expect(state.finances.summary.totalPayroll).toBeCloseTo(payrollTotal, 6);
+    expect(state.finances.summary.lastTickExpenses).toBeCloseTo(payrollTotal, 6);
+
+    const payrollEvent = result.events.find((event) => event.type === 'finance.opex');
+    expect(payrollEvent).toBeDefined();
+    expect(payrollEvent?.payload).toMatchObject({ category: 'payroll', amount: payrollTotal });
+
+    const tickEvent = result.events.find((event) => event.type === 'finance.tick');
+    expect(tickEvent).toBeDefined();
+    expect(tickEvent?.payload).toMatchObject({ payroll: payrollTotal, expenses: payrollTotal });
   });
 });
