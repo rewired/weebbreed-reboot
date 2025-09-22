@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SAVEGAME_KIND, saveGameEnvelopeSchema } from './schemas.js';
 import { createInitialState } from '../stateFactory.js';
-import { createStateFactoryContext } from '../testing/fixtures.js';
+import { createStateFactoryContext } from '@/testing/fixtures.js';
 
 describe('saveGameEnvelopeSchema', () => {
   it('accepts a well-formed save game envelope', async () => {

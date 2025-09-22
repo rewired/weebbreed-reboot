@@ -13,11 +13,27 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@runtime': path.resolve(__dirname, '../runtime'),
-      rxjs: path.resolve(__dirname, 'node_modules/rxjs'),
-      pino: path.resolve(__dirname, 'src/testing/pinoStub.ts'),
-    },
+    alias: [
+      {
+        find: '@/physio',
+        replacement: path.resolve(__dirname, '../physio'),
+      },
+      {
+        find: '@',
+        replacement: path.resolve(__dirname, 'src'),
+      },
+      {
+        find: '@runtime',
+        replacement: path.resolve(__dirname, '../runtime'),
+      },
+      {
+        find: 'rxjs',
+        replacement: path.resolve(__dirname, 'node_modules/rxjs'),
+      },
+      {
+        find: 'pino',
+        replacement: path.resolve(__dirname, 'src/testing/pinoStub.ts'),
+      },
+    ],
   },
 });

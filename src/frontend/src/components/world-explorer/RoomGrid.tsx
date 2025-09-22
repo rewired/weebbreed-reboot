@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { RoomSnapshot } from '../../types/simulation';
+import type { RoomSnapshot } from '@/types/simulation';
 import styles from './HierarchyGrid.module.css';
 
 export interface RoomSummary {

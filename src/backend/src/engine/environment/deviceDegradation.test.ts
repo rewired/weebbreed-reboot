@@ -8,7 +8,7 @@ import type {
   ZoneResourceState,
 } from '@/state/models.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
-import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 
 const LAMBDA = 1e-5;

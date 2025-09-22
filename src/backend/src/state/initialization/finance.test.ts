@@ -3,7 +3,7 @@ import {
   createBlueprintRepositoryStub,
   createDeviceBlueprint,
   createStructureBlueprint,
-} from '../../testing/fixtures.js';
+} from '@/testing/fixtures.js';
 import type { EconomicsSettings } from '../models.js';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { createFinanceState } from './finance.js';

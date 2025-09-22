@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { ZoneSnapshot, PlantSnapshot } from '../../types/simulation';
+import type { ZoneSnapshot, PlantSnapshot } from '@/types/simulation';
 import styles from './HierarchyGrid.module.css';
 
 export interface ZoneSummary {
@@ -102,7 +102,10 @@ export const ZoneGrid = ({
             const isActive = selectedZoneId === zone.id;
             const harvestable = harvestReadyCount(plants);
             return (
-              <article key={zone.id} className={`${styles.card} ${isActive ? styles.cardActive : ''}`.trim()}>
+              <article
+                key={zone.id}
+                className={`${styles.card} ${isActive ? styles.cardActive : ''}`.trim()}
+              >
                 <header className={styles.cardHeader}>
                   <div className={styles.cardTitleGroup}>
                     {isEditing ? (
@@ -137,7 +140,9 @@ export const ZoneGrid = ({
                       <span>
                         {t('labels.zoneMethod', {
                           defaultValue: 'Method: {{value}}',
-                          value: zone.cultivationMethodId ?? t('labels.unknown', { defaultValue: 'Unknown' }),
+                          value:
+                            zone.cultivationMethodId ??
+                            t('labels.unknown', { defaultValue: 'Unknown' }),
                         })}
                       </span>
                     </span>
@@ -168,7 +173,11 @@ export const ZoneGrid = ({
                       type="button"
                       className={`${styles.iconButton} ${styles.iconButtonDanger}`}
                       onClick={() => {
-                        if (window.confirm(t('labels.confirmDeleteZone', { defaultValue: 'Delete this zone?' }))) {
+                        if (
+                          window.confirm(
+                            t('labels.confirmDeleteZone', { defaultValue: 'Delete this zone?' }),
+                          )
+                        ) {
                           onDelete(zone.id);
                         }
                       }}
@@ -191,7 +200,9 @@ export const ZoneGrid = ({
                   </div>
                   <div className={styles.metricRow}>
                     <dt>{t('labels.ppfd')}</dt>
-                    <dd className={styles.metricValue}>{zone.environment.ppfd.toFixed(0)} µmol·m⁻²·s⁻¹</dd>
+                    <dd className={styles.metricValue}>
+                      {zone.environment.ppfd.toFixed(0)} µmol·m⁻²·s⁻¹
+                    </dd>
                   </div>
                 </dl>
               </article>

@@ -14,11 +14,11 @@ import {
   type ResourceDemandResult,
   type ResourceSupply,
 } from './resourceDemand.js';
-import { lightSaturationResponse, ppfdToMoles } from '../../../../physio/ppfd.js';
-import { gaussianResponse } from '../../../../physio/temp.js';
-import { co2HalfSaturationResponse } from '../../../../physio/co2.js';
-import { vaporPressureDeficit } from '../../../../physio/vpd.js';
-import { estimateTranspirationLiters } from '../../../../physio/transpiration.js';
+import { lightSaturationResponse, ppfdToMoles } from '@/physio/ppfd.js';
+import { gaussianResponse } from '@/physio/temp.js';
+import { co2HalfSaturationResponse } from '@/physio/co2.js';
+import { vaporPressureDeficit } from '@/physio/vpd.js';
+import { estimateTranspirationLiters } from '@/physio/transpiration.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);

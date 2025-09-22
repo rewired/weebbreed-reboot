@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useAppStore } from '../store';
-import type { SimulationEvent } from '../types/simulation';
+import type { SimulationEvent } from '@/types/simulation';
 import styles from './PersonnelView.module.css';
 
 const buildEventKey = (event: SimulationEvent, fallbackIndex: number) => {

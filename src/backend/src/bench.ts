@@ -12,7 +12,7 @@ import type { SimulationPhaseContext } from './sim/loop.js';
 import { createPhenologyConfig } from './engine/plants/phenology.js';
 import type { PhenologyState } from './engine/plants/phenology.js';
 import { updatePlantGrowth } from './engine/plants/growthModel.js';
-import { createBlueprintRepositoryStub, createStateFactoryContext } from './testing/fixtures.js';
+import { createBlueprintRepositoryStub, createStateFactoryContext } from '@/testing/fixtures.js';
 import { logger } from '@runtime/logger.js';
 
 const benchLogger = logger.child({ component: 'bench' });

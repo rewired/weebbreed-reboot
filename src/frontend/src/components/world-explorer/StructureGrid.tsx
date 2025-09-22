@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { StructureSnapshot } from '../../types/simulation';
+import type { StructureSnapshot } from '@/types/simulation';
 import styles from './HierarchyGrid.module.css';
 
 export interface StructureSummary {
@@ -116,9 +116,10 @@ export const StructureGrid = ({
                     <span className={styles.cardSubtitle}>
                       {t('labels.structureFootprint', {
                         defaultValue: '{{value}} m² footprint',
-                        value: structure.footprint?.area?.toLocaleString(undefined, {
-                          maximumFractionDigits: 1,
-                        }) ?? '—',
+                        value:
+                          structure.footprint?.area?.toLocaleString(undefined, {
+                            maximumFractionDigits: 1,
+                          }) ?? '—',
                       })}
                     </span>
                   </div>
@@ -137,7 +138,13 @@ export const StructureGrid = ({
                       type="button"
                       className={`${styles.iconButton} ${styles.iconButtonDanger}`}
                       onClick={() => {
-                        if (window.confirm(t('labels.confirmDeleteStructure', { defaultValue: 'Delete this structure?' }))) {
+                        if (
+                          window.confirm(
+                            t('labels.confirmDeleteStructure', {
+                              defaultValue: 'Delete this structure?',
+                            }),
+                          )
+                        ) {
                           onDelete(structure.id);
                         }
                       }}

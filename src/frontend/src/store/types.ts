@@ -4,6 +4,7 @@ import type {
   FinanceSummarySnapshot,
   PlantSnapshot,
   PersonnelSnapshot,
+  RoomSnapshot,
   SimulationConfigUpdate,
   SimulationControlCommand,
   SimulationEvent,
@@ -12,9 +13,8 @@ import type {
   SimulationTimeStatus,
   SimulationUpdateEntry,
   StructureSnapshot,
-  RoomSnapshot,
   ZoneSnapshot,
-} from '../types/simulation';
+} from '@/types/simulation';
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
 

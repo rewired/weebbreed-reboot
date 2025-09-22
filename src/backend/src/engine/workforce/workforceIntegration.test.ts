@@ -10,7 +10,7 @@ import type {
 } from '@/state/models.js';
 import { WorkforceEngine } from './workforceEngine.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
-import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 
 let growRoomPurposeId: string;

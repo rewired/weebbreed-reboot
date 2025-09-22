@@ -10,7 +10,7 @@ import {
   createStrainBlueprint,
   createStrainPriceMap,
   createStructureBlueprint,
-} from './testing/fixtures.js';
+} from '@/testing/fixtures.js';
 import * as blueprintModule from './state/initialization/blueprints.js';
 
 afterEach(() => {
