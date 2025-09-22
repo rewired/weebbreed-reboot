@@ -23,6 +23,14 @@ workspace documentation. Start with the product vision and system references in
 [`docs/vision_scope.md`](docs/vision_scope.md), the data dictionary in
 [`docs/DD.md`](docs/DD.md), and additional deep dives under `docs/system/`.
 
+### Project History & Decisions
+
+- Track notable workspace changes in [`CHANGELOG.md`](CHANGELOG.md) following the
+  Keep a Changelog convention with Semantic Versioning.
+- Accepted architecture decisions are recorded in `docs/system/adr/`. The
+  TypeScript toolchain direction lives in
+  [`docs/system/adr/0001-typescript-toolchain.md`](docs/system/adr/0001-typescript-toolchain.md).
+
 ## Continuous Verification
 
 Our automation pipeline keeps data, security, and code quality aligned with the
@@ -47,7 +55,8 @@ Our automation pipeline keeps data, security, and code quality aligned with the
    - `pnpm lint`
 
 Refer to the docs for simulation tuning, schema updates, and naming conventions
-before changing blueprints or code.
+before changing blueprints or code. Review the changelog and ADRs when planning
+tooling or architecture updates to stay aligned with previous decisions.
 
 ## Contributing
 
