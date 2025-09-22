@@ -235,6 +235,9 @@ const createTestState = (): GameState => {
                 name: 'Zone',
                 cultivationMethodId: 'method-1',
                 strainId: 'strain-1',
+                area: 60,
+                ceilingHeight: 4,
+                volume: 240,
                 environment: {
                   temperature: 22,
                   relativeHumidity: 0.55,

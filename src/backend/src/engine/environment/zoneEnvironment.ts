@@ -1,15 +1,16 @@
-import { computeZoneDeviceDeltas, type ZoneGeometry } from './deviceEffects.js';
+import { computeZoneDeviceDeltas } from './deviceEffects.js';
 import {
   ClimateController,
   type ClimateControllerOptions,
   type ClimateControlSetpoints,
 } from './climateController.js';
-import type { GameState, RoomState, ZoneState } from '@/state/models.js';
+import type { GameState, RoomState, StructureState, ZoneState } from '@/state/models.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
 import { approachTemperature } from '../../../../physio/temp.js';
 import { approachRelativeHumidity } from '../../../../physio/rh.js';
 import { approachCo2 } from '../../../../physio/co2.js';
 import { computeVpd } from '../../../../physio/vpd.js';
+import { getZoneGeometry, type ZoneGeometry } from '@/state/geometry.js';
 
 export interface AmbientEnvironment {
   temperature: number;
@@ -91,14 +92,17 @@ const computeTickHours = (tickLengthMinutes: number): number => {
   return Math.max(tickLengthMinutes, 0) / 60;
 };
 
-const computeZoneGeometry = (room: RoomState): ZoneGeometry => {
-  const zoneCount = Math.max(room.zones.length, 1);
-  const area = room.area / zoneCount;
-  const volume = room.volume / zoneCount;
+const resolveZoneGeometry = (
+  structure: StructureState,
+  room: RoomState,
+  zone: ZoneState,
+): ZoneGeometry => {
+  const geometry = getZoneGeometry(structure, room, zone);
   return {
-    area: Math.max(area, 0.0001),
-    volume: Math.max(volume, 0.0001),
-  };
+    area: Math.max(geometry.area, 0.0001),
+    ceilingHeight: Math.max(geometry.ceilingHeight, 0.0001),
+    volume: Math.max(geometry.volume, 0.0001),
+  } satisfies ZoneGeometry;
 };
 
 const computeAirChangesPerHour = (
@@ -159,7 +163,7 @@ export class ZoneEnvironmentService {
     for (const structure of state.structures) {
       for (const room of structure.rooms) {
         for (const zone of room.zones) {
-          const geometry = computeZoneGeometry(room);
+          const geometry = resolveZoneGeometry(structure, room, zone);
           const controller = this.getController(zone.id);
           const setpoints = this.resolveSetpoints(zone);
           const powerLevels = controller.update(
@@ -196,7 +200,7 @@ export class ZoneEnvironmentService {
     for (const structure of state.structures) {
       for (const room of structure.rooms) {
         for (const zone of room.zones) {
-          const geometry = computeZoneGeometry(room);
+          const geometry = resolveZoneGeometry(structure, room, zone);
           const effect = this.deviceEffects.get(zone.id);
           const airflow = effect?.airflow ?? 0;
           const ach = computeAirChangesPerHour(

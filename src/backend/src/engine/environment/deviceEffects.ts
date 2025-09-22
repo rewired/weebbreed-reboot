@@ -1,10 +1,6 @@
 import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
+import type { ZoneGeometry } from '@/state/geometry.js';
 import type { ClimateControlOutput } from './climateController.js';
-
-export interface ZoneGeometry {
-  area: number;
-  volume: number;
-}
 
 export interface DeviceEffect {
   temperatureDelta: number;

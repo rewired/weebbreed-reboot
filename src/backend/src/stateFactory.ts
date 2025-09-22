@@ -41,6 +41,7 @@ import { createPersonnel, loadPersonnelDirectory } from './state/initialization/
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
 import { resolveRoomPurposeId, requireRoomPurposeByName } from './engine/roomPurposes/index.js';
 import type { RoomPurpose, RoomPurposeSlug } from './engine/roomPurposes/index.js';
+import { validateStructureGeometry } from './state/geometry.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';
@@ -260,12 +261,18 @@ const buildStructureState = (
   const plants = createPlants(plantCount, zoneId, strain, idStream, plantStream);
   const environment = createZoneEnvironment();
   const growRoomPurposeId = growRoomPurpose.id;
+  const zoneArea = growRoomArea;
+  const zoneCeilingHeight = footprint.height;
+  const zoneVolume = zoneArea * zoneCeilingHeight;
   const zone: StructureCreationResult['growZone'] = {
     id: zoneId,
     roomId: '',
     name: 'Zone A',
     cultivationMethodId: method.id,
     strainId: strain.id,
+    area: zoneArea,
+    ceilingHeight: zoneCeilingHeight,
+    volume: zoneVolume,
     environment,
     resources: createZoneResources(),
     plants,
@@ -315,6 +322,8 @@ const buildStructureState = (
     rentPerTick: (blueprint.rentalCostPerSqmPerMonth * footprint.area) / (30 * 24),
     upfrontCostPaid: blueprint.upfrontFee,
   };
+
+  validateStructureGeometry(structure);
 
   return {
     structure,

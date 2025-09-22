@@ -28,6 +28,9 @@ const createBaseState = (): GameState => {
     name: 'Propagation',
     cultivationMethodId: 'method-1',
     strainId: 'strain-1',
+    area: 100,
+    ceilingHeight: 4,
+    volume: 400,
     environment: {
       temperature: 24,
       relativeHumidity: 0.6,
