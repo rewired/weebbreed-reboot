@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { SimulationBridgeHandle } from '../hooks/useSimulationBridge';
-import { useAppStore } from '../store';
-import type { NavigationView } from '../store';
+import type { SimulationBridgeHandle } from '@/hooks/useSimulationBridge';
+import { useAppStore } from '@/store';
+import type { NavigationView } from '@/store';
 import {
   selectAlertCount,
   selectCapital,
@@ -13,8 +13,8 @@ import {
   selectLastTickEvent,
   selectRecentEvents,
   selectTargetTickRate,
-} from '../store/selectors';
-import { formatInGameTime } from '../store/utils/time';
+} from '@/store/selectors';
+import { formatInGameTime } from '@/store/utils/time';
 import styles from './Dashboard.module.css';
 
 const SPEED_OPTIONS = [0.5, 1, 2, 5, 10];

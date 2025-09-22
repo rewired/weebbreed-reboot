@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import type { DeviceSnapshot, PlantSnapshot, ZoneSnapshot } from '@/types/simulation';
 import { BreedingStationPlaceholder } from './world-explorer/BreedingStationPlaceholder';
 import { RoomGrid, type RoomSummary } from './world-explorer/RoomGrid';
