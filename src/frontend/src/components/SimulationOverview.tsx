@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import styles from './SimulationOverview.module.css';
 
 export const SimulationOverview = () => {

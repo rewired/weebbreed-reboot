@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import type { SimulationEvent } from '@/types/simulation';
 import styles from './EventLog.module.css';
 

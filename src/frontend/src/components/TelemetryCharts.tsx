@@ -10,9 +10,9 @@ import {
   YAxis,
 } from 'recharts';
 import { useTranslation } from 'react-i18next';
-import { useThrottledValue } from '../hooks/useThrottledValue';
-import { useAppStore } from '../store';
-import type { SimulationTimelineEntry } from '../store';
+import { useThrottledValue } from '@/hooks/useThrottledValue';
+import { useAppStore } from '@/store';
+import type { SimulationTimelineEntry } from '@/store';
 import styles from './TelemetryCharts.module.css';
 
 const MAX_POINTS = 120;

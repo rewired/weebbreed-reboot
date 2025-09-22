@@ -1,11 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '../store';
-import {
-  selectSelectedRoom,
-  selectSelectedStructure,
-  selectSelectedZone,
-} from '../store/selectors';
+import { useAppStore } from '@/store';
+import { selectSelectedRoom, selectSelectedStructure, selectSelectedZone } from '@/store/selectors';
 import styles from './NavigationTabs.module.css';
 
 interface BreadcrumbSegment {

@@ -11,7 +11,7 @@ import {
   Area,
   AreaChart,
 } from 'recharts';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import styles from './FinanceView.module.css';
 
 export const FinanceView = () => {

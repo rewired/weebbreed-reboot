@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { flexRender, getCoreRowModel, useReactTable, type ColumnDef } from '@tanstack/react-table';
-import { useAppStore } from '../store';
+import { useAppStore } from '@/store';
 import styles from './TelemetryTable.module.css';
 
 interface TelemetryRow {
