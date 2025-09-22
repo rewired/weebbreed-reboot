@@ -1,12 +1,7 @@
 import path from 'path';
 import { watchData } from '@runtime/dataWatcher.js';
-import {
-  BlueprintData,
-  DataLoadResult,
-  DataLoadSummary,
-  DataLoaderError,
-  loadBlueprintData,
-} from './dataLoader.js';
+import { DataLoaderError, loadBlueprintData } from './dataLoader.js';
+import type { BlueprintData, DataLoadResult, DataLoadSummary } from './dataLoader.js';
 import type { DevicePriceEntry, StrainPriceEntry } from './schemas/index.js';
 
 export type HotReloadDisposition = 'commit' | 'defer';
