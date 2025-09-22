@@ -5,13 +5,14 @@ import { io as createClient, type Socket as ClientSocket } from 'socket.io-clien
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type {
   CommandResult,
-  EventFilter,
+  SimulationFacade,
   TimeStartIntent,
   TimeStatus,
   TimeStepIntent,
   SetSpeedIntent,
   Unsubscribe,
 } from '@/facade/index.js';
+import type { EventFilter } from '@/lib/eventBus.js';
 import { EventBus, type SimulationEvent, type UiStreamPacket } from '@runtime/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '@/sim/loop.js';
 import type { GameState } from '@/state/models.js';
@@ -64,7 +65,8 @@ beforeAll(async () => {
 describe('SocketGateway uiStream integration', () => {
   let server: HttpServer;
   let port: number;
-  let facade: StubFacade;
+  let facade: SimulationFacade;
+  let facadeStub: StubFacade;
   let gateway: SocketGateway;
   let client: ClientSocket;
   let uiStream$: Subject<UiStreamPacket<SimulationSnapshot, TimeStatus>>;
@@ -75,9 +77,14 @@ describe('SocketGateway uiStream integration', () => {
     server = createServer();
     await new Promise<void>((resolve) => server.listen(0, resolve));
     port = (server.address() as AddressInfo).port;
-    facade = new StubFacade(createTestState());
+    const facadeBundle = createFacadeStub();
+    facade = facadeBundle.facade;
+    facadeStub = facadeBundle.stub;
     uiStream$ = new Subject<UiStreamPacket<SimulationSnapshot, TimeStatus>>();
-    subscribeSpy = vi.spyOn(uiStream$, 'subscribe');
+    subscribeSpy = vi.spyOn(
+      uiStream$ as unknown as { subscribe: (...args: unknown[]) => unknown },
+      'subscribe',
+    );
     gateway = new SocketGateway({
       httpServer: server,
       facade,
@@ -98,7 +105,7 @@ describe('SocketGateway uiStream integration', () => {
   afterEach(async () => {
     client.disconnect();
     gateway.close();
-    facade.dispose();
+    facadeStub.dispose();
     subscribeSpy.mockRestore();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });
@@ -337,6 +344,13 @@ const domainEvents: SimulationEvent[][] = [];
 
 type IntentResponse = CommandResult<unknown> & { requestId?: string };
 
+const createFacadeStub = (
+  state: GameState = createTestState(),
+): { facade: SimulationFacade; stub: StubFacade } => {
+  const stub = new StubFacade(state);
+  return { facade: stub as unknown as SimulationFacade, stub };
+};
+
 class StubFacade {
   public readonly eventBus = new EventBus();
 
@@ -534,7 +548,8 @@ class StubFacade {
 describe('SocketGateway', () => {
   let server: HttpServer;
   let port: number;
-  let facade: StubFacade;
+  let facade: SimulationFacade;
+  let facadeStub: StubFacade;
   let gateway: SocketGateway;
   let client: ClientSocket;
 
@@ -544,14 +559,16 @@ describe('SocketGateway', () => {
     server = createServer();
     await new Promise<void>((resolve) => server.listen(0, resolve));
     port = (server.address() as AddressInfo).port;
-    facade = new StubFacade(createTestState());
+    const facadeBundle = createFacadeStub();
+    facade = facadeBundle.facade;
+    facadeStub = facadeBundle.stub;
     gateway = new SocketGateway({
       httpServer: server,
       facade,
       simulationBatchIntervalMs: 30,
       domainBatchIntervalMs: 30,
       roomPurposeSource: roomPurposeRepository,
-      eventBus: facade.eventBus,
+      eventBus: facadeStub.eventBus,
     });
     client = createClient(`http://127.0.0.1:${port}`, {
       transports: ['websocket'],
@@ -581,35 +598,38 @@ describe('SocketGateway', () => {
     client.removeAllListeners();
     client.disconnect();
     gateway.close();
-    facade.dispose();
+    facadeStub.dispose();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   });
 
   it('batches simulation updates before emitting', async () => {
-    facade.state.structures[0].rooms[0].zones[0].environment.temperature = 23;
-    facade.emitTickCompleted(1, [
+    const zone = facadeStub.state.structures[0]!.rooms[0]!.zones[0]!;
+    zone.environment.temperature = 23;
+    facadeStub.emitTickCompleted(1, [
       { type: 'plant.stageChanged', tick: 1, ts: Date.now(), payload: { plantId: 'plant-1' } },
     ]);
-    facade.state.structures[0].rooms[0].zones[0].environment.temperature = 24;
-    facade.emitTickCompleted(2, []);
+    zone.environment.temperature = 24;
+    facadeStub.emitTickCompleted(2, []);
 
     await waitFor(() => simulationUpdates.length >= 1);
 
     expect(simulationUpdates).toHaveLength(1);
-    const batch = simulationUpdates[0];
+    const batch = simulationUpdates[0]!;
     expect(batch.updates).toHaveLength(2);
-    expect(batch.updates[0].tick).toBe(1);
-    expect(batch.updates[1].tick).toBe(2);
+    const firstUpdate = batch.updates[0]!;
+    const secondUpdate = batch.updates[1]!;
+    expect(firstUpdate.tick).toBe(1);
+    expect(secondUpdate.tick).toBe(2);
   });
 
   it('aggregates domain events using throttling', async () => {
-    facade.emit({
+    facadeStub.emit({
       type: 'plant.stageChanged',
       tick: 1,
       ts: Date.now(),
       payload: { plantId: 'plant-1', from: 'vegetative', to: 'flowering' },
     });
-    facade.emit({
+    facadeStub.emit({
       type: 'device.degraded',
       tick: 1,
       ts: Date.now(),
@@ -619,9 +639,12 @@ describe('SocketGateway', () => {
     await waitFor(() => domainEvents.length >= 1);
 
     expect(domainEvents).toHaveLength(1);
-    expect(domainEvents[0]).toHaveLength(2);
-    expect(domainEvents[0][0].type).toBe('plant.stageChanged');
-    expect(domainEvents[0][1].type).toBe('device.degraded');
+    const domainBatch = domainEvents[0]!;
+    expect(domainBatch).toHaveLength(2);
+    const firstEvent = domainBatch[0]!;
+    const secondEvent = domainBatch[1]!;
+    expect(firstEvent.type).toBe('plant.stageChanged');
+    expect(secondEvent.type).toBe('device.degraded');
   });
 
   it('validates and executes simulation control commands', async () => {
@@ -636,7 +659,7 @@ describe('SocketGateway', () => {
     });
 
     expect(response.ok).toBe(true);
-    expect(facade.startInvocations).toBe(1);
+    expect(facadeStub.startInvocations).toBe(1);
 
     const invalid = await new Promise<CommandResult<TimeStatus>>((resolve) => {
       client.emit(
@@ -649,7 +672,7 @@ describe('SocketGateway', () => {
     });
 
     expect(invalid.ok).toBe(false);
-    expect(invalid.errors?.[0].code).toBe('ERR_VALIDATION');
+    expect(invalid.errors?.[0]?.code).toBe('ERR_VALIDATION');
   });
 
   it('updates configuration via config.update', async () => {
@@ -664,8 +687,8 @@ describe('SocketGateway', () => {
     });
 
     expect(response.ok).toBe(true);
-    expect(facade.state.metadata.tickLengthMinutes).toBe(15);
-    expect(facade.setTickLengthInvocations).toBe(1);
+    expect(facadeStub.state.metadata.tickLengthMinutes).toBe(15);
+    expect(facadeStub.setTickLengthInvocations).toBe(1);
 
     const unsupported = await new Promise<CommandResult<TimeStatus>>((resolve) => {
       client.emit(
@@ -682,7 +705,7 @@ describe('SocketGateway', () => {
     });
 
     expect(unsupported.ok).toBe(false);
-    expect(unsupported.errors?.[0].code).toBe('ERR_INVALID_STATE');
+    expect(unsupported.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
   });
 
   it('routes facade intents to the correct service handler', async () => {
@@ -700,8 +723,8 @@ describe('SocketGateway', () => {
     });
 
     expect(response.ok).toBe(true);
-    await waitFor(() => facade.intentInvocations.length === 1);
-    expect(facade.intentInvocations[0]).toEqual({
+    await waitFor(() => facadeStub.intentInvocations.length === 1);
+    expect(facadeStub.intentInvocations[0]).toEqual({
       domain: 'world',
       action: 'createRoom',
       payload: intentPayload,
@@ -718,6 +741,6 @@ describe('SocketGateway', () => {
     });
 
     expect(response.ok).toBe(false);
-    expect(response.errors?.[0].code).toBe('ERR_VALIDATION');
+    expect(response.errors?.[0]?.code).toBe('ERR_VALIDATION');
   });
 });
