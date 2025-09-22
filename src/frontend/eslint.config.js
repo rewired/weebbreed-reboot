@@ -1,9 +1,8 @@
-/* eslint-disable import/no-named-as-default-member */
 import js from '@eslint/js';
 import globals from 'globals';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
-import tseslint from 'typescript-eslint';
+import * as tseslint from 'typescript-eslint';
 
 export default tseslint.config(
   {
