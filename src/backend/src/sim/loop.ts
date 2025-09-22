@@ -458,6 +458,14 @@ export class SimulationLoop {
       );
     }
 
+    this.costAccountingService.applyPayroll(
+      context.state,
+      context.tick,
+      timestamp,
+      runtime.accumulator,
+      context.events,
+    );
+
     this.costAccountingService.finalizeTick(
       context.state,
       runtime.accumulator,

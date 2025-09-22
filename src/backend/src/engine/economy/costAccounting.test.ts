@@ -1,13 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
-import type { DeviceInstanceState, GameState, LedgerEntry } from '@/state/models.js';
+import type { DeviceInstanceState, EmployeeState, GameState, LedgerEntry } from '@/state/models.js';
 import { DeviceDegradationService } from '@/engine/environment/deviceDegradation.js';
 import { CostAccountingService } from './costAccounting.js';
 import { MissingDevicePriceError } from './devicePriceRegistry.js';
 import type { PriceCatalog } from './pricing.js';
 
 const DEVICE_BLUEPRINT_ID = '3b5f6ad7-672e-47cd-9a24-f0cc45c4101e';
+
+const createEmployee = (id: string, salaryPerTick: number): EmployeeState => ({
+  id,
+  name: `Employee ${id}`,
+  role: 'Gardener',
+  salaryPerTick,
+  status: 'idle',
+  morale: 0.8,
+  energy: 0.9,
+  maxMinutesPerTick: 60,
+  skills: {},
+  experience: {},
+  traits: [],
+  certifications: [],
+  shift: {
+    shiftId: 'shift-day',
+    name: 'Day Shift',
+    startHour: 8,
+    durationHours: 8,
+    overlapMinutes: 0,
+  },
+  hoursWorkedToday: 0,
+  overtimeHours: 0,
+});
 
 const createPriceCatalog = (): PriceCatalog => ({
   devicePrices: new Map([
@@ -204,6 +228,53 @@ describe('CostAccountingService', () => {
     const tickPayload = events[1].payload as { utilities: { totalCost: number }; expenses: number };
     expect(tickPayload.expenses).toBeCloseTo(record?.totalCost ?? 0, 6);
     expect(tickPayload.utilities.totalCost).toBeCloseTo(record?.totalCost ?? 0, 6);
+  });
+
+  it('applies payroll expenses, records ledger entries, and updates summaries', () => {
+    const catalog = createPriceCatalog();
+    const service = new CostAccountingService(catalog);
+    const state = createBaseState();
+    state.personnel.employees = [
+      createEmployee('emp-1', 12.5),
+      createEmployee('emp-2', 7.25),
+      createEmployee('emp-3', -5),
+    ];
+
+    const accumulator = service.createAccumulator();
+    const events: SimulationEvent[] = [];
+    const collector = createEventCollector(events, 2);
+    const timestamp = '2025-01-01T02:00:00.000Z';
+
+    const payroll = service.applyPayroll(state, 2, timestamp, accumulator, collector);
+
+    expect(payroll).toBeDefined();
+    expect(payroll).toBeCloseTo(19.75, 6);
+    expect(accumulator.payroll).toBeCloseTo(19.75, 6);
+    expect(state.finances.cashOnHand).toBeCloseTo(1000 - 19.75, 6);
+    expect(state.finances.ledger).toHaveLength(1);
+    expect(state.finances.ledger[0]).toMatchObject({ category: 'payroll', amount: -19.75 });
+
+    const opexEvent = events.find((event) => event.type === 'finance.opex');
+    expect(opexEvent).toBeDefined();
+    expect(opexEvent?.payload).toMatchObject({
+      amount: 19.75,
+      category: 'payroll',
+      employeeCount: 3,
+    });
+
+    service.finalizeTick(state, accumulator, 2, timestamp, collector);
+
+    expect(state.finances.summary.totalExpenses).toBeCloseTo(19.75, 6);
+    expect(state.finances.summary.totalPayroll).toBeCloseTo(19.75, 6);
+    expect(state.finances.summary.totalMaintenance).toBeCloseTo(0, 6);
+    expect(state.finances.summary.lastTickExpenses).toBeCloseTo(19.75, 6);
+
+    const tickEvent = events.find((event) => event.type === 'finance.tick');
+    expect(tickEvent).toBeDefined();
+    expect(tickEvent?.payload).toMatchObject({
+      expenses: 19.75,
+      payroll: 19.75,
+    });
   });
 
   it('escalates maintenance costs with device age and degradation', () => {
