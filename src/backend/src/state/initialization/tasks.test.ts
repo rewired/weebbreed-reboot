@@ -4,7 +4,7 @@ import path from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
-import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
+import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type {
   StructureState,

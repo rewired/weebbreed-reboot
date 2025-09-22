@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppStore } from '../store';
 import type { ModalDescriptor } from '../store';
-import type { FacadeIntentCommand } from '../types/simulation';
+import type { FacadeIntentCommand } from '@/types/simulation';
 import styles from './ModalRoot.module.css';
 
 type SubmitHandler = (event: FormEvent<HTMLFormElement>) => void;

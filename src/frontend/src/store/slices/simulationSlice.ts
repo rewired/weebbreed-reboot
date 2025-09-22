@@ -9,7 +9,7 @@ import type {
   SimulationSnapshot,
   SimulationUpdateEntry,
   ZoneSnapshot,
-} from '../../types/simulation';
+} from '@/types/simulation';
 import type {
   AppStoreState,
   FinanceTickEntry,

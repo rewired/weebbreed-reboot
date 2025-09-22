@@ -8,7 +8,7 @@ import type {
   SimulationTickEvent,
   SimulationUpdateEntry,
   SimulationUpdateMessage,
-} from '../types/simulation';
+} from '@/types/simulation';
 import { useAppStore } from '../store';
 import type { ConnectionStatus } from '../store';
 import type { FinanceTickEntry } from '../store/types';
