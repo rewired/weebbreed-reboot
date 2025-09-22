@@ -1,0 +1,246 @@
+import { createServer, type Server } from 'node:http';
+import process from 'node:process';
+
+import { createUiStream, eventBus as telemetryEventBus } from '@runtime/eventBus.js';
+import { logger } from '@runtime/logger.js';
+import { CostAccountingService } from '@/engine/economy/costAccounting.js';
+import { createPriceCatalogFromRepository } from '@/engine/economy/catalog.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { DataLoadSummary } from '@/data/dataLoader.js';
+import { buildSimulationSnapshot } from '@/lib/uiSnapshot.js';
+import { RngService, getRegisteredRngStreamIds } from '@/lib/rng.js';
+import { SimulationFacade, type TimeStatus } from '@/facade/index.js';
+import { SocketGateway } from '@/server/socketGateway.js';
+import { SseGateway } from '@/server/sseGateway.js';
+import { bootstrap } from '@/bootstrap.js';
+import { createInitialState, type StateFactoryContext } from '@/stateFactory.js';
+import { SimulationLoop } from '@/sim/loop.js';
+import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
+
+const DEFAULT_PORT = 7331;
+const DEFAULT_SEED = 'dev-server';
+
+const serverLogger = logger.child({ component: 'backend.server' });
+
+const resolvePort = (value: number | string | undefined): number => {
+  if (typeof value === 'number') {
+    if (Number.isFinite(value) && value > 0) {
+      return Math.trunc(value);
+    }
+    serverLogger.warn(
+      { providedPort: value, defaultPort: DEFAULT_PORT },
+      'Invalid numeric port override; falling back to default.',
+    );
+    return DEFAULT_PORT;
+  }
+
+  if (value === undefined || value === null || value === '') {
+    return DEFAULT_PORT;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    serverLogger.warn(
+      { providedPort: value, defaultPort: DEFAULT_PORT },
+      'Invalid WEEBBREED_BACKEND_PORT value; falling back to default.',
+    );
+    return DEFAULT_PORT;
+  }
+
+  return parsed;
+};
+
+const startHttpServer = (server: Server, port: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const handleError = (error: Error) => {
+      server.off('error', handleError);
+      reject(error);
+    };
+
+    server.once('error', handleError);
+    server.listen(port, () => {
+      server.off('error', handleError);
+      resolve();
+    });
+  });
+};
+
+const formatTimeStatus = (status: TimeStatus | undefined): string => {
+  if (!status) {
+    return 'unknown status';
+  }
+  return `running=${status.running} paused=${status.paused} tick=${status.tick}`;
+};
+
+export interface StartServerOptions {
+  port?: number;
+  rngSeed?: string;
+  dataDirectoryOverride?: string;
+}
+
+export interface BackendServerHandle {
+  port: number;
+  repository: BlueprintRepository;
+  dataDirectory: string;
+  summary: DataLoadSummary;
+  facade: SimulationFacade;
+  shutdown(signal?: NodeJS.Signals): Promise<void>;
+}
+
+export const startBackendServer = async (
+  options: StartServerOptions = {},
+): Promise<BackendServerHandle> => {
+  const { repository, dataDirectory, summary } = await bootstrap({
+    envOverride: options.dataDirectoryOverride,
+  });
+  const rngSeed =
+    options.rngSeed ??
+    process.env.WEEBBREED_BACKEND_SEED ??
+    process.env.WEEBBREED_SEED ??
+    DEFAULT_SEED;
+  const rng = new RngService(rngSeed);
+  serverLogger.info(
+    {
+      dataDirectory,
+      loadedFiles: summary.loadedFiles,
+      rng: {
+        seed: rng.getSeed(),
+        streamIds: getRegisteredRngStreamIds(),
+      },
+    },
+    'Loaded blueprint repository.',
+  );
+  const priceCatalog = createPriceCatalogFromRepository(repository);
+  const costAccountingService = new CostAccountingService(priceCatalog);
+  const context: StateFactoryContext = {
+    repository,
+    rng,
+    dataDirectory,
+  };
+
+  const state = await createInitialState(context);
+  serverLogger.info('Initial game state created.');
+
+  const hotReloadManager = new BlueprintHotReloadManager(
+    repository,
+    telemetryEventBus,
+    () => state.clock.tick,
+  );
+  const enableHotReload = process.env.NODE_ENV !== 'production';
+  if (enableHotReload) {
+    await hotReloadManager.start();
+    hotReloadManager.onReloadCommitted((result) => {
+      const updatedCatalog = createPriceCatalogFromRepository(repository);
+      costAccountingService.updatePriceCatalog(updatedCatalog);
+      serverLogger.info(
+        {
+          tick: state.clock.tick,
+          dataReload: {
+            loadedFiles: result.summary.loadedFiles,
+            issues: result.summary.issues.length,
+          },
+        },
+        'Blueprint repository hot-reload committed.',
+      );
+    });
+  } else {
+    serverLogger.info('Blueprint hot-reload disabled in production mode.');
+  }
+  const commitHook = hotReloadManager.createCommitHook();
+
+  const httpServer = createServer();
+  const loop = new SimulationLoop({
+    state,
+    eventBus: telemetryEventBus,
+    accounting: { service: costAccountingService },
+    phases: { commit: commitHook },
+  });
+  const facade = new SimulationFacade({
+    state,
+    accounting: { service: costAccountingService },
+    loop,
+  });
+  const uiStream$ = createUiStream({
+    snapshotProvider: () => facade.select((value) => buildSimulationSnapshot(value, repository)),
+    timeStatusProvider: () => facade.getTimeStatus(),
+  });
+  const socketGateway = new SocketGateway({
+    httpServer,
+    facade,
+    roomPurposeSource: repository,
+    uiStream$,
+  });
+  const sseGateway = new SseGateway({
+    httpServer,
+    facade,
+    roomPurposeSource: repository,
+    uiStream$,
+  });
+
+  const port = resolvePort(options.port ?? process.env.WEEBBREED_BACKEND_PORT);
+  await startHttpServer(httpServer, port);
+  serverLogger.info({ port }, 'Listening for HTTP connections.');
+
+  const startResult = await facade.time.start();
+  if (!startResult.ok) {
+    const details = startResult.errors?.map((error) => error.message).join(', ') ?? 'unknown error';
+    serverLogger.error({ details }, 'Failed to start simulation clock.');
+  } else {
+    const statusDescription = formatTimeStatus(startResult.data);
+    serverLogger.info({ status: startResult.data, statusDescription }, 'Simulation clock started.');
+  }
+
+  let shuttingDown = false;
+  const shutdown = async (signal?: NodeJS.Signals) => {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
+    serverLogger.info({ signal }, 'Received shutdown request.');
+
+    try {
+      socketGateway.close();
+      sseGateway.close();
+    } catch (error) {
+      serverLogger.error({ err: error }, 'Error while closing gateway.');
+    }
+
+    try {
+      await new Promise<void>((resolve) => {
+        httpServer.close((closeError) => {
+          if (closeError) {
+            serverLogger.error({ err: closeError }, 'Error while closing HTTP server.');
+          }
+          resolve();
+        });
+      });
+    } catch (error) {
+      serverLogger.error({ err: error }, 'Unexpected error while closing HTTP server.');
+    }
+
+    if (startResult.ok) {
+      try {
+        await facade.time.pause();
+      } catch (error) {
+        serverLogger.error({ err: error }, 'Error while pausing simulation during shutdown.');
+      }
+    }
+
+    try {
+      await hotReloadManager.stop();
+    } catch (error) {
+      serverLogger.error({ err: error }, 'Error while stopping data hot-reload manager.');
+    }
+
+    serverLogger.info('Shutdown complete.');
+  };
+
+  return {
+    port,
+    repository,
+    dataDirectory,
+    summary,
+    facade,
+    shutdown,
+  };
+};

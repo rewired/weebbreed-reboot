@@ -1,0 +1,322 @@
+.dashboard {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.92), rgba(15, 23, 42, 0.85));
+  box-shadow: var(--shadow-strong);
+}
+
+.metricsGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 150px;
+}
+
+.metricLabel {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.metricValue {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.clockMetric {
+  min-width: 220px;
+}
+
+.clockDisplay {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.tickRing {
+  width: 48px;
+  height: 48px;
+  transform: rotate(-90deg);
+}
+
+.tickTrack {
+  fill: none;
+  stroke: rgba(148, 163, 184, 0.25);
+  stroke-width: 4px;
+}
+
+.tickProgress {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 4px;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.3s linear;
+}
+
+.clockText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.clockTime {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.clockTick {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.controlsGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.connectionStatus {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  font-size: 0.85rem;
+  color: var(--color-text-secondary);
+}
+
+.connectionDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+}
+
+.connectionLabel {
+  white-space: nowrap;
+}
+
+.connecting {
+  background: rgba(250, 204, 21, 0.8);
+}
+
+.connected {
+  background: rgba(52, 211, 153, 0.9);
+}
+
+.disconnected,
+.idle {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+.error {
+  background: rgba(248, 113, 113, 0.9);
+}
+
+.playbackControls,
+.viewSwitchers {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: rgba(15, 23, 42, 0.55);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.iconButton {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  background: transparent;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.iconButton:hover,
+.iconButton:focus-visible {
+  background: rgba(15, 23, 42, 0.8);
+  color: #fff;
+}
+
+.iconButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.iconButton.active {
+  background: var(--color-accent-strong);
+  color: #fff;
+}
+
+.speedControls {
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.speedButton {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.speedButton:hover,
+.speedButton:focus-visible {
+  background: rgba(15, 23, 42, 0.75);
+  color: #fff;
+}
+
+.speedButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.speedButton.active {
+  background: var(--color-accent-strong);
+  color: #fff;
+}
+
+.popoverAnchor,
+.menuAnchor {
+  position: relative;
+}
+
+.notificationsBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+  font-size: 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  min-width: 220px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(15, 23, 42, 0.95);
+  box-shadow: var(--shadow-soft);
+  z-index: 20;
+}
+
+.notifications ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.notifications li {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.notifications p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.menu {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 160px;
+}
+
+.menu button {
+  justify-content: flex-start;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  text-align: left;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+}
+
+.menu button:hover,
+.menu button:focus-visible {
+  background: rgba(67, 56, 202, 0.35);
+  color: #fff;
+}
+
+.menu button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 960px) {
+  .dashboard {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .metricsGroup {
+    justify-content: space-between;
+  }
+
+  .controlsGroup {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 720px) {
+  .metricsGroup,
+  .controlsGroup {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .playbackControls,
+  .speedControls,
+  .viewSwitchers {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

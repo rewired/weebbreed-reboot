@@ -4,21 +4,15 @@
   "name": "DryBox 200",
   "quality": 0.8,
   "complexity": 0.25,
-  "lifespanInHours": 26280,
+  "lifespan": 94608000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "latentRemovalKgPerTick": 0.05,
     "power": 0.3
   },
   "meta": {
     "description": "Compact unit for reducing ambient humidity.",
-    "advantages": [
-      "Efficient moisture removal",
-      "Low energy consumption"
-    ],
-    "disadvantages": [
-      "Limited capacity for large rooms",
-      "Generates heat"
-    ]
+    "advantages": ["Efficient moisture removal", "Low energy consumption"],
+    "disadvantages": ["Limited capacity for large rooms", "Generates heat"]
   }
 }
-
