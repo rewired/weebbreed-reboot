@@ -55,6 +55,7 @@ export interface TickAccumulator {
   capex: number;
   opex: number;
   maintenance: number;
+  payroll: number;
   utilities: UtilityCostBreakdown;
   maintenanceDetails: MaintenanceExpenseRecord[];
 }
@@ -86,12 +87,13 @@ const DEFAULT_DESCRIPTION = {
   utilities: 'Utility consumption',
   maintenance: 'Device maintenance',
   devicePurchase: 'Device purchase',
+  payroll: 'Employee payroll',
 };
 
 export class CostAccountingService {
-  private readonly devicePrices: DevicePriceRegistry;
+  private devicePrices: DevicePriceRegistry;
 
-  constructor(private readonly prices: PriceCatalog) {
+  constructor(private prices: PriceCatalog) {
     this.devicePrices = DevicePriceRegistry.fromCatalog(prices);
   }
 
@@ -102,9 +104,15 @@ export class CostAccountingService {
       capex: 0,
       opex: 0,
       maintenance: 0,
+      payroll: 0,
       utilities: createEmptyUtilityBreakdown(),
       maintenanceDetails: [],
     };
+  }
+
+  updatePriceCatalog(catalog: PriceCatalog): void {
+    this.prices = catalog;
+    this.devicePrices = DevicePriceRegistry.fromCatalog(catalog);
   }
 
   applyUtilityConsumption(
@@ -197,6 +205,47 @@ export class CostAccountingService {
     return record;
   }
 
+  applyPayroll(
+    state: GameState,
+    tick: number,
+    timestamp: string,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+  ): number | undefined {
+    const employees = state.personnel.employees ?? [];
+    if (employees.length === 0) {
+      return undefined;
+    }
+
+    const totalPayroll = employees.reduce((sum, employee) => {
+      const salary = Number.isFinite(employee.salaryPerTick) ? employee.salaryPerTick : 0;
+      return sum + Math.max(0, salary);
+    }, 0);
+
+    if (totalPayroll <= MULTIPLIER_TOLERANCE) {
+      return undefined;
+    }
+
+    this.recordExpense(
+      state,
+      totalPayroll,
+      'payroll',
+      DEFAULT_DESCRIPTION.payroll,
+      tick,
+      timestamp,
+      accumulator,
+      events,
+      'opex',
+      {
+        employeeCount: employees.length,
+        payroll: totalPayroll,
+        averageSalaryPerTick: employees.length > 0 ? totalPayroll / employees.length : 0,
+      },
+    );
+
+    return totalPayroll;
+  }
+
   recordDevicePurchase(
     state: GameState,
     blueprintId: string,
@@ -259,6 +308,7 @@ export class CostAccountingService {
     summary.totalRevenue += accumulator.revenue;
     summary.totalExpenses += accumulator.expenses;
     summary.totalMaintenance += accumulator.maintenance;
+    summary.totalPayroll += accumulator.payroll;
     summary.lastTickRevenue = accumulator.revenue;
     summary.lastTickExpenses = accumulator.expenses;
     summary.netIncome = summary.totalRevenue - summary.totalExpenses;
@@ -275,6 +325,7 @@ export class CostAccountingService {
         opex: accumulator.opex,
         utilities: accumulator.utilities,
         maintenance: accumulator.maintenanceDetails,
+        payroll: accumulator.payroll,
       },
       tick,
       'info',
@@ -467,6 +518,7 @@ export class CostAccountingService {
 
     accumulator.expenses += amount;
     accumulator.maintenance += category === 'maintenance' ? amount : 0;
+    accumulator.payroll += category === 'payroll' ? amount : 0;
     if (detailKind === 'capex') {
       accumulator.capex += amount;
     } else {
