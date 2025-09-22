@@ -219,6 +219,41 @@ describe('SseGateway', () => {
     return res;
   };
 
+  it('responds to OPTIONS requests with CORS headers for SSE negotiation', async () => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/events',
+      method: 'OPTIONS',
+    });
+    activeRequest = req;
+
+    const responsePromise = new Promise<IncomingMessage>((resolve) => req.on('response', resolve));
+    req.end();
+
+    const res = await responsePromise;
+    activeResponse = res;
+
+    const endPromise = new Promise<void>((resolve) => res.on('end', resolve));
+    res.resume();
+
+    expect(res.statusCode).toBe(204);
+
+    const allowHeaders = res.headers['access-control-allow-headers'];
+    const headerValues = Array.isArray(allowHeaders)
+      ? allowHeaders
+      : (allowHeaders ?? '').split(',');
+    const normalizedHeaders = headerValues
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.length > 0);
+
+    expect(normalizedHeaders).toContain('last-event-id');
+
+    await endPromise;
+    activeResponse = undefined;
+    activeRequest = undefined;
+  });
+
   it('subscribes to the provided uiStream$ and forwards batched packets', async () => {
     await attachEventStream();
 

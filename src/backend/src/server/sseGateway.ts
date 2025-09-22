@@ -19,6 +19,8 @@ const DEFAULT_SIMULATION_BATCH_MAX_SIZE = 5;
 const DEFAULT_DOMAIN_BATCH_INTERVAL_MS = 250;
 const DEFAULT_DOMAIN_BATCH_MAX_SIZE = 25;
 
+const ACCESS_CONTROL_ALLOW_HEADERS = 'Content-Type, Last-Event-ID';
+
 const formatData = (data: unknown): string => {
   if (data === undefined) {
     return 'null';
@@ -144,7 +146,7 @@ export class SseGateway {
       response.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': ACCESS_CONTROL_ALLOW_HEADERS,
       });
       response.end();
       return;
@@ -168,6 +170,7 @@ export class SseGateway {
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': ACCESS_CONTROL_ALLOW_HEADERS,
       'X-Accel-Buffering': 'no',
     });
     if (typeof response.flushHeaders === 'function') {
