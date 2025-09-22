@@ -2,8 +2,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { EventBus } from '../lib/eventBus.js';
-import { RngService, RNG_STREAM_IDS, type RngStream } from '../lib/rng.js';
+import { EventBus } from '@/lib/eventBus.js';
+import { RngService, RNG_STREAM_IDS, type RngStream } from '@/lib/rng.js';
 import { createInitialState } from '../stateFactory.js';
 import { SimulationLoop } from './loop.js';
 import {
@@ -15,14 +15,14 @@ import {
   createStrainBlueprint,
   createStrainPriceMap,
 } from '../testing/fixtures.js';
-import type { BlueprintRepository } from '../../data/blueprintRepository.js';
-import type { GameState, ZoneState } from '../state/models.js';
-import { createPhenologyConfig } from '../engine/plants/phenology.js';
-import type { PhenologyState } from '../engine/plants/phenology.js';
-import { updatePlantGrowth } from '../engine/plants/growthModel.js';
-import type { SimulationEvent } from '../lib/eventBus.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { GameState, ZoneState } from '@/state/models.js';
+import { createPhenologyConfig } from '@/engine/plants/phenology.js';
+import type { PhenologyState } from '@/engine/plants/phenology.js';
+import { updatePlantGrowth } from '@/engine/plants/growthModel.js';
+import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { SimulationPhaseContext } from './loop.js';
-import type { PriceCatalog } from '../engine/economy/pricing.js';
+import type { PriceCatalog } from '@/engine/economy/pricing.js';
 
 interface TickMetrics {
   biomassDelta: number;

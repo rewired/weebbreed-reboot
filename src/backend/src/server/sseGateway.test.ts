@@ -3,12 +3,12 @@ import type { AddressInfo } from 'node:net';
 import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { SimulationFacade, TimeStatus } from '../facade/index.js';
-import type { RoomPurposeSource } from '../src/engine/roomPurposes/index.js';
+import type { SimulationFacade, TimeStatus } from '@/facade/index.js';
+import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import { SseGateway } from './sseGateway.js';
-import type { UiStreamPacket } from '../../runtime/eventBus.js';
-import type { SimulationSnapshot } from '../src/lib/uiSnapshot.js';
-import type { GameState } from '../src/state/models.js';
+import type { UiStreamPacket } from '@runtime/eventBus.js';
+import type { SimulationSnapshot } from '@/lib/uiSnapshot.js';
+import type { GameState } from '@/state/models.js';
 
 interface ReceivedEvent {
   event: string;

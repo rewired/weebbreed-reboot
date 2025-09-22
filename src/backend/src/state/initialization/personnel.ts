@@ -7,7 +7,7 @@ import type {
   EmployeeSkills,
   EmployeeShiftAssignment,
 } from '../models.js';
-import { RngService, RngStream, RNG_STREAM_IDS } from '../../lib/rng.js';
+import { RngService, RngStream, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { generateId, readJsonFile } from './common.js';
 
 const DEFAULT_SALARY_BY_ROLE: Record<EmployeeRole, number> = {

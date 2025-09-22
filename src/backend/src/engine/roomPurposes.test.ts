@@ -5,7 +5,7 @@ import {
   requireRoomPurpose,
   resolveRoomPurposeId,
 } from './roomPurposes/index.js';
-import type { BlueprintRepository } from '../../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
 
 let repository: BlueprintRepository;

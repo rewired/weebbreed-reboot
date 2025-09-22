@@ -4,13 +4,14 @@
   "private": true,
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
-    "dev": "tsx watch server/devServer.ts",
-    "build": "tsc --project tsconfig.json",
-    "lint": "eslint --ext .ts src data",
-    "test": "vitest --run --passWithNoTests",
-    "test:coverage": "vitest --run --coverage",
+    "dev": "tsx --watch src/index.ts",
+    "build": "tsup src/index.ts --format esm --sourcemap --clean --tsconfig tsconfig.build.json",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "bench": "tsx src/bench.ts"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "tsup": "^8.5.0",
     "tsx": "^4.20.5"
   }
 }

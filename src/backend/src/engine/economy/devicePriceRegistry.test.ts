@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { PriceCatalog } from './pricing.js';
 import { DevicePriceRegistry, MissingDevicePriceError } from './devicePriceRegistry.js';
 

@@ -6,8 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockLoadFrom = vi.fn();
 
-vi.mock('../facade/index.js', () => ({}));
-vi.mock('../data/index.js', () => ({
+vi.mock('@/facade/index.js', () => ({}));
+vi.mock('@/data/index.js', () => ({
   BlueprintRepository: {
     loadFrom: mockLoadFrom,
   },

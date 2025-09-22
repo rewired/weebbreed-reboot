@@ -1,9 +1,9 @@
 import { stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { DataIssue } from '../data/index.js';
-import { BlueprintRepository, DataLoaderError } from '../data/index.js';
-import type { BlueprintRepository as BlueprintRepositoryType } from '../data/blueprintRepository.js';
+import type { DataIssue } from '@/data/index.js';
+import { BlueprintRepository, DataLoaderError } from '@/data/index.js';
+import type { BlueprintRepository as BlueprintRepositoryType } from '@/data/blueprintRepository.js';
 import type { StructureBlueprint } from './state/models.js';
 import { createInitialState, loadStructureBlueprints } from './stateFactory.js';
 import { EventBus } from './lib/eventBus.js';
@@ -13,7 +13,7 @@ import { createPhenologyConfig } from './engine/plants/phenology.js';
 import type { PhenologyState } from './engine/plants/phenology.js';
 import { updatePlantGrowth } from './engine/plants/growthModel.js';
 import { createBlueprintRepositoryStub, createStateFactoryContext } from './testing/fixtures.js';
-import { logger } from '../../runtime/logger.js';
+import { logger } from '@runtime/logger.js';
 
 const benchLogger = logger.child({ component: 'bench' });
 const dataLogger = benchLogger.child({ scope: 'data' });

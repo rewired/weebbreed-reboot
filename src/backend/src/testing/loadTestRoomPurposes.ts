@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { BlueprintRepository } from '../../data/blueprintRepository.js';
+import { BlueprintRepository } from '@/data/blueprintRepository.js';
 
 const repoRoot = path.resolve(fileURLToPath(new URL('../../../..', import.meta.url)));
 const shippedDataDirectory = path.join(repoRoot, 'data');

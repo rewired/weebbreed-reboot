@@ -1,4 +1,4 @@
-import type { EventCollector } from '../../lib/eventBus.js';
+import type { EventCollector } from '@/lib/eventBus.js';
 import type {
   EmployeeState,
   GameState,
@@ -11,8 +11,8 @@ import type {
   TaskState,
   TaskSystemState,
   ZoneState,
-} from '../../state/models.js';
-import type { SimulationPhaseHandler } from '../../sim/loop.js';
+} from '@/state/models.js';
+import type { SimulationPhaseHandler } from '@/sim/loop.js';
 import {
   type TaskSafetyRequirements,
   type WorkforceEmployeeRuntimeState,

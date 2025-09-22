@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EventBus } from '../lib/eventBus.js';
+import { EventBus } from '@/lib/eventBus.js';
 import { SimulationLoop } from './loop.js';
 import type {
   DeviceInstanceState,
@@ -10,9 +10,9 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '../state/models.js';
-import { CostAccountingService } from '../engine/economy/costAccounting.js';
-import type { PriceCatalog } from '../engine/economy/pricing.js';
+} from '@/state/models.js';
+import { CostAccountingService } from '@/engine/economy/costAccounting.js';
+import type { PriceCatalog } from '@/engine/economy/pricing.js';
 
 const createAccountingTestState = (): GameState => {
   const createdAt = new Date().toISOString();

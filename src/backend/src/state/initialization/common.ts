@@ -1,5 +1,5 @@
 import { promises as fs } from 'fs';
-import type { RngStream } from '../../lib/rng.js';
+import type { RngStream } from '@/lib/rng.js';
 
 export const generateId = (stream: RngStream, prefix: string, length = 10): string =>
   `${prefix}_${stream.nextString(length)}`;

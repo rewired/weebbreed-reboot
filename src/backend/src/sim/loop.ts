@@ -2,26 +2,26 @@ import { performance } from 'node:perf_hooks';
 import {
   ZoneEnvironmentService,
   type ZoneEnvironmentOptions,
-} from '../engine/environment/zoneEnvironment.js';
-import { DeviceDegradationService } from '../engine/environment/deviceDegradation.js';
+} from '@/engine/environment/zoneEnvironment.js';
+import { DeviceDegradationService } from '@/engine/environment/deviceDegradation.js';
 import {
   HarvestQualityService,
   type HarvestQualityOptions,
-} from '../engine/harvest/harvestQualityService.js';
+} from '@/engine/harvest/harvestQualityService.js';
 import {
   CostAccountingService,
   type TickAccumulator,
   type UtilityConsumption,
-} from '../engine/economy/costAccounting.js';
-import type { PriceCatalog } from '../engine/economy/pricing.js';
-import type { GameState } from '../state/models.js';
-import { eventBus as telemetryEventBus } from '../../../runtime/eventBus.js';
+} from '@/engine/economy/costAccounting.js';
+import type { PriceCatalog } from '@/engine/economy/pricing.js';
+import type { GameState } from '@/state/models.js';
+import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
 import {
   EventBus,
   createEventCollector,
   type EventCollector,
   type SimulationEvent,
-} from '../lib/eventBus.js';
+} from '@/lib/eventBus.js';
 
 export const TICK_PHASES = [
   'applyDevices',

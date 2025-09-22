@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { EventBus } from '../lib/eventBus.js';
-import { resolveRoomPurposeId } from '../engine/roomPurposes/index.js';
+import { EventBus } from '@/lib/eventBus.js';
+import { resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../testing/loadTestRoomPurposes.js';
-import type { BlueprintRepository } from '../../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type {
   DeviceInstanceState,
   GameState,
@@ -12,7 +12,7 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '../state/models.js';
+} from '@/state/models.js';
 import { SimulationLoop, TICK_PHASES, type SimulationPhaseContext } from './loop.js';
 
 const createGameState = (): GameState => {

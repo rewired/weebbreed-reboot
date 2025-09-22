@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { SimulationClockState } from '../state/models.js';
+import type { SimulationClockState } from '@/state/models.js';
 import { SimulationScheduler } from './simScheduler.js';
 
 type FrameCallback = () => void;

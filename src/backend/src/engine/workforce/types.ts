@@ -1,4 +1,4 @@
-import type { TreatmentCategory } from '../../state/models.js';
+import type { TreatmentCategory } from '@/state/models.js';
 
 export type TaskHazardLevel = 'low' | 'medium' | 'high';
 

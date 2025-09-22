@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EventBus } from '../lib/eventBus.js';
+import { EventBus } from '@/lib/eventBus.js';
 import { SimulationLoop } from './loop.js';
 import { createInitialState } from '../stateFactory.js';
 import {
@@ -12,10 +12,10 @@ import {
   createStrainPriceMap,
   createStructureBlueprint,
 } from '../testing/fixtures.js';
-import { createPhenologyConfig } from '../engine/plants/phenology.js';
-import type { PhenologyState } from '../engine/plants/phenology.js';
-import { updatePlantGrowth } from '../engine/plants/growthModel.js';
-import type { BlueprintRepository } from '../../data/blueprintRepository.js';
+import { createPhenologyConfig } from '@/engine/plants/phenology.js';
+import type { PhenologyState } from '@/engine/plants/phenology.js';
+import { updatePlantGrowth } from '@/engine/plants/growthModel.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { SimulationPhaseContext } from './loop.js';
 
 interface TickMetrics {

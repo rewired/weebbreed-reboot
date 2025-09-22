@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { EventBus, createEventCollector, type SimulationEvent } from '../lib/eventBus.js';
-import type { SimulationPhaseContext } from '../sim/loop.js';
-import type { GameState } from '../state/models.js';
+import { EventBus, createEventCollector, type SimulationEvent } from '@/lib/eventBus.js';
+import type { SimulationPhaseContext } from '@/sim/loop.js';
+import type { GameState } from '@/state/models.js';
 import { BlueprintHotReloadManager } from './hotReload.js';
-import type { DataLoadResult, DataIssue } from '../../data/dataLoader.js';
-import { DataLoaderError as LoaderError } from '../../data/dataLoader.js';
-import type { HotReloadDisposition } from '../../data/blueprintRepository.js';
+import type { DataLoadResult, DataIssue } from '@/data/dataLoader.js';
+import { DataLoaderError as LoaderError } from '@/data/dataLoader.js';
+import type { HotReloadDisposition } from '@/data/blueprintRepository.js';
 
 class FakeRepository {
   public handler:

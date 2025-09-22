@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { RoomPurpose } from '../../src/engine/roomPurposes/index.js';
+import type { RoomPurpose } from '@/engine/roomPurposes/index.js';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 

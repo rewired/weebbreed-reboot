@@ -1,4 +1,4 @@
-import { requireRoomPurpose, type RoomPurposeSource } from '../engine/roomPurposes/index.js';
+import { requireRoomPurpose, type RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import type {
   ApplicantState,
   DeviceInstanceState,
@@ -9,7 +9,7 @@ import type {
   ZoneEnvironmentState,
   ZoneMetricState,
   ZoneResourceState,
-} from '../state/models.js';
+} from '@/state/models.js';
 
 export interface StructureSnapshot {
   id: string;

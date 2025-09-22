@@ -1,4 +1,4 @@
-import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { PriceCatalog } from './pricing.js';
 
 export const createPriceCatalogFromRepository = (repository: BlueprintRepository): PriceCatalog => {

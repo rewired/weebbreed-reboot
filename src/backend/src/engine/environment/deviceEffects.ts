@@ -1,4 +1,4 @@
-import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '../../state/models.js';
+import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
 import type { ClimateControlOutput } from './climateController.js';
 
 export interface ZoneGeometry {

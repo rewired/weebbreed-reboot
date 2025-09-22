@@ -1,4 +1,4 @@
-import type { SimulationPhaseContext } from '../../sim/loop.js';
+import type { SimulationPhaseContext } from '@/sim/loop.js';
 import type {
   AppliedTreatmentRecord,
   DiseaseState,
@@ -11,7 +11,7 @@ import type {
   PlantState,
   ZoneHealthState,
   ZoneState,
-} from '../../state/models.js';
+} from '@/state/models.js';
 import {
   clamp,
   mapStageToHealthPhase,

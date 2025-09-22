@@ -8,7 +8,7 @@ import type {
   TaskSystemState,
   TaskState,
 } from '../models.js';
-import type { RngStream } from '../../lib/rng.js';
+import type { RngStream } from '@/lib/rng.js';
 import { generateId, readJsonFile } from './common.js';
 
 interface RawTaskDefinition {

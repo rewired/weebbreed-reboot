@@ -1,4 +1,4 @@
-import type { DeviceInstanceState, GameState } from '../../state/models.js';
+import type { DeviceInstanceState, GameState } from '@/state/models.js';
 
 export interface DeviceDegradationOptions {
   lambda?: number;

@@ -1,5 +1,5 @@
-import { createSeededStreamGenerator } from '../../../runtime/rng.js';
-import type { SeededRngStream } from '../../../runtime/rng.js';
+import { createSeededStreamGenerator } from '@runtime/rng.js';
+import type { SeededRngStream } from '@runtime/rng.js';
 
 const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
@@ -154,11 +154,11 @@ export {
   getRegisteredRngStreamIds,
   createSeededStreamFactory,
   createSeededStreamGenerator,
-} from '../../../runtime/rng.js';
+} from '@runtime/rng.js';
 
 export type {
   RngStreamId,
   RngStreamKey,
   SeededRngStream,
   SeededStreamFactory,
-} from '../../../runtime/rng.js';
+} from '@runtime/rng.js';

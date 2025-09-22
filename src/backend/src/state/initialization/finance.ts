@@ -1,5 +1,5 @@
-import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
-import type { DeviceBlueprint } from '../../../data/schemas/index.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { DeviceBlueprint } from '@/data/schemas/index.js';
 import type {
   EconomicsSettings,
   FinanceState,
@@ -7,8 +7,8 @@ import type {
   LedgerEntry,
   StructureBlueprint,
 } from '../models.js';
-import type { RngStream } from '../../lib/rng.js';
-import { DevicePriceRegistry } from '../../engine/economy/devicePriceRegistry.js';
+import type { RngStream } from '@/lib/rng.js';
+import { DevicePriceRegistry } from '@/engine/economy/devicePriceRegistry.js';
 import { generateId } from './common.js';
 
 const sumDeviceCapitalCosts = (
