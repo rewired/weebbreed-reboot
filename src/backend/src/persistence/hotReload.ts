@@ -31,8 +31,12 @@ type HotReloadableRepository = Pick<
   'onHotReload' | 'commitReload' | 'discardStagedReload'
 >;
 
+type ReloadListener = (result: DataLoadResult) => void | Promise<void>;
+
 export class BlueprintHotReloadManager {
   private disposeWatcher: (() => Promise<void>) | null = null;
+
+  private readonly listeners = new Set<ReloadListener>();
 
   constructor(
     private readonly repository: HotReloadableRepository,
@@ -45,7 +49,7 @@ export class BlueprintHotReloadManager {
       return;
     }
     const currentTickProvider = options.getCurrentTick ?? this.getCurrentTick;
-    this.disposeWatcher = this.repository.onHotReload(
+    const disposer = await this.repository.onHotReload(
       async () => {
         // Stage reload; commit happens at the next tick boundary.
         return 'defer';
@@ -56,6 +60,7 @@ export class BlueprintHotReloadManager {
         },
       },
     );
+    this.disposeWatcher = disposer;
   }
 
   async stop(): Promise<void> {
@@ -69,24 +74,49 @@ export class BlueprintHotReloadManager {
   }
 
   createCommitHook(): SimulationPhaseHandler {
-    return (context) => {
+    return async (context) => {
       const result = this.repository.commitReload();
       if (!result) {
         return;
       }
+      const summary = normaliseSummary(result);
       context.events.queue(
         'sim.hotReloaded',
         {
           appliedTick: context.tick,
-          summary: normaliseSummary(result),
+          summary,
         },
         context.tick,
         'info',
       );
+      context.events.queue(
+        'reload:data',
+        {
+          status: 'success',
+          appliedTick: context.tick,
+          summary,
+        },
+        context.tick,
+        'info',
+      );
+      await this.notifyListeners(result);
+    };
+  }
+
+  onReloadCommitted(listener: ReloadListener): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
     };
   }
 
   private emitReloadFailed(error: unknown, tick: number): void {
+    this.eventBus.emit({
+      type: 'reload:data',
+      level: 'error',
+      tick,
+      payload: { status: 'error', error: formatErrorPayload(error) },
+    });
     const event: SimulationEvent = {
       type: 'sim.reloadFailed',
       level: 'error',
@@ -94,6 +124,24 @@ export class BlueprintHotReloadManager {
       payload: formatErrorPayload(error),
     };
     this.eventBus.emit(event);
+  }
+
+  private async notifyListeners(result: DataLoadResult): Promise<void> {
+    for (const listener of this.listeners) {
+      try {
+        await Promise.resolve(listener(result));
+      } catch (error) {
+        this.eventBus.emit({
+          type: 'reload:data',
+          level: 'error',
+          payload: {
+            status: 'error',
+            stage: 'listener',
+            error: formatErrorPayload(error),
+          },
+        });
+      }
+    }
   }
 }
 

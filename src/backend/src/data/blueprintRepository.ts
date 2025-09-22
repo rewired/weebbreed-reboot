@@ -1,5 +1,5 @@
-import { watch } from 'chokidar';
 import path from 'path';
+import { watchData } from '@runtime/dataWatcher.js';
 import {
   BlueprintData,
   DataLoadResult,
@@ -120,14 +120,10 @@ export class BlueprintRepository {
     this.stagedResult = null;
   }
 
-  onHotReload(
+  async onHotReload(
     handler: HotReloadHandler,
     options: BlueprintRepositoryOptions = {},
-  ): () => Promise<void> {
-    const watcher = watch(this.dataDirectory, {
-      ignoreInitial: true,
-    });
-
+  ): Promise<() => Promise<void>> {
     let reloading = false;
     let queued = false;
 
@@ -161,14 +157,13 @@ export class BlueprintRepository {
       }
     };
 
-    const onWatcherError = (error: Error) => {
-      options.onHotReloadError?.(error);
-    };
+    const watcher = watchData(this.dataDirectory, () => triggerReload(), {
+      onError: (error) => {
+        options.onHotReloadError?.(error);
+      },
+    });
 
-    watcher.on('add', triggerReload);
-    watcher.on('change', triggerReload);
-    watcher.on('unlink', triggerReload);
-    watcher.on('error', onWatcherError);
+    await watcher.whenReady();
 
     return async () => {
       await watcher.close();
