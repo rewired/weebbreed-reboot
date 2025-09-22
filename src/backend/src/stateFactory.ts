@@ -5,7 +5,7 @@ import type {
   StrainBlueprint,
 } from '@/data/schemas/index.js';
 import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
-import {
+import type {
   DeviceInstanceState,
   DifficultyLevel,
   EconomicsSettings,

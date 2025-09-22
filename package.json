@@ -10,11 +10,21 @@
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "bench": "pnpm --filter @weebbreed/backend bench",
+    "audit:run": "pnpm exec tsx --tsconfig src/backend/tsconfig.build.json scripts/run_audit.ts",
     "validate:data": "tsx tools/validate-data.ts",
     "prepare": "husky"
   },
   "dependencies": {
-    "seedrandom": "^3.0.5"
+    "seedrandom": "^3.0.5",
+    "commander": "^12.1.0",
+    "pino": "^9.11.0",
+    "ajv": "^8.17.1",
+    "chokidar": "^3.5.3",
+    "glob": "^11.0.0",
+    "rxjs": "^7.8.2",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.19.17",
