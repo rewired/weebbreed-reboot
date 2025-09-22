@@ -56,48 +56,54 @@ export interface MaintenanceExpenseEntry {
   degradationMultiplier: number;
 }
 
-export interface SimulationSlice {
+export interface GameStoreState {
   connectionStatus: ConnectionStatus;
   lastError?: string;
-  lastSnapshot?: SimulationSnapshot;
+  events: SimulationEvent[];
+  timeStatus?: SimulationTimeStatus;
+  lastTickCompleted?: SimulationTickEvent;
+  lastSnapshotTick?: number;
   lastSnapshotTimestamp?: number;
+  lastClockSnapshot?: SimulationSnapshot['clock'];
+  lastRequestedTickLength?: number;
+  sendControlCommand?: (command: SimulationControlCommand) => void;
+  sendConfigUpdate?: (update: SimulationConfigUpdate) => void;
+  setConnectionStatus: (status: ConnectionStatus, errorMessage?: string) => void;
+  ingestUpdate: (update: SimulationUpdateEntry) => void;
+  appendEvents: (events: SimulationEvent[]) => void;
+  registerTickCompleted: (event: SimulationTickEvent) => void;
+  setCommandHandlers: (
+    control: (command: SimulationControlCommand) => void,
+    config: (update: SimulationConfigUpdate) => void,
+  ) => void;
+  issueControlCommand: (command: SimulationControlCommand) => void;
+  requestTickLength: (minutes: number) => void;
+  reset: () => void;
+}
+
+export interface ZoneStoreState {
   structures: Record<string, StructureSnapshot>;
   rooms: Record<string, RoomSnapshot>;
   zones: Record<string, ZoneSnapshot>;
   devices: Record<string, DeviceSnapshot>;
   plants: Record<string, PlantSnapshot>;
-  events: SimulationEvent[];
   timeline: SimulationTimelineEntry[];
-  lastTickCompleted?: SimulationTickEvent;
-  lastRequestedTickLength?: number;
-  lastSetpoints: Record<string, number | undefined>;
-  timeStatus?: SimulationTimeStatus;
-  personnel?: PersonnelSnapshot;
   financeSummary?: FinanceSummarySnapshot;
   financeHistory: FinanceTickEntry[];
-  hrEvents: SimulationEvent[];
-  setConnectionStatus: (status: ConnectionStatus, errorMessage?: string) => void;
-  ingestUpdate: (update: SimulationUpdateEntry) => void;
-  appendEvents: (events: SimulationEvent[]) => void;
-  recordFinanceTick: (entry: FinanceTickEntry) => void;
-  recordHREvent: (event: SimulationEvent) => void;
-  registerTickCompleted: (event: SimulationTickEvent) => void;
-  resetSimulation: () => void;
-  sendControlCommand?: (command: SimulationControlCommand) => void;
+  lastSnapshotTimestamp?: number;
+  lastSnapshotTick?: number;
+  lastSetpoints: Record<string, number | undefined>;
   sendConfigUpdate?: (update: SimulationConfigUpdate) => void;
   sendFacadeIntent?: (intent: FacadeIntentCommand) => void;
-  issueControlCommand: (command: SimulationControlCommand) => void;
-  requestTickLength: (minutes: number) => void;
+  ingestUpdate: (update: SimulationUpdateEntry) => void;
+  recordFinanceTick: (entry: FinanceTickEntry) => void;
+  setConfigHandler: (handler: (update: SimulationConfigUpdate) => void) => void;
+  setIntentHandler: (handler: (intent: FacadeIntentCommand) => void) => void;
   sendSetpoint: (
     zoneId: string,
     metric: 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd' | 'vpd',
     value: number,
   ) => void;
-  setCommandHandlers: (
-    control: (command: SimulationControlCommand) => void,
-    config: (update: SimulationConfigUpdate) => void,
-  ) => void;
-  setIntentHandler: (handler: (intent: FacadeIntentCommand) => void) => void;
   issueFacadeIntent: (intent: FacadeIntentCommand) => void;
   updateStructureName: (structureId: string, name: string) => void;
   updateRoomName: (roomId: string, name: string) => void;
@@ -113,6 +119,15 @@ export interface SimulationSlice {
   harvestPlanting: (plantingId: string) => void;
   harvestPlantings: (plantingIds: string[]) => void;
   togglePlantingPlan: (zoneId: string, enabled: boolean) => void;
+  reset: () => void;
+}
+
+export interface PersonnelStoreState {
+  personnel?: PersonnelSnapshot;
+  hrEvents: SimulationEvent[];
+  ingestUpdate: (update: SimulationUpdateEntry) => void;
+  recordHREvent: (event: SimulationEvent) => void;
+  reset: () => void;
 }
 
 export interface NavigationSlice {
@@ -155,4 +170,4 @@ export interface ModalSlice {
   setWasRunningBeforeModal: (wasRunning: boolean) => void;
 }
 
-export type AppStoreState = SimulationSlice & NavigationSlice & ModalSlice;
+export type AppStoreState = NavigationSlice & ModalSlice;

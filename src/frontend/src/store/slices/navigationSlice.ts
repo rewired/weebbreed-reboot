@@ -1,4 +1,5 @@
 import type { StateCreator } from 'zustand';
+import { useZoneStore } from '../zoneStore';
 import type { AppStoreState, NavigationSlice, NavigationView } from '../types';
 
 export const createNavigationSlice: StateCreator<AppStoreState, [], [], NavigationSlice> = (
@@ -57,7 +58,7 @@ export const createNavigationSlice: StateCreator<AppStoreState, [], [], Navigati
       if (!roomId) {
         return { selectedRoomId: undefined, selectedZoneId: undefined };
       }
-      const room = state.rooms[roomId];
+      const room = useZoneStore.getState().rooms[roomId];
       return {
         selectedStructureId: room?.structureId ?? state.selectedStructureId,
         selectedRoomId: roomId,
@@ -70,7 +71,7 @@ export const createNavigationSlice: StateCreator<AppStoreState, [], [], Navigati
       if (!zoneId) {
         return { selectedZoneId: undefined };
       }
-      const zone = state.zones[zoneId];
+      const zone = useZoneStore.getState().zones[zoneId];
       return {
         selectedStructureId: zone?.structureId ?? state.selectedStructureId,
         selectedRoomId: zone?.roomId ?? state.selectedRoomId,

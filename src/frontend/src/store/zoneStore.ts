@@ -1,44 +1,12 @@
-import type { StateCreator } from 'zustand';
-import type {
-  DeviceSnapshot,
-  FacadeIntentCommand,
-  FinanceSummarySnapshot,
-  PlantSnapshot,
-  PersonnelSnapshot,
-  SimulationEvent,
-  SimulationSnapshot,
-  SimulationUpdateEntry,
-  ZoneSnapshot,
-} from '@/types/simulation';
-import type {
-  AppStoreState,
-  FinanceTickEntry,
-  MaintenanceExpenseEntry,
-  SimulationSlice,
-  SimulationTimelineEntry,
-} from '../types';
+import { create } from 'zustand';
+import type { FacadeIntentCommand, SimulationUpdateEntry } from '@/types/simulation';
+import { indexById, truncate } from './utils/collections';
+import type { FinanceTickEntry, MaintenanceExpenseEntry, ZoneStoreState } from './types';
 
-const MAX_EVENTS = 250;
 const MAX_TIMELINE_ENTRIES = 360;
 const MAX_FINANCE_HISTORY = 720;
-const MAX_HR_EVENTS = 200;
 
-const truncate = <T>(items: T[], limit: number): T[] => {
-  if (items.length <= limit) {
-    return items;
-  }
-
-  return items.slice(items.length - limit);
-};
-
-const indexById = <T extends { id: string }>(items: T[]): Record<string, T> => {
-  return items.reduce<Record<string, T>>((accumulator, item) => {
-    accumulator[item.id] = item;
-    return accumulator;
-  }, {});
-};
-
-const mapTimelineEntries = (update: SimulationUpdateEntry): SimulationTimelineEntry[] => {
+const mapTimelineEntries = (update: SimulationUpdateEntry) => {
   return update.snapshot.zones.map((zone) => ({
     tick: update.tick,
     ts: update.ts,
@@ -51,67 +19,34 @@ const mapTimelineEntries = (update: SimulationUpdateEntry): SimulationTimelineEn
   }));
 };
 
-const extractDevices = (zones: ZoneSnapshot[]): Record<string, DeviceSnapshot> => {
-  return zones.reduce<Record<string, DeviceSnapshot>>((accumulator, zone) => {
-    for (const device of zone.devices) {
-      accumulator[device.id] = device;
-    }
-    return accumulator;
-  }, {});
+const extractDevices = (snapshot: SimulationUpdateEntry['snapshot']) => {
+  return snapshot.zones.reduce<Record<string, (typeof snapshot.zones)[number]['devices'][number]>>(
+    (accumulator, zone) => {
+      for (const device of zone.devices) {
+        accumulator[device.id] = device;
+      }
+      return accumulator;
+    },
+    {},
+  );
 };
 
-const extractPlants = (zones: ZoneSnapshot[]): Record<string, PlantSnapshot> => {
-  return zones.reduce<Record<string, PlantSnapshot>>((accumulator, zone) => {
-    for (const plant of zone.plants) {
-      accumulator[plant.id] = {
-        ...plant,
-        zoneId: zone.id,
-        structureId: zone.structureId,
-        roomId: zone.roomId,
-      };
-    }
-    return accumulator;
-  }, {});
+const extractPlants = (snapshot: SimulationUpdateEntry['snapshot']) => {
+  return snapshot.zones.reduce<Record<string, (typeof snapshot.zones)[number]['plants'][number]>>(
+    (accumulator, zone) => {
+      for (const plant of zone.plants) {
+        accumulator[plant.id] = {
+          ...plant,
+          zoneId: zone.id,
+          structureId: zone.structureId,
+          roomId: zone.roomId,
+        };
+      }
+      return accumulator;
+    },
+    {},
+  );
 };
-
-const eventKey = (event: SimulationEvent): string => {
-  return [
-    event.type,
-    event.tick ?? 'na',
-    event.ts ?? 'na',
-    event.message ?? '',
-    event.deviceId ?? '',
-    event.plantId ?? '',
-    event.zoneId ?? '',
-  ].join('|');
-};
-
-const mergeEventsWithLimit = (
-  existing: SimulationEvent[],
-  incoming: SimulationEvent[],
-  limit: number,
-): SimulationEvent[] => {
-  if (!incoming.length) {
-    return existing;
-  }
-
-  const seen = new Set(existing.map(eventKey));
-  const merged = [...existing];
-
-  for (const event of incoming) {
-    const key = eventKey(event);
-    if (seen.has(key)) {
-      continue;
-    }
-    seen.add(key);
-    merged.push(event);
-  }
-
-  return truncate(merged, limit);
-};
-
-const mergeEvents = (existing: SimulationEvent[], incoming: SimulationEvent[]): SimulationEvent[] =>
-  mergeEventsWithLimit(existing, incoming, MAX_EVENTS);
 
 const appendFinanceHistory = (
   history: FinanceTickEntry[],
@@ -218,122 +153,70 @@ const extractFinanceEvents = (update: SimulationUpdateEntry): FinanceTickEntry[]
   }, []);
 };
 
-const extractHrEvents = (update: SimulationUpdateEntry): SimulationUpdateEntry['events'] => {
-  return update.events.filter((event) => event.type.startsWith('hr.'));
-};
-
-const updatePersonnel = (snapshot: SimulationSnapshot): PersonnelSnapshot | undefined => {
-  return snapshot.personnel;
-};
-
-const updateFinanceSummary = (snapshot: SimulationSnapshot): FinanceSummarySnapshot | undefined => {
-  return snapshot.finance;
-};
-
-export const createSimulationSlice: StateCreator<AppStoreState, [], [], SimulationSlice> = (
-  set,
-) => ({
-  connectionStatus: 'idle',
+export const useZoneStore = create<ZoneStoreState>()((set) => ({
   structures: {},
   rooms: {},
   zones: {},
   devices: {},
   plants: {},
-  events: [],
   timeline: [],
-  lastSetpoints: {},
+  financeSummary: undefined,
   financeHistory: [],
-  hrEvents: [],
-  setConnectionStatus: (status, errorMessage) =>
-    set((state) => ({
-      connectionStatus: status,
-      lastError: status === 'error' ? (errorMessage ?? state.lastError) : undefined,
-    })),
-  ingestUpdate: (update) =>
+  lastSnapshotTimestamp: undefined,
+  lastSnapshotTick: undefined,
+  lastSetpoints: {},
+  ingestUpdate: (update: SimulationUpdateEntry) =>
     set((state) => {
       const { snapshot } = update;
       const structures = indexById(snapshot.structures);
       const rooms = indexById(snapshot.rooms);
       const zones = indexById(snapshot.zones);
-      const devices = extractDevices(snapshot.zones);
-      const plants = extractPlants(snapshot.zones);
+      const devices = extractDevices(snapshot);
+      const plants = extractPlants(snapshot);
       const timelineEntries = mapTimelineEntries(update);
       const financeEntries = extractFinanceEvents(update);
-      const hrEvents = extractHrEvents(update);
 
       let nextFinanceHistory = state.financeHistory;
       for (const entry of financeEntries) {
         nextFinanceHistory = appendFinanceHistory(nextFinanceHistory, entry);
       }
 
-      const nextHrEvents = hrEvents.length ? mergeEvents(state.hrEvents, hrEvents) : state.hrEvents;
-
       return {
-        lastSnapshot: snapshot,
-        lastSnapshotTimestamp: update.ts,
         structures,
         rooms,
         zones,
         devices,
         plants,
         timeline: truncate([...state.timeline, ...timelineEntries], MAX_TIMELINE_ENTRIES),
-        events: mergeEvents(state.events, update.events),
-        timeStatus: update.time,
-        financeSummary: updateFinanceSummary(snapshot),
-        personnel: updatePersonnel(snapshot),
+        financeSummary: snapshot.finance,
         financeHistory: nextFinanceHistory,
-        hrEvents: nextHrEvents,
+        lastSnapshotTimestamp: update.ts,
+        lastSnapshotTick: snapshot.tick,
       };
-    }),
-  appendEvents: (events) =>
-    set((state) => {
-      return events.length ? { events: mergeEvents(state.events, events) } : {};
     }),
   recordFinanceTick: (entry) =>
     set((state) => ({
       financeHistory: appendFinanceHistory(state.financeHistory, entry),
     })),
-  recordHREvent: (event) =>
-    set((state) => ({
-      hrEvents: mergeEventsWithLimit(state.hrEvents, [event], MAX_HR_EVENTS),
-    })),
-  registerTickCompleted: (event) =>
+  setConfigHandler: (handler) =>
     set(() => ({
-      lastTickCompleted: event,
+      sendConfigUpdate: handler,
     })),
-  resetSimulation: () =>
-    set(() => ({
-      lastSnapshot: undefined,
-      structures: {},
-      rooms: {},
-      zones: {},
-      devices: {},
-      plants: {},
-      events: [],
-      timeline: [],
-      lastTickCompleted: undefined,
-      lastSnapshotTimestamp: undefined,
-      financeHistory: [],
-      hrEvents: [],
-      financeSummary: undefined,
-      personnel: undefined,
-      timeStatus: undefined,
-    })),
-  setCommandHandlers: (control, config) =>
-    set(() => ({
-      sendControlCommand: control,
-      sendConfigUpdate: config,
-    })),
-  setIntentHandler: (handler: (intent: FacadeIntentCommand) => void) =>
+  setIntentHandler: (handler) =>
     set(() => ({
       sendFacadeIntent: handler,
     })),
-  issueControlCommand: (command) =>
+  sendSetpoint: (zoneId, metric, value) =>
     set((state) => {
-      state.sendControlCommand?.(command);
-      return {};
+      state.sendConfigUpdate?.({ type: 'setpoint', zoneId, metric, value });
+      return {
+        lastSetpoints: {
+          ...state.lastSetpoints,
+          [`${zoneId}:${metric}`]: value,
+        },
+      };
     }),
-  issueFacadeIntent: (intent) =>
+  issueFacadeIntent: (intent: FacadeIntentCommand) =>
     set((state) => {
       state.sendFacadeIntent?.(intent);
       return {};
@@ -489,19 +372,20 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
       });
       return {};
     }),
-  requestTickLength: (minutes) =>
-    set((state) => {
-      state.sendConfigUpdate?.({ type: 'tickLength', minutes });
-      return { lastRequestedTickLength: minutes };
-    }),
-  sendSetpoint: (zoneId, metric, value) =>
-    set((state) => {
-      state.sendConfigUpdate?.({ type: 'setpoint', zoneId, metric, value });
-      return {
-        lastSetpoints: {
-          ...state.lastSetpoints,
-          [`${zoneId}:${metric}`]: value,
-        },
-      };
-    }),
-});
+  reset: () =>
+    set(() => ({
+      structures: {},
+      rooms: {},
+      zones: {},
+      devices: {},
+      plants: {},
+      timeline: [],
+      financeSummary: undefined,
+      financeHistory: [],
+      lastSnapshotTimestamp: undefined,
+      lastSnapshotTick: undefined,
+      lastSetpoints: {},
+    })),
+  sendConfigUpdate: undefined,
+  sendFacadeIntent: undefined,
+}));

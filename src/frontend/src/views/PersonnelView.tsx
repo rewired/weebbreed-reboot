@@ -2,7 +2,7 @@ import Card from '@/components/Card';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
-import { useAppStore } from '@/store';
+import { usePersonnelStore } from '@/store';
 
 const percentageFormatter = new Intl.NumberFormat('en-US', {
   style: 'percent',
@@ -36,8 +36,8 @@ const resolveBarTone = (value: number) => {
 };
 
 const PersonnelView = () => {
-  const personnel = useAppStore((state) => state.personnel);
-  const hrEvents = useAppStore((state) => state.hrEvents.slice(-12).reverse());
+  const personnel = usePersonnelStore((state) => state.personnel);
+  const hrEvents = usePersonnelStore((state) => state.hrEvents.slice(-12).reverse());
 
   if (!personnel) {
     return (

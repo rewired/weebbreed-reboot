@@ -9,9 +9,13 @@ import type {
   SimulationUpdateEntry,
   SimulationUpdateMessage,
 } from '@/types/simulation';
-import { useAppStore } from '@/store';
-import type { ConnectionStatus } from '@/store';
-import type { FinanceTickEntry } from '@/store/types';
+import {
+  type ConnectionStatus,
+  type FinanceTickEntry,
+  useGameStore,
+  usePersonnelStore,
+  useZoneStore,
+} from '@/store';
 
 type AnyHandler = (...args: unknown[]) => void;
 
@@ -130,14 +134,16 @@ const toArray = <T>(input: T | T[] | undefined): T[] => {
 
 const processSimulationUpdates = (
   message: SimulationUpdateMessage,
-  ingestUpdate: (update: SimulationUpdateEntry) => void,
+  handlers: Array<(update: SimulationUpdateEntry) => void>,
 ) => {
   if (!message || !Array.isArray(message.updates)) {
     return;
   }
 
   for (const update of message.updates) {
-    ingestUpdate(update);
+    for (const handler of handlers) {
+      handler(update);
+    }
   }
 };
 
@@ -170,15 +176,20 @@ export const useSimulationBridge = (
   options: UseSimulationBridgeOptions = {},
 ): SimulationBridgeHandle => {
   const { url = '/socket.io', autoConnect = true, debug = false } = options;
-  const setConnectionStatus = useAppStore((state) => state.setConnectionStatus);
-  const ingestUpdate = useAppStore((state) => state.ingestUpdate);
-  const appendEvents = useAppStore((state) => state.appendEvents);
-  const registerTickCompleted = useAppStore((state) => state.registerTickCompleted);
-  const recordFinanceTick = useAppStore((state) => state.recordFinanceTick);
-  const recordHREvent = useAppStore((state) => state.recordHREvent);
-  const setCommandHandlers = useAppStore((state) => state.setCommandHandlers);
-  const setIntentHandler = useAppStore((state) => state.setIntentHandler);
-  const status = useAppStore((state) => state.connectionStatus);
+  const setConnectionStatus = useGameStore((state) => state.setConnectionStatus);
+  const ingestGameUpdate = useGameStore((state) => state.ingestUpdate);
+  const appendEvents = useGameStore((state) => state.appendEvents);
+  const registerTickCompleted = useGameStore((state) => state.registerTickCompleted);
+  const setGameCommandHandlers = useGameStore((state) => state.setCommandHandlers);
+  const status = useGameStore((state) => state.connectionStatus);
+
+  const ingestZoneUpdate = useZoneStore((state) => state.ingestUpdate);
+  const recordFinanceTick = useZoneStore((state) => state.recordFinanceTick);
+  const setZoneConfigHandler = useZoneStore((state) => state.setConfigHandler);
+  const setIntentHandler = useZoneStore((state) => state.setIntentHandler);
+
+  const ingestPersonnelUpdate = usePersonnelStore((state) => state.ingestUpdate);
+  const recordHREvent = usePersonnelStore((state) => state.recordHREvent);
 
   const socketRef = useRef<Socket | null>(null);
   const pendingSubscriptionsRef = useRef<PendingSubscription[]>([]);
@@ -215,14 +226,16 @@ export const useSimulationBridge = (
   }, []);
 
   useEffect(() => {
-    setCommandHandlers(sendControlCommand, sendConfigUpdate);
+    setGameCommandHandlers(sendControlCommand, sendConfigUpdate);
+    setZoneConfigHandler(sendConfigUpdate);
     setIntentHandler(sendFacadeIntent);
   }, [
     sendConfigUpdate,
     sendControlCommand,
     sendFacadeIntent,
-    setCommandHandlers,
+    setGameCommandHandlers,
     setIntentHandler,
+    setZoneConfigHandler,
   ]);
 
   const subscribe = useCallback(<TPayload>(event: string, handler: (payload: TPayload) => void) => {
@@ -280,7 +293,11 @@ export const useSimulationBridge = (
     };
 
     const handleSimulationUpdate = (payload: SimulationUpdateMessage) => {
-      processSimulationUpdates(payload, ingestUpdate);
+      processSimulationUpdates(payload, [
+        ingestGameUpdate,
+        ingestZoneUpdate,
+        ingestPersonnelUpdate,
+      ]);
     };
 
     const handleTickCompleted = (payload: SimulationTickEvent) => {
@@ -344,7 +361,9 @@ export const useSimulationBridge = (
     appendEvents,
     autoConnect,
     debug,
-    ingestUpdate,
+    ingestGameUpdate,
+    ingestPersonnelUpdate,
+    ingestZoneUpdate,
     recordFinanceTick,
     recordHREvent,
     registerTickCompleted,

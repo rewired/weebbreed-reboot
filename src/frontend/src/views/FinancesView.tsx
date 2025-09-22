@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
-import { selectFinanceSummary, useAppStore } from '@/store';
+import { selectFinanceSummary, useZoneStore } from '@/store';
 import {
   Area,
   AreaChart,
@@ -25,8 +25,8 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 const formatCurrency = (value: number | undefined) => currencyFormatter.format(value ?? 0);
 
 const FinancesView = () => {
-  const financeSummary = useAppStore(selectFinanceSummary);
-  const financeHistory = useAppStore((state) => state.financeHistory);
+  const financeSummary = useZoneStore(selectFinanceSummary);
+  const financeHistory = useZoneStore((state) => state.financeHistory);
 
   const chartData = useMemo(() => {
     return financeHistory.slice(-24).map((entry) => ({

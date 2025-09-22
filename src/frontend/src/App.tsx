@@ -1,7 +1,7 @@
-import { useAppStore } from '@/store';
+import { useGameStore } from '@/store';
 
 const App = () => {
-  const connectionStatus = useAppStore((state) => state.connectionStatus);
+  const connectionStatus = useGameStore((state) => state.connectionStatus);
 
   return (
     <main className="min-h-screen bg-background text-text-primary font-sans">
