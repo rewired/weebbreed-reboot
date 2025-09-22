@@ -1,0 +1,33 @@
+{
+  "name": "@weebbreed/frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint --ext .ts,.tsx src",
+    "fmt": "pnpm exec prettier --write .",
+    "test": "vitest --run --passWithNoTests"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.10.7",
+    "@tanstack/react-query": "^5.66.7",
+    "@tanstack/react-query-devtools": "^5.66.7",
+    "@tanstack/react-virtual": "^3.10.8",
+    "i18next": "^25.4.1",
+    "i18next-browser-languagedetector": "^8.0.5",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^15.5.2",
+    "recharts": "^2.8.0",
+    "socket.io-client": "^4.7.5",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.66",
+    "@types/react-dom": "^18.2.22",
+    "@vitejs/plugin-react": "^4.2.1",
+    "jsdom": "^24.0.0"
+  }
+}
