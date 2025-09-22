@@ -6,6 +6,7 @@ import { createDeviceBlueprint, createStructureBlueprint } from '../../testing/f
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import {
   chooseDeviceBlueprints,
+  DEFAULT_STRUCTURE_HEIGHT_METERS,
   isDeviceCompatibleWithRoomPurpose,
   loadStructureBlueprints,
   selectBlueprint,
@@ -77,6 +78,73 @@ describe('state/initialization/blueprints', () => {
         id: blueprint.id,
         footprint: blueprint.footprint,
       });
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('applies the default ceiling height when a structure blueprint omits height', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-blueprints-default-height-'));
+    try {
+      const structuresDir = path.join(tempDir, 'blueprints', 'structures');
+      await fs.mkdir(structuresDir, { recursive: true });
+      const blueprint = createStructureBlueprint({
+        id: 'structure-default-height',
+        footprint: { length: 10, width: 5, height: undefined },
+      });
+
+      const raw = {
+        id: blueprint.id,
+        name: blueprint.name,
+        footprint: {
+          length_m: blueprint.footprint.length,
+          width_m: blueprint.footprint.width,
+        },
+        rentalCostPerSqmPerMonth: blueprint.rentalCostPerSqmPerMonth,
+        upfrontFee: blueprint.upfrontFee,
+      } satisfies Record<string, unknown>;
+
+      await fs.writeFile(path.join(structuresDir, 'structure-default.json'), JSON.stringify(raw));
+
+      const loaded = await loadStructureBlueprints(tempDir);
+
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0]?.footprint.height).toBe(DEFAULT_STRUCTURE_HEIGHT_METERS);
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('allows overriding the default ceiling height for structure blueprints', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-blueprints-custom-height-'));
+    try {
+      const structuresDir = path.join(tempDir, 'blueprints', 'structures');
+      await fs.mkdir(structuresDir, { recursive: true });
+      const blueprint = createStructureBlueprint({
+        id: 'structure-custom-height',
+        footprint: { length: 9, width: 4, height: undefined },
+      });
+
+      const raw = {
+        id: blueprint.id,
+        name: blueprint.name,
+        footprint: {
+          length_m: blueprint.footprint.length,
+          width_m: blueprint.footprint.width,
+        },
+        rentalCostPerSqmPerMonth: blueprint.rentalCostPerSqmPerMonth,
+        upfrontFee: blueprint.upfrontFee,
+      } satisfies Record<string, unknown>;
+
+      await fs.writeFile(path.join(structuresDir, 'structure-custom.json'), JSON.stringify(raw));
+
+      const overrideHeight = 3.4;
+      const loaded = await loadStructureBlueprints(tempDir, {
+        defaultHeightMeters: overrideHeight,
+      });
+
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0]?.footprint.height).toBe(overrideHeight);
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }

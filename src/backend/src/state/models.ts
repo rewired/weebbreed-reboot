@@ -54,7 +54,7 @@ export interface GameState {
 export interface FootprintBlueprint {
   length: number;
   width: number;
-  height: number;
+  height?: number;
 }
 
 export interface StructureBlueprint {
@@ -66,6 +66,7 @@ export interface StructureBlueprint {
 }
 
 export interface FootprintDimensions extends FootprintBlueprint {
+  height: number;
   area: number;
   volume: number;
 }

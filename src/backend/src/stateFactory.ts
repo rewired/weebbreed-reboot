@@ -35,6 +35,7 @@ import {
   chooseDeviceBlueprints,
   isDeviceCompatibleWithRoomPurpose,
   loadStructureBlueprints,
+  DEFAULT_STRUCTURE_HEIGHT_METERS,
   selectBlueprint,
 } from './state/initialization/blueprints.js';
 import { createFinanceState } from './state/initialization/finance.js';
@@ -95,11 +96,23 @@ interface StructureCreationResult {
   installationNotes: SimulationNote[];
 }
 
-const computeFootprint = (blueprint: StructureBlueprint): FootprintDimensions => {
+const resolveStructureHeight = (height: number | undefined, defaultHeight: number): number => {
+  if (typeof height === 'number' && Number.isFinite(height)) {
+    return height;
+  }
+  return defaultHeight;
+};
+
+const computeFootprint = (
+  blueprint: StructureBlueprint,
+  defaultStructureHeight: number,
+): FootprintDimensions => {
+  const height = resolveStructureHeight(blueprint.footprint.height, defaultStructureHeight);
   const area = blueprint.footprint.length * blueprint.footprint.width;
-  const volume = area * blueprint.footprint.height;
+  const volume = area * height;
   return {
     ...blueprint.footprint,
+    height,
     area,
     volume,
   };
@@ -112,6 +125,7 @@ export interface StateFactoryContext {
   structureBlueprints?: StructureBlueprint[];
   personnelDirectory?: PersonnelNameDirectory;
   taskDefinitions?: TaskDefinitionMap;
+  defaultStructureHeightMeters?: number;
 }
 
 export interface StateFactoryOptions {
@@ -122,6 +136,7 @@ export interface StateFactoryOptions {
   preferredCultivationMethodId?: string;
   employeeCountByRole?: Partial<Record<EmployeeRole, number>>;
   zonePlantCount?: number;
+  defaultStructureHeightMeters?: number;
 }
 
 const cloneSettings = (settings: DeviceBlueprint['settings'] | undefined) => {
@@ -243,9 +258,10 @@ const buildStructureState = (
   idStream: RngStream,
   rng: RngService,
   growRoomPurpose: RoomPurpose,
+  defaultStructureHeight: number,
   plantCountOverride?: number,
 ): StructureCreationResult => {
-  const footprint = computeFootprint(blueprint);
+  const footprint = computeFootprint(blueprint, defaultStructureHeight);
   const totalArea = footprint.area;
   const growRoomArea = totalArea * 0.65;
   const supportRoomArea = Math.max(0, totalArea - growRoomArea);
@@ -397,10 +413,18 @@ export const createInitialState = async (
   const tickLengthMinutes = options.tickLengthMinutes ?? DEFAULT_TICK_LENGTH_MINUTES;
   const createdAt = new Date().toISOString();
   const idStream = context.rng.getStream(RNG_STREAM_IDS.ids);
+  const defaultStructureHeight =
+    options.defaultStructureHeightMeters ??
+    context.defaultStructureHeightMeters ??
+    DEFAULT_STRUCTURE_HEIGHT_METERS;
 
   const structureBlueprints =
     context.structureBlueprints ??
-    (context.dataDirectory ? await loadStructureBlueprints(context.dataDirectory) : []);
+    (context.dataDirectory
+      ? await loadStructureBlueprints(context.dataDirectory, {
+          defaultHeightMeters: defaultStructureHeight,
+        })
+      : []);
   if (structureBlueprints.length === 0) {
     throw new Error('No structure blueprints available to create initial state.');
   }
@@ -454,6 +478,7 @@ export const createInitialState = async (
     idStream,
     context.rng,
     growRoomPurpose,
+    defaultStructureHeight,
     options.zonePlantCount,
   );
 

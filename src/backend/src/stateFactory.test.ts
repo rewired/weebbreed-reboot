@@ -168,4 +168,72 @@ describe('createInitialState', () => {
 
     expect(spy).toHaveBeenCalled();
   });
+
+  it('uses the default ceiling height when a structure blueprint omits height', async () => {
+    const structureBlueprint = createStructureBlueprint({
+      footprint: { height: undefined },
+    });
+    const context = createStateFactoryContext('default-height', {
+      structureBlueprints: [structureBlueprint],
+    });
+
+    const state = await createInitialState(context);
+
+    const structure = state.structures[0];
+    expect(structure?.footprint.height).toBe(blueprintModule.DEFAULT_STRUCTURE_HEIGHT_METERS);
+    const zone = structure?.rooms[0]?.zones[0];
+    expect(zone).toBeDefined();
+    if (!zone) {
+      throw new Error('Expected a grow zone to be created.');
+    }
+    expect(zone.ceilingHeight).toBe(blueprintModule.DEFAULT_STRUCTURE_HEIGHT_METERS);
+    expect(zone.volume).toBeCloseTo(zone.area * blueprintModule.DEFAULT_STRUCTURE_HEIGHT_METERS);
+  });
+
+  it('allows overriding the default ceiling height via factory options', async () => {
+    const structureBlueprint = createStructureBlueprint({
+      footprint: { height: undefined },
+    });
+    const context = createStateFactoryContext('custom-height', {
+      structureBlueprints: [structureBlueprint],
+    });
+
+    const overrideHeight = 3.1;
+    const state = await createInitialState(context, {
+      defaultStructureHeightMeters: overrideHeight,
+    });
+
+    const structure = state.structures[0];
+    expect(structure?.footprint.height).toBe(overrideHeight);
+    const zone = structure?.rooms[0]?.zones[0];
+    expect(zone).toBeDefined();
+    if (!zone) {
+      throw new Error('Expected a grow zone to be created.');
+    }
+    expect(zone.ceilingHeight).toBe(overrideHeight);
+  });
+
+  it('prefers explicit blueprint heights over the configured default', async () => {
+    const explicitHeight = 4.4;
+    const structureBlueprint = createStructureBlueprint({
+      footprint: { height: explicitHeight },
+    });
+    const context = createStateFactoryContext('explicit-height', {
+      structureBlueprints: [structureBlueprint],
+      defaultStructureHeightMeters: 2.9,
+    });
+
+    const state = await createInitialState(context, {
+      defaultStructureHeightMeters: 3.3,
+    });
+
+    const structure = state.structures[0];
+    expect(structure?.footprint.height).toBe(explicitHeight);
+    const zone = structure?.rooms[0]?.zones[0];
+    expect(zone).toBeDefined();
+    if (!zone) {
+      throw new Error('Expected a grow zone to be created.');
+    }
+    expect(zone.ceilingHeight).toBe(explicitHeight);
+  });
 });
