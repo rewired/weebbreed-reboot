@@ -6,6 +6,10 @@ import {
 } from './climateController.js';
 import type { GameState, RoomState, ZoneState } from '@/state/models.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
+import { approachTemperature } from '../../../../physio/temp.js';
+import { approachRelativeHumidity } from '../../../../physio/rh.js';
+import { approachCo2 } from '../../../../physio/co2.js';
+import { computeVpd } from '../../../../physio/vpd.js';
 
 export interface AmbientEnvironment {
   temperature: number;
@@ -95,19 +99,6 @@ const computeZoneGeometry = (room: RoomState): ZoneGeometry => {
     area: Math.max(area, 0.0001),
     volume: Math.max(volume, 0.0001),
   };
-};
-
-const exponentialMix = (
-  current: number,
-  target: number,
-  rate: number,
-  tickHours: number,
-): number => {
-  if (tickHours <= 0 || rate <= 0) {
-    return current;
-  }
-  const decay = Math.exp(-rate * tickHours);
-  return target + (current - target) * decay;
 };
 
 const computeAirChangesPerHour = (
@@ -221,7 +212,7 @@ export class ZoneEnvironmentService {
           const co2Rate = this.normalization.co2Rate + this.normalization.airflowCo2Factor * ach;
 
           zone.environment.temperature = clamp(
-            exponentialMix(
+            approachTemperature(
               zone.environment.temperature,
               this.ambient.temperature,
               temperatureRate,
@@ -232,7 +223,7 @@ export class ZoneEnvironmentService {
           );
 
           zone.environment.relativeHumidity = clamp(
-            exponentialMix(
+            approachRelativeHumidity(
               zone.environment.relativeHumidity,
               this.ambient.relativeHumidity,
               humidityRate,
@@ -243,9 +234,14 @@ export class ZoneEnvironmentService {
           );
 
           zone.environment.co2 = clamp(
-            exponentialMix(zone.environment.co2, this.ambient.co2, co2Rate, tickHours),
+            approachCo2(zone.environment.co2, this.ambient.co2, co2Rate, tickHours),
             this.safety.minCo2,
             this.safety.maxCo2,
+          );
+
+          zone.environment.vpd = computeVpd(
+            zone.environment.temperature,
+            zone.environment.relativeHumidity,
           );
         }
       }

@@ -147,6 +147,8 @@ describe('updatePlantGrowth', () => {
 
     expect(darkResult.biomassDelta).toBeLessThan(brightResult.biomassDelta);
     expect(brightResult.biomassDelta).toBeGreaterThan(0);
+    expect(darkResult.transpirationLiters).toBeLessThan(brightResult.transpirationLiters);
+    expect(brightResult.transpirationLiters).toBeGreaterThan(0);
   });
 
   it('reduces growth when temperature deviates from the optimal band', () => {
@@ -258,6 +260,7 @@ describe('updatePlantGrowth', () => {
     expect(limited.metrics.water.stress).toBeGreaterThan(ample.metrics.water.stress);
     expect(limited.biomassDelta).toBeLessThan(ample.biomassDelta);
     expect(limited.plant.health).toBeLessThan(ample.plant.health);
+    expect(limited.transpirationLiters).toBeLessThan(ample.transpirationLiters);
   });
 });
 
