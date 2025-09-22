@@ -10,7 +10,6 @@ import { logger } from '@runtime/logger.js';
 const moduleDirectory = path.dirname(fileURLToPath(import.meta.url));
 const bootstrapLogger = logger.child({ component: 'backend.bootstrap' });
 const dataLoaderLogger = bootstrapLogger.child({ scope: 'dataLoader' });
-const hotReloadLogger = bootstrapLogger.child({ scope: 'hotReload' });
 
 export const formatError = (error: unknown): string => {
   if (error instanceof Error) {
@@ -130,25 +129,6 @@ export const bootstrap = async (
   const dataDirectory = await resolveDataDirectory(options);
   const repository = await BlueprintRepository.loadFrom(dataDirectory);
   const summary = repository.getSummary();
-
-  if (process.env.NODE_ENV !== 'production') {
-    repository.onHotReload(
-      async (result) => {
-        hotReloadLogger.info(
-          { loadedFiles: result.summary.loadedFiles },
-          'Blueprint data reloaded.',
-        );
-      },
-      {
-        onHotReloadError: (error) => {
-          hotReloadLogger.error(
-            { err: error, details: formatError(error) },
-            'Blueprint data reload failed.',
-          );
-        },
-      },
-    );
-  }
 
   return { repository, dataDirectory, summary };
 };

@@ -91,9 +91,9 @@ const DEFAULT_DESCRIPTION = {
 };
 
 export class CostAccountingService {
-  private readonly devicePrices: DevicePriceRegistry;
+  private devicePrices: DevicePriceRegistry;
 
-  constructor(private readonly prices: PriceCatalog) {
+  constructor(private prices: PriceCatalog) {
     this.devicePrices = DevicePriceRegistry.fromCatalog(prices);
   }
 
@@ -108,6 +108,11 @@ export class CostAccountingService {
       utilities: createEmptyUtilityBreakdown(),
       maintenanceDetails: [],
     };
+  }
+
+  updatePriceCatalog(catalog: PriceCatalog): void {
+    this.prices = catalog;
+    this.devicePrices = DevicePriceRegistry.fromCatalog(catalog);
   }
 
   applyUtilityConsumption(

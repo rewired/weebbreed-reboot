@@ -16,10 +16,10 @@ class FakeRepository {
   public errorHandler: ((error: unknown) => void) | null = null;
   public staged: DataLoadResult | null = null;
 
-  onHotReload(
+  async onHotReload(
     handler: (payload: DataLoadResult) => void | Promise<void>,
     options?: { onHotReloadError?: (error: unknown) => void },
-  ): () => Promise<void> {
+  ): Promise<() => Promise<void>> {
     this.handler = handler;
     this.errorHandler = options?.onHotReloadError ?? null;
     return async () => {
@@ -97,11 +97,19 @@ describe('BlueprintHotReloadManager', () => {
       events: collector,
     };
 
-    commitHook(context);
+    await commitHook(context);
 
-    expect(buffered).toHaveLength(1);
-    expect(buffered[0].type).toBe('sim.hotReloaded');
-    expect(buffered[0].payload).toMatchObject({
+    const hotReloadEvent = buffered.find((event) => event.type === 'sim.hotReloaded');
+    expect(hotReloadEvent).toBeDefined();
+    expect(hotReloadEvent?.payload).toMatchObject({
+      appliedTick: 12,
+      summary: { loadedFiles: 3 },
+    });
+
+    const reloadEvent = buffered.find((event) => event.type === 'reload:data');
+    expect(reloadEvent).toBeDefined();
+    expect(reloadEvent?.payload).toMatchObject({
+      status: 'success',
       appliedTick: 12,
       summary: { loadedFiles: 3 },
     });
@@ -126,6 +134,9 @@ describe('BlueprintHotReloadManager', () => {
     const failure = received.find((event) => event.type === 'sim.reloadFailed');
     expect(failure?.tick).toBe(7);
     expect(failure?.payload).toMatchObject({ message: 'Data loader encountered blocking issues.' });
+
+    const reloadFailure = received.find((event) => event.type === 'reload:data');
+    expect(reloadFailure?.payload).toMatchObject({ status: 'error' });
 
     subscription.unsubscribe();
   });

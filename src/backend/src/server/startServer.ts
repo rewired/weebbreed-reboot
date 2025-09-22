@@ -1,7 +1,7 @@
 import { createServer, type Server } from 'node:http';
 import process from 'node:process';
 
-import { createUiStream } from '@runtime/eventBus.js';
+import { createUiStream, eventBus as telemetryEventBus } from '@runtime/eventBus.js';
 import { logger } from '@runtime/logger.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import { createPriceCatalogFromRepository } from '@/engine/economy/catalog.js';
@@ -14,6 +14,8 @@ import { SocketGateway } from '@/server/socketGateway.js';
 import { SseGateway } from '@/server/sseGateway.js';
 import { bootstrap } from '@/bootstrap.js';
 import { createInitialState, type StateFactoryContext } from '@/stateFactory.js';
+import { SimulationLoop } from '@/sim/loop.js';
+import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';
@@ -119,8 +121,45 @@ export const startBackendServer = async (
   const state = await createInitialState(context);
   serverLogger.info('Initial game state created.');
 
+  const hotReloadManager = new BlueprintHotReloadManager(
+    repository,
+    telemetryEventBus,
+    () => state.clock.tick,
+  );
+  const enableHotReload = process.env.NODE_ENV !== 'production';
+  if (enableHotReload) {
+    await hotReloadManager.start();
+    hotReloadManager.onReloadCommitted((result) => {
+      const updatedCatalog = createPriceCatalogFromRepository(repository);
+      costAccountingService.updatePriceCatalog(updatedCatalog);
+      serverLogger.info(
+        {
+          tick: state.clock.tick,
+          dataReload: {
+            loadedFiles: result.summary.loadedFiles,
+            issues: result.summary.issues.length,
+          },
+        },
+        'Blueprint repository hot-reload committed.',
+      );
+    });
+  } else {
+    serverLogger.info('Blueprint hot-reload disabled in production mode.');
+  }
+  const commitHook = hotReloadManager.createCommitHook();
+
   const httpServer = createServer();
-  const facade = new SimulationFacade({ state, accounting: { service: costAccountingService } });
+  const loop = new SimulationLoop({
+    state,
+    eventBus: telemetryEventBus,
+    accounting: { service: costAccountingService },
+    phases: { commit: commitHook },
+  });
+  const facade = new SimulationFacade({
+    state,
+    accounting: { service: costAccountingService },
+    loop,
+  });
   const uiStream$ = createUiStream({
     snapshotProvider: () => facade.select((value) => buildSimulationSnapshot(value, repository)),
     timeStatusProvider: () => facade.getTimeStatus(),
@@ -185,6 +224,12 @@ export const startBackendServer = async (
       } catch (error) {
         serverLogger.error({ err: error }, 'Error while pausing simulation during shutdown.');
       }
+    }
+
+    try {
+      await hotReloadManager.stop();
+    } catch (error) {
+      serverLogger.error({ err: error }, 'Error while stopping data hot-reload manager.');
     }
 
     serverLogger.info('Shutdown complete.');
