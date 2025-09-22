@@ -161,30 +161,7 @@ All randomness (pests/events/market) comes from here.
 
 ---
 
-## 9) Initial Tasks for Codex (linked)
-
-Each task lives under `docs/tasks/*.md` and **must start with an open checkbox field** `- [ ] done`.
-
-1. **Aliases & imports.** Refactor to `@/*`; remove deep relative paths.
-   → `docs/tasks/TASK_ci_quality_gate.md`
-2. **Physio modules + tests.** Implement `src/physio/*` pure functions + Golden‑Master tests.
-   → `docs/tasks/TASK_physio_modules.md`
-3. **Tick state machine.** Implement 7 phases; wire event bus.
-   → `docs/tasks/TASK_tick_machine.md`
-4. **Event bus (telemetry).** `emit`, `events$`, `uiStream$`, basic filtering.
-   → `docs/tasks/TASK_event_bus_ts.md`
-5. **JSON load & validate.** Load/validate strains/methods/devices/prices on startup; log summaries.
-   → `docs/tasks/TASK_json_schema_validation.md`
-6. **Economics externalized.** Keep device prices separate; ensure split at load/factory.
-   → `docs/tasks/TASK_device_prices_split.md`
-7. **Zone.addPlant validation.** Slots, method compatibility, container/substrate plausibility.
-   → `docs/tasks/TASK_zone_plant_validation.md`
-
-> Each task must keep JSON field names intact and respect `/docs` schemas/naming rules.
-
----
-
-## 10) Acceptance Checks (manual)
+## 9) Acceptance Checks (manual)
 
 - Start dev: `pnpm dev` → **no** experimental loader warnings.
 - Trigger a short sim (e.g., 7 days) → UI shows phase events in order; summary log contains energy/water/costs.
@@ -192,7 +169,7 @@ Each task lives under `docs/tasks/*.md` and **must start with an open checkbox f
 
 ---
 
-## 11) Notes for Future Work
+## 10) Notes for Future Work
 
 - Upgrade temp/RH model from proxy to proper psychrometrics when needed.
 - Add device degradation & maintenance curves (externalized config).
