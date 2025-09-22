@@ -63,7 +63,9 @@ export interface ZoneSnapshot {
   structureName: string;
   roomId: string;
   roomName: string;
-  area?: number;
+  area: number;
+  ceilingHeight: number;
+  volume: number;
   cultivationMethodId?: string;
   environment: SimulationEnvironmentState;
   resources: ZoneResourceSnapshot;

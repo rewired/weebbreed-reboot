@@ -91,6 +91,9 @@ const createZone = (
   name: 'Zone 1',
   cultivationMethodId: 'method-1',
   strainId: 'strain-1',
+  area: 40,
+  ceilingHeight: 3,
+  volume: 120,
   environment,
   resources: createResources(),
   plants: [],
@@ -257,5 +260,32 @@ describe('ZoneEnvironmentService', () => {
     expect(zone.environment.relativeHumidity).toBeCloseTo(0.63, 2);
     expect(zone.environment.co2).toBeCloseTo(890, 0);
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);
+  });
+
+  it('throws when zone area exceeds the enclosing room capacity', () => {
+    const environment = createEnvironment();
+    const devices: DeviceInstanceState[] = [];
+    const zone = createZone(devices, environment);
+    zone.area = 80;
+    zone.volume = zone.area * zone.ceilingHeight;
+    const room = createRoom(zone);
+    const structure = createStructure(room);
+    const state = createGameState(structure);
+    const service = new ZoneEnvironmentService();
+
+    expect(() => service.applyDeviceDeltas(state, 15, undefined)).toThrow(/zone areas/i);
+  });
+
+  it('throws when zone ceiling height exceeds the room height', () => {
+    const environment = createEnvironment();
+    const zone = createZone([], environment);
+    zone.ceilingHeight = 5;
+    zone.volume = zone.area * zone.ceilingHeight;
+    const room = createRoom(zone);
+    const structure = createStructure(room);
+    const state = createGameState(structure);
+    const service = new ZoneEnvironmentService();
+
+    expect(() => service.applyDeviceDeltas(state, 15, undefined)).toThrow(/ceiling height/i);
   });
 });

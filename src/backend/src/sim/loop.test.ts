@@ -128,6 +128,9 @@ const createGameStateWithZone = (): GameState => {
     name: 'Zone 1',
     cultivationMethodId: 'method-1',
     strainId: 'strain-1',
+    area: 40,
+    ceilingHeight: 3,
+    volume: 120,
     environment,
     resources: {
       waterLiters: 500,

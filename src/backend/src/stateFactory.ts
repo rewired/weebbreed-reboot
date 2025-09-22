@@ -20,6 +20,7 @@ import {
   PlantState,
   ResourceInventory,
   SeedStockEntry,
+  SimulationNote,
   StructureBlueprint,
   StructureState,
   TaskDefinitionMap,
@@ -41,6 +42,8 @@ import { createPersonnel, loadPersonnelDirectory } from './state/initialization/
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
 import { resolveRoomPurposeId, requireRoomPurposeByName } from './engine/roomPurposes/index.js';
 import type { RoomPurpose, RoomPurposeSlug } from './engine/roomPurposes/index.js';
+import { validateStructureGeometry } from './state/geometry.js';
+import { addDeviceToZone } from './state/devices.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';
@@ -89,6 +92,7 @@ interface StructureCreationResult {
   growZone: StructureState['rooms'][number]['zones'][number];
   installedDeviceBlueprints: DeviceBlueprint[];
   plantCount: number;
+  installationNotes: SimulationNote[];
 }
 
 const computeFootprint = (blueprint: StructureBlueprint): FootprintDimensions => {
@@ -127,38 +131,36 @@ const cloneSettings = (settings: DeviceBlueprint['settings'] | undefined) => {
   return JSON.parse(JSON.stringify(settings)) as Record<string, unknown>;
 };
 
-const createDeviceInstances = (
-  blueprints: DeviceBlueprint[],
+const createDeviceInstance = (
+  blueprint: DeviceBlueprint,
   zoneId: string,
   idStream: RngStream,
   roomPurpose: RoomPurposeSlug,
-): DeviceInstanceState[] => {
-  return blueprints.map((device) => {
-    if (!isDeviceCompatibleWithRoomPurpose(device, roomPurpose)) {
-      throw new Error(
-        `Device blueprint ${device.id} (${device.kind}) is not compatible with room purpose "${roomPurpose}".`,
-      );
-    }
+): DeviceInstanceState => {
+  if (!isDeviceCompatibleWithRoomPurpose(blueprint, roomPurpose)) {
+    throw new Error(
+      `Device blueprint ${blueprint.id} (${blueprint.kind}) is not compatible with room purpose "${roomPurpose}".`,
+    );
+  }
 
-    return {
-      id: generateId(idStream, 'device'),
-      blueprintId: device.id,
-      kind: device.kind,
-      name: device.name,
-      zoneId,
-      status: 'operational',
-      efficiency: device.quality ?? 1,
-      runtimeHours: 0,
-      maintenance: {
-        lastServiceTick: 0,
-        nextDueTick: 24 * 30,
-        condition: Math.min(1, Math.max(0, device.quality ?? 1)),
-        runtimeHoursAtLastService: 0,
-        degradation: 0,
-      },
-      settings: cloneSettings(device.settings),
-    };
-  });
+  return {
+    id: generateId(idStream, 'device'),
+    blueprintId: blueprint.id,
+    kind: blueprint.kind,
+    name: blueprint.name,
+    zoneId,
+    status: 'operational',
+    efficiency: blueprint.quality ?? 1,
+    runtimeHours: 0,
+    maintenance: {
+      lastServiceTick: 0,
+      nextDueTick: 24 * 30,
+      condition: Math.min(1, Math.max(0, blueprint.quality ?? 1)),
+      runtimeHoursAtLastService: 0,
+      degradation: 0,
+    },
+    settings: cloneSettings(blueprint.settings),
+  } satisfies DeviceInstanceState;
 };
 
 const createZoneEnvironment = (): ZoneEnvironmentState => ({
@@ -249,27 +251,27 @@ const buildStructureState = (
   const supportRoomArea = Math.max(0, totalArea - growRoomArea);
   const plantStream = rng.getStream(RNG_STREAM_IDS.plants);
   const zoneId = generateId(idStream, 'zone');
-  const deviceInstances = createDeviceInstances(
-    deviceBlueprints,
-    zoneId,
-    idStream,
-    growRoomPurpose.kind,
-  );
   const capacity = Math.max(1, Math.floor(growRoomArea / Math.max(0.1, method.areaPerPlant)));
   const plantCount = Math.min(capacity, plantCountOverride ?? Math.min(12, capacity));
   const plants = createPlants(plantCount, zoneId, strain, idStream, plantStream);
   const environment = createZoneEnvironment();
   const growRoomPurposeId = growRoomPurpose.id;
+  const zoneArea = growRoomArea;
+  const zoneCeilingHeight = footprint.height;
+  const zoneVolume = zoneArea * zoneCeilingHeight;
   const zone: StructureCreationResult['growZone'] = {
     id: zoneId,
     roomId: '',
     name: 'Zone A',
     cultivationMethodId: method.id,
     strainId: strain.id,
+    area: zoneArea,
+    ceilingHeight: zoneCeilingHeight,
+    volume: zoneVolume,
     environment,
     resources: createZoneResources(),
     plants,
-    devices: deviceInstances,
+    devices: [],
     metrics: createZoneMetrics(environment),
     health: createZoneHealth(plants),
     activeTaskIds: [],
@@ -305,6 +307,27 @@ const buildStructureState = (
     maintenanceLevel: 0.95,
   } satisfies StructureState['rooms'][number];
 
+  const installationNotes: SimulationNote[] = [];
+  const installedDeviceBlueprints: DeviceBlueprint[] = [];
+
+  for (const deviceBlueprint of deviceBlueprints) {
+    const instance = createDeviceInstance(deviceBlueprint, zoneId, idStream, growRoomPurpose.kind);
+    const result = addDeviceToZone(zone, instance);
+
+    for (const warning of result.warnings) {
+      installationNotes.push({
+        id: generateId(idStream, 'note'),
+        tick: 0,
+        message: warning.message,
+        level: warning.level,
+      });
+    }
+
+    if (result.added) {
+      installedDeviceBlueprints.push(deviceBlueprint);
+    }
+  }
+
   const structure: StructureState = {
     id: structureId,
     blueprintId: blueprint.id,
@@ -316,12 +339,15 @@ const buildStructureState = (
     upfrontCostPaid: blueprint.upfrontFee,
   };
 
+  validateStructureGeometry(structure);
+
   return {
     structure,
     growRoom,
     growZone: zone,
-    installedDeviceBlueprints: deviceBlueprints,
+    installedDeviceBlueprints,
     plantCount,
+    installationNotes,
   };
 };
 
@@ -497,6 +523,7 @@ export const createInitialState = async (
       message: 'Simulation initialized.',
       level: 'info' as const,
     },
+    ...structureResult.installationNotes,
   ];
 
   return {

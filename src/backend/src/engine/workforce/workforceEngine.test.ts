@@ -10,6 +10,7 @@ import type {
   TreatmentCategory,
   ZoneState,
 } from '@/state/models.js';
+import { addDeviceToZone } from '@/state/devices.js';
 import { WorkforceEngine } from './workforceEngine.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
@@ -30,6 +31,9 @@ const createBaseState = (): GameState => {
     name: 'Propagation',
     cultivationMethodId: 'method-1',
     strainId: 'strain-1',
+    area: 100,
+    ceilingHeight: 4,
+    volume: 400,
     environment: {
       temperature: 24,
       relativeHumidity: 0.6,
@@ -265,7 +269,7 @@ describe('WorkforceEngine', () => {
   it('accrues overtime and emits hr events when limits are exceeded', () => {
     const state = createBaseState();
     const zone = state.structures[0].rooms[0].zones[0];
-    zone.devices.push({
+    addDeviceToZone(zone, {
       id: 'device-1',
       blueprintId: 'device-blueprint',
       kind: 'ClimateUnit',

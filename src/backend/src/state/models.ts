@@ -215,6 +215,9 @@ export interface ZoneState {
   name: string;
   cultivationMethodId: string;
   strainId?: string;
+  area: number;
+  ceilingHeight: number;
+  volume: number;
   environment: ZoneEnvironmentState;
   resources: ZoneResourceState;
   plants: PlantState[];
