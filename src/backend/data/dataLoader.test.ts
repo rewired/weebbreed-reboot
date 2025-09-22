@@ -21,9 +21,11 @@ describe('loadBlueprintData', () => {
     expect(scrog?.strainTraitCompatibility?.conflicting?.['genotype.indica']?.min).toBe(0.7);
 
     const sog = cultivationMethods.get('659ba4d7-a5fc-482e-98d4-b614341883ac');
-    expect(sog?.strainTraitCompatibility?.preferred?.['photoperiod.vegetationDays']?.max).toBe(21);
-    expect(sog?.strainTraitCompatibility?.conflicting?.['photoperiod.vegetationDays']?.min).toBe(
-      28,
+    expect(sog?.strainTraitCompatibility?.preferred?.['photoperiod.vegetationTime']?.max).toBe(
+      1_814_400,
+    );
+    expect(sog?.strainTraitCompatibility?.conflicting?.['photoperiod.vegetationTime']?.min).toBe(
+      2_419_200,
     );
   });
 });

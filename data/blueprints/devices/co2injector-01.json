@@ -4,7 +4,7 @@
   "name": "CO2 Pulse",
   "quality": 0.85,
   "complexity": 0.15,
-  "lifespanInHours": 8760,
+  "lifespan": 31536000,
   "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.05,

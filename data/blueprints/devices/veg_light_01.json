@@ -4,7 +4,7 @@
   "name": "LED VegLight 600",
   "quality": 0.95,
   "complexity": 0.2,
-  "lifespanInHours": 52560,
+  "lifespan": 189216000,
   "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.6,

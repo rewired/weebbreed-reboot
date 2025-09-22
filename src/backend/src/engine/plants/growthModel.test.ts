@@ -16,8 +16,8 @@ const createTestStrain = (): StrainBlueprint => ({
   chemotype: { thcContent: 0.2, cbdContent: 0.02 },
   morphology: { growthRate: 1, yieldFactor: 1, leafAreaIndex: 3 },
   growthModel: {
-    maxBiomassDry_g: 220,
-    baseLUE_gPerMol: 1.1,
+    maxBiomassDry: 0.22,
+    baseLightUseEfficiency: 0.0011,
     maintenanceFracPerDay: 0.012,
     dryMatterFraction: { vegetation: 0.25, flowering: 0.22 },
     harvestIndex: { targetFlowering: 0.7 },
@@ -72,20 +72,20 @@ const createTestStrain = (): StrainBlueprint => ({
     fatalityThreshold: 0.95,
   },
   photoperiod: {
-    vegetationDays: 28,
-    floweringDays: 60,
-    transitionTriggerHours: 12,
+    vegetationTime: 2_419_200,
+    floweringTime: 5_184_000,
+    transitionTrigger: 43_200,
   },
   stageChangeThresholds: {
     vegetative: { minLightHours: 260, maxStressForStageChange: 0.4 },
     flowering: { minLightHours: 620, maxStressForStageChange: 0.35 },
     ripening: { minLightHours: 920, maxStressForStageChange: 0.3 },
   },
-  harvestWindowInDays: [60, 72],
+  harvestWindow: [5_184_000, 6_220_800],
   harvestProperties: {
-    ripeningTimeInHours: 48,
-    maxStorageTimeInHours: 120,
-    qualityDecayPerHour: 0.02,
+    ripeningTime: 172_800,
+    maxStorageTime: 432_000,
+    qualityDecayRate: 5.555555555555556e-6,
   },
   meta: {},
 });

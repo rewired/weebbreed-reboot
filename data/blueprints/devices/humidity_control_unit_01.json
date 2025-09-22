@@ -4,7 +4,7 @@
   "name": "Humidity Control Unit L1",
   "quality": 0.8,
   "complexity": 0.3,
-  "lifespanInHours": 8760,
+  "lifespan": 31536000,
   "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.35,

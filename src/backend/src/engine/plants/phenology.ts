@@ -92,11 +92,14 @@ const resolveStageDuration = (stage: PlantStage, strain: StrainBlueprint): numbe
     case 'seedling':
       return strain.stageChangeThresholds?.vegetative?.minLightHours ?? DEFAULT_SEEDLING_HOURS;
     case 'vegetative':
-      return strain.photoperiod.vegetationDays * 24;
+      return Math.max(strain.photoperiod.vegetationTime, 0) / 3_600;
     case 'flowering':
-      return strain.photoperiod.floweringDays * 24;
+      return Math.max(strain.photoperiod.floweringTime, 0) / 3_600;
     case 'ripening':
-      return strain.harvestProperties?.ripeningTimeInHours ?? DEFAULT_RIPENING_HOURS;
+      if (typeof strain.harvestProperties?.ripeningTime === 'number') {
+        return Math.max(strain.harvestProperties.ripeningTime, 0) / 3_600;
+      }
+      return DEFAULT_RIPENING_HOURS;
     default:
       return undefined;
   }
