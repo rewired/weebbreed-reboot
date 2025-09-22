@@ -1,21 +1,24 @@
 import { promises as fs, Dirent } from 'fs';
 import path from 'path';
-import { ZodError, ZodType, ZodTypeDef } from 'zod';
+import { ZodError } from 'zod';
+import type { ZodType, ZodTypeDef } from 'zod';
 import {
-  StrainBlueprint,
   strainSchema,
-  DeviceBlueprint,
   deviceSchema,
-  CultivationMethodBlueprint,
   cultivationMethodSchema,
-  RoomPurposeBlueprint,
   roomPurposeSchema,
-  DevicePriceEntry,
   devicePricesSchema,
-  StrainPriceEntry,
   strainPricesSchema,
-  UtilityPrices,
   utilityPricesSchema,
+} from './schemas/index.js';
+import type {
+  StrainBlueprint,
+  DeviceBlueprint,
+  CultivationMethodBlueprint,
+  RoomPurposeBlueprint,
+  DevicePriceEntry,
+  StrainPriceEntry,
+  UtilityPrices,
 } from './schemas/index.js';
 
 export type IssueLevel = 'error' | 'warning';

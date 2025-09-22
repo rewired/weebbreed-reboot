@@ -1,4 +1,5 @@
-import { Observable, OperatorFunction, Subject, bufferTime, filter as rxFilter, share } from 'rxjs';
+import { Observable, Subject, bufferTime, filter as rxFilter, share } from 'rxjs';
+import type { OperatorFunction } from 'rxjs';
 import type { Level } from 'pino';
 
 import { logger } from '@runtime/logger.js';
