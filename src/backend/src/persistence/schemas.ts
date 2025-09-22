@@ -254,8 +254,8 @@ const harvestBatchSchema = z.object({
   stage: z.enum(['fresh', 'drying', 'cured', 'waste']),
   harvestedAtTick: z.number().int().nonnegative(),
   notes: z.string().optional(),
-  decayRatePerHour: z.number().nonnegative().optional(),
-  maxStorageTimeInHours: z.number().nonnegative().optional(),
+  decayRate: z.number().nonnegative().optional(),
+  maxStorageTime: z.number().nonnegative().optional(),
   qualityUpdatedAtTick: z.number().int().nonnegative().optional(),
   cooling: harvestCoolingSchema.optional(),
 });

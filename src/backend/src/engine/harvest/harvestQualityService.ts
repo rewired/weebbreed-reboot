@@ -12,9 +12,9 @@ const clamp = (value: number, min: number, max: number): number => {
 
 export interface HarvestQualityOptions {
   /**
-   * Default exponential decay rate per hour (ρ) if a batch does not provide one.
+   * Default exponential decay rate per second (ρ) if a batch does not provide one.
    */
-  defaultDecayRatePerHour?: number;
+  defaultDecayRate?: number;
   /**
    * Multiplier applied to the decay rate when cooling is enabled (defaults to halving ρ).
    */
@@ -39,7 +39,7 @@ export class HarvestQualityService {
   private readonly maxQuality: number;
 
   constructor(options: HarvestQualityOptions = {}) {
-    this.defaultDecay = Math.max(0, options.defaultDecayRatePerHour ?? 0);
+    this.defaultDecay = Math.max(0, options.defaultDecayRate ?? 0);
     const modifier = options.coolingDecayModifier ?? 0.5;
     this.coolingModifier = clamp(Number.isFinite(modifier) ? modifier : 0.5, 0, 1);
     this.minQuality = options.minimumQuality ?? 0;
@@ -52,32 +52,29 @@ export class HarvestQualityService {
       return;
     }
 
-    const hoursPerTick = tickLengthMinutes / 60;
-    if (!Number.isFinite(hoursPerTick) || hoursPerTick <= 0) {
+    const secondsPerTick = tickLengthMinutes * 60;
+    if (!Number.isFinite(secondsPerTick) || secondsPerTick <= 0) {
       return;
     }
 
     for (const batch of harvest) {
-      this.updateBatchQuality(batch, tick, hoursPerTick);
+      this.updateBatchQuality(batch, tick, secondsPerTick);
     }
   }
 
-  private updateBatchQuality(batch: HarvestBatch, tick: number, hoursPerTick: number): void {
+  private updateBatchQuality(batch: HarvestBatch, tick: number, secondsPerTick: number): void {
     if (batch.stage === 'waste') {
       batch.quality = this.minQuality;
       batch.qualityUpdatedAtTick = tick;
       return;
     }
 
-    const totalStorageHours = (tick - batch.harvestedAtTick) * hoursPerTick;
-    if (totalStorageHours <= 0) {
+    const totalStorageSeconds = (tick - batch.harvestedAtTick) * secondsPerTick;
+    if (totalStorageSeconds <= 0) {
       return;
     }
 
-    if (
-      typeof batch.maxStorageTimeInHours === 'number' &&
-      totalStorageHours >= batch.maxStorageTimeInHours
-    ) {
+    if (typeof batch.maxStorageTime === 'number' && totalStorageSeconds >= batch.maxStorageTime) {
       batch.quality = this.minQuality;
       batch.qualityUpdatedAtTick = tick;
       return;
@@ -89,8 +86,8 @@ export class HarvestQualityService {
     }
 
     const elapsedTicks = tick - lastUpdateTick;
-    const deltaHours = elapsedTicks * hoursPerTick;
-    if (deltaHours <= 0) {
+    const deltaSeconds = elapsedTicks * secondsPerTick;
+    if (deltaSeconds <= 0) {
       return;
     }
 
@@ -101,7 +98,7 @@ export class HarvestQualityService {
     }
 
     const effectiveDecay = this.resolveEffectiveDecay(baseDecay, batch.cooling);
-    const factor = Math.exp(-effectiveDecay * deltaHours);
+    const factor = Math.exp(-effectiveDecay * deltaSeconds);
     const nextQuality = clamp(batch.quality * factor, this.minQuality, this.maxQuality);
 
     batch.quality = nextQuality;
@@ -109,8 +106,8 @@ export class HarvestQualityService {
   }
 
   private resolveBaseDecay(batch: HarvestBatch): number {
-    if (typeof batch.decayRatePerHour === 'number' && Number.isFinite(batch.decayRatePerHour)) {
-      return Math.max(0, batch.decayRatePerHour);
+    if (typeof batch.decayRate === 'number' && Number.isFinite(batch.decayRate)) {
+      return Math.max(0, batch.decayRate);
     }
     return this.defaultDecay;
   }

@@ -11,7 +11,7 @@ export const deviceSchema = z
     name: z.string().min(1),
     quality: z.number(),
     complexity: z.number(),
-    lifespanInHours: z.number(),
+    lifespan: z.number(),
     roomPurposes: roomPurposeCompatibilitySchema,
     settings: z
       .object({

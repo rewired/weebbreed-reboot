@@ -4,7 +4,7 @@
   "name": "Exhaust Fan 4-inch",
   "quality": 0.7,
   "complexity": 0.1,
-  "lifespanInHours": 17520,
+  "lifespan": 63072000,
   "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.05,

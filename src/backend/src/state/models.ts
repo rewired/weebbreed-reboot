@@ -315,8 +315,8 @@ export interface HarvestBatch {
   stage: HarvestStage;
   harvestedAtTick: number;
   notes?: string;
-  decayRatePerHour?: number;
-  maxStorageTimeInHours?: number;
+  decayRate?: number;
+  maxStorageTime?: number;
   qualityUpdatedAtTick?: number;
   cooling?: HarvestCoolingState;
 }

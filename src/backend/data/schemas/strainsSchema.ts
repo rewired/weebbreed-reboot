@@ -42,8 +42,8 @@ export const strainSchema = z
       .passthrough(),
     growthModel: z
       .object({
-        maxBiomassDry_g: z.number(),
-        baseLUE_gPerMol: z.number(),
+        maxBiomassDry: z.number(),
+        baseLightUseEfficiency: z.number(),
         maintenanceFracPerDay: z.number(),
       })
       .passthrough(),
@@ -86,18 +86,18 @@ export const strainSchema = z
       .passthrough(),
     photoperiod: z
       .object({
-        vegetationDays: z.number(),
-        floweringDays: z.number(),
-        transitionTriggerHours: z.number(),
+        vegetationTime: z.number(),
+        floweringTime: z.number(),
+        transitionTrigger: z.number(),
       })
       .passthrough(),
     stageChangeThresholds: z.record(z.string(), z.object({}).passthrough()),
-    harvestWindowInDays: rangeTuple,
+    harvestWindow: rangeTuple,
     harvestProperties: z
       .object({
-        ripeningTimeInHours: z.number(),
-        maxStorageTimeInHours: z.number(),
-        qualityDecayPerHour: z.number(),
+        ripeningTime: z.number(),
+        maxStorageTime: z.number(),
+        qualityDecayRate: z.number(),
       })
       .passthrough(),
     meta: z

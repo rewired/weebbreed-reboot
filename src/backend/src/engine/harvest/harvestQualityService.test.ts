@@ -75,7 +75,7 @@ const createBaseState = (harvest: HarvestBatch[], tickLengthMinutes = 60): GameS
 
 describe('HarvestQualityService', () => {
   it('applies exponential decay after more than seven days without cooling', () => {
-    const decayRate = 0.02;
+    const decayRate = 0.02 / 3_600;
     const initialQuality = 80;
     const batch: HarvestBatch = {
       id: 'batch-1',
@@ -84,7 +84,7 @@ describe('HarvestQualityService', () => {
       quality: initialQuality,
       stage: 'fresh',
       harvestedAtTick: 0,
-      decayRatePerHour: decayRate,
+      decayRate,
       cooling: { enabled: false },
     };
     const state = createBaseState([batch]);
@@ -93,13 +93,14 @@ describe('HarvestQualityService', () => {
     const targetTick = 24 * 7 + 1; // Just over seven days of storage at one hour per tick.
     service.process(state, targetTick, state.metadata.tickLengthMinutes);
 
-    const expectedQuality = initialQuality * Math.exp(-decayRate * targetTick);
+    const expectedSeconds = targetTick * 3_600;
+    const expectedQuality = initialQuality * Math.exp(-decayRate * expectedSeconds);
     expect(state.inventory.harvest[0].quality).toBeCloseTo(expectedQuality, 6);
     expect(state.inventory.harvest[0].qualityUpdatedAtTick).toBe(targetTick);
   });
 
   it('halves the decay rate when cooling is enabled', () => {
-    const decayRate = 0.02;
+    const decayRate = 0.02 / 3_600;
     const initialQuality = 80;
     const batch: HarvestBatch = {
       id: 'batch-2',
@@ -108,7 +109,7 @@ describe('HarvestQualityService', () => {
       quality: initialQuality,
       stage: 'fresh',
       harvestedAtTick: 0,
-      decayRatePerHour: decayRate,
+      decayRate,
       cooling: { enabled: true, enabledAtTick: 0, temperatureC: 4 },
     };
     const state = createBaseState([batch]);
@@ -117,7 +118,8 @@ describe('HarvestQualityService', () => {
     const targetTick = 24 * 7 + 1;
     service.process(state, targetTick, state.metadata.tickLengthMinutes);
 
-    const expectedQuality = initialQuality * Math.exp(-(decayRate / 2) * targetTick);
+    const expectedSeconds = targetTick * 3_600;
+    const expectedQuality = initialQuality * Math.exp(-(decayRate / 2) * expectedSeconds);
     expect(state.inventory.harvest[0].quality).toBeCloseTo(expectedQuality, 6);
     expect(state.inventory.harvest[0].qualityUpdatedAtTick).toBe(targetTick);
   });

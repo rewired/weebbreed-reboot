@@ -207,7 +207,8 @@ const resolveStageCap = (
   stage: PlantStage,
 ): number => {
   const capFraction = config.stageCaps[stage] ?? 1;
-  const maxBiomass = Math.max(strain.growthModel?.maxBiomassDry_g ?? 0, 0);
+  const maxBiomassKg = Math.max(strain.growthModel?.maxBiomassDry ?? 0, 0);
+  const maxBiomass = maxBiomassKg * 1_000;
   return Math.max(maxBiomass * capFraction, 0);
 };
 
@@ -332,7 +333,8 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
   const q10 = strain.growthModel?.temperature?.Q10;
   const tref = strain.growthModel?.temperature?.T_ref_C ?? 25;
   const q10Factor = q10 ? Math.pow(q10, (environment.temperature - tref) / 10) : 1;
-  const lue = (strain.growthModel?.baseLUE_gPerMol ?? 0.9) * q10Factor;
+  const baseLueKgPerMol = strain.growthModel?.baseLightUseEfficiency ?? 0.0009;
+  const lue = baseLueKgPerMol * 1_000 * q10Factor;
   const grossBiomass = absorbedMol * lue * combinedResponse;
   const maintenance =
     plant.biomassDryGrams * (strain.growthModel?.maintenanceFracPerDay ?? 0) * (tickHours / 24);
