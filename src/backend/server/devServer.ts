@@ -11,6 +11,7 @@ import {
   type StateFactoryContext,
   type TimeStatus,
   createUiStream,
+  getRegisteredRngStreamIds,
 } from '../src/index.js';
 import { CostAccountingService } from '../src/engine/economy/costAccounting.js';
 import { createPriceCatalogFromRepository } from '../src/engine/economy/catalog.js';
@@ -63,15 +64,21 @@ const formatTimeStatus = (status: TimeStatus | undefined): string => {
 
 const main = async (): Promise<void> => {
   const { repository, dataDirectory, summary } = await bootstrap();
+  const rngSeed = process.env.WEEBBREED_BACKEND_SEED ?? process.env.WEEBBREED_SEED ?? DEFAULT_SEED;
+  const rng = new RngService(rngSeed);
   devLogger.info(
-    { dataDirectory, loadedFiles: summary.loadedFiles },
+    {
+      dataDirectory,
+      loadedFiles: summary.loadedFiles,
+      rng: {
+        seed: rng.getSeed(),
+        streamIds: getRegisteredRngStreamIds(),
+      },
+    },
     'Loaded blueprint repository.',
   );
   const priceCatalog = createPriceCatalogFromRepository(repository);
   const costAccountingService = new CostAccountingService(priceCatalog);
-
-  const rngSeed = process.env.WEEBBREED_BACKEND_SEED ?? process.env.WEEBBREED_SEED ?? DEFAULT_SEED;
-  const rng = new RngService(rngSeed);
   const context: StateFactoryContext = {
     repository,
     rng,
