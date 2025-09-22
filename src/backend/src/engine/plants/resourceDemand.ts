@@ -1,5 +1,5 @@
-import type { PlantStage } from '../../state/models.js';
-import type { StrainBlueprint } from '../../../data/schemas/strainsSchema.js';
+import type { PlantStage } from '@/state/models.js';
+import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import { mapStageToGrowthPhase } from './phenology.js';
 
 export interface NutrientDemand {

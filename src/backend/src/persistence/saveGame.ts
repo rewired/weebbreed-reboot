@@ -7,8 +7,8 @@ import {
 } from './schemas.js';
 
 export { SAVEGAME_KIND } from './schemas.js';
-import type { GameState } from '../state/models.js';
-import { RngService, type SerializedRngState } from '../lib/rng.js';
+import type { GameState } from '@/state/models.js';
+import { RngService, type SerializedRngState } from '@/lib/rng.js';
 
 export interface SaveGameHeader {
   kind: typeof SAVEGAME_KIND;

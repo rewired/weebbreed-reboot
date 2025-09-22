@@ -1,17 +1,17 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { createEventCollector } from '../../lib/eventBus.js';
-import type { SimulationEvent } from '../../lib/eventBus.js';
+import { createEventCollector } from '@/lib/eventBus.js';
+import type { SimulationEvent } from '@/lib/eventBus.js';
 import type {
   EmployeeState,
   GameState,
   TaskDefinitionMap,
   TaskState,
   ZoneState,
-} from '../../state/models.js';
+} from '@/state/models.js';
 import { WorkforceEngine } from './workforceEngine.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
-import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 
 let growRoomPurposeId: string;
 let repository: BlueprintRepository;

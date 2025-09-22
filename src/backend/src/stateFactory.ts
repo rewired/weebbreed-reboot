@@ -1,9 +1,9 @@
-import type { BlueprintRepository } from '../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type {
   CultivationMethodBlueprint,
   DeviceBlueprint,
   StrainBlueprint,
-} from '../data/schemas/index.js';
+} from '@/data/schemas/index.js';
 import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
 import {
   DeviceInstanceState,

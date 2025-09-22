@@ -5,9 +5,9 @@ import {
   createStructureBlueprint,
 } from '../../testing/fixtures.js';
 import type { EconomicsSettings } from '../models.js';
-import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { createFinanceState } from './finance.js';
-import { MissingDevicePriceError } from '../../engine/economy/devicePriceRegistry.js';
+import { MissingDevicePriceError } from '@/engine/economy/devicePriceRegistry.js';
 
 describe('state/initialization/finance', () => {
   it('records initial capital, upfront fees, and device purchases in the ledger', () => {

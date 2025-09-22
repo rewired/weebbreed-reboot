@@ -4,8 +4,8 @@ import {
   type ClimateControllerOptions,
   type ClimateControlSetpoints,
 } from './climateController.js';
-import type { GameState, RoomState, ZoneState } from '../../state/models.js';
-import type { SimulationPhaseContext } from '../../sim/loop.js';
+import type { GameState, RoomState, ZoneState } from '@/state/models.js';
+import type { SimulationPhaseContext } from '@/sim/loop.js';
 
 export interface AmbientEnvironment {
   temperature: number;

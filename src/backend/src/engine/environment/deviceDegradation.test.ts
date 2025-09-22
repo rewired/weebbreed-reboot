@@ -6,10 +6,10 @@ import type {
   ZoneEnvironmentState,
   ZoneMetricState,
   ZoneResourceState,
-} from '../../state/models.js';
+} from '@/state/models.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
-import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 
 const LAMBDA = 1e-5;
 const EXPONENT = 0.9;

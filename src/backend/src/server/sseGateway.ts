@@ -1,16 +1,16 @@
 import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'node:http';
 import type { Observable, Subscription } from 'rxjs';
 
-import type { SimulationFacade, TimeStatus } from '../facade/index.js';
-import type { RoomPurposeSource } from '../src/engine/roomPurposes/index.js';
+import type { SimulationFacade, TimeStatus } from '@/facade/index.js';
+import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import {
   createUiStream,
   type EventBus,
   type UiSimulationUpdateEntry,
   type UiSimulationUpdateMessage,
   type UiStreamPacket,
-} from '../../runtime/eventBus.js';
-import { buildSimulationSnapshot, type SimulationSnapshot } from '../src/lib/uiSnapshot.js';
+} from '@runtime/eventBus.js';
+import { buildSimulationSnapshot, type SimulationSnapshot } from '@/lib/uiSnapshot.js';
 
 const DEFAULT_KEEP_ALIVE_MS = 15000;
 

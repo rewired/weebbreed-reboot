@@ -2,7 +2,7 @@ import type { Server as HttpServer } from 'node:http';
 import { Server as IOServer, type ServerOptions as IOServerOptions, type Socket } from 'socket.io';
 import type { Observable, Subscription } from 'rxjs';
 import { z, type ZodError } from 'zod';
-import type { RoomPurposeSource } from '../src/engine/roomPurposes/index.js';
+import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import type {
   CommandError,
   CommandResult,
@@ -11,18 +11,18 @@ import type {
   TimeStatus,
   TimeStepIntent,
   SetSpeedIntent,
-} from '../facade/index.js';
+} from '@/facade/index.js';
 import {
   createUiStream,
   type EventBus,
   type UiSimulationUpdateEntry,
   type UiSimulationUpdateMessage,
   type UiStreamPacket,
-} from '../../runtime/eventBus.js';
-import { buildSimulationSnapshot, type SimulationSnapshot } from '../src/lib/uiSnapshot.js';
-import { logger } from '../../runtime/logger.js';
+} from '@runtime/eventBus.js';
+import { buildSimulationSnapshot, type SimulationSnapshot } from '@/lib/uiSnapshot.js';
+import { logger } from '@runtime/logger.js';
 
-export type { SimulationSnapshot } from '../src/lib/uiSnapshot.js';
+export type { SimulationSnapshot } from '@/lib/uiSnapshot.js';
 
 const DEFAULT_SIMULATION_BATCH_INTERVAL_MS = 120;
 const DEFAULT_SIMULATION_BATCH_MAX_SIZE = 5;

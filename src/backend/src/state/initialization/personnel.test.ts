@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
-import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { createPersonnel, loadPersonnelDirectory } from './personnel.js';
 
 describe('state/initialization/personnel', () => {

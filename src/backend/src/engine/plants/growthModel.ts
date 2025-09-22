@@ -1,6 +1,6 @@
-import type { SimulationEvent } from '../../lib/eventBus.js';
-import type { PlantStage, PlantState, ZoneEnvironmentState } from '../../state/models.js';
-import type { StrainBlueprint } from '../../../data/schemas/strainsSchema.js';
+import type { SimulationEvent } from '@/lib/eventBus.js';
+import type { PlantStage, PlantState, ZoneEnvironmentState } from '@/state/models.js';
+import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import {
   advancePhenology,
   createInitialPhenologyState,

@@ -1,9 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import type { DeviceBlueprint } from '../../../data/schemas/index.js';
-import type { RoomPurposeSlug } from '../../engine/roomPurposes/index.js';
+import type { DeviceBlueprint } from '@/data/schemas/index.js';
+import type { RoomPurposeSlug } from '@/engine/roomPurposes/index.js';
 import type { StructureBlueprint } from '../models.js';
-import type { RngStream } from '../../lib/rng.js';
+import type { RngStream } from '@/lib/rng.js';
 import { readJsonFile } from './common.js';
 
 interface RawStructureBlueprint {

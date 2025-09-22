@@ -1,4 +1,4 @@
-import type { PlantStage, TreatmentCategory, HealthTarget } from '../../state/models.js';
+import type { PlantStage, TreatmentCategory, HealthTarget } from '@/state/models.js';
 
 export type DiseasePhaseKey = 'seedling' | 'vegetation' | 'earlyFlower' | 'lateFlower' | 'ripening';
 

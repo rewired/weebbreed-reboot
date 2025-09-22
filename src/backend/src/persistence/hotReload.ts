@@ -1,7 +1,7 @@
-import type { BlueprintRepository } from '../../data/blueprintRepository.js';
-import type { DataLoadResult, DataLoaderError } from '../../data/dataLoader.js';
-import type { EventBus, SimulationEvent } from '../lib/eventBus.js';
-import type { SimulationPhaseHandler } from '../sim/loop.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { DataLoadResult, DataLoaderError } from '@/data/dataLoader.js';
+import type { EventBus, SimulationEvent } from '@/lib/eventBus.js';
+import type { SimulationPhaseHandler } from '@/sim/loop.js';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null;

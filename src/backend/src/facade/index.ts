@@ -5,13 +5,13 @@ import {
   type EventFilter,
   type EventCollector,
   createEventCollector,
-} from '../src/lib/eventBus.js';
-import { eventBus as telemetryEventBus } from '../../runtime/eventBus.js';
-import type { GameState, SimulationClockState } from '../src/state/models.js';
-import { SimulationLoop, type SimulationLoopAccountingOptions } from '../src/sim/loop.js';
-import { SimulationScheduler } from '../src/sim/simScheduler.js';
-import type { SimulationSchedulerOptions } from '../src/sim/simScheduler.js';
-import type { ZoneEnvironmentOptions } from '../src/engine/environment/zoneEnvironment.js';
+} from '@/lib/eventBus.js';
+import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
+import type { GameState, SimulationClockState } from '@/state/models.js';
+import { SimulationLoop, type SimulationLoopAccountingOptions } from '@/sim/loop.js';
+import { SimulationScheduler } from '@/sim/simScheduler.js';
+import type { SimulationSchedulerOptions } from '@/sim/simScheduler.js';
+import type { ZoneEnvironmentOptions } from '@/engine/environment/zoneEnvironment.js';
 
 const cloneState = <T>(value: T): T => {
   if (typeof structuredClone === 'function') {

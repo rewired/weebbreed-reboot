@@ -1,4 +1,4 @@
-import type { GameState, HarvestBatch, HarvestCoolingState } from '../../state/models.js';
+import type { GameState, HarvestBatch, HarvestCoolingState } from '@/state/models.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   if (value < min) {

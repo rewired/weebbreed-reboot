@@ -1,11 +1,11 @@
-import type { EventCollector } from '../../lib/eventBus.js';
+import type { EventCollector } from '@/lib/eventBus.js';
 import type {
   DeviceInstanceState,
   FinanceState,
   GameState,
   LedgerCategory,
   LedgerEntry,
-} from '../../state/models.js';
+} from '@/state/models.js';
 import type { PriceCatalog } from './pricing.js';
 import { DevicePriceRegistry } from './devicePriceRegistry.js';
 

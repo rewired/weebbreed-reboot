@@ -1,5 +1,5 @@
-import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
-import type { DevicePriceEntry } from '../../../data/schemas/index.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { DevicePriceEntry } from '@/data/schemas/index.js';
 import type { PriceCatalog } from './pricing.js';
 
 export interface DevicePriceRequestMetadata {
