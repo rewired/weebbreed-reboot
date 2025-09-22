@@ -1,73 +1,22 @@
-import { Fragment } from 'react';
-import { useTranslation } from 'react-i18next';
-import styles from './App.module.css';
-import { EventLog } from './components/EventLog';
-import { ModalRoot } from './components/ModalRoot';
-import { SimulationControls } from './components/SimulationControls';
-import { SimulationOverview } from './components/SimulationOverview';
-import { TelemetryCharts } from './components/TelemetryCharts';
-import { TelemetryTable } from './components/TelemetryTable';
-import { WorldExplorer } from './components/WorldExplorer';
-import { PersonnelView } from './components/PersonnelView';
-import { FinanceView } from './components/FinanceView';
-import { Dashboard } from './components/Dashboard';
-import { NavigationTabs } from './components/NavigationTabs';
-import { useSimulationBridge } from './hooks/useSimulationBridge';
-import { SOCKET_URL } from './config/socket';
-import { useAppStore } from './store';
-
-const PlaceholderView = ({ translationKey }: { translationKey: string }) => {
-  const { t } = useTranslation('simulation');
-
-  return (
-    <section className={styles.placeholder}>
-      <h2>{t('labels.inDevelopment')}</h2>
-      <p>{t(translationKey)}</p>
-    </section>
-  );
-};
+import { useAppStore } from '@/store';
 
 const App = () => {
-  const currentView = useAppStore((state) => state.currentView);
-  const activeModal = useAppStore((state) => state.activeModal);
-  const bridge = useSimulationBridge({ autoConnect: true, url: SOCKET_URL });
-
-  const contentAreaClasses = [styles.contentArea, 'content-area'];
-  if (activeModal) {
-    contentAreaClasses.push(styles.blurred, 'blurred');
-  }
+  const connectionStatus = useAppStore((state) => state.connectionStatus);
 
   return (
-    <div className={styles.app}>
-      <div className={contentAreaClasses.join(' ')}>
-        <Dashboard bridge={bridge} />
-        <NavigationTabs />
-
-        <main className={styles.main}>
-          {currentView === 'overview' ? (
-            <Fragment>
-              <SimulationControls bridge={bridge} />
-              <SimulationOverview />
-              <TelemetryCharts />
-              <TelemetryTable />
-              <EventLog />
-            </Fragment>
-          ) : null}
-
-          {currentView === 'world' ? <WorldExplorer /> : null}
-
-          {currentView === 'personnel' ? <PersonnelView /> : null}
-
-          {currentView === 'finance' ? <FinanceView /> : null}
-
-          {currentView === 'settings' ? (
-            <PlaceholderView translationKey="views.settingsDescription" />
-          ) : null}
-        </main>
+    <main className="min-h-screen bg-background text-text-primary font-sans">
+      <div className="mx-auto max-w-layout px-6 py-10">
+        <h1 className="text-3xl font-semibold tracking-tight">Weed Breed Simulation Dashboard</h1>
+        <p className="mt-4 text-lg text-text-secondary">
+          Connection status:{' '}
+          <span className="font-mono text-accent-strong">{connectionStatus}</span>
+        </p>
+        <p className="mt-6 max-w-2xl text-text-muted">
+          Core hooks, stores, and configuration from the legacy frontend are ready to plug into new
+          views so we can focus on rapid feature development.
+        </p>
       </div>
-
-      <ModalRoot />
-    </div>
+    </main>
   );
 };
 
