@@ -13,4 +13,5 @@ Nutze `strainPrices.json` (seedPrice, harvestPricePerGram). Implementiere `quali
 
 1. Registry `StrainPriceRegistry` + Validierung.
 2. Einfaches Qualitätsmodell (0.7–1.2) dokumentieren.
+   - Qualitätssignal kommt normalisiert (`0–1`) aus Health/Stress; ca. `0.6` entspricht neutraler Preisqualität (`×1.0`).
 3. Abverkaufslogik im Accounting integrieren.
