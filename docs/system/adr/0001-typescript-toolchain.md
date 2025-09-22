@@ -1,6 +1,6 @@
 # ADR 0001 — Backend TypeScript Toolchain Stabilization
 
-- **Status:** Accepted (2025-01-22)
+- **Status:** Accepted (initial decision 2025-01-22, updated 2025-02-04)
 - **Owner:** Simulation Platform
 - **Context:** Backend service
 
@@ -9,43 +9,50 @@
 The backend had been relying on `ts-node` and custom loader flags to execute
 TypeScript directly. The approach created friction when running on modern Node
 (>20), complicated debugging (custom loaders), and made it hard to ship a clean
-ESM bundle. The TypeScript configuration also mixed multiple source roots
-(`src/`, `data/`, `facade/`, `server/`), complicating analysis and bundling. A
-dedicated `typecheck` command was missing because `tsc --noEmit` surfaced
-hundreds of issues under the old layout.
+Node-compatible bundle for operations teams. The TypeScript configuration also
+mixed multiple source roots (`src/`, `data/`, `facade/`, `server/`), complicating
+analysis and bundling. A dedicated `typecheck` command was missing because
+`tsc --noEmit` surfaced hundreds of issues under the old layout.
 
 ## Decision
 
-- Keep TypeScript as the implementation language.
-- Consolidate all backend sources under `src/backend/src` and expose internal
-  modules via the `@/` alias (`@runtime/` for shared runtime helpers).
+- Keep TypeScript as the implementation language for the backend runtime and
+  supporting tooling.
+- Keep all backend sources under `src/backend/src` and expose internal modules
+  via the `@/` alias (`@runtime/` for shared runtime helpers) so refactors do not
+  rely on brittle relative imports.
 - Replace `ts-node` with [`tsx`](https://tsx.is/) for the development server
-  (`pnpm dev` ⇒ `tsx --watch src/index.ts`).
-- Build production artifacts with [`tsup`](https://tsup.egoist.dev/) targeting
-  pure ESM (`pnpm build` ⇒ `dist/index.js` + sourcemaps). Declaration output will
-  be re-enabled once the strict typecheck backlog is addressed.
-- Run the packaged server through plain Node (`pnpm start` ⇒ `node dist/index.js`).
-- Add a strict `tsconfig.json` that uses bundler resolution, enforces modern ESM
-  semantics (isolated modules, verbatim module syntax, exact optional property
-  types, etc.), and declares the `@/`/`@runtime/` path aliases.
+  (`pnpm dev` ⇒ `tsx --watch src/index.ts`). `tsx` offers a fast feedback loop
+  without experimental ESM loader flags.
+- Build production artifacts with [`tsup`](https://tsup.egoist.dev/) targeting a
+  CommonJS bundle in `dist/` (`pnpm build` ⇒ `dist/index.cjs` + sourcemaps). The
+  CommonJS output avoids ESM loader drift across Node 20–23 while preserving the
+  ability to emit type declarations once the strict typecheck backlog is cleared.
+- Run the packaged server through plain Node (`pnpm start` ⇒ `node dist/index.cjs`).
+- Ship a strict `tsconfig.json` that uses Node resolution, enforces modern
+  TypeScript safety nets (isolated modules, exact optional property types, no
+  unchecked indexed access), and declares the `@/`/`@runtime/` path aliases.
 - Introduce a `typecheck` script (`tsc -p tsconfig.json --noEmit`) and wire it
-  into the workspace-level `pnpm typecheck` target.
-- Document the workflow in `src/backend/README.md` and capture the rationale in
-  this ADR.
+  into the workspace-level `pnpm typecheck` target so CI can enforce the
+  settings.
+- Document the workflow in `src/backend/README.md`, link the changelog in the
+  workspace `README.md`, and capture the rationale in this ADR to keep the tool
+  choice visible for future audits.
 
 ## Consequences
 
 - Development and production runtimes no longer require experimental loaders or
-  custom flags; Node ≥23 runs the compiled output directly.
-- `tsup` produces deterministic ESM bundles with type declarations, aligning the
-  backend with the rest of the toolchain and simplifying deployment.
-- The stricter compiler settings will surface previously hidden issues; teams
-  must address outstanding errors before enabling the new `typecheck` step in CI.
+  custom flags; Node 20–23 runs the compiled CommonJS output directly.
+- `tsup` produces deterministic CommonJS bundles (and, when enabled, declaration
+  files), reducing drift between local development and production deploys.
+- The stricter compiler settings surface previously hidden issues; teams must
+  address outstanding errors before the CI `typecheck` gate can be flipped to
+  “required”.
 - Shared runtime utilities continue to live in `src/runtime`, but they are
   consumed through the explicit `@runtime/` alias to keep module boundaries
   obvious.
 - Path updates touched many files; downstream branches must rebase to adopt the
-  consolidated layout.
+  consolidated layout and the new import conventions.
 
 ## Alternatives Considered
 
@@ -54,8 +61,10 @@ hundreds of issues under the old layout.
 2. **Use `esbuild` CLI instead of `tsup`.** `tsup` wraps `esbuild` but adds
    sensible defaults (bundle splitting, declaration emit) with less manual
    wiring.
-3. **Transpile with `tsc`.** `tsc` alone cannot emit bundles or tree-shake the
-   runtime. It also slows down incremental builds compared to `tsup`+`esbuild`.
+3. **Emit ESM-only bundles.** Rejected for the primary build because Node’s ESM
+   loader differences across versions routinely introduced regressions in our
+   deployment targets. CommonJS keeps runtime friction low while still allowing
+   ESM-friendly authoring during development.
 
 ## Rollback Plan
 
