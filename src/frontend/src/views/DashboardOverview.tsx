@@ -8,7 +8,8 @@ import {
   selectCurrentTick,
   selectCumulativeYield,
   selectTimeStatus,
-  useAppStore,
+  useGameStore,
+  useZoneStore,
 } from '@/store';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -27,15 +28,15 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
 });
 
 const DashboardOverview = () => {
-  const timeStatus = useAppStore(selectTimeStatus);
-  const currentTick = useAppStore(selectCurrentTick);
-  const cashOnHand = useAppStore(selectCapital);
-  const cumulativeYield = useAppStore(selectCumulativeYield);
-  const alertCount = useAppStore(selectAlertCount);
-  const structures = useAppStore((state) => Object.values(state.structures));
-  const rooms = useAppStore((state) => Object.values(state.rooms));
-  const zones = useAppStore((state) => Object.values(state.zones));
-  const plants = useAppStore((state) => Object.values(state.plants));
+  const timeStatus = useGameStore(selectTimeStatus);
+  const currentTick = useGameStore(selectCurrentTick);
+  const alertCount = useGameStore(selectAlertCount);
+  const cashOnHand = useZoneStore(selectCapital);
+  const cumulativeYield = useZoneStore(selectCumulativeYield);
+  const structures = useZoneStore((state) => Object.values(state.structures));
+  const rooms = useZoneStore((state) => Object.values(state.rooms));
+  const zones = useZoneStore((state) => Object.values(state.zones));
+  const plants = useZoneStore((state) => Object.values(state.plants));
 
   const headerStatus =
     timeStatus === undefined

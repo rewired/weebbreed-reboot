@@ -2,7 +2,13 @@ import Card from '@/components/Card';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
-import { selectCurrentTick, selectSelectedZone, useAppStore } from '@/store';
+import {
+  selectCurrentTick,
+  selectZoneById,
+  useAppStore,
+  useGameStore,
+  useZoneStore,
+} from '@/store';
 
 const percentageFormatter = new Intl.NumberFormat('en-US', {
   style: 'percent',
@@ -14,9 +20,10 @@ const numberFormatter = new Intl.NumberFormat('en-US', {
 });
 
 const ZoneDetail = () => {
-  const zone = useAppStore(selectSelectedZone);
-  const currentTick = useAppStore(selectCurrentTick);
-  const timeline = useAppStore((state) => state.timeline);
+  const selectedZoneId = useAppStore((state) => state.selectedZoneId);
+  const zone = useZoneStore(selectZoneById(selectedZoneId));
+  const currentTick = useGameStore(selectCurrentTick);
+  const timeline = useZoneStore((state) => state.timeline);
 
   if (!zone) {
     return (

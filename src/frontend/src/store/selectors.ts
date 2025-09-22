@@ -1,84 +1,73 @@
-import type { AppStoreState } from './types';
+import type { GameStoreState, ZoneStoreState } from './types';
 
-export const selectFinanceSummary = (state: AppStoreState) => state.financeSummary;
+export const selectFinanceSummary = (state: ZoneStoreState) => state.financeSummary;
 
-export const selectCapital = (state: AppStoreState): number => {
+export const selectCapital = (state: ZoneStoreState): number => {
   return state.financeSummary?.cashOnHand ?? 0;
 };
 
-export const selectCumulativeYield = (state: AppStoreState): number => {
+export const selectCumulativeYield = (state: ZoneStoreState): number => {
   return Object.values(state.plants).reduce(
     (total, plant) => total + (plant.yieldDryGrams ?? 0),
     0,
   );
 };
 
-export const selectCurrentTick = (state: AppStoreState): number => {
-  return state.timeStatus?.tick ?? state.lastSnapshot?.tick ?? 0;
+export const selectCurrentTick = (state: GameStoreState): number => {
+  return state.timeStatus?.tick ?? state.lastSnapshotTick ?? 0;
 };
 
-export const selectTimeStatus = (state: AppStoreState) => state.timeStatus;
+export const selectTimeStatus = (state: GameStoreState) => state.timeStatus;
 
-export const selectLastTickEvent = (state: AppStoreState) => state.lastTickCompleted;
+export const selectLastTickEvent = (state: GameStoreState) => state.lastTickCompleted;
 
-export const selectIsPaused = (state: AppStoreState): boolean => {
+export const selectIsPaused = (state: GameStoreState): boolean => {
   if (state.timeStatus) {
     return Boolean(state.timeStatus.paused);
   }
-  if (state.lastSnapshot?.clock) {
-    return state.lastSnapshot.clock.isPaused;
+  if (state.lastClockSnapshot) {
+    return state.lastClockSnapshot.isPaused;
   }
   return true;
 };
 
-export const selectTargetTickRate = (state: AppStoreState): number => {
+export const selectTargetTickRate = (state: GameStoreState): number => {
   if (state.timeStatus) {
     return state.timeStatus.targetTickRate;
   }
-  if (state.lastSnapshot?.clock) {
-    return state.lastSnapshot.clock.targetTickRate;
+  if (state.lastClockSnapshot) {
+    return state.lastClockSnapshot.targetTickRate;
   }
   return 1;
 };
 
-export const selectCurrentSpeed = (state: AppStoreState): number => {
+export const selectCurrentSpeed = (state: GameStoreState): number => {
   if (state.timeStatus) {
     return state.timeStatus.speed;
   }
-  if (state.lastSnapshot?.clock) {
-    return state.lastSnapshot.clock.targetTickRate;
+  if (state.lastClockSnapshot) {
+    return state.lastClockSnapshot.targetTickRate;
   }
   return 1;
 };
 
-export const selectAlertEvents = (state: AppStoreState) => {
+export const selectAlertEvents = (state: GameStoreState) => {
   return state.events.filter((event) => event.severity === 'warning' || event.severity === 'error');
 };
 
-export const selectRecentEvents = (limit: number) => (state: AppStoreState) => {
+export const selectRecentEvents = (limit: number) => (state: GameStoreState) => {
   if (limit <= 0) {
     return [];
   }
   return state.events.slice(-limit).reverse();
 };
 
-export const selectAlertCount = (state: AppStoreState): number => {
+export const selectAlertCount = (state: GameStoreState): number => {
   return state.events.reduce((count, event) => {
     return count + (event.severity === 'warning' || event.severity === 'error' ? 1 : 0);
   }, 0);
 };
 
-export const selectSelectedStructure = (state: AppStoreState) => {
-  const structureId = state.selectedStructureId;
-  return structureId ? state.structures[structureId] : undefined;
-};
-
-export const selectSelectedRoom = (state: AppStoreState) => {
-  const roomId = state.selectedRoomId;
-  return roomId ? state.rooms[roomId] : undefined;
-};
-
-export const selectSelectedZone = (state: AppStoreState) => {
-  const zoneId = state.selectedZoneId;
+export const selectZoneById = (zoneId?: string) => (state: ZoneStoreState) => {
   return zoneId ? state.zones[zoneId] : undefined;
 };
