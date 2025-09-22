@@ -50,6 +50,15 @@ export interface DataLoadResult {
   summary: DataLoadSummary;
 }
 
+export interface LoadBlueprintDataOptions {
+  /**
+   * When true the loader will return the collected summary even if blocking
+   * issues were encountered. Callers are responsible for inspecting the
+   * returned summary and handling errors appropriately.
+   */
+  allowErrors?: boolean;
+}
+
 export class DataLoaderError extends Error {
   constructor(public readonly issues: DataIssue[]) {
     super('Data loader encountered blocking issues.');
@@ -314,7 +323,10 @@ const runCrossChecks = (data: BlueprintData, summary: DataLoadSummary) => {
   }
 };
 
-export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoadResult> => {
+export const loadBlueprintData = async (
+  dataDirectory: string,
+  options: LoadBlueprintDataOptions = {},
+): Promise<DataLoadResult> => {
   const absoluteDataDir = path.resolve(dataDirectory);
   const summary: DataLoadSummary = {
     loadedFiles: 0,
@@ -322,6 +334,7 @@ export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoad
     issues: [],
   };
   const issues = summary.issues;
+  const { allowErrors = false } = options;
 
   const blueprintsDir = path.join(absoluteDataDir, 'blueprints');
   const strainDir = path.join(blueprintsDir, 'strains');
@@ -439,7 +452,7 @@ export const loadBlueprintData = async (dataDirectory: string): Promise<DataLoad
   runCrossChecks(data, summary);
 
   const blockingIssues = summary.issues.filter((item) => item.level === 'error');
-  if (blockingIssues.length > 0) {
+  if (blockingIssues.length > 0 && !allowErrors) {
     throw new DataLoaderError(blockingIssues);
   }
 
