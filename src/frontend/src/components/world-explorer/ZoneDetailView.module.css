@@ -93,7 +93,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .navButton:hover,
@@ -173,7 +175,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .supplyButton:hover,
@@ -273,7 +277,9 @@
   align-items: center;
   gap: 0.4rem;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .harvestButton:hover,

@@ -48,7 +48,9 @@
   display: flex;
   flex-direction: column;
   gap: 0.8rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .card:hover,
@@ -147,7 +149,9 @@
   padding: 0.25rem;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .iconButton:hover,
@@ -210,7 +214,9 @@
   padding: 0.45rem 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .cardButton:hover,
