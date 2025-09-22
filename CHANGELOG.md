@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Introduced the changelog to capture noteworthy changes for upcoming releases.
 
 ### Changed
-- Updated ADR 0001 to reflect the accepted CommonJS-first TypeScript toolchain decision and documentation touchpoints.
 
+- Updated ADR 0001 to reflect the accepted CommonJS-first TypeScript toolchain decision and documentation touchpoints.

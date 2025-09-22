@@ -9,6 +9,7 @@
     "build": "tsup src/index.ts --format esm --sourcemap --clean --tsconfig tsconfig.build.json",
     "start": "node dist/index.js",
     "lint": "eslint .",
+    "fmt": "pnpm exec prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit",

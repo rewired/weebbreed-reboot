@@ -5,7 +5,9 @@ interface BreedingStationPlaceholderProps {
   onBreedNewStrain?: () => void;
 }
 
-export const BreedingStationPlaceholder = ({ onBreedNewStrain }: BreedingStationPlaceholderProps) => {
+export const BreedingStationPlaceholder = ({
+  onBreedNewStrain,
+}: BreedingStationPlaceholderProps) => {
   const { t } = useTranslation('simulation');
 
   return (
