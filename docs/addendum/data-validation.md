@@ -42,6 +42,12 @@ appear as untracked changes.
 
 ## Continuous Integration
 
-The `Data Validation` workflow (`.github/workflows/data-validation.yml`) executes
-`pnpm validate:data` on every push and pull request. This ensures blueprint
-changes are validated alongside application code before merging.
+The `Data Validation` workflow (`.github/workflows/data-validation.yml`) now
+executes three independent jobs on every push and pull request:
+
+- `pnpm validate:data` to gate blueprint updates.
+- `pnpm audit:run` to surface dependency vulnerabilities via the audit runner.
+- `pnpm lint` to keep workspace lint rules enforced in the same gate.
+
+Each job installs dependencies with the pinned pnpm and Node.js versions so a
+failure in any command marks the workflow as failed.

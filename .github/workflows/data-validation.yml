@@ -11,23 +11,51 @@ jobs:
     name: Validate blueprint data
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - &checkout
+        name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
+      - &setup-pnpm
+        name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 10.17.0
 
-      - name: Setup Node.js
+      - &setup-node
+        name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 23
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install dependencies
+      - &install
+        name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Validate blueprint data
         run: pnpm validate:data
+
+  audit:
+    name: Audit dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+      - *install
+
+      - name: Run security audit
+        run: pnpm audit:run
+
+  lint:
+    name: Lint workspace
+    runs-on: ubuntu-latest
+    steps:
+      - *checkout
+      - *setup-pnpm
+      - *setup-node
+      - *install
+
+      - name: Run lint checks
+        run: pnpm lint
