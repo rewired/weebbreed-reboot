@@ -144,6 +144,18 @@ const HOURS_PER_DAY = 24;
 const MINUTES_PER_DAY = HOURS_PER_DAY * 60;
 const MIN_ESTIMATED_HOURS = 0.25;
 
+const computeEffectiveWorkMinutesPerTick = (
+  employee: EmployeeState,
+  tickLengthMinutes: number,
+): number => {
+  const baseMinutes = Number.isFinite(tickLengthMinutes) ? Math.max(tickLengthMinutes, 0) : 0;
+  if (!Number.isFinite(employee.maxMinutesPerTick)) {
+    return baseMinutes;
+  }
+  const cap = Math.max(employee.maxMinutesPerTick, 0);
+  return Math.max(Math.min(baseMinutes, cap), 0);
+};
+
 const normaliseMinuteOfDay = (value: number): number => {
   if (!Number.isFinite(value)) {
     return 0;
@@ -672,6 +684,9 @@ export class WorkforceEngine {
       if (employee.energy < this.policies.energy.minEnergyToClaim) {
         return false;
       }
+      if (computeEffectiveWorkMinutesPerTick(employee, tickLengthMinutes) <= 0) {
+        return false;
+      }
       return true;
     });
 
@@ -691,14 +706,18 @@ export class WorkforceEngine {
       const metadata = getTaskMetadata(task);
       const estimatedHours =
         metadata?.estimatedWorkHours ?? this.estimateWorkHours(definition, task.metadata);
-      const hoursPerTick = Math.max(tickLengthMinutes / 60, 0.1);
-      const etaTicks = Math.max(1, Math.ceil(estimatedHours / hoursPerTick));
+      const workMinutesPerTick = computeEffectiveWorkMinutesPerTick(best, tickLengthMinutes);
+      const hoursPerTick = workMinutesPerTick / 60;
+      const etaTicks =
+        hoursPerTick > 0 ? Math.max(1, Math.ceil(estimatedHours / hoursPerTick)) : undefined;
       const assignment: TaskAssignment = {
         employeeId: best.id,
         startedAtTick: tick,
         progress: 0,
-        etaTick: tick + etaTicks,
       };
+      if (typeof etaTicks === 'number') {
+        assignment.etaTick = tick + etaTicks;
+      }
       task.assignment = assignment;
       state.tasks.active.push(task);
       best.status = 'assigned';
@@ -840,7 +859,7 @@ export class WorkforceEngine {
     tickLengthMinutes: number,
     events: EventCollector,
   ): void {
-    const hoursPerTick = Math.max(tickLengthMinutes / 60, 0.1);
+    const baseHoursPerTick = Math.max(tickLengthMinutes / 60, 0);
     const completed: TaskState[] = [];
     const requeued: TaskState[] = [];
 
@@ -874,7 +893,7 @@ export class WorkforceEngine {
       const metadata = getTaskMetadata(task);
       const estimatedHours =
         metadata?.estimatedWorkHours ?? this.estimateWorkHours(definition, task.metadata);
-      const allocation = this.allocateWorkHours(employee, hoursPerTick);
+      const allocation = this.allocateWorkHours(employee, baseHoursPerTick);
       if (allocation.totalHours <= 0) {
         assignment.etaTick = tick + 1;
         continue;
@@ -971,15 +990,24 @@ export class WorkforceEngine {
     );
   }
 
-  private allocateWorkHours(employee: EmployeeState, hoursPerTick: number): WorkHoursAllocation {
+  private allocateWorkHours(
+    employee: EmployeeState,
+    baseHoursPerTick: number,
+  ): WorkHoursAllocation {
+    const minutesRequested = Math.max(baseHoursPerTick * 60, 0);
+    const effectiveMinutes = computeEffectiveWorkMinutesPerTick(employee, minutesRequested);
+    const limitedHoursPerTick = Math.min(baseHoursPerTick, effectiveMinutes / 60);
+    if (!(limitedHoursPerTick > 0)) {
+      return { regularHours: 0, overtimeHours: 0, totalHours: 0 };
+    }
     const overtimePolicy = this.policies.overtime;
     const threshold = overtimePolicy.overtimeThresholdHours;
     const standardLimit =
       overtimePolicy.standardHoursPerDay + overtimePolicy.maxOvertimeHoursPerDay;
     const hoursWorked = employee.hoursWorkedToday;
     const regularAvailable = Math.max(threshold - hoursWorked, 0);
-    const regularHours = Math.min(regularAvailable, hoursPerTick);
-    let overtimeHours = Math.max(hoursPerTick - regularHours, 0);
+    const regularHours = Math.min(regularAvailable, limitedHoursPerTick);
+    let overtimeHours = Math.max(limitedHoursPerTick - regularHours, 0);
     const overtimeRemaining = Math.max(standardLimit - hoursWorked - regularHours, 0);
     if (overtimeHours > overtimeRemaining) {
       overtimeHours = overtimeRemaining;

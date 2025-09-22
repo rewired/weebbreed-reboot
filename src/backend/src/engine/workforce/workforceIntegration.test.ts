@@ -172,6 +172,7 @@ const createEmployee = (overrides: Partial<EmployeeState>): EmployeeState => ({
   status: 'offShift',
   morale: 0.82,
   energy: 1,
+  maxMinutesPerTick: 120,
   skills: { Gardening: 4 },
   experience: { Gardening: 4 },
   traits: [],

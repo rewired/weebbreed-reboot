@@ -166,6 +166,7 @@ export interface EmployeeSnapshot {
   salaryPerTick: number;
   morale: number;
   energy: number;
+  maxMinutesPerTick: number;
   status: string;
   assignedStructureId?: string;
 }
