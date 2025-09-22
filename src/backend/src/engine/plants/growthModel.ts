@@ -14,6 +14,11 @@ import {
   type ResourceDemandResult,
   type ResourceSupply,
 } from './resourceDemand.js';
+import { lightSaturationResponse, ppfdToMoles } from '../../../../physio/ppfd.js';
+import { gaussianResponse } from '../../../../physio/temp.js';
+import { co2HalfSaturationResponse } from '../../../../physio/co2.js';
+import { vaporPressureDeficit } from '../../../../physio/vpd.js';
+import { estimateTranspirationLiters } from '../../../../physio/transpiration.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -28,44 +33,7 @@ const HEALTH_ALERT_THRESHOLDS = [
   { threshold: 0.3, severity: 'critical' as const },
 ];
 
-export const lightSaturationResponse = (
-  ppfd: number,
-  halfSaturation: number,
-  maxResponse = 1,
-): number => {
-  if (ppfd <= 0) {
-    return 0;
-  }
-  const half = Math.max(halfSaturation, 1);
-  const response = ppfd / (ppfd + half);
-  return clamp(response * maxResponse, 0, maxResponse);
-};
-
-export const gaussianResponse = (value: number, mean: number, sigma: number): number => {
-  if (!Number.isFinite(value) || !Number.isFinite(mean)) {
-    return 0;
-  }
-  const spread = Math.max(Math.abs(sigma), MIN_SIGMA);
-  const exponent = -0.5 * ((value - mean) / spread) ** 2;
-  return clamp(Math.exp(exponent), 0, 1);
-};
-
-export const co2HalfSaturationResponse = (co2: number, halfSaturation: number): number => {
-  if (co2 <= 0) {
-    return 0;
-  }
-  const half = Math.max(halfSaturation, 1);
-  const response = co2 / (co2 + half);
-  return clamp(response, 0, 1);
-};
-
-export const computeVpd = (temperatureC: number, relativeHumidity: number): number => {
-  const temp = clamp(temperatureC, -40, 60);
-  const rh = clamp(relativeHumidity, 0, 1);
-  const saturationVp = 0.6108 * Math.exp((17.27 * temp) / (temp + 237.3));
-  const actualVp = saturationVp * rh;
-  return Math.max(saturationVp - actualVp, 0);
-};
+export const computeVpd = vaporPressureDeficit;
 
 const resolveLightHalfSaturation = (strain: StrainBlueprint, stage: PlantStage): number => {
   const phase = mapStageToGrowthPhase(stage);
@@ -122,8 +90,8 @@ const resolveCo2HalfSaturation = (strain: StrainBlueprint): number => {
   return clamp(DEFAULT_CO2_HALF_SAT / growthRate, 350, 900);
 };
 
-const computeCanopyInterception = (strain: StrainBlueprint, canopyArea: number): number => {
-  const lai = clamp(strain.morphology?.leafAreaIndex ?? 2.5, 0.2, 6);
+const computeCanopyInterception = (leafAreaIndex: number, canopyArea: number): number => {
+  const lai = clamp(leafAreaIndex, 0.2, 6);
   const referenceArea = Math.max(canopyArea, 0.05);
   const extinctionCoefficient = 0.7;
   return clamp(1 - Math.exp(-extinctionCoefficient * lai * referenceArea), 0, 1);
@@ -138,6 +106,11 @@ export interface VpdEvaluation extends DriverEvaluation {
   value: number;
 }
 
+export interface TranspirationMetrics {
+  liters: number;
+  litersPerHour: number;
+}
+
 export interface GrowthDriverMetrics {
   light: DriverEvaluation;
   temperature: DriverEvaluation;
@@ -145,6 +118,7 @@ export interface GrowthDriverMetrics {
   vpd: VpdEvaluation;
   water: DriverEvaluation;
   nutrients: DriverEvaluation;
+  transpiration: TranspirationMetrics;
   overallStress: number;
   combinedResponse: number;
 }
@@ -167,6 +141,7 @@ export interface PlantGrowthResult {
   biomassDelta: number;
   healthDelta: number;
   qualityDelta: number;
+  transpirationLiters: number;
   metrics: GrowthDriverMetrics;
   resources: ResourceDemandResult;
   events: SimulationEvent[];
@@ -273,6 +248,7 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
   const phenologyConfig = context.phenologyConfig ?? createPhenologyConfig(strain);
   const phenologyState = ensurePhenologyState(plant.stage, context.phenology);
   const canopyArea = Math.max(context.canopyAreaOverride ?? plant.canopyCover ?? 0.1, 0.05);
+  const leafAreaIndex = clamp(strain.morphology?.leafAreaIndex ?? 2.5, 0.2, 6);
 
   const resources = calculateResourceDemand({
     strain,
@@ -311,6 +287,14 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
     resourceResponse,
   ]);
 
+  const transpirationLiters = estimateTranspirationLiters({
+    vpdKPa: vpd,
+    canopyAreaM2: canopyArea,
+    leafAreaIndex,
+    durationHours: tickHours,
+    stomatalFactor: combinedResponse,
+  });
+
   const resilience = clamp(strain.generalResilience ?? 0.5, 0, 1);
   const overallStress = clamp(1 - combinedResponse, 0, 1);
   const effectiveStress = clamp(overallStress - (resilience - 0.5) * 0.3, 0, 1);
@@ -327,9 +311,9 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
     tickHours,
   );
 
-  const canopyInterception = computeCanopyInterception(strain, canopyArea);
-  const absorbedMol =
-    environment.ppfd * 1e-6 * Math.max(tickHours, 0) * 3600 * canopyInterception * lightResponse;
+  const canopyInterception = computeCanopyInterception(leafAreaIndex, canopyArea);
+  const incidentMol = ppfdToMoles(environment.ppfd, tickHours);
+  const absorbedMol = incidentMol * canopyInterception * lightResponse;
   const q10 = strain.growthModel?.temperature?.Q10;
   const tref = strain.growthModel?.temperature?.T_ref_C ?? 25;
   const q10Factor = q10 ? Math.pow(q10, (environment.temperature - tref) / 10) : 1;
@@ -382,6 +366,10 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
       response: clamp(nutrientResponse, 0, 1),
       stress: clamp(1 - nutrientResponse, 0, 1),
     },
+    transpiration: {
+      liters: transpirationLiters,
+      litersPerHour: tickHours > 0 ? transpirationLiters / tickHours : 0,
+    },
     overallStress: effectiveStress,
     combinedResponse,
   };
@@ -408,6 +396,7 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
     biomassDelta,
     healthDelta,
     qualityDelta,
+    transpirationLiters,
     metrics,
     resources,
     events,
