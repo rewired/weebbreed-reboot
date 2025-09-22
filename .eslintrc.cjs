@@ -22,12 +22,12 @@ module.exports = {
         project: [
           './tsconfig.base.json',
           './src/backend/tsconfig.json',
-          './src/frontend/tsconfig.json',
+          './frontend-legacy/tsconfig.json',
         ],
       },
     },
   },
-  ignorePatterns: ['dist', 'node_modules'],
+  ignorePatterns: ['dist', 'node_modules', 'frontend/**', 'frontend-legacy/**'],
   rules: {
     'no-throw-literal': 'error',
   },
