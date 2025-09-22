@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { RngService } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
 import { resolveRoomPurposeId } from '../../engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '../../testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '../../../data/blueprintRepository.js';
@@ -56,7 +56,7 @@ describe('state/initialization/tasks', () => {
 
   it('creates seed tasks with metadata populated from structure context', () => {
     const rng = new RngService('task-seeding');
-    const idStream = rng.getStream('ids');
+    const idStream = rng.getStream(RNG_STREAM_IDS.ids);
 
     const environment: ZoneEnvironmentState = {
       temperature: 24,

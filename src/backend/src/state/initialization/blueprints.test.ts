@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 import { createDeviceBlueprint, createStructureBlueprint } from '../../testing/fixtures.js';
-import { RngService } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
 import {
   chooseDeviceBlueprints,
   isDeviceCompatibleWithRoomPurpose,
@@ -17,7 +17,11 @@ describe('state/initialization/blueprints', () => {
     const preferred = { id: 'preferred', name: 'Preferred' };
     const options = [{ id: 'a', name: 'Alpha' }, preferred, { id: 'b', name: 'Beta' }];
 
-    const chosen = selectBlueprint(options, rng.getStream('options'), preferred.id);
+    const chosen = selectBlueprint(
+      options,
+      rng.getStream(RNG_STREAM_IDS.blueprintOptions),
+      preferred.id,
+    );
 
     expect(chosen).toBe(preferred);
   });
@@ -31,7 +35,7 @@ describe('state/initialization/blueprints', () => {
 
     const selected = chooseDeviceBlueprints(
       [lamp, climate, dehumidifier, misc],
-      rng.getStream('devices'),
+      rng.getStream(RNG_STREAM_IDS.devices),
       'growroom',
     );
     const kinds = selected.map((device) => device.kind);
@@ -88,7 +92,7 @@ describe('state/initialization/blueprints', () => {
 
     const selected = chooseDeviceBlueprints(
       [growLamp, breakRoomFan],
-      rng.getStream('devices'),
+      rng.getStream(RNG_STREAM_IDS.devices),
       'breakroom',
     );
 
@@ -110,7 +114,7 @@ describe('state/initialization/blueprints', () => {
 
     const selected = chooseDeviceBlueprints(
       [wildcardDevice],
-      rng.getStream('devices'),
+      rng.getStream(RNG_STREAM_IDS.devices),
       'breakroom',
     );
 

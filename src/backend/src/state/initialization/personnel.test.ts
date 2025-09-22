@@ -2,7 +2,7 @@ import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
-import { RngService } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
 import { createPersonnel, loadPersonnelDirectory } from './personnel.js';
 
 describe('state/initialization/personnel', () => {
@@ -37,7 +37,7 @@ describe('state/initialization/personnel', () => {
 
   it('creates personnel with role-based shift preferences and morale averages', () => {
     const rng = new RngService('personnel-roster');
-    const idStream = rng.getStream('ids');
+    const idStream = rng.getStream(RNG_STREAM_IDS.ids);
     const directory = {
       firstNames: ['Morgan', 'Drew', 'Sasha'],
       lastNames: ['Nguyen', 'Lopez'],

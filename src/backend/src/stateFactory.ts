@@ -28,7 +28,7 @@ import {
   ZoneMetricState,
   ZoneResourceState,
 } from './state/models.js';
-import { RngService, RngStream } from './lib/rng.js';
+import { RngService, RngStream, RNG_STREAM_IDS } from './lib/rng.js';
 import { generateId } from './state/initialization/common.js';
 import {
   chooseDeviceBlueprints,
@@ -247,7 +247,7 @@ const buildStructureState = (
   const totalArea = footprint.area;
   const growRoomArea = totalArea * 0.65;
   const supportRoomArea = Math.max(0, totalArea - growRoomArea);
-  const plantStream = rng.getStream('plants');
+  const plantStream = rng.getStream(RNG_STREAM_IDS.plants);
   const zoneId = generateId(idStream, 'zone');
   const deviceInstances = createDeviceInstances(
     deviceBlueprints,
@@ -370,7 +370,7 @@ export const createInitialState = async (
   const economics = DIFFICULTY_ECONOMICS[difficulty];
   const tickLengthMinutes = options.tickLengthMinutes ?? DEFAULT_TICK_LENGTH_MINUTES;
   const createdAt = new Date().toISOString();
-  const idStream = context.rng.getStream('ids');
+  const idStream = context.rng.getStream(RNG_STREAM_IDS.ids);
 
   const structureBlueprints =
     context.structureBlueprints ??
@@ -379,7 +379,7 @@ export const createInitialState = async (
     throw new Error('No structure blueprints available to create initial state.');
   }
 
-  const structureSelectionStream = context.rng.getStream('structures');
+  const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
   const structureBlueprint = selectBlueprint(
     structureBlueprints,
     structureSelectionStream,
@@ -392,7 +392,7 @@ export const createInitialState = async (
   }
   const strain = selectBlueprint(
     strains,
-    context.rng.getStream('strains'),
+    context.rng.getStream(RNG_STREAM_IDS.strains),
     options.preferredStrainId,
   );
 
@@ -402,7 +402,7 @@ export const createInitialState = async (
   }
   const method = selectBlueprint(
     cultivationMethods,
-    context.rng.getStream('methods'),
+    context.rng.getStream(RNG_STREAM_IDS.methods),
     options.preferredCultivationMethodId,
   );
 
@@ -413,7 +413,7 @@ export const createInitialState = async (
   }
   const deviceBlueprints = chooseDeviceBlueprints(
     devices,
-    context.rng.getStream('devices'),
+    context.rng.getStream(RNG_STREAM_IDS.devices),
     growRoomPurpose.kind,
   );
 
