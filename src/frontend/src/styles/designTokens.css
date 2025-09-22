@@ -1,18 +1,19 @@
 :root {
-  --color-surface: #0b1120;
-  --color-surface-alt: #111c34;
-  --color-surface-elevated: rgba(30, 41, 59, 0.9);
-  --color-border: rgba(148, 163, 184, 0.2);
-  --color-border-strong: rgba(148, 163, 184, 0.35);
-  --color-text-primary: #f8fafc;
-  --color-text-secondary: #cbd5f5;
-  --color-text-muted: #94a3b8;
-  --color-accent: #8b5cf6;
-  --color-accent-strong: #7c3aed;
-  --color-positive: #34d399;
-  --color-warning: #facc15;
-  --color-danger: #f87171;
-  --color-overlay: rgba(15, 23, 42, 0.75);
+  --background-color: #0b1120;
+  --surface-color: #0b1120;
+  --surface-alt-color: #111c34;
+  --surface-elevated-color: rgba(30, 41, 59, 0.9);
+  --border-color: rgba(148, 163, 184, 0.2);
+  --border-strong-color: rgba(148, 163, 184, 0.35);
+  --text-primary-color: #f8fafc;
+  --text-secondary-color: #cbd5f5;
+  --text-muted-color: #94a3b8;
+  --primary-color: #8b5cf6;
+  --primary-strong-color: #7c3aed;
+  --positive-color: #34d399;
+  --warning-color: #facc15;
+  --danger-color: #f87171;
+  --overlay-color: rgba(15, 23, 42, 0.75);
 
   --font-family-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
