@@ -5,6 +5,40 @@ import { useAppStore } from '../store';
 import type { SimulationEvent } from '../types/simulation';
 import styles from './PersonnelView.module.css';
 
+const buildEventKey = (event: SimulationEvent, fallbackIndex: number) => {
+  const segments = [event.type];
+
+  if (event.ts !== undefined) {
+    segments.push(`ts:${event.ts}`);
+  }
+
+  if (event.tick !== undefined) {
+    segments.push(`tick:${event.tick}`);
+  }
+
+  if (event.deviceId) {
+    segments.push(`device:${event.deviceId}`);
+  }
+
+  if (event.plantId) {
+    segments.push(`plant:${event.plantId}`);
+  }
+
+  if (event.zoneId) {
+    segments.push(`zone:${event.zoneId}`);
+  }
+
+  if (event.message) {
+    segments.push(`message:${event.message}`);
+  }
+
+  if (segments.length === 1) {
+    segments.push(`index:${fallbackIndex}`);
+  }
+
+  return segments.join('|');
+};
+
 interface EventCardProps {
   event: SimulationEvent;
 }
@@ -269,11 +303,8 @@ export const PersonnelView = () => {
             {hrEvents
               .slice(-12)
               .reverse()
-              .map((event) => (
-                <EventCard
-                  key={`${event.type}-${event.ts ?? event.tick ?? Math.random()}`}
-                  event={event}
-                />
+              .map((event, index) => (
+                <EventCard key={buildEventKey(event, hrEvents.length - 1 - index)} event={event} />
               ))}
           </div>
         )}
