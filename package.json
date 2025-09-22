@@ -9,6 +9,7 @@
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
     "bench": "pnpm --filter @weebbreed/backend bench",
+    "validate:data": "tsx tools/validate-data.ts",
     "prepare": "husky"
   },
   "devDependencies": {
