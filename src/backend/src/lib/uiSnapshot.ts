@@ -76,6 +76,9 @@ export interface ZoneSnapshot {
   structureName: string;
   roomId: string;
   roomName: string;
+  area: number;
+  ceilingHeight: number;
+  volume: number;
   environment: ZoneEnvironmentState;
   resources: ZoneResourceState;
   metrics: ZoneMetricState;
@@ -182,6 +185,9 @@ export const buildSimulationSnapshot = (
           structureName: structure.name,
           roomId: room.id,
           roomName: room.name,
+          area: zone.area,
+          ceilingHeight: zone.ceilingHeight,
+          volume: zone.volume,
           environment: { ...zone.environment },
           resources: cloneResources(zone.resources),
           metrics: { ...zone.metrics },

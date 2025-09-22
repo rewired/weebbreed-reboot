@@ -77,6 +77,9 @@ const createZone = (
     name: 'Zone 1',
     cultivationMethodId: 'method-1',
     strainId: 'strain-1',
+    area: 40,
+    ceilingHeight: 3,
+    volume: 120,
     environment: env,
     resources: createResources(),
     plants: [],
@@ -102,7 +105,11 @@ describe('deviceEffects', () => {
       ),
     ]);
 
-    const deltas = computeZoneDeviceDeltas(zone, { area: 12, volume: 36 }, { tickHours: 0.25 });
+    const deltas = computeZoneDeviceDeltas(
+      zone,
+      { area: 12, ceilingHeight: 3, volume: 36 },
+      { tickHours: 0.25 },
+    );
 
     expect(deltas.temperatureDelta).toBeCloseTo(0.84, 2);
     expect(deltas.ppfdDelta).toBeCloseTo(72, 4);
@@ -127,7 +134,11 @@ describe('deviceEffects', () => {
       createEnvironment({ temperature: 28 }),
     );
 
-    const deltas = computeZoneDeviceDeltas(zone, { area: 40, volume: 120 }, { tickHours: 0.25 });
+    const deltas = computeZoneDeviceDeltas(
+      zone,
+      { area: 40, ceilingHeight: 3, volume: 120 },
+      { tickHours: 0.25 },
+    );
 
     expect(deltas.temperatureDelta).toBeCloseTo(-4, 3);
     expect(deltas.airflow).toBeCloseTo(315, 6);
@@ -147,7 +158,11 @@ describe('deviceEffects', () => {
       createEnvironment({ co2: 800 }),
     );
 
-    const deltas = computeZoneDeviceDeltas(zone, { area: 30, volume: 90 }, { tickHours: 5 / 60 });
+    const deltas = computeZoneDeviceDeltas(
+      zone,
+      { area: 30, ceilingHeight: 3, volume: 90 },
+      { tickHours: 5 / 60 },
+    );
 
     expect(deltas.co2Delta).toBeCloseTo(300, 5);
     expect(deltas.temperatureDelta).toBe(0);

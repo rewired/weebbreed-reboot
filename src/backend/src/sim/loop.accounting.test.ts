@@ -49,6 +49,9 @@ const createAccountingTestState = (): GameState => {
     name: 'Accounting Zone',
     cultivationMethodId: 'method-1',
     strainId: 'strain-1',
+    area: 40,
+    ceilingHeight: 3,
+    volume: 120,
     environment,
     resources: {
       waterLiters: 0,
