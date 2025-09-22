@@ -19,44 +19,8 @@
 
 ## 1) Monorepo Layout (pnpm workspaces)
 
-```
-.
-├─ apps/
-│  └─ frontend/              # React + Vite client
-├─ packages/
-│  └─ backend/               # TS simulation backend
-├─ docs/                     # Architecture, schemas, formulas
-├─ package.json              # pnpm workspace root
-└─ pnpm-workspace.yaml
-```
-
-### Backend `/packages/backend`
-
-```
-src/
-├─ engine/            # Plant, Device, Zone, Room (base classes + logic)
-├─ sim/               # ticker, tickMachine, eventBus, costEngine, market
-├─ physio/            # vpd, ppfd, co2, temp, rh, transpiration (pure fns)
-├─ data/              # loaded JSON blueprints (strains, methods, devices, prices)
-├─ lib/               # logger, rng, util
-└─ index.ts
-```
-
-### Frontend `/apps/frontend` (Vite React)
-
-```
-src/
-├─ main.tsx
-├─ App.tsx
-├─ components/
-└─ lib/
-```
-
----
-
 ## 2) Toolchain & Config (backend)
 
-- **Compilation:** `tsup` → output **CommonJS** in `dist/` to avoid ESM runtime friction.
 - **Dev runner:** `tsx` (`tsx src/index.ts`) — **no experimental loaders**.
 - **Testing:** `vitest` (+ happy-dom or Node environment).
 - **Lint/format:** ESLint (TS) + Prettier.
@@ -64,59 +28,13 @@ src/
 
 **`packages/backend/tsconfig.json` (minimal)**
 
-```json
-{
-  "extends": "./tsconfig.paths.json",
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "baseUrl": ".",
-    "outDir": "dist",
-    "rootDir": "src",
-    "strict": true,
-    "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "skipLibCheck": true,
-    "paths": { "@/*": ["src/*"] }
-  },
-  "include": ["src"]
-}
-```
-
-**`packages/backend/package.json` (scripts)**
-
-```json
-{
-  "name": "@weed-breed/backend",
-  "type": "commonjs",
-  "scripts": {
-    "dev": "tsx src/index.ts",
-    "build": "tsup src/index.ts --dts --format cjs --out-dir dist",
-    "test": "vitest run",
-    "test:ui": "vitest",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "format": "prettier --write ."
-  },
-  "devDependencies": {
-    "tsup": "^8",
-    "tsx": "^4",
-    "typescript": "^5",
-    "vitest": "^2",
-    "eslint": "^9",
-    "@typescript-eslint/eslint-plugin": "^8",
-    "@typescript-eslint/parser": "^8",
-    "prettier": "^3"
-  }
-}
-```
-
 ---
 
 ## 3) Toolchain & Config (frontend)
 
 - Vite React with TypeScript template.
 - No CRA. Keep it lean. Use ESLint + Prettier aligned with backend.
+- Eventually we have to consider to usa a library like TailWind
 
 **`apps/frontend/package.json` (key scripts)**
 
@@ -226,7 +144,7 @@ All randomness (pests/events/market) comes from here.
 ## 7) Definition of Done (DoD)
 
 - ✅ No usage of ts-node loaders; no `ExperimentalWarning` on startup.
-- ✅ `pnpm build` produces `packages/backend/dist/**` (CJS) and `apps/frontend/dist/**`.
+- ✅ `pnpm build` produces `packages/backend/dist/**` and `apps/frontend/dist/**`.
 - ✅ Golden‑Master tests for physio modules green with tight tolerances.
 - ✅ Deterministic 200‑day run: same seed ⇒ identical summary metrics.
 - ✅ JSON blueprints conform to docs; naming rules respected.
@@ -247,21 +165,19 @@ All randomness (pests/events/market) comes from here.
 
 Each task lives under `docs/tasks/*.md` and **must start with an open checkbox field** `- [ ] done`.
 
-1. **Tooling switch (backend).** Add tsup, tsx, Vitest; remove ts-node scripts; set TS→CJS output.
-   → `docs/tasks/TASK_setup_toolchain.md`
-2. **Aliases & imports.** Refactor to `@/*`; remove deep relative paths.
+1. **Aliases & imports.** Refactor to `@/*`; remove deep relative paths.
    → `docs/tasks/TASK_ci_quality_gate.md`
-3. **Physio modules + tests.** Implement `src/physio/*` pure functions + Golden‑Master tests.
+2. **Physio modules + tests.** Implement `src/physio/*` pure functions + Golden‑Master tests.
    → `docs/tasks/TASK_physio_modules.md`
-4. **Tick state machine.** Implement 7 phases; wire event bus.
+3. **Tick state machine.** Implement 7 phases; wire event bus.
    → `docs/tasks/TASK_tick_machine.md`
-5. **Event bus (telemetry).** `emit`, `events$`, `uiStream$`, basic filtering.
+4. **Event bus (telemetry).** `emit`, `events$`, `uiStream$`, basic filtering.
    → `docs/tasks/TASK_event_bus_ts.md`
-6. **JSON load & validate.** Load/validate strains/methods/devices/prices on startup; log summaries.
+5. **JSON load & validate.** Load/validate strains/methods/devices/prices on startup; log summaries.
    → `docs/tasks/TASK_json_schema_validation.md`
-7. **Economics externalized.** Keep device prices separate; ensure split at load/factory.
+6. **Economics externalized.** Keep device prices separate; ensure split at load/factory.
    → `docs/tasks/TASK_device_prices_split.md`
-8. **Zone.addPlant validation.** Slots, method compatibility, container/substrate plausibility.
+7. **Zone.addPlant validation.** Slots, method compatibility, container/substrate plausibility.
    → `docs/tasks/TASK_zone_plant_validation.md`
 
 > Each task must keep JSON field names intact and respect `/docs` schemas/naming rules.
