@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { PricingService, type PriceCatalog } from './pricing.js';
-import { RngService } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
 import type { EconomicsSettings } from '../../state/models.js';
 
 const MARKET_INDEX_MIN = 0.85;
@@ -40,7 +40,7 @@ describe('PricingService', () => {
     const rng = new RngService(seed);
     const service = new PricingService(catalog, rng);
     const expectedRng = new RngService(seed);
-    const marketStream = expectedRng.getStream('market');
+    const marketStream = expectedRng.getStream(RNG_STREAM_IDS.market);
     const economics = createEconomics();
 
     const sale1 = service.calculateHarvestSale('strain-a', 1200, 82, economics);

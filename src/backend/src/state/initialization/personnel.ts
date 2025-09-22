@@ -7,7 +7,7 @@ import type {
   EmployeeSkills,
   EmployeeShiftAssignment,
 } from '../models.js';
-import { RngService, RngStream } from '../../lib/rng.js';
+import { RngService, RngStream, RNG_STREAM_IDS } from '../../lib/rng.js';
 import { generateId, readJsonFile } from './common.js';
 
 const DEFAULT_SALARY_BY_ROLE: Record<EmployeeRole, number> = {
@@ -117,9 +117,9 @@ export const createPersonnel = (
   const firstNames = directory?.firstNames ?? [];
   const lastNames = directory?.lastNames ?? [];
   const traits = directory?.traits ?? [];
-  const nameStream = rng.getStream('personnel-names');
-  const traitStream = rng.getStream('personnel-traits');
-  const moraleStream = rng.getStream('personnel-morale');
+  const nameStream = rng.getStream(RNG_STREAM_IDS.personnelNames);
+  const traitStream = rng.getStream(RNG_STREAM_IDS.personnelTraits);
+  const moraleStream = rng.getStream(RNG_STREAM_IDS.personnelMorale);
   const employees: EmployeeState[] = [];
   const shiftCounts = new Map<string, number>();
   let shiftCursor = 0;

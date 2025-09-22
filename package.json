@@ -12,6 +12,9 @@
     "validate:data": "tsx tools/validate-data.ts",
     "prepare": "husky"
   },
+  "dependencies": {
+    "seedrandom": "^3.0.5"
+  },
   "devDependencies": {
     "@types/node": "^20.19.17",
     "@typescript-eslint/eslint-plugin": "^7.18.0",

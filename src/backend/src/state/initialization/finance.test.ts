@@ -5,7 +5,7 @@ import {
   createStructureBlueprint,
 } from '../../testing/fixtures.js';
 import type { EconomicsSettings } from '../models.js';
-import { RngService } from '../../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '../../lib/rng.js';
 import { createFinanceState } from './finance.js';
 import { MissingDevicePriceError } from '../../engine/economy/devicePriceRegistry.js';
 
@@ -28,7 +28,7 @@ describe('state/initialization/finance', () => {
       rentPerSqmRoomPerTick: 0.3,
     };
     const rng = new RngService('finance-state');
-    const idStream = rng.getStream('ids');
+    const idStream = rng.getStream(RNG_STREAM_IDS.ids);
 
     const state = createFinanceState(
       '2024-01-01T00:00:00Z',
@@ -63,7 +63,7 @@ describe('state/initialization/finance', () => {
       rentPerSqmRoomPerTick: 0.2,
     };
     const rng = new RngService('finance-state-missing-price');
-    const idStream = rng.getStream('ids');
+    const idStream = rng.getStream(RNG_STREAM_IDS.ids);
 
     try {
       createFinanceState(

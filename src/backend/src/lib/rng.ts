@@ -1,24 +1,7 @@
-const UINT32_MAX = 0xffffffff;
+import { createSeededStreamGenerator } from '../../../runtime/rng.js';
+import type { SeededRngStream } from '../../../runtime/rng.js';
+
 const DEFAULT_ALPHABET = 'abcdefghijklmnopqrstuvwxyz0123456789';
-
-const mulberry32 = (seed: number) => {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = Math.imul(state ^ (state >>> 15), (state | 1) >>> 0);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / (UINT32_MAX + 1);
-  };
-};
-
-const hashString = (input: string): number => {
-  let hash = 2166136261;
-  for (let index = 0; index < input.length; index += 1) {
-    hash ^= input.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return hash >>> 0;
-};
 
 export interface SerializedRngState {
   seed: string;
@@ -26,15 +9,15 @@ export interface SerializedRngState {
 }
 
 export class RngStream {
-  private generator: () => number;
+  private generator: SeededRngStream;
   private offset = 0;
 
   constructor(
     private readonly name: string,
-    streamSeed: number,
+    generator: SeededRngStream,
     offset = 0,
   ) {
-    this.generator = mulberry32(streamSeed);
+    this.generator = generator;
     if (offset > 0) {
       this.advance(offset);
     }
@@ -139,9 +122,9 @@ export class RngService {
   getStream(name: string): RngStream {
     let stream = this.streams.get(name);
     if (!stream) {
-      const streamSeed = hashString(`${this.seed}:${name}`);
       const offset = this.knownOffsets.get(name) ?? 0;
-      stream = new RngStream(name, streamSeed, offset);
+      const generator = createSeededStreamGenerator(this.seed, name);
+      stream = new RngStream(name, generator, offset);
       this.streams.set(name, stream);
     }
     return stream;
@@ -164,3 +147,18 @@ export class RngService {
 }
 
 export default RngService;
+
+export {
+  RNG_STREAM_IDS,
+  registerRngStreamIds,
+  getRegisteredRngStreamIds,
+  createSeededStreamFactory,
+  createSeededStreamGenerator,
+} from '../../../runtime/rng.js';
+
+export type {
+  RngStreamId,
+  RngStreamKey,
+  SeededRngStream,
+  SeededStreamFactory,
+} from '../../../runtime/rng.js';

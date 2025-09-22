@@ -4,6 +4,7 @@ import type {
   UtilityPrices,
 } from '../../../data/schemas/index.js';
 import type { EconomicsSettings } from '../../state/models.js';
+import { RNG_STREAM_IDS } from '../../lib/rng.js';
 import type { RngService } from '../../lib/rng.js';
 
 export interface PriceCatalog {
@@ -46,7 +47,7 @@ const LOW_QUALITY_KINK_MULTIPLIER = 0.85;
 
 const MARKET_INDEX_MIN = 0.85;
 const MARKET_INDEX_MAX = 1.15;
-const DEFAULT_MARKET_STREAM_ID = 'market';
+const DEFAULT_MARKET_STREAM_ID = RNG_STREAM_IDS.market;
 
 const computeQualityFactor = (quality: number): number => {
   const q = clamp(quality, 0, 100);

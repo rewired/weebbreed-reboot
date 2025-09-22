@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { RngService } from '../lib/rng.js';
+import { RngService, RNG_STREAM_IDS } from '../lib/rng.js';
 import type { GameState } from '../state/models.js';
 import {
   DEFAULT_SAVEGAME_VERSION,
@@ -83,7 +83,7 @@ describe('saveGame persistence', () => {
   it('round-trips a game state with rng offsets intact', () => {
     const state = createMinimalState();
     const rng = new RngService(state.metadata.seed);
-    const stream = rng.getStream('sim.test');
+    const stream = rng.getStream(RNG_STREAM_IDS.simulationTest);
     stream.next();
     stream.nextBoolean();
 
@@ -93,14 +93,14 @@ describe('saveGame persistence', () => {
     });
 
     expect(serialized.header.kind).toBe(SAVEGAME_KIND);
-    expect(serialized.rng.streams['sim.test']).toBe(2);
+    expect(serialized.rng.streams[RNG_STREAM_IDS.simulationTest]).toBe(2);
 
     const plain = JSON.parse(JSON.stringify(serialized));
     const result = deserializeGameState(plain);
 
     expect(result.state).toEqual(state);
     expect(result.rng.serialize()).toEqual(serialized.rng);
-    expect(result.rng.getStream('sim.test').getOffset()).toBe(2);
+    expect(result.rng.getStream(RNG_STREAM_IDS.simulationTest).getOffset()).toBe(2);
   });
 
   it('migrates legacy save envelopes without headers', () => {
