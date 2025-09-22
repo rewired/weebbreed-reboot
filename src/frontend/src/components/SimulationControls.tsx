@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { SimulationBridgeHandle } from '../hooks/useSimulationBridge';
-import { useAppStore } from '../store';
+import type { SimulationBridgeHandle } from '@/hooks/useSimulationBridge';
+import { useAppStore } from '@/store';
 import styles from './SimulationControls.module.css';
 
 interface SimulationControlsProps {

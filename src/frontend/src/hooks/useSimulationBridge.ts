@@ -9,9 +9,9 @@ import type {
   SimulationUpdateEntry,
   SimulationUpdateMessage,
 } from '@/types/simulation';
-import { useAppStore } from '../store';
-import type { ConnectionStatus } from '../store';
-import type { FinanceTickEntry } from '../store/types';
+import { useAppStore } from '@/store';
+import type { ConnectionStatus } from '@/store';
+import type { FinanceTickEntry } from '@/store/types';
 
 type AnyHandler = (...args: unknown[]) => void;
 
