@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { EventBus } from '@/lib/eventBus.js';
 import { SimulationLoop } from './loop.js';
 import { createInitialState } from '../stateFactory.js';
+import { addDeviceToZone } from '../state/devices.js';
 import {
   createBlueprintRepositoryStub,
   createCultivationMethodBlueprint,
@@ -273,7 +274,12 @@ describe('integration scenarios', () => {
     zoneDouble.environment.ppfd = 0;
     const lamp = zoneDouble.devices.find((device) => device.kind === 'Lamp');
     if (lamp) {
-      zoneDouble.devices.push({ ...lamp, id: `${lamp.id}-extra` });
+      const installResult = addDeviceToZone(zoneDouble, {
+        ...lamp,
+        id: `${lamp.id}-extra`,
+        settings: { ...lamp.settings },
+      });
+      expect(installResult.added).toBe(true);
     }
 
     const loopDouble = new SimulationLoop({
