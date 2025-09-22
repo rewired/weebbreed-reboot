@@ -35,26 +35,44 @@ const DEFAULT_ECONOMICS: EconomicsSettings = {
   rentPerSqmRoomPerTick: 0,
 };
 
-const BASELINE_QUALITY = 70;
-const QUALITY_ALPHA = 1.25;
-const QUALITY_BETA = 1.5;
-const LOW_QUALITY_KINK_THRESHOLD = 50;
-const LOW_QUALITY_KINK_MULTIPLIER = 0.85;
+const MIN_QUALITY_MULTIPLIER = 0.7;
+const MAX_QUALITY_MULTIPLIER = 1.2;
+const QUALITY_BASELINE = 0.6;
+const QUALITY_HEALTH_EXPONENT = 0.75;
+const QUALITY_STRESS_EXPONENT = 1.35;
 
 const MARKET_INDEX_MIN = 0.85;
 const MARKET_INDEX_MAX = 1.15;
 const DEFAULT_MARKET_STREAM_ID = RNG_STREAM_IDS.market;
 
+/**
+ * Maps the simulation's normalized quality signal (0–1) onto the economic
+ * quality multiplier window (0.7–1.2).
+ *
+ * Quality ≈0.6 is treated as neutral (multiplier 1.0). Values below that point
+ * decay faster towards 0.7 to model stressed harvests, while values above curve
+ * gently towards 1.2 to reward healthy plants without runaway pricing.
+ */
 const computeQualityFactor = (quality: number): number => {
-  const q = clamp(quality, 0, 100);
-  if (q >= BASELINE_QUALITY) {
-    const ratio = q / BASELINE_QUALITY;
-    return Math.pow(ratio, QUALITY_ALPHA);
+  const q = clamp(quality, 0, 1);
+
+  if (q >= QUALITY_BASELINE) {
+    const span = 1 - QUALITY_BASELINE;
+    if (span <= 0) {
+      return MAX_QUALITY_MULTIPLIER;
+    }
+    const ratio = (q - QUALITY_BASELINE) / span;
+    const eased = Math.pow(ratio, QUALITY_HEALTH_EXPONENT);
+    return 1 + eased * (MAX_QUALITY_MULTIPLIER - 1);
   }
-  const ratio = Math.max(q, 0) / BASELINE_QUALITY;
-  const base = Math.pow(ratio, QUALITY_BETA);
-  const kink = q < LOW_QUALITY_KINK_THRESHOLD ? LOW_QUALITY_KINK_MULTIPLIER : 1;
-  return base * kink;
+
+  if (QUALITY_BASELINE <= 0) {
+    return MIN_QUALITY_MULTIPLIER;
+  }
+
+  const ratio = (QUALITY_BASELINE - q) / QUALITY_BASELINE;
+  const eased = Math.pow(ratio, QUALITY_STRESS_EXPONENT);
+  return 1 - eased * (1 - MIN_QUALITY_MULTIPLIER);
 };
 
 export class PricingService {
