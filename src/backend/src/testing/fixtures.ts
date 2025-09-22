@@ -272,6 +272,7 @@ export const createStateFactoryContext = (
   dataDirectory: options.dataDirectory,
   personnelDirectory: options.personnelDirectory,
   taskDefinitions: options.taskDefinitions,
+  defaultStructureHeightMeters: options.defaultStructureHeightMeters,
 });
 
 export const createDevicePriceMap = (

@@ -12,19 +12,32 @@ interface RawStructureBlueprint {
   footprint: {
     length_m: number;
     width_m: number;
-    height_m: number;
+    height_m?: number;
   };
   rentalCostPerSqmPerMonth: number;
   upfrontFee: number;
 }
 
-const normaliseStructureBlueprint = (blueprint: RawStructureBlueprint): StructureBlueprint => ({
+export const DEFAULT_STRUCTURE_HEIGHT_METERS = 2.5;
+
+export interface LoadStructureBlueprintsOptions {
+  defaultHeightMeters?: number;
+}
+
+const normaliseStructureBlueprint = (
+  blueprint: RawStructureBlueprint,
+  defaultHeightMeters: number,
+): StructureBlueprint => ({
   id: blueprint.id,
   name: blueprint.name,
   footprint: {
     length: blueprint.footprint.length_m,
     width: blueprint.footprint.width_m,
-    height: blueprint.footprint.height_m,
+    height:
+      typeof blueprint.footprint.height_m === 'number' &&
+      Number.isFinite(blueprint.footprint.height_m)
+        ? blueprint.footprint.height_m
+        : defaultHeightMeters,
   },
   rentalCostPerSqmPerMonth: blueprint.rentalCostPerSqmPerMonth,
   upfrontFee: blueprint.upfrontFee,
@@ -32,7 +45,9 @@ const normaliseStructureBlueprint = (blueprint: RawStructureBlueprint): Structur
 
 export const loadStructureBlueprints = async (
   dataDirectory: string,
+  options: LoadStructureBlueprintsOptions = {},
 ): Promise<StructureBlueprint[]> => {
+  const defaultHeightMeters = options.defaultHeightMeters ?? DEFAULT_STRUCTURE_HEIGHT_METERS;
   const directory = path.join(dataDirectory, 'blueprints', 'structures');
   let entries: string[] = [];
   try {
@@ -55,7 +70,7 @@ export const loadStructureBlueprints = async (
     if (!raw) {
       continue;
     }
-    blueprints.push(normaliseStructureBlueprint(raw));
+    blueprints.push(normaliseStructureBlueprint(raw, defaultHeightMeters));
   }
   return blueprints;
 };
