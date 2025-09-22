@@ -18,6 +18,16 @@ const DEFAULT_SALARY_BY_ROLE: Record<EmployeeRole, number> = {
   Manager: 35,
 };
 
+const DEFAULT_MAX_MINUTES_PER_TICK = 90;
+
+const DEFAULT_MAX_MINUTES_PER_TICK_BY_ROLE: Partial<Record<EmployeeRole, number>> = {
+  Gardener: 90,
+  Technician: 120,
+  Janitor: 75,
+  Operator: 90,
+  Manager: 60,
+};
+
 const MINUTES_PER_DAY = 24 * 60;
 
 const SHIFT_TEMPLATES: readonly EmployeeShiftAssignment[] = [
@@ -188,6 +198,8 @@ export const createPersonnel = (
       ).map((trait) => trait.id);
       const shift = assignShift(role);
       const isActiveAtStart = isShiftActiveAtMinute(shift, 0);
+      const maxMinutesPerTick =
+        DEFAULT_MAX_MINUTES_PER_TICK_BY_ROLE[role] ?? DEFAULT_MAX_MINUTES_PER_TICK;
       employees.push({
         id: generateId(idStream, 'emp'),
         name: fullName,
@@ -196,6 +208,7 @@ export const createPersonnel = (
         status: isActiveAtStart ? 'idle' : 'offShift',
         morale: 0.82 + moraleStream.nextRange(0, 0.08),
         energy: 1,
+        maxMinutesPerTick,
         skills,
         experience: createExperienceStub(skills),
         traits: employeeTraits,

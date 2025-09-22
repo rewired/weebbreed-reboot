@@ -58,6 +58,8 @@ describe('state/initialization/personnel', () => {
 
     expect(manager?.shift.shiftId).toBe('shift.day');
     expect(janitor?.shift.shiftId).toBe('shift.night');
+    expect(manager?.maxMinutesPerTick).toBe(60);
+    expect(janitor?.maxMinutesPerTick).toBe(75);
     expect(roster.overallMorale).toBeGreaterThan(0);
     expect(roster.overallMorale).toBeLessThanOrEqual(1);
   });

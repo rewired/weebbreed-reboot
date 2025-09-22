@@ -426,6 +426,7 @@ export interface EmployeeState {
   status: EmployeeStatus;
   morale: number;
   energy: number;
+  maxMinutesPerTick: number;
   skills: EmployeeSkills;
   experience: EmployeeSkills;
   traits: string[];

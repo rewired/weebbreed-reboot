@@ -94,6 +94,7 @@ export interface EmployeeSnapshot {
   salaryPerTick: number;
   morale: number;
   energy: number;
+  maxMinutesPerTick: number;
   status: EmployeeState['status'];
   assignedStructureId?: string;
 }
@@ -254,6 +255,7 @@ export const buildSimulationSnapshot = (
       salaryPerTick: employee.salaryPerTick,
       morale: employee.morale,
       energy: employee.energy,
+      maxMinutesPerTick: employee.maxMinutesPerTick,
       status: employee.status,
       assignedStructureId: employee.assignedStructureId,
     })),

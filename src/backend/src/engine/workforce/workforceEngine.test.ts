@@ -184,6 +184,7 @@ const createEmployee = (overrides: Partial<EmployeeState>): EmployeeState => ({
   status: 'idle',
   morale: 0.8,
   energy: 1,
+  maxMinutesPerTick: 120,
   skills: { Gardening: 4 },
   experience: { Gardening: 4 },
   traits: [],
@@ -336,6 +337,94 @@ describe('WorkforceEngine', () => {
     expect(updatedTech.overtimeHours).toBeCloseTo(1.5, 5);
     expect(updatedTech.hoursWorkedToday).toBeCloseTo(2, 5);
     expect(updatedTech.energy).toBeCloseTo(0.78, 2);
+  });
+
+  it('caps allocated hours and allows backlog to grow when maxMinutesPerTick is low', () => {
+    const limitedState = createBaseState();
+    const normalState = createBaseState();
+
+    const definitions: TaskDefinitionMap = {
+      long_task: {
+        id: 'long_task',
+        costModel: { basis: 'perAction', laborMinutes: 120 },
+        priority: 80,
+        requiredRole: 'Gardener',
+        requiredSkill: 'Gardening',
+        minSkillLevel: 4,
+        description: 'Perform intensive maintenance',
+      },
+    };
+
+    const limitedEmployee = createEmployee({
+      id: 'employee-limited',
+      maxMinutesPerTick: 30,
+      morale: 1,
+      energy: 1,
+    });
+    const normalEmployee = createEmployee({
+      id: 'employee-normal',
+      maxMinutesPerTick: 240,
+      morale: 1,
+      energy: 1,
+    });
+
+    limitedState.personnel.employees.push(limitedEmployee);
+    normalState.personnel.employees.push(normalEmployee);
+
+    const makeTask = (id: string): TaskState => ({
+      id,
+      definitionId: 'long_task',
+      status: 'pending',
+      priority: 80,
+      createdAtTick: 0,
+      metadata: { estimatedWorkHours: 2 },
+    });
+
+    const overtimePolicy = {
+      standardHoursPerDay: 12,
+      overtimeThresholdHours: 12,
+      maxOvertimeHoursPerDay: 12,
+    };
+
+    const limitedEngine = new WorkforceEngine(definitions, {
+      policies: { overtime: overtimePolicy },
+    });
+    const normalEngine = new WorkforceEngine(definitions, {
+      policies: { overtime: overtimePolicy },
+    });
+
+    const limitedEvents: SimulationEvent[] = [];
+    const normalEvents: SimulationEvent[] = [];
+    const limitedCollector = createEventCollector(limitedEvents, 1);
+    const normalCollector = createEventCollector(normalEvents, 1);
+
+    limitedState.tasks.backlog.push(makeTask('limited-1'));
+    normalState.tasks.backlog.push(makeTask('normal-1'));
+    limitedEngine.processTick(limitedState, 1, 240, limitedCollector);
+    normalEngine.processTick(normalState, 1, 240, normalCollector);
+
+    const limitedFirstAssignment = limitedState.tasks.active[0];
+    expect(limitedFirstAssignment).toBeDefined();
+    expect(limitedFirstAssignment?.assignment?.etaTick).toBeGreaterThan(2);
+    expect(normalState.tasks.completed).toHaveLength(1);
+
+    for (let tick = 2; tick <= 5; tick += 1) {
+      limitedState.tasks.backlog.push(makeTask(`limited-${tick}`));
+      normalState.tasks.backlog.push(makeTask(`normal-${tick}`));
+      limitedEngine.processTick(limitedState, tick, 240, limitedCollector);
+      normalEngine.processTick(normalState, tick, 240, normalCollector);
+    }
+
+    const limitedEmployeeAfter = limitedState.personnel.employees[0];
+    const normalEmployeeAfter = normalState.personnel.employees[0];
+
+    expect(limitedEmployeeAfter.hoursWorkedToday).toBeCloseTo(2.5, 5);
+    expect(normalEmployeeAfter.hoursWorkedToday).toBeCloseTo(20, 5);
+
+    expect(limitedState.tasks.backlog.length).toBeGreaterThan(0);
+    expect(limitedState.tasks.completed).toHaveLength(1);
+    expect(normalState.tasks.completed).toHaveLength(5);
+    expect(normalState.tasks.backlog).toHaveLength(0);
   });
 
   it('applies dynamic priority boosts in 10-point increments', () => {
