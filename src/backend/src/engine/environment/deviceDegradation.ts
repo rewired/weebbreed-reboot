@@ -48,26 +48,31 @@ export class DeviceDegradationService {
       : DEFAULT_MAX_WEAR;
   }
 
-  process(state: GameState, _tick: number, tickLengthMinutes: number): void {
+  process(state: GameState, tick: number, tickLengthMinutes: number): void {
     const tickHours = computeTickHours(tickLengthMinutes);
+    const serviceTick = Number.isFinite(tick) ? Math.max(tick, 0) : 0;
 
     for (const structure of state.structures) {
       for (const room of structure.rooms) {
         for (const zone of room.zones) {
           for (const device of zone.devices) {
-            this.updateDevice(device, tickHours);
+            this.updateDevice(device, serviceTick, tickHours);
           }
         }
       }
     }
   }
 
-  private updateDevice(device: DeviceInstanceState, tickHours: number): void {
+  private updateDevice(device: DeviceInstanceState, tick: number, tickHours: number): void {
     const maintenance = device.maintenance;
     const baseCondition = clamp(maintenance.condition ?? 0, 0, 1);
     const baseEfficiency = clamp(Math.min(baseCondition, this.maintenanceCap), 0, 1);
 
     if (device.status === 'maintenance') {
+      maintenance.lastServiceTick = tick;
+      if (!Number.isFinite(maintenance.nextDueTick) || maintenance.nextDueTick <= tick) {
+        maintenance.nextDueTick = tick + 1;
+      }
       maintenance.runtimeHoursAtLastService = Math.max(device.runtimeHours, 0);
       maintenance.degradation = 0;
       device.efficiency = baseEfficiency;

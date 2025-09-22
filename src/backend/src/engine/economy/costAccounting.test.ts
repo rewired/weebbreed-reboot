@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { DeviceInstanceState, GameState, LedgerEntry } from '@/state/models.js';
+import { DeviceDegradationService } from '@/engine/environment/deviceDegradation.js';
 import { CostAccountingService } from './costAccounting.js';
 import { MissingDevicePriceError } from './devicePriceRegistry.js';
 import type { PriceCatalog } from './pricing.js';
@@ -96,6 +97,71 @@ const createBaseState = (): GameState => {
     },
     notes: [],
   };
+};
+
+const attachDeviceToState = (state: GameState, device: DeviceInstanceState): void => {
+  state.structures = [
+    {
+      id: 'structure-1',
+      blueprintId: 'structure-blueprint',
+      name: 'Structure 1',
+      status: 'active',
+      footprint: { length: 1, width: 1, height: 1, area: 1, volume: 1 },
+      rooms: [
+        {
+          id: 'room-1',
+          structureId: 'structure-1',
+          name: 'Room 1',
+          purposeId: 'purpose-1',
+          area: 1,
+          height: 1,
+          volume: 1,
+          zones: [
+            {
+              id: 'zone-1',
+              roomId: 'room-1',
+              name: 'Zone 1',
+              cultivationMethodId: 'method-1',
+              strainId: undefined,
+              area: 1,
+              ceilingHeight: 1,
+              volume: 1,
+              environment: {
+                temperature: 0,
+                relativeHumidity: 0,
+                co2: 0,
+                ppfd: 0,
+                vpd: 0,
+              },
+              resources: {
+                waterLiters: 0,
+                nutrientSolutionLiters: 0,
+                nutrientStrength: 0,
+                substrateHealth: 0,
+                reservoirLevel: 0,
+              },
+              plants: [],
+              devices: [device],
+              metrics: {
+                averageTemperature: 0,
+                averageHumidity: 0,
+                averageCo2: 0,
+                averagePpfd: 0,
+                stressLevel: 0,
+                lastUpdatedTick: 0,
+              },
+              health: { plantHealth: {}, pendingTreatments: [], appliedTreatments: [] },
+              activeTaskIds: [],
+            },
+          ],
+          cleanliness: 1,
+          maintenanceLevel: 1,
+        },
+      ],
+      rentPerTick: 0,
+      upfrontCostPaid: 0,
+    },
+  ];
 };
 
 describe('CostAccountingService', () => {
@@ -245,6 +311,78 @@ describe('CostAccountingService', () => {
       blueprintId: DEVICE_BLUEPRINT_ID,
       quantity: 2,
     });
+  });
+
+  it('drops maintenance costs back to the base tier after servicing a device', () => {
+    const catalog = createPriceCatalog();
+    const costService = new CostAccountingService(catalog);
+    const degradationService = new DeviceDegradationService();
+    const state = createBaseState();
+    const device: DeviceInstanceState = {
+      id: 'device-1',
+      blueprintId: DEVICE_BLUEPRINT_ID,
+      kind: 'Lamp',
+      name: 'LED VegLight',
+      zoneId: 'zone-1',
+      status: 'operational',
+      efficiency: 1,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: 0,
+        condition: 1,
+        runtimeHoursAtLastService: 0,
+        degradation: 0.3,
+      },
+      settings: {},
+    };
+
+    attachDeviceToState(state, device);
+
+    const baseCost = catalog.devicePrices.get(DEVICE_BLUEPRINT_ID)?.baseMaintenanceCostPerTick ?? 0;
+
+    const beforeAccumulator = costService.createAccumulator();
+    const beforeEvents: SimulationEvent[] = [];
+    const beforeCollector = createEventCollector(beforeEvents, 2500);
+    const beforeRecord = costService.applyMaintenanceExpense(
+      state,
+      device,
+      2500,
+      '2025-01-01T05:00:00.000Z',
+      beforeAccumulator,
+      beforeCollector,
+    );
+
+    expect(beforeRecord).toBeDefined();
+    expect(beforeRecord?.ageTicks).toBe(2500);
+    expect(beforeRecord?.ageAdjustedCostPerTick).toBeGreaterThan(baseCost);
+    expect(beforeRecord?.totalCost).toBeGreaterThan(baseCost);
+
+    device.status = 'maintenance';
+    degradationService.process(state, 2500, state.metadata.tickLengthMinutes);
+
+    expect(device.maintenance.lastServiceTick).toBe(2500);
+    expect(device.maintenance.degradation).toBe(0);
+    expect(device.maintenance.nextDueTick).toBeGreaterThan(2500);
+
+    device.status = 'operational';
+
+    const afterAccumulator = costService.createAccumulator();
+    const afterEvents: SimulationEvent[] = [];
+    const afterCollector = createEventCollector(afterEvents, 2501);
+    const afterRecord = costService.applyMaintenanceExpense(
+      state,
+      device,
+      2501,
+      '2025-01-01T06:00:00.000Z',
+      afterAccumulator,
+      afterCollector,
+    );
+
+    expect(afterRecord).toBeDefined();
+    expect(afterRecord?.ageTicks).toBe(1);
+    expect(afterRecord?.ageAdjustedCostPerTick).toBeCloseTo(baseCost, 10);
+    expect(afterRecord?.totalCost).toBeCloseTo(baseCost, 10);
   });
 
   it('throws a descriptive error when purchasing a device without a price entry', () => {

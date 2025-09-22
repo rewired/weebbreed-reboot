@@ -227,25 +227,28 @@ describe('DeviceDegradationService', () => {
 
   it('resets efficiency to the maintenance guardrail when serviced', () => {
     const device = createDevice({
-      maintenance: { condition: 0.92 },
+      maintenance: { condition: 0.92, nextDueTick: 0 },
     });
     const state = createStateWithDevice(device);
     const service = new DeviceDegradationService();
     const baseEfficiency = Math.min(MAINTENANCE_CAP, device.maintenance.condition);
+    const serviceTick = 3;
 
     service.process(state, 1, MINUTES_PER_HOUR);
     service.process(state, 2, MINUTES_PER_HOUR);
 
     device.status = 'maintenance';
-    service.process(state, 3, MINUTES_PER_HOUR);
+    service.process(state, serviceTick, MINUTES_PER_HOUR);
 
     expect(device.runtimeHours).toBeCloseTo(2, 6);
     expect(device.maintenance.runtimeHoursAtLastService).toBeCloseTo(2, 6);
     expect(device.maintenance.degradation).toBeCloseTo(0, 10);
     expect(device.efficiency).toBeCloseTo(baseEfficiency, 10);
+    expect(device.maintenance.lastServiceTick).toBe(serviceTick);
+    expect(device.maintenance.nextDueTick).toBe(serviceTick + 1);
 
     device.status = 'operational';
-    service.process(state, 4, MINUTES_PER_HOUR);
+    service.process(state, serviceTick + 1, MINUTES_PER_HOUR);
 
     expect(device.runtimeHours).toBeCloseTo(3, 6);
     const runtimeSinceService = device.runtimeHours - device.maintenance.runtimeHoursAtLastService;
