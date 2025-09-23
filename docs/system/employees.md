@@ -9,7 +9,9 @@ Employees are the heart of automation in Weedbreed.AI. They are **autonomous age
 ## 1) Candidate Generation & External Name Provider
 
 See [Job Market Population](./job_market_population.md) for the full refresh
-pipeline, remote API contract, and configuration knobs.
+pipeline, remote API contract, and configuration knobs. That reference also
+covers the startup provisioning service that keeps the offline personnel
+directory populated.
 
 To keep the labor market dynamic and credible, the game continuously injects new, unique candidates. Rather than relying only on a fixed local name list, the game **optionally** queries a **seedable external name provider** (e.g., an API that returns first/last names) and falls back to local data if unavailable. An free and open provider is https://randomuser.me/. For detailed information about the API, check the providers documentation.
 
@@ -23,13 +25,24 @@ To keep the labor market dynamic and credible, the game continuously injects new
 - **Privacy-aware payload**  
    Request **first/last names, age, gender and password only**; no other personal data. The age should range between `[18;65]`. For employee the age should play am altering role for random skill creation.
   A random password will be mapped as "personal" RNG seed. For the ease of use request the password with `password=number,8` as additional parameter from API. The attribute in our Employee-Object is called `personalSeed`, not `password`.
+- **Startup provisioning**
+  During backend boot the simulation runs `provisionPersonnelDirectory()`.
+  Missing `/data/personnel/` files trigger deterministic RandomUser pulls that
+  populate gendered first-name lists, the shared last-name list, and
+  `randomSeeds.json`. When the files already exist the provisioner exits without
+  modifying them.
 - **Offline-safe fallback**
-  If the external provider is unreachable or disabled, **fallback** to `/data/personnel/` local lists to synthesize names.
+  If the external provider is unreachable or disabled, **fallback** to the
+  provisioned `/data/personnel/` lists (female first names, male first names,
+  last names, traits, and stored seeds) to synthesize names.
 - **Resilience & retries**
   The job market service performs up to two attempts per refresh against the remote provider. When the HTTP call fails or is disabled it switches to the local generator, reusing the same deterministic `personalSeed` logic so rerolls remain reproducible.
 - **Profile synthesis**
   After names are obtained, the game **generates full candidate profiles**:
-  randomized **skills**, **traits**, and a **wage** consistent with the generated profile and company difficulty/balancing rules.
+  randomized **skills**, **traits**, and a **wage** consistent with the generated
+  profile and company difficulty/balancing rules. Offline runs consume the stored
+  personal seeds before minting new ones so manual refreshes reproduce the same
+  roster when replayed with the same seed.
 
 ---
 
