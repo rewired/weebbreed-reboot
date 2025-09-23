@@ -1,28 +1,34 @@
 Create tasks to fix the issues:
 Critical: tools/validate-data.ts imports ../src/backend/data/dataLoader.js, but the file lives at src/backend/src/data/dataLoader.ts; the relative path is wrong (breaks “pnpm validate:data” and CI).
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Completed 2025-09-24 — Snapshot/time documentation aligned with ADR 0005; protocol guide, README, and AGENTS updated.
 
 Create tasks to fix the issues:
 Event naming mismatch: backend emits SimulationEvent.level while frontend types/selectors use severity; alert counts and filters won’t work—map level->severity in useSimulationBridge or align types/selectors. Which ever comes handier and is less hardcoded.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Duplicate of snapshot/time documentation update (2025-09-24).
 
 Create tasks to fix the issues:
 Unsupported intents: frontend sends world.updateStructure, world.duplicateRoom, world.duplicateZone, world.deleteStructure, devices.toggleDeviceGroup, plants.togglePlantingPlan, etc., but backend facade only supports rent/create/update/delete (room/zone) and lacks these; calls will be rejected. Overhaul the messaging system used and create an open and modular one, which handles later needs.
 Status: ✅ Completed 2025-09-23 — façade registry now exposes duplication, rename, and toggle intents; socket docs updated alongside ADR 0003 and AGENTS.md.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Duplicate of snapshot/time documentation update (2025-09-24).
 
 Create tasks to fix the issues:
 Setpoints not implemented: frontend emits config.update {type:'setpoint', ...}, but backend explicitly returns ERR_INVALID_STATE; implement setpoint handling. check for other devices, which can handle settings.
 Status: ✅ Completed 2025-09-23 — façade now routes zone setpoints to device targets, clamps invalid values, and emits env.setpointUpdated events.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Duplicate of snapshot/time documentation update (2025-09-24).
 
 Create tasks to fix the issues:
 Snapshot shape mismatch: frontend types require snapshot.clock, backend snapshot omits it; runtime is guarded but typings are inaccurate—either add clock to snapshot or relax the type.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Duplicate of snapshot/time documentation update (2025-09-24).
 
 Create tasks to fix the issues:
 Version drift: socket.io-client is ^4.7.5 in frontend vs ^4.8.1 server; align to avoid subtle protocol issues.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Duplicate of snapshot/time documentation update (2025-09-24).
 
 Create tasks to fix the issues:
 Unused config: src/frontend/src/config/socket.ts isn’t used by useSimulationBridge (hardcodes '/socket.io'); wire it up so VITE_SOCKET_URL works in non-proxied deployments.

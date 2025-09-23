@@ -174,6 +174,26 @@ control }` and, when humidity is derived (RH/VPD), `effectiveHumidity`.
 
 ---
 
+### 4.8 UI Snapshot & Time Status Contract
+
+- `buildSimulationSnapshot(state, roomPurposeSource)` is the single producer for
+  UI-visible state. It MUST include the `clock` block with
+  `{ tick, isPaused, targetTickRate, startedAt, lastUpdatedAt }` in addition to
+  structures, rooms, zones (with control/resources/health), personnel, and
+  finance summaries.
+- Socket telemetry mirrors this structure and augments each update with the
+  scheduler-derived `time` payload from `SimulationFacade.getTimeStatus()`. Treat
+  `time` as ephemeral (scheduler view) and `snapshot.clock` as the persisted
+  state; both are required for consumers to reconcile pause/resume UX.
+- `time.status` is only emitted on the initial connection handshake. Subsequent
+  time drift is communicated through the `simulationUpdate.time` entries. Keep
+  dashboard logic and docs aligned with this behaviour.
+- Keep `docs/system/socket_protocol.md`, `README.md`, and ADR 0005 synchronized
+  with any snapshot/time-shape evolution so downstream clients and automation
+  stay in lock-step.
+
+---
+
 ## 5) Developer Ergonomics
 
 - **Env:** load `.env` (tick length, log level, seeds…).
