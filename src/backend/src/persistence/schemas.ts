@@ -373,7 +373,7 @@ const applicantStateSchema = z.object({
   expectedSalary: z.number(),
   traits: z.array(nonEmptyString),
   skills: employeeSkillsSchema,
-  personalSeed: nonEmptyString,
+  personalSeed: nonEmptyString.optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
 });
 

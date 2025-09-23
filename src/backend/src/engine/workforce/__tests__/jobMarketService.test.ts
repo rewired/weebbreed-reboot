@@ -164,6 +164,8 @@ describe('JobMarketService', () => {
     expect(state.personnel.applicants).toHaveLength(2);
     expect(state.personnel.applicants[0].name).toBe('Jamie Hammond');
     expect(state.personnel.applicants[0].personalSeed).toBe('alpha');
+    expect(state.personnel.applicants[0].gender).toBe('male');
+    expect(state.personnel.applicants[1]?.gender).toBe('female');
     expect(result.data?.source).toBe('remote');
     expect(context.events.size).toBe(1);
   });
@@ -187,6 +189,7 @@ describe('JobMarketService', () => {
     expect(result.data?.source).toBe('local');
     expect(state.personnel.applicants).toHaveLength(2);
     expect(state.personnel.applicants[0].personalSeed.startsWith('offline-')).toBe(true);
+    expect(state.personnel.applicants[0].gender).toBeDefined();
     expect(context.events.size).toBe(1);
   });
 
@@ -216,6 +219,7 @@ describe('JobMarketService', () => {
     await commitHook(firstContext);
     state.clock.tick = 1;
     expect(state.personnel.applicants).toHaveLength(1);
+    expect(state.personnel.applicants[0].gender).toBe('other');
     expect(firstBuffer).toHaveLength(1);
 
     const secondBuffer: unknown[] = [];
