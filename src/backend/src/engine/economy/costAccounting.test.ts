@@ -311,6 +311,7 @@ describe('CostAccountingService', () => {
       device,
       500,
       timestamp1,
+      state.metadata.tickLengthMinutes / 60,
       accumulator1,
       collector1,
     );
@@ -332,6 +333,7 @@ describe('CostAccountingService', () => {
       device,
       1500,
       timestamp2,
+      state.metadata.tickLengthMinutes / 60,
       accumulator2,
       collector2,
     );
@@ -421,13 +423,14 @@ describe('CostAccountingService', () => {
       device,
       2500,
       '2025-01-01T05:00:00.000Z',
+      state.metadata.tickLengthMinutes / 60,
       beforeAccumulator,
       beforeCollector,
     );
 
     expect(beforeRecord).toBeDefined();
     expect(beforeRecord?.ageTicks).toBe(2500);
-    expect(beforeRecord?.ageAdjustedCostPerTick).toBeGreaterThan(baseCost);
+    expect(beforeRecord?.ageAdjustedCostPerHour).toBeGreaterThan(baseCost);
     expect(beforeRecord?.totalCost).toBeGreaterThan(baseCost);
 
     device.status = 'maintenance';
@@ -447,13 +450,14 @@ describe('CostAccountingService', () => {
       device,
       2501,
       '2025-01-01T06:00:00.000Z',
+      state.metadata.tickLengthMinutes / 60,
       afterAccumulator,
       afterCollector,
     );
 
     expect(afterRecord).toBeDefined();
     expect(afterRecord?.ageTicks).toBe(1);
-    expect(afterRecord?.ageAdjustedCostPerTick).toBeCloseTo(baseCost, 10);
+    expect(afterRecord?.ageAdjustedCostPerHour).toBeCloseTo(baseCost, 10);
     expect(afterRecord?.totalCost).toBeCloseTo(baseCost, 10);
   });
 
@@ -490,5 +494,88 @@ describe('CostAccountingService', () => {
         'Missing device price entry for blueprint "missing-device-blueprint"',
       );
     }
+  });
+
+  it('normalizes maintenance and rent costs across tick lengths for equivalent simulated hours', () => {
+    const totalHours = 12;
+    const rentPerHour = 250;
+
+    const runScenario = (tickLengthMinutes: number) => {
+      const catalog = createPriceCatalog();
+      const service = new CostAccountingService(catalog);
+      const state = createBaseState();
+      state.metadata.tickLengthMinutes = tickLengthMinutes;
+      state.finances.cashOnHand = 1_000_000;
+
+      const device: DeviceInstanceState = {
+        id: `device-${tickLengthMinutes}`,
+        blueprintId: DEVICE_BLUEPRINT_ID,
+        kind: 'Lamp',
+        name: 'Lamp',
+        zoneId: 'zone-1',
+        status: 'operational',
+        efficiency: 1,
+        runtimeHours: 0,
+        maintenance: {
+          lastServiceTick: 0,
+          nextDueTick: 0,
+          condition: 1,
+          runtimeHoursAtLastService: 0,
+          degradation: 0,
+        },
+        settings: {},
+      } satisfies DeviceInstanceState;
+
+      attachDeviceToState(state, device);
+      const structure = state.structures[0];
+      structure.rentPerTick = rentPerHour;
+
+      const tickLengthHours = tickLengthMinutes / 60;
+      const tickCount = Math.round(totalHours / tickLengthHours);
+
+      for (let tick = 1; tick <= tickCount; tick += 1) {
+        const accumulator = service.createAccumulator();
+        const events: SimulationEvent[] = [];
+        const collector = createEventCollector(events, tick);
+        const timestamp = new Date(Date.UTC(2025, 0, 1, tick)).toISOString();
+
+        service.applyStructureRent(
+          state,
+          structure,
+          tick,
+          timestamp,
+          tickLengthHours,
+          accumulator,
+          collector,
+        );
+
+        service.applyMaintenanceExpense(
+          state,
+          structure.rooms[0].zones[0].devices[0],
+          tick,
+          timestamp,
+          tickLengthHours,
+          accumulator,
+          collector,
+        );
+
+        service.finalizeTick(state, accumulator, tick, timestamp, collector);
+      }
+
+      const rentTotal = state.finances.ledger
+        .filter((entry) => entry.category === 'rent')
+        .reduce((sum, entry) => sum - entry.amount, 0);
+
+      return {
+        maintenance: state.finances.summary.totalMaintenance,
+        rent: rentTotal,
+      };
+    };
+
+    const hourly = runScenario(60);
+    const quarterHourly = runScenario(15);
+
+    expect(quarterHourly.maintenance).toBeCloseTo(hourly.maintenance, 6);
+    expect(quarterHourly.rent).toBeCloseTo(hourly.rent, 6);
   });
 });

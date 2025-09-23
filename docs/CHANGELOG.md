@@ -10,3 +10,9 @@
 - Recorded the accepted zone setpoint routing contract in
   [ADR 0004](system/adr/0004-zone-setpoint-routing.md) and aligned the socket
   protocol/AGENTS docs with the implemented metrics and response semantics.
+
+### Changed
+
+- Clarified that `baseMaintenanceCostPerTick`, `rentPerTick`, and room purpose
+  base rent values are stored as hourly rates that must be multiplied by the
+  active tick length when booking recurring costs.

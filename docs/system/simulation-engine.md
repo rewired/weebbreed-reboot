@@ -160,11 +160,16 @@ At completion: convert negative energy to **overtime hours** (ticks).
 
 - **CapEx**: device purchases (`capitalCost`), structure setup; log & deduct immediately.
 - **OpEx (per tick)**:
-  - **Maintenance**: `baseMaintenanceCostPerTick` (+ aging via `costIncreasePer1000Ticks`).
+  - **Maintenance**: `baseMaintenanceCostPerTick` (hourly base rate) × tickHours, with aging via `costIncreasePer1000Ticks`.
   - **Energy**: sum `(device.power_kW × tickHours × electricityCostPerKWh)` for active devices.
   - **Water/Nutrients**: from zone demand using **g/m²/day** curves → per-tick spend via `waterCostPerM3`, `nutrientsCostPerKg`.
-  - **Rent**: structure fixed costs or `area_m2 × rentalRate`, normalized to ticks.
-  - **Labor**: daily sweep (every 24 ticks) or continuous accrual; overtime per policy.
+- **Rent**: structure fixed costs or `area_m2 × rentalRate`, stored as hourly rates and multiplied by tickHours.
+
+Recurring OpEx entries should always derive their per-tick charge from the current tick length
+(`tickHours = tickLengthMinutes / 60`) so that changing the tick length at runtime does not drift
+total rent or maintenance over real-time hours.
+
+- **Labor**: daily sweep (every 24 ticks) or continuous accrual; overtime per policy.
 - **Revenue**: `harvestBasePricePerGram × quality × market modifiers` on sales.
 - **Reports**: emit `finance.tick` summaries; categorize by device/structure/zone.
 

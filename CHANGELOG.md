@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `VITE_SOCKET_URL`, and the localhost default) across AGENTS.md, the socket
   protocol guide, package READMEs, and ADR 0006 after wiring the shared
   `SOCKET_URL` constant.
+- Normalized rent and maintenance accounting to use hourly base rates scaled by
+  the active tick length, keeping recurring costs consistent across runtime tick
+  changes.
 
 ### Fixed
 

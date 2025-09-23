@@ -32,22 +32,22 @@
       "waterLiters": 12000,
       "nutrientsGrams": 8000
     },
-    "cashOnHand": 566640.0849796439,
+    "cashOnHand": 555120.0849797971,
     "financeSummary": {
       "totalRevenue": 1500000,
-      "totalExpenses": 933359.9150202525,
+      "totalExpenses": 944879.915020253,
       "totalPayroll": 921600,
       "totalMaintenance": 46.03502025457756,
-      "netIncome": 566640.0849797475,
+      "netIncome": 555120.084979747,
       "lastTickRevenue": 0,
-      "lastTickExpenses": 192.1328591120789
+      "lastTickExpenses": 194.5328591120789
     }
   },
   "financials": {
     "revenue": 0,
-    "expenses": 922509.9150202532,
+    "expenses": 934029.9150202529,
     "capex": 0,
-    "opex": 922509.9150202532,
+    "opex": 934029.9150202529,
     "utilityCost": 863.8800000000276,
     "maintenanceCost": 46.03502025457762,
     "utilitiesConsumed": {
@@ -57,9 +57,9 @@
     }
   },
   "events": {
-    "dispatched": 28824,
+    "dispatched": 33624,
     "counts": {
-      "finance.opex": 24000,
+      "finance.opex": 28800,
       "finance.tick": 4800,
       "plant.healthAlert": 24
     }
@@ -73,11 +73,11 @@
       "avgVpd": 1.2142280864681247,
       "cumulativeBiomassDelta": 1.6873952663139298,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 192.126600066,
-      "cashOnHand": 1488957.873399934,
+      "cumulativeExpenses": 194.526600066,
+      "cashOnHand": 1488955.4733999341,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 6
+      "eventCount": 7
     },
     {
       "tick": 1200,
@@ -87,11 +87,11 @@
       "avgVpd": 1.3972378095664382,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 230624.12778267416,
-      "cashOnHand": 1258525.872217265,
+      "cumulativeExpenses": 233504.12778267442,
+      "cashOnHand": 1255645.8722173767,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 7224
+      "eventCount": 8424
     },
     {
       "tick": 1306,
@@ -101,11 +101,11 @@
       "avgVpd": 1.3972577166324385,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 250996.07165607932,
-      "cashOnHand": 1238153.9283438544,
+      "cumulativeExpenses": 254130.47165607964,
+      "cashOnHand": 1235019.528343976,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 7860
+      "eventCount": 9166
     },
     {
       "tick": 1506,
@@ -115,11 +115,11 @@
       "avgVpd": 1.3972948309107622,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 289433.70269198116,
-      "cashOnHand": 1199716.2973079437,
+      "cumulativeExpenses": 293048.1026919816,
+      "cashOnHand": 1196101.897308084,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 9060
+      "eventCount": 10566
     },
     {
       "tick": 1604,
@@ -129,11 +129,11 @@
       "avgVpd": 1.3973128247876152,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 308268.14241287997,
-      "cashOnHand": 1180881.8575870402,
+      "cumulativeExpenses": 312117.7424128805,
+      "cashOnHand": 1177032.2575871896,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 9648
+      "eventCount": 11252
     },
     {
       "tick": 2400,
@@ -143,11 +143,11 @@
       "avgVpd": 1.3974552385326617,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 461250.53797446546,
-      "cashOnHand": 1027899.462025419,
+      "cumulativeExpenses": 467010.5379744673,
+      "cashOnHand": 1022139.4620256281,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 14424
+      "eventCount": 16824
     },
     {
       "tick": 3718,
@@ -157,11 +157,11 @@
       "avgVpd": 1.3976805708490645,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 714557.6987239112,
-      "cashOnHand": 774592.3012759826,
+      "cumulativeExpenses": 723480.8987239114,
+      "cashOnHand": 765669.101276161,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 22332
+      "eventCount": 26050
     },
     {
       "tick": 4800,
@@ -171,11 +171,11 @@
       "avgVpd": 1.397858804246941,
       "cumulativeBiomassDelta": 2880.0000000000027,
       "cumulativeRevenue": 0,
-      "cumulativeExpenses": 922509.9150202532,
-      "cashOnHand": 566640.0849796439,
+      "cumulativeExpenses": 934029.9150202529,
+      "cashOnHand": 555120.0849797971,
       "waterRemaining": 12000,
       "nutrientsRemaining": 8000,
-      "eventCount": 28824
+      "eventCount": 33624
     }
   ]
 }
