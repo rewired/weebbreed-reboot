@@ -3,7 +3,7 @@ import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
-import type { PersonnelNameDirectory, PersonnelRoleBlueprint } from '@/state/models.js';
+import type { PersonnelNameDirectory, PersonnelRoleBlueprintDraft } from '@/state/models.js';
 import {
   createPersonnel,
   loadPersonnelDirectory,
@@ -56,36 +56,38 @@ describe('state/initialization/personnel', () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-role-blueprints-'));
     try {
       const blueprintDir = path.join(tempDir, 'blueprints');
-      await fs.mkdir(blueprintDir, { recursive: true });
-      const customRoles: { roles: PersonnelRoleBlueprint[] } = {
-        roles: [
-          {
-            id: 'Gardener',
-            name: 'Field Gardener',
-            salary: { basePerTick: 26 },
-            skillProfile: {
-              primary: { skill: 'Gardening', startingLevel: 5, roll: { min: 3, max: 5 } },
-            },
-          } as PersonnelRoleBlueprint,
-          {
-            id: 'Specialist',
-            name: 'IPM Specialist',
-            roleWeight: 0.05,
-            salary: { basePerTick: 30 },
-            skillProfile: {
-              primary: { skill: 'Cleanliness', startingLevel: 4, roll: { min: 2, max: 4 } },
-            },
-          } as PersonnelRoleBlueprint,
-        ],
+      const rolesDir = path.join(blueprintDir, 'personnel', 'roles');
+      await fs.mkdir(rolesDir, { recursive: true });
+      const gardenerDraft: PersonnelRoleBlueprintDraft = {
+        id: 'Gardener',
+        name: 'Field Gardener',
+        salary: { basePerTick: 26 },
+        skillProfile: {
+          primary: { skill: 'Gardening', startingLevel: 5, roll: { min: 3, max: 5 } },
+        },
       };
       await fs.writeFile(
-        path.join(blueprintDir, 'personnelRoles.json'),
-        JSON.stringify(customRoles, null, 2),
+        path.join(rolesDir, 'Gardener.json'),
+        JSON.stringify(gardenerDraft, null, 2),
+      );
+      const specialistDraft: PersonnelRoleBlueprintDraft = {
+        id: 'Specialist',
+        name: 'IPM Specialist',
+        roleWeight: 0.05,
+        salary: { basePerTick: 30 },
+        skillProfile: {
+          primary: { skill: 'Cleanliness', startingLevel: 4, roll: { min: 2, max: 4 } },
+        },
+      };
+      await fs.writeFile(
+        path.join(rolesDir, 'Specialist.json'),
+        JSON.stringify(specialistDraft, null, 2),
       );
 
       const roles = await loadPersonnelRoleBlueprints(tempDir);
       const gardener = roles.find((role) => role.id === 'Gardener');
       const specialist = roles.find((role) => role.id === 'Specialist');
+      const technician = roles.find((role) => role.id === 'Technician');
 
       expect(gardener?.salary.basePerTick).toBe(26);
       expect(gardener?.skillProfile.secondary?.skill).toBe('Cleanliness');
@@ -95,6 +97,7 @@ describe('state/initialization/personnel', () => {
       expect(specialist?.skillProfile.primary.skill).toBe('Cleanliness');
       expect(specialist?.skillProfile.secondary).toBeUndefined();
       expect(specialist?.salary.skillFactor?.base).toBeGreaterThan(0);
+      expect(technician).toBeDefined();
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }

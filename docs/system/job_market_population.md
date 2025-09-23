@@ -25,8 +25,8 @@ strategy, and operator-facing configuration levers.
 
 Manual refreshes (`facade.workforce.refreshCandidates`) reuse the same path and
 force regeneration when `force` is set. Applicant composition (role mix, skill
-rolls, salaries) is data-driven via
-[`data/blueprints/personnelRoles.json`](./personnel_roles_blueprint.md); the
+rolls, salaries) is data-driven via the
+[`data/blueprints/personnel/roles/*.json`](./personnel_roles_blueprint.md) files; the
 service hot-loads updated blueprints on demand and falls back to the shipped
 defaults when the file is missing.
 
