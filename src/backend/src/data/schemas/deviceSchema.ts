@@ -2,28 +2,35 @@ import { z } from 'zod';
 
 const roomPurposeCompatibilitySchema = z.union([z.literal('*'), z.array(z.string().min(1)).min(1)]);
 
-const rangeTuple = z.tuple([z.number(), z.number()]);
+const numericSetting = z.number();
+const rangeTuple = z.tuple([numericSetting, numericSetting]);
+const optionalNumericSetting = numericSetting.optional();
+const optionalRangeTuple = rangeTuple.optional();
 
 export const deviceSchema = z
   .object({
     id: z.string().uuid(),
     kind: z.string().min(1),
     name: z.string().min(1),
-    quality: z.number(),
-    complexity: z.number(),
-    lifespan: z.number(),
+    quality: numericSetting,
+    complexity: numericSetting,
+    lifespan: numericSetting,
     roomPurposes: roomPurposeCompatibilitySchema,
     settings: z
       .object({
-        power: z.number().optional(),
-        ppfd: z.number().optional(),
-        coverageArea: z.number().optional(),
-        spectralRange: rangeTuple.optional(),
-        heatFraction: z.number().optional(),
-        airflow: z.number().optional(),
-        coolingCapacity: z.number().optional(),
-        moistureRemoval: z.number().optional(),
-        targetCO2: z.number().optional(),
+        power: optionalNumericSetting,
+        ppfd: optionalNumericSetting,
+        coverageArea: optionalNumericSetting,
+        spectralRange: optionalRangeTuple,
+        heatFraction: optionalNumericSetting,
+        airflow: optionalNumericSetting,
+        coolingCapacity: optionalNumericSetting,
+        moistureRemoval: optionalNumericSetting,
+        targetTemperature: optionalNumericSetting,
+        targetTemperatureRange: optionalRangeTuple,
+        targetHumidity: optionalNumericSetting,
+        targetCO2: optionalNumericSetting,
+        targetCO2Range: optionalRangeTuple,
       })
       .passthrough(),
     meta: z
