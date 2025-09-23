@@ -16,6 +16,9 @@ import { bootstrap } from '@/bootstrap.js';
 import { createInitialState, type StateFactoryContext } from '@/stateFactory.js';
 import { SimulationLoop } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
+import { WorldService } from '@/engine/world/worldService.js';
+import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
+import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';
@@ -159,6 +162,32 @@ export const startBackendServer = async (
     state,
     accounting: { service: costAccountingService },
     loop,
+  });
+  const worldService = new WorldService({ state, rng, costAccounting: costAccountingService });
+  const deviceGroupService = new DeviceGroupService({ state, rng });
+  const plantingPlanService = new PlantingPlanService({ state, rng });
+
+  facade.updateServices({
+    world: {
+      renameStructure: (intent, context) =>
+        worldService.renameStructure(intent.structureId, intent.name, context),
+      deleteStructure: (intent, context) =>
+        worldService.deleteStructure(intent.structureId, context),
+      duplicateStructure: (intent, context) =>
+        worldService.duplicateStructure(intent.structureId, intent.name, context),
+      duplicateRoom: (intent, context) =>
+        worldService.duplicateRoom(intent.roomId, intent.name, context),
+      duplicateZone: (intent, context) =>
+        worldService.duplicateZone(intent.zoneId, intent.name, context),
+    },
+    devices: {
+      toggleDeviceGroup: (intent, context) =>
+        deviceGroupService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
+    },
+    plants: {
+      togglePlantingPlan: (intent, context) =>
+        plantingPlanService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
+    },
   });
   const uiStream$ = createUiStream({
     snapshotProvider: () => facade.select((value) => buildSimulationSnapshot(value, repository)),

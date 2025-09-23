@@ -134,26 +134,12 @@ const configUpdateSchema = requestMetadataSchema.and(
   ]),
 );
 
-type FacadeDomain = 'world' | 'devices' | 'plants' | 'health' | 'workforce' | 'finance';
-
 interface FacadeIntentCommand {
-  domain: FacadeDomain;
+  domain: string;
   action: string;
   payload?: unknown;
   requestId?: string;
 }
-
-const FACADE_DOMAINS: readonly FacadeDomain[] = [
-  'world',
-  'devices',
-  'plants',
-  'health',
-  'workforce',
-  'finance',
-] as const;
-
-const isFacadeDomain = (value: unknown): value is FacadeDomain =>
-  typeof value === 'string' && (FACADE_DOMAINS as readonly string[]).includes(value);
 
 export interface SocketGatewayOptions {
   httpServer: HttpServer;
@@ -367,9 +353,9 @@ export class SocketGateway {
     }
 
     const command = payload as FacadeIntentCommand;
-    if (!isFacadeDomain(command.domain)) {
+    if (!this.facade.hasIntentDomain(command.domain)) {
       const response = this.buildIntentValidationError(
-        `Unsupported intent domain: ${String((payload as FacadeIntentCommand).domain)}`,
+        `Unsupported intent domain: ${String(command.domain)}`,
         ['facade.intent', 'domain'],
         requestId,
       );
@@ -387,10 +373,9 @@ export class SocketGateway {
       return;
     }
 
-    const service = this.facade[command.domain];
-    const handler = (service as Record<string, unknown>)[command.action];
+    const handler = this.facade.getIntentHandler(command.domain, command.action);
 
-    if (typeof handler !== 'function') {
+    if (!handler) {
       const response = this.buildIntentValidationError(
         `Unsupported action ${command.domain}.${command.action}.`,
         ['facade.intent', 'action'],
@@ -402,10 +387,7 @@ export class SocketGateway {
 
     let result: CommandResult<unknown>;
     try {
-      const execution = (
-        handler as (intent?: unknown) => Promise<CommandResult<unknown>> | CommandResult<unknown>
-      )(command.payload);
-      result = await Promise.resolve(execution);
+      result = await handler(command.payload);
     } catch (error) {
       result = this.buildInternalError(`${command.domain}.${command.action}`, error);
     }
