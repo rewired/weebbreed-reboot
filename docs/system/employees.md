@@ -8,6 +8,9 @@ Employees are the heart of automation in Weedbreed.AI. They are **autonomous age
 
 ## 1) Candidate Generation & External Name Provider
 
+See [Job Market Population](./job_market_population.md) for the full refresh
+pipeline, remote API contract, and configuration knobs.
+
 To keep the labor market dynamic and credible, the game continuously injects new, unique candidates. Rather than relying only on a fixed local name list, the game **optionally** queries a **seedable external name provider** (e.g., an API that returns first/last names) and falls back to local data if unavailable. An free and open provider is https://randomuser.me/. For detailed information about the API, check the providers documentation.
 
 - **Periodic refresh**  

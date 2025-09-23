@@ -107,6 +107,9 @@ Common categories are below.
 
 ### 4.7 Personnel & Tasks
 
+- See [Job Market Population](./job_market_population.md) for deterministic
+  refresh cadence, external provider usage, and fallback rules.
+
 - `refreshCandidates()` — seeded refresh per policy; uses external name provider iff enabled, fallback to local lists.
 - `hire(candidateId, role, wage?)` / `fire(employeeId)`
 - `setOvertimePolicy({ policy: "payout"|"timeOff", multiplier? })`

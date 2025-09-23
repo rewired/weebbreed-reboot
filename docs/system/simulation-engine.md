@@ -135,6 +135,9 @@ Integrates **data-driven** pests/diseases with **operational** treatments.
 
 ## Tasks & Agentic Employees (utility-based; overtime-aware)
 
+The hiring side of this system—including weekly candidate refresh mechanics—is
+documented in [Job Market Population](./job_market_population.md).
+
 ### Task generation (per tick)
 
 Scan world state → create **Task** objects (see DD §Tasks) from `task_definitions.json`.  
