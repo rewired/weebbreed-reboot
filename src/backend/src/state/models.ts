@@ -472,6 +472,8 @@ export interface ApplicantState {
   expectedSalary: number;
   traits: string[];
   skills: EmployeeSkills;
+  personalSeed: string;
+  gender?: 'male' | 'female' | 'other';
 }
 
 export interface TrainingProgramState {

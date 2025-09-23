@@ -13,12 +13,18 @@ import { SimulationFacade, type TimeStatus } from '@/facade/index.js';
 import { SocketGateway } from '@/server/socketGateway.js';
 import { SseGateway } from '@/server/sseGateway.js';
 import { bootstrap } from '@/bootstrap.js';
-import { createInitialState, type StateFactoryContext } from '@/stateFactory.js';
-import { SimulationLoop } from '@/sim/loop.js';
+import {
+  createInitialState,
+  loadPersonnelDirectory,
+  type StateFactoryContext,
+} from '@/stateFactory.js';
+import type { PersonnelNameDirectory } from '@/state/models.js';
+import { SimulationLoop, type SimulationPhaseHandler } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
 import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
+import { JobMarketService } from '@/engine/workforce/jobMarketService.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';
@@ -124,6 +130,23 @@ export const startBackendServer = async (
   const state = await createInitialState(context);
   serverLogger.info('Initial game state created.');
 
+  let personnelDirectory: PersonnelNameDirectory | undefined;
+  try {
+    personnelDirectory = await loadPersonnelDirectory(dataDirectory);
+  } catch (error) {
+    serverLogger.warn(
+      { err: error },
+      'Failed to load personnel directory; job market fallback will synthesise names.',
+    );
+    personnelDirectory = undefined;
+  }
+  const jobMarketService = new JobMarketService({
+    state,
+    rng,
+    personnelDirectory,
+    dataDirectory,
+  });
+
   const hotReloadManager = new BlueprintHotReloadManager(
     repository,
     telemetryEventBus,
@@ -149,7 +172,12 @@ export const startBackendServer = async (
   } else {
     serverLogger.info('Blueprint hot-reload disabled in production mode.');
   }
-  const commitHook = hotReloadManager.createCommitHook();
+  const hotReloadCommitHook = hotReloadManager.createCommitHook();
+  const jobMarketCommitHook = jobMarketService.createCommitHook();
+  const commitHook: SimulationPhaseHandler = async (context) => {
+    await jobMarketCommitHook(context);
+    await hotReloadCommitHook(context);
+  };
 
   const httpServer = createServer();
   const loop = new SimulationLoop({
@@ -188,7 +216,33 @@ export const startBackendServer = async (
       togglePlantingPlan: (intent, context) =>
         plantingPlanService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
     },
+    workforce: {
+      refreshCandidates: (intent, serviceContext) =>
+        jobMarketService.refreshCandidates(intent, serviceContext),
+    },
   });
+
+  const initialRefresh = await facade.workforce.refreshCandidates({ force: true });
+  if (!initialRefresh.ok) {
+    serverLogger.warn({ errors: initialRefresh.errors }, 'Initial job market refresh failed.');
+  } else {
+    const summary = initialRefresh.data;
+    if (summary) {
+      serverLogger.info(
+        {
+          jobMarket: {
+            seed: summary.seed,
+            source: summary.source,
+            count: summary.count,
+            week: summary.week,
+            retries: summary.retries,
+          },
+          warnings: initialRefresh.warnings,
+        },
+        'Job market candidates seeded.',
+      );
+    }
+  }
   const uiStream$ = createUiStream({
     snapshotProvider: () => facade.select((value) => buildSimulationSnapshot(value, repository)),
     timeStatusProvider: () => facade.getTimeStatus(),

@@ -177,6 +177,10 @@ export interface ApplicantSnapshot {
   name: string;
   desiredRole: string;
   expectedSalary: number;
+  traits: string[];
+  skills: Partial<Record<string, number>>;
+  personalSeed?: string;
+  gender?: 'male' | 'female' | 'other';
 }
 
 export interface PersonnelSnapshot {

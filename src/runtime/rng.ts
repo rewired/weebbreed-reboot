@@ -18,6 +18,8 @@ export const RNG_STREAM_IDS = {
   personnelNames: 'personnel-names',
   personnelTraits: 'personnel-traits',
   personnelMorale: 'personnel-morale',
+  jobMarket: 'job-market',
+  jobMarketCandidates: 'job-market.candidates',
   simulationTest: 'sim.test',
 } as const;
 
