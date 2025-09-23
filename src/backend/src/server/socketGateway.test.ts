@@ -230,7 +230,7 @@ const createTestState = (): GameState => {
             maintenanceLevel: 0.9,
             zones: [
               {
-                id: 'zone-1',
+                id: 'zone_000001',
                 roomId: 'room-1',
                 name: 'Zone',
                 cultivationMethodId: 'method-1',
@@ -256,7 +256,7 @@ const createTestState = (): GameState => {
                   {
                     id: 'plant-1',
                     strainId: 'strain-1',
-                    zoneId: 'zone-1',
+                    zoneId: 'zone_000001',
                     stage: 'vegetative',
                     plantedAtTick: 0,
                     ageInHours: 24,
@@ -279,6 +279,7 @@ const createTestState = (): GameState => {
                   stressLevel: 0.1,
                   lastUpdatedTick: 0,
                 },
+                control: { setpoints: {} },
                 health: {
                   plantHealth: {},
                   pendingTreatments: [],
@@ -378,6 +379,10 @@ class StubFacade {
   public setSpeedInvocations = 0;
 
   public setTickLengthInvocations = 0;
+
+  public setZoneSetpointInvocations = 0;
+
+  public lastSetpointUpdate?: { zoneId: string; metric: string; value: number };
 
   public intentInvocations: Array<{ domain: string; action: string; payload: unknown }> = [];
 
@@ -539,6 +544,38 @@ class StubFacade {
   setTickLength(minutes: number): CommandResult<TimeStatus> {
     this.setTickLengthInvocations += 1;
     this.state.metadata.tickLengthMinutes = minutes;
+    return { ok: true, data: this.status };
+  }
+
+  setZoneSetpoint(zoneId: string, metric: string, value: number): CommandResult<TimeStatus> {
+    this.setZoneSetpointInvocations += 1;
+    this.lastSetpointUpdate = { zoneId, metric, value };
+    const zone = this.state.structures
+      .flatMap((structure) => structure.rooms)
+      .flatMap((room) => room.zones)
+      .find((candidate) => candidate.id === zoneId);
+    if (zone) {
+      zone.control ??= { setpoints: {} };
+      switch (metric) {
+        case 'temperature':
+          zone.control.setpoints.temperature = value;
+          break;
+        case 'relativeHumidity':
+          zone.control.setpoints.humidity = value;
+          break;
+        case 'co2':
+          zone.control.setpoints.co2 = value;
+          break;
+        case 'ppfd':
+          zone.control.setpoints.ppfd = value;
+          break;
+        case 'vpd':
+          zone.control.setpoints.vpd = value;
+          break;
+        default:
+          break;
+      }
+    }
     return { ok: true, data: this.status };
   }
 
@@ -725,13 +762,13 @@ describe('SocketGateway', () => {
     expect(facadeStub.state.metadata.tickLengthMinutes).toBe(15);
     expect(facadeStub.setTickLengthInvocations).toBe(1);
 
-    const unsupported = await new Promise<CommandResult<TimeStatus>>((resolve) => {
+    const setpoint = await new Promise<CommandResult<TimeStatus>>((resolve) => {
       client.emit(
         'config.update',
         {
           requestId: 'cfg-2',
           type: 'setpoint',
-          zoneId: '11111111-1111-1111-1111-111111111111',
+          zoneId: 'zone_000001',
           metric: 'temperature',
           value: 25,
         },
@@ -739,8 +776,13 @@ describe('SocketGateway', () => {
       );
     });
 
-    expect(unsupported.ok).toBe(false);
-    expect(unsupported.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+    expect(setpoint.ok).toBe(true);
+    expect(facadeStub.setZoneSetpointInvocations).toBe(1);
+    expect(facadeStub.lastSetpointUpdate).toEqual({
+      zoneId: 'zone_000001',
+      metric: 'temperature',
+      value: 25,
+    });
   });
 
   it('routes facade intents to the correct service handler', async () => {

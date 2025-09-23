@@ -25,6 +25,7 @@ import type {
   StructureState,
   TaskDefinitionMap,
   ZoneEnvironmentState,
+  ZoneControlState,
   ZoneHealthState,
   ZoneMetricState,
   ZoneResourceState,
@@ -186,6 +187,10 @@ const createZoneEnvironment = (): ZoneEnvironmentState => ({
   vpd: 1.2,
 });
 
+const createZoneControl = (): ZoneControlState => ({
+  setpoints: {},
+});
+
 const createZoneResources = (): ZoneResourceState => ({
   waterLiters: DEFAULT_ZONE_WATER_LITERS,
   nutrientSolutionLiters: DEFAULT_ZONE_NUTRIENT_LITERS,
@@ -289,6 +294,7 @@ const buildStructureState = (
     plants,
     devices: [],
     metrics: createZoneMetrics(environment),
+    control: createZoneControl(),
     health: createZoneHealth(plants),
     activeTaskIds: [],
   };

@@ -1,8 +1,9 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ZoneEnvironmentService } from './zoneEnvironment.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import { ClimateController } from './climateController.js';
 import type {
   DeviceInstanceState,
   FootprintDimensions,
@@ -58,6 +59,10 @@ beforeAll(async () => {
   growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
 });
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 const createDevice = (
   id: string,
   kind: string,
@@ -99,6 +104,7 @@ const createZone = (
   plants: [],
   devices,
   metrics: createMetrics(environment),
+  control: { setpoints: {} },
   health: createHealth(),
   activeTaskIds: [],
 });
@@ -260,6 +266,48 @@ describe('ZoneEnvironmentService', () => {
     expect(zone.environment.relativeHumidity).toBeCloseTo(0.63, 2);
     expect(zone.environment.co2).toBeCloseTo(900, 0);
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);
+  });
+
+  it('prefers zone control setpoints when resolving climate targets', () => {
+    const environment = createEnvironment();
+    const devices: DeviceInstanceState[] = [
+      createDevice('lamp-1', 'Lamp', { power: 0.6, coverageArea: 1.2, ppfd: 800 }, 0.9),
+      createDevice(
+        'hvac-1',
+        'ClimateUnit',
+        {
+          coolingCapacity: 1.6,
+          airflow: 350,
+          targetTemperature: 24,
+          targetTemperatureRange: [23, 25],
+          fullPowerAtDeltaK: 2,
+        },
+        0.9,
+      ),
+      createDevice('humidity-1', 'HumidityControlUnit', { targetHumidity: 0.6 }),
+      createDevice('co2-1', 'CO2Injector', {
+        targetCO2: 1100,
+        targetCO2Range: [400, 1500],
+        hysteresis: 50,
+      }),
+    ];
+
+    const zone = createZone(devices, environment);
+    zone.control.setpoints.temperature = 20;
+    zone.control.setpoints.humidity = 0.45;
+    zone.control.setpoints.co2 = 950;
+    const room = createRoom(zone);
+    const structure = createStructure(room);
+    const state = createGameState(structure);
+    const service = new ZoneEnvironmentService();
+
+    const updateSpy = vi.spyOn(ClimateController.prototype, 'update');
+
+    service.applyDeviceDeltas(state, 15, undefined);
+
+    expect(updateSpy).toHaveBeenCalled();
+    const [setpoints] = updateSpy.mock.calls[0] ?? [];
+    expect(setpoints).toEqual({ temperature: 20, humidity: 0.45, co2: 950 });
   });
 
   it('throws when zone area exceeds the enclosing room capacity', () => {

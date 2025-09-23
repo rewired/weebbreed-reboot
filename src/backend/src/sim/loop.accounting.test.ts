@@ -75,6 +75,7 @@ const createAccountingTestState = (): GameState => {
       stressLevel: 0,
       lastUpdatedTick: 0,
     } satisfies ZoneMetricState,
+    control: { setpoints: {} },
     health: {
       plantHealth: {},
       pendingTreatments: [],

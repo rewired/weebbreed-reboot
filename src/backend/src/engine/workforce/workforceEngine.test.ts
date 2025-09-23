@@ -75,6 +75,7 @@ const createBaseState = (): GameState => {
       stressLevel: 0.1,
       lastUpdatedTick: 0,
     },
+    control: { setpoints: {} },
     health: {
       plantHealth: {},
       pendingTreatments: [],

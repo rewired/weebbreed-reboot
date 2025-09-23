@@ -7,7 +7,12 @@ import {
   createEventCollector,
 } from '@/lib/eventBus.js';
 import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
-import type { GameState, SimulationClockState } from '@/state/models.js';
+import type {
+  GameState,
+  SimulationClockState,
+  ZoneControlState,
+  ZoneState,
+} from '@/state/models.js';
 import { SimulationLoop, type SimulationLoopAccountingOptions } from '@/sim/loop.js';
 import { SimulationScheduler } from '@/sim/simScheduler.js';
 import type { SimulationSchedulerOptions } from '@/sim/simScheduler.js';
@@ -19,6 +24,8 @@ import type {
 } from '@/engine/world/worldService.js';
 import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
 import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
+import { findZone } from '@/engine/world/stateSelectors.js';
+import { saturationVaporPressure } from '@/physio/vpd.js';
 
 const cloneState = <T>(value: T): T => {
   if (typeof structuredClone === 'function') {
@@ -101,6 +108,13 @@ const nonNegativeInteger = z
   .min(0, { message: 'Value must be zero or greater.' });
 const settingsRecord = z.record(z.string(), z.unknown());
 const emptyObjectSchema = z.object({}).strict();
+
+type ZoneSetpointMetric = 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd' | 'vpd';
+
+const TEMPERATURE_DEVICE_KINDS = new Set(['ClimateUnit', 'HVAC']);
+const HUMIDITY_DEVICE_KINDS = new Set(['HumidityControlUnit']);
+const CO2_DEVICE_KINDS = new Set(['CO2Injector']);
+const LIGHT_DEVICE_KINDS = new Set(['Lamp']);
 
 const timeStartSchema = z
   .object({
@@ -887,6 +901,176 @@ export class SimulationFacade {
     return { ok: true, data: status };
   }
 
+  setZoneSetpoint(
+    zoneId: string,
+    metric: ZoneSetpointMetric,
+    rawValue: number,
+  ): CommandResult<TimeStatus> {
+    const command = 'config.setSetpoint';
+    const { context, flush } = this.createCommandContext(command);
+    try {
+      if (!Number.isFinite(rawValue)) {
+        return this.createFailure('ERR_VALIDATION', 'Setpoint value must be finite.', command);
+      }
+
+      const lookup = findZone(this.state, zoneId);
+      if (!lookup) {
+        return this.createFailure('ERR_INVALID_STATE', `Zone ${zoneId} is not available.`, command);
+      }
+
+      const { zone } = lookup;
+      const warnings: string[] = [];
+      const control = this.ensureZoneControl(zone);
+      let effectiveValue = rawValue;
+      let effectiveHumidity: number | undefined;
+
+      switch (metric) {
+        case 'temperature': {
+          const devices = this.filterZoneDevices(zone, TEMPERATURE_DEVICE_KINDS);
+          if (devices.length === 0) {
+            return this.createFailure(
+              'ERR_INVALID_STATE',
+              `Zone ${zoneId} does not support temperature control.`,
+              command,
+            );
+          }
+          for (const device of devices) {
+            device.settings.targetTemperature = rawValue;
+          }
+          control.setpoints.temperature = rawValue;
+          break;
+        }
+
+        case 'relativeHumidity': {
+          const devices = this.filterZoneDevices(zone, HUMIDITY_DEVICE_KINDS);
+          if (devices.length === 0) {
+            return this.createFailure(
+              'ERR_INVALID_STATE',
+              `Zone ${zoneId} does not support humidity control.`,
+              command,
+            );
+          }
+          const humidity = this.sanitizeRelativeHumidity(rawValue, warnings);
+          for (const device of devices) {
+            device.settings.targetHumidity = humidity;
+          }
+          control.setpoints.humidity = humidity;
+          delete control.setpoints.vpd;
+          effectiveValue = humidity;
+          effectiveHumidity = humidity;
+          break;
+        }
+
+        case 'co2': {
+          const devices = this.filterZoneDevices(zone, CO2_DEVICE_KINDS);
+          if (devices.length === 0) {
+            return this.createFailure(
+              'ERR_INVALID_STATE',
+              `Zone ${zoneId} does not support CO2 control.`,
+              command,
+            );
+          }
+          const target = this.sanitizeNonNegative(
+            rawValue,
+            warnings,
+            'CO₂ setpoint was clamped to zero or greater.',
+          );
+          for (const device of devices) {
+            device.settings.targetCO2 = target;
+          }
+          control.setpoints.co2 = target;
+          effectiveValue = target;
+          break;
+        }
+
+        case 'ppfd': {
+          const devices = this.filterZoneDevices(zone, LIGHT_DEVICE_KINDS);
+          if (devices.length === 0) {
+            return this.createFailure(
+              'ERR_INVALID_STATE',
+              `Zone ${zoneId} does not have controllable lighting.`,
+              command,
+            );
+          }
+          const target = this.sanitizeNonNegative(
+            rawValue,
+            warnings,
+            'PPFD setpoint was clamped to zero or greater.',
+          );
+          for (const device of devices) {
+            const settings = device.settings;
+            const previousPpfd = this.extractFiniteNumber(settings.ppfd);
+            const previousPower = this.extractFiniteNumber(settings.power);
+            settings.ppfd = target;
+            if (previousPower !== undefined) {
+              if (target <= 0) {
+                settings.power = 0;
+              } else if (previousPpfd && previousPpfd > 0) {
+                const ratio = target / previousPpfd;
+                settings.power = Math.max(previousPower * ratio, 0);
+              }
+            }
+          }
+          control.setpoints.ppfd = target;
+          effectiveValue = target;
+          break;
+        }
+
+        case 'vpd': {
+          const devices = this.filterZoneDevices(zone, HUMIDITY_DEVICE_KINDS);
+          if (devices.length === 0) {
+            return this.createFailure(
+              'ERR_INVALID_STATE',
+              `Zone ${zoneId} does not support humidity control.`,
+              command,
+            );
+          }
+          const vpd = this.sanitizeNonNegative(
+            rawValue,
+            warnings,
+            'VPD setpoint was clamped to zero or greater.',
+          );
+          const referenceTemperature = this.resolveTemperatureForVpd(zone);
+          const humidity = this.computeHumidityForVpd(referenceTemperature, vpd, warnings);
+          for (const device of devices) {
+            device.settings.targetHumidity = humidity;
+          }
+          control.setpoints.vpd = vpd;
+          control.setpoints.humidity = humidity;
+          effectiveValue = vpd;
+          effectiveHumidity = humidity;
+          break;
+        }
+
+        default:
+          return this.createFailure(
+            'ERR_INVALID_STATE',
+            `Unsupported setpoint metric: ${String(metric)}`,
+            command,
+          );
+      }
+
+      const eventPayload: Record<string, unknown> = {
+        zoneId,
+        metric,
+        value: effectiveValue,
+        control: { ...control.setpoints },
+      };
+      if (effectiveHumidity !== undefined) {
+        eventPayload.effectiveHumidity = effectiveHumidity;
+      }
+      context.events.queue('env.setpointUpdated', eventPayload, context.tick, 'info');
+
+      return {
+        ok: true,
+        data: this.getTimeStatus(),
+        warnings: this.normalizeWarnings(warnings),
+      } satisfies CommandResult<TimeStatus>;
+    } finally {
+      flush();
+    }
+  }
+
   updateServices(services: Partial<EngineServices>): void {
     if (services.world) {
       this.services.world = { ...this.services.world, ...services.world };
@@ -1363,6 +1547,64 @@ export class SimulationFacade {
       data: result.data,
       warnings,
     };
+  }
+
+  private filterZoneDevices(zone: ZoneState, kinds: ReadonlySet<string>): ZoneState['devices'] {
+    return zone.devices.filter((device) => kinds.has(device.kind));
+  }
+
+  private ensureZoneControl(zone: ZoneState): ZoneControlState {
+    if (!zone.control) {
+      zone.control = { setpoints: {} } as ZoneControlState;
+    } else if (!zone.control.setpoints) {
+      zone.control.setpoints = {};
+    }
+    return zone.control;
+  }
+
+  private sanitizeRelativeHumidity(value: number, warnings: string[]): number {
+    const clamped = Math.min(Math.max(value, 0), 1);
+    if (clamped !== value) {
+      warnings.push('Relative humidity setpoint was clamped to the [0, 1] range.');
+    }
+    return clamped;
+  }
+
+  private sanitizeNonNegative(value: number, warnings: string[], message: string): number {
+    const clamped = Math.max(value, 0);
+    if (clamped !== value) {
+      warnings.push(message);
+    }
+    return clamped;
+  }
+
+  private extractFiniteNumber(value: unknown): number | undefined {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return undefined;
+    }
+    return value;
+  }
+
+  private resolveTemperatureForVpd(zone: ZoneState): number {
+    const controlTemperature = this.extractFiniteNumber(zone.control?.setpoints.temperature);
+    if (controlTemperature !== undefined) {
+      return controlTemperature;
+    }
+    const environmentTemperature = this.extractFiniteNumber(zone.environment.temperature);
+    if (environmentTemperature !== undefined) {
+      return environmentTemperature;
+    }
+    return 24;
+  }
+
+  private computeHumidityForVpd(temperature: number, vpd: number, warnings: string[]): number {
+    const saturation = Math.max(saturationVaporPressure(temperature), Number.EPSILON);
+    const humidity = 1 - vpd / saturation;
+    const clamped = Math.min(Math.max(humidity, 0), 1);
+    if (clamped !== humidity) {
+      warnings.push('Derived humidity target was clamped to the [0, 1] range.');
+    }
+    return clamped;
   }
 
   private normalizeWarnings(warnings?: string[]): string[] | undefined {

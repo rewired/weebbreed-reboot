@@ -35,6 +35,7 @@ const createZone = (overrides: Partial<ZoneState> = {}): ZoneState => ({
     stressLevel: 0,
     lastUpdatedTick: 0,
   },
+  control: { setpoints: {} },
   health: { plantHealth: {}, pendingTreatments: [], appliedTreatments: [] },
   activeTaskIds: [],
   ...overrides,

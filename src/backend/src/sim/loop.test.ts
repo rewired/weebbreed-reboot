@@ -179,6 +179,7 @@ const createGameStateWithZone = (): GameState => {
       stressLevel: 0.2,
       lastUpdatedTick: 0,
     } satisfies ZoneMetricState,
+    control: { setpoints: {} },
     health: {
       plantHealth: {},
       pendingTreatments: [],

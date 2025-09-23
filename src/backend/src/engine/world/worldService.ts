@@ -67,6 +67,22 @@ const cloneEnvironment = (environment: ZoneState['environment']): ZoneState['env
   };
 };
 
+const cloneControl = (control: ZoneState['control'] | undefined): ZoneState['control'] => {
+  if (!control) {
+    return { setpoints: {} } satisfies ZoneState['control'];
+  }
+  const setpoints = control.setpoints ?? {};
+  return {
+    setpoints: {
+      temperature: setpoints.temperature,
+      humidity: setpoints.humidity,
+      co2: setpoints.co2,
+      ppfd: setpoints.ppfd,
+      vpd: setpoints.vpd,
+    },
+  } satisfies ZoneState['control'];
+};
+
 const deepCloneSettings = (settings: Record<string, unknown>): Record<string, unknown> => {
   return JSON.parse(JSON.stringify(settings));
 };
@@ -396,6 +412,7 @@ export class WorldService {
       plants: [],
       devices,
       metrics,
+      control: cloneControl(zone.control),
       health: createEmptyHealth(),
       activeTaskIds: [],
       plantingPlan: undefined,

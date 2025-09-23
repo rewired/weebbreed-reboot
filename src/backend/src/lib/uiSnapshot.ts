@@ -6,6 +6,7 @@ import type {
   GameState,
   PlantState,
   StructureState,
+  ZoneControlState,
   ZoneEnvironmentState,
   ZoneMetricState,
   ZoneResourceState,
@@ -84,6 +85,7 @@ export interface ZoneSnapshot {
   metrics: ZoneMetricState;
   devices: DeviceSnapshot[];
   plants: PlantSnapshot[];
+  control: ZoneControlState;
   health: ZoneHealthSnapshot;
 }
 
@@ -162,6 +164,16 @@ const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
   reservoirLevel: resources.reservoirLevel,
 });
 
+const cloneControl = (control: ZoneControlState): ZoneControlState => ({
+  setpoints: {
+    temperature: control.setpoints.temperature,
+    humidity: control.setpoints.humidity,
+    co2: control.setpoints.co2,
+    ppfd: control.setpoints.ppfd,
+    vpd: control.setpoints.vpd,
+  },
+});
+
 export const buildSimulationSnapshot = (
   state: GameState,
   roomPurposeSource: RoomPurposeSource,
@@ -192,6 +204,7 @@ export const buildSimulationSnapshot = (
           environment: { ...zone.environment },
           resources: cloneResources(zone.resources),
           metrics: { ...zone.metrics },
+          control: cloneControl(zone.control ?? { setpoints: {} }),
           devices: zone.devices.map((device) => ({
             id: device.id,
             blueprintId: device.blueprintId,
