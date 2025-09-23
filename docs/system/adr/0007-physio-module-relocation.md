@@ -64,3 +64,9 @@ If the relocation causes unforeseen coupling issues, restore the previous
 `src/physio` directory via git history, reinstate the `@/physio` alias in the
 backend config, and revert the documentation changes. No data migrations are
 needed because the move only touches source files.
+
+## Status Updates
+
+- 2025-09-24 — Confirmed the frontend Vite and TypeScript configs no longer
+  expose the unused `@/engine` alias, and the outstanding task tracker entry was
+  closed to document the cleanup.
