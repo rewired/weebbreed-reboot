@@ -13,7 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated ADR 0001 to reflect the accepted CommonJS-first TypeScript toolchain decision and documentation touchpoints.
+- Updated ADR 0001 to reflect the accepted `tsx` + `tsup` ESM backend toolchain
+  and documentation touchpoints.
+- Realigned workspace documentation and ADR 0001 with the `src/backend` and
+  `src/frontend` layout plus the ESM backend build output.
 
 ### Fixed
 

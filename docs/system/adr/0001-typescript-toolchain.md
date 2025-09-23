@@ -11,8 +11,11 @@ TypeScript directly. The approach created friction when running on modern Node
 (>20), complicated debugging (custom loaders), and made it hard to ship a clean
 Node-compatible bundle for operations teams. The TypeScript configuration also
 mixed multiple source roots (`src/`, `data/`, `facade/`, `server/`), complicating
-analysis and bundling. A dedicated `typecheck` command was missing because
-`tsc --noEmit` surfaced hundreds of issues under the old layout.
+analysis and bundling. After consolidating the service into `src/backend`, the
+workspace adopted `type: module` semantics, but the documentation still pointed
+to CommonJS build outputs, leading to confusion about the canonical runtime
+artifact. A dedicated `typecheck` command was missing because `tsc --noEmit`
+surfaced hundreds of issues under the old layout.
 
 ## Decision
 
@@ -22,13 +25,12 @@ analysis and bundling. A dedicated `typecheck` command was missing because
   via the `@/` alias (`@runtime/` for shared runtime helpers) so refactors do not
   rely on brittle relative imports.
 - Replace `ts-node` with [`tsx`](https://tsx.is/) for the development server
-  (`pnpm dev` ⇒ `tsx --watch src/index.ts`). `tsx` offers a fast feedback loop
-  without experimental ESM loader flags.
-- Build production artifacts with [`tsup`](https://tsup.egoist.dev/) targeting a
-  CommonJS bundle in `dist/` (`pnpm build` ⇒ `dist/index.cjs` + sourcemaps). The
-  CommonJS output avoids ESM loader drift across Node 20–23 while preserving the
-  ability to emit type declarations once the strict typecheck backlog is cleared.
-- Run the packaged server through plain Node (`pnpm start` ⇒ `node dist/index.cjs`).
+  (`pnpm --filter @weebbreed/backend dev` ⇒ `tsx --watch src/index.ts`). `tsx`
+  offers a fast feedback loop without experimental ESM loader flags.
+- Build production artifacts with [`tsup`](https://tsup.egoist.dev/) targeting an
+  ESM bundle in `dist/` (`pnpm build` ⇒ `dist/index.js` + sourcemaps) that aligns
+  with the package’s `type: module` contract.
+- Run the packaged server through plain Node (`pnpm start` ⇒ `node dist/index.js`).
 - Ship a strict `tsconfig.json` that uses Node resolution, enforces modern
   TypeScript safety nets (isolated modules, exact optional property types, no
   unchecked indexed access), and declares the `@/`/`@runtime/` path aliases.
@@ -42,9 +44,11 @@ analysis and bundling. A dedicated `typecheck` command was missing because
 ## Consequences
 
 - Development and production runtimes no longer require experimental loaders or
-  custom flags; Node 20–23 runs the compiled CommonJS output directly.
-- `tsup` produces deterministic CommonJS bundles (and, when enabled, declaration
-  files), reducing drift between local development and production deploys.
+  custom flags; Node 20–23 runs the compiled ESM output directly under the
+  standard loader.
+- `tsup` produces deterministic ESM bundles (and, when enabled, declaration
+  files), reducing drift between local development and production deploys while
+  matching the `type: module` expectation of downstream tooling.
 - The stricter compiler settings surface previously hidden issues; teams must
   address outstanding errors before the CI `typecheck` gate can be flipped to
   “required”.
@@ -58,24 +62,25 @@ analysis and bundling. A dedicated `typecheck` command was missing because
 
 1. **Stay on `ts-node`.** Rejected because modern Node has native ESM support;
    custom loaders add startup overhead and platform-specific instability.
-2. **Use `esbuild` CLI instead of `tsup`.** `tsup` wraps `esbuild` but adds
+2. **Keep emitting CommonJS bundles.** Rejected because the package already
+   declares `"type": "module"`, and forcing a CommonJS artifact would reintroduce
+   dual-module resolution issues for downstream tooling and deployment targets.
+3. **Use `esbuild` CLI instead of `tsup`.** `tsup` wraps `esbuild` but adds
    sensible defaults (bundle splitting, declaration emit) with less manual
    wiring.
-3. **Emit ESM-only bundles.** Rejected for the primary build because Node’s ESM
-   loader differences across versions routinely introduced regressions in our
-   deployment targets. CommonJS keeps runtime friction low while still allowing
-   ESM-friendly authoring during development.
 
 ## Rollback Plan
 
-If the new stack causes blocking regressions, restore commit `2ec8852` (the last
-known good `ts-node` setup) and reinstate the previous scripts:
+If the ESM bundle introduces blocking regressions, reconfigure the backend to
+emit CommonJS again:
 
-- Revert `src/backend/package.json` scripts to `tsx watch server/devServer.ts`
-  and `tsc --project tsconfig.json`.
-- Restore the old directory layout (`data/`, `facade/`, `server/` as top-level
-  siblings of `src/`).
-- Remove the `typecheck` script and delete `tsup` from dependencies.
-- Re-add `ts-node` to the workspace dev dependencies.
+- Update `src/backend/package.json` to set `"type": "commonjs"`, point `main`
+  to `dist/index.cjs`, and adjust `start` to `node dist/index.cjs`.
+- Change the `tsup` build target to `--format cjs` and rename the output file to
+  `dist/index.cjs`.
+- Re-introduce any compatibility shims required by downstream consumers that
+  rely on CommonJS semantics.
 
-Rollback requires reintroducing the legacy loader flags when running on Node 20.
+If loader issues persist even after reverting to CommonJS, fall back to the
+pre-toolchain-migration stack (`ts-node` + legacy directory layout) by restoring
+commit `2ec8852` and reapplying the historical scripts.

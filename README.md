@@ -12,8 +12,9 @@ while a React front end streams telemetry for real-time visualization.
 ## Architecture at a Glance
 
 - **Backend** – Deterministic simulation engine, schema validation, and
-  Socket.IO gateway housed under `packages/backend`.
-- **Frontend** – Vite + React dashboard in `apps/frontend` for live telemetry,
+  Socket.IO gateway housed under `src/backend`. The production build ships as an
+  ESM bundle at `dist/index.js` for direct execution on modern Node runtimes.
+- **Frontend** – Vite + React dashboard in `src/frontend` for live telemetry,
   controls, and analytics.
 - **Blueprint data** – Authoritative JSON bundles in `/data` define strains,
   devices, cultivation methods, and price tables per the data dictionary.

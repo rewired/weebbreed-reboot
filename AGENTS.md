@@ -19,24 +19,40 @@
 
 ## 1) Monorepo Layout (pnpm workspaces)
 
+- Root `pnpm-workspace.yaml` groups the backend and frontend packages alongside
+  shared libraries.
+- **Backend package:** `src/backend` (`@weebbreed/backend`). Source lives under
+  `src/backend/src`; build outputs are emitted to `src/backend/dist`. Scripts
+  run with the package directory as the working directory.
+- **Frontend package:** `src/frontend`. React + Vite application code resides in
+  `src/frontend/src`; production assets land in `src/frontend/dist`.
+- **Shared TypeScript modules:** `src/physio` (domain formulas) and
+  `src/runtime` (cross-cutting runtime helpers). These folders are consumed via
+  the `@/` and `@runtime/` path aliases exposed through the workspace
+  TypeScript configs.
+
 ## 2) Toolchain & Config (backend)
 
-- **Dev runner:** `tsx` (`tsx src/index.ts`) — **no experimental loaders**.
+- **Dev runner:** `tsx` (e.g., `pnpm --filter @weebbreed/backend dev`) — **no
+  experimental loaders**.
 - **Testing:** `vitest` (+ happy-dom or Node environment).
 - **Lint/format:** ESLint (TS) + Prettier.
 - **Path alias:** `@/*` → `./src/*` via `tsconfig.json` + `tsconfig.paths.json`.
+- **Build:** `tsup` bundles `src/index.ts` to an **ESM** artifact at
+  `dist/index.js` with sourcemaps. `pnpm start` executes `node dist/index.js`
+  under the package `type: module` contract.
 
-**`packages/backend/tsconfig.json` (minimal)**
+**`src/backend/tsconfig.json` (minimal)**
 
 ---
 
 ## 3) Toolchain & Config (frontend)
 
-- Vite React with TypeScript template.
+- Vite React with TypeScript template under `src/frontend`.
 - No CRA. Keep it lean. Use ESLint + Prettier aligned with backend.
 - Eventually we have to consider to usa a library like TailWind
 
-**`apps/frontend/package.json` (key scripts)**
+**`src/frontend/package.json` (key scripts)**
 
 ```json
 {
@@ -144,7 +160,7 @@ All randomness (pests/events/market) comes from here.
 ## 7) Definition of Done (DoD)
 
 - ✅ No usage of ts-node loaders; no `ExperimentalWarning` on startup.
-- ✅ `pnpm build` produces `packages/backend/dist/**` and `apps/frontend/dist/**`.
+- ✅ `pnpm build` produces `src/backend/dist/**` and `src/frontend/dist/**`.
 - ✅ Golden‑Master tests for physio modules green with tight tolerances.
 - ✅ Deterministic 200‑day run: same seed ⇒ identical summary metrics.
 - ✅ JSON blueprints conform to docs; naming rules respected.
