@@ -1,14 +1,19 @@
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import type { PersonnelNameDirectory, PersonnelRoleBlueprintDraft } from '@/state/models.js';
+import { getEmployeeSkillNames, resetPersonnelSkillBlueprints } from '@/state/models.js';
 import {
   createPersonnel,
   loadPersonnelDirectory,
   loadPersonnelRoleBlueprints,
 } from './personnel.js';
+
+afterEach(() => {
+  resetPersonnelSkillBlueprints();
+});
 
 describe('state/initialization/personnel', () => {
   it('loads personnel name directories with gender-specific files', async () => {
@@ -98,6 +103,90 @@ describe('state/initialization/personnel', () => {
       expect(specialist?.skillProfile.secondary).toBeUndefined();
       expect(specialist?.salary.skillFactor?.base).toBeGreaterThan(0);
       expect(technician).toBeDefined();
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects personnel role blueprints referencing unknown skills', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-role-skills-unknown-'));
+    try {
+      const blueprintDir = path.join(tempDir, 'blueprints');
+      const skillsDir = path.join(blueprintDir, 'personnel', 'skills');
+      const rolesDir = path.join(blueprintDir, 'personnel', 'roles');
+      await fs.mkdir(skillsDir, { recursive: true });
+      await fs.mkdir(rolesDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(skillsDir, 'Research.json'),
+        JSON.stringify({ id: 'Research', name: 'Research' }),
+      );
+
+      await fs.writeFile(
+        path.join(rolesDir, 'Researcher.json'),
+        JSON.stringify(
+          {
+            id: 'Researcher',
+            name: 'Researcher',
+            salary: { basePerTick: 32 },
+            skillProfile: {
+              primary: { skill: 'UnknownSkill', startingLevel: 4 },
+            },
+          } satisfies PersonnelRoleBlueprintDraft,
+          null,
+          2,
+        ),
+      );
+
+      await expect(loadPersonnelRoleBlueprints(tempDir)).rejects.toThrow(
+        /Unknown skill "UnknownSkill"/i,
+      );
+      expect(getEmployeeSkillNames()).toEqual(['Research']);
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('loads role blueprints with skills defined by skill blueprints', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-role-skills-custom-'));
+    try {
+      const blueprintDir = path.join(tempDir, 'blueprints');
+      const skillsDir = path.join(blueprintDir, 'personnel', 'skills');
+      const rolesDir = path.join(blueprintDir, 'personnel', 'roles');
+      await fs.mkdir(skillsDir, { recursive: true });
+      await fs.mkdir(rolesDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(skillsDir, 'Research.json'),
+        JSON.stringify({
+          id: 'Research',
+          name: 'Research',
+          description: 'Applied plant science and analytics.',
+        }),
+      );
+
+      await fs.writeFile(
+        path.join(rolesDir, 'Researcher.json'),
+        JSON.stringify(
+          {
+            id: 'Researcher',
+            name: 'Research Scientist',
+            salary: { basePerTick: 34 },
+            skillProfile: {
+              primary: { skill: 'Research', startingLevel: 5, roll: { min: 3, max: 5 } },
+            },
+          } satisfies PersonnelRoleBlueprintDraft,
+          null,
+          2,
+        ),
+      );
+
+      const roles = await loadPersonnelRoleBlueprints(tempDir);
+      const researcher = roles.find((role) => role.id === 'Researcher');
+
+      expect(researcher).toBeDefined();
+      expect(researcher?.skillProfile.primary.skill).toBe('Research');
+      expect(getEmployeeSkillNames()).toEqual(['Research']);
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }

@@ -45,4 +45,31 @@ describe('saveGameEnvelopeSchema', () => {
     const result = saveGameEnvelopeSchema.safeParse(invalid);
     expect(result.success).toBe(false);
   });
+
+  it('rejects save games that contain unknown personnel skills', async () => {
+    const context = createStateFactoryContext('schema-skill-unknown');
+    const state = await createInitialState(context);
+    const employee = state.personnel.employees[0];
+    expect(employee).toBeDefined();
+    if (employee) {
+      employee.skills = { ...employee.skills, UnknownSkill: 3 };
+    }
+
+    const envelope = {
+      header: {
+        kind: SAVEGAME_KIND,
+        version: '1.0.0',
+        createdAt: '2025-01-01T00:00:00.000Z',
+      },
+      metadata: {
+        tickLengthMinutes: state.metadata.tickLengthMinutes,
+        rngSeed: context.rng.getSeed(),
+      },
+      rng: context.rng.serialize(),
+      state,
+    } as const;
+
+    const result = saveGameEnvelopeSchema.safeParse(envelope);
+    expect(result.success).toBe(false);
+  });
 });

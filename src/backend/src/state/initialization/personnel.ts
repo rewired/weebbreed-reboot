@@ -1,7 +1,14 @@
 import { promises as fs } from 'node:fs';
 import path from 'path';
 import { z } from 'zod';
-import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '../models.js';
+import {
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+  DEFAULT_PERSONNEL_SKILL_BLUEPRINTS,
+  getEmployeeSkillNames,
+  isKnownSkillName,
+  loadPersonnelSkillBlueprints,
+  setPersonnelSkillBlueprints,
+} from '../models.js';
 import type {
   PersonnelNameDirectory,
   PersonnelRoster,
@@ -15,6 +22,7 @@ import type {
   PersonnelRoleSkillRoll,
   PersonnelRoleSkillTemplate,
   PersonnelRoleTertiarySkillConfig,
+  SkillName,
 } from '../models.js';
 import { RngService, RngStream, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { generateId, readJsonFile } from './common.js';
@@ -154,9 +162,25 @@ const skillRollSchema = z
     }
   });
 
+const skillNameSchema: z.ZodType<SkillName> = z
+  .string()
+  .min(1)
+  .superRefine((value, ctx) => {
+    if (!isKnownSkillName(value)) {
+      const allowed = getEmployeeSkillNames();
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          allowed.length > 0
+            ? `Unknown skill "${value}". Allowed skills: ${allowed.join(', ')}`
+            : `Unknown skill "${value}".`,
+      });
+    }
+  }) as z.ZodType<SkillName>;
+
 const skillTemplateSchema: z.ZodType<PersonnelRoleSkillTemplate> = z
   .object({
-    skill: z.enum(EMPLOYEE_SKILL_NAMES),
+    skill: skillNameSchema,
     startingLevel: z.number(),
     roll: skillRollSchema.optional(),
     weight: z.number().optional(),
@@ -507,6 +531,12 @@ const loadLegacyBlueprintDrafts = async (
 export const loadPersonnelRoleBlueprints = async (
   dataDirectory: string,
 ): Promise<PersonnelRoleBlueprint[]> => {
+  try {
+    await loadPersonnelSkillBlueprints(dataDirectory);
+  } catch (error) {
+    setPersonnelSkillBlueprints(DEFAULT_PERSONNEL_SKILL_BLUEPRINTS);
+    throw error;
+  }
   const blueprintRoot = path.join(dataDirectory, 'blueprints');
   const directoryPath = path.join(blueprintRoot, PERSONNEL_ROLE_BLUEPRINT_DIR);
   const draftsFromDirectory = await loadBlueprintDraftsFromDirectory(directoryPath);
