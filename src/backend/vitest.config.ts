@@ -15,10 +15,6 @@ export default defineConfig({
   resolve: {
     alias: [
       {
-        find: '@/physio',
-        replacement: path.resolve(__dirname, '../physio'),
-      },
-      {
         find: '@',
         replacement: path.resolve(__dirname, 'src'),
       },

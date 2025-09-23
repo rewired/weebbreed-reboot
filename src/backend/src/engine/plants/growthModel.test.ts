@@ -3,7 +3,8 @@ import type { PlantState, ZoneEnvironmentState } from '@/state/models.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import { createInitialPhenologyState, createPhenologyConfig } from './phenology.js';
 import type { PhenologyState } from './phenology.js';
-import { computeVpd, updatePlantGrowth } from './growthModel.js';
+import { updatePlantGrowth } from './growthModel.js';
+import { computeVpd } from '@/engine/physio/vpd.js';
 
 const createTestStrain = (): StrainBlueprint => ({
   id: 'strain-test',

@@ -3,7 +3,7 @@ import { SimulationFacade } from './index.js';
 import type { GameState, SimulationEvent } from '@/state/models.js';
 import { EventBus } from '@/lib/eventBus.js';
 import type { SimulationLoop } from '@/sim/loop.js';
-import { saturationVaporPressure } from '@/physio/vpd.js';
+import { saturationVaporPressure } from '@/engine/physio/vpd.js';
 
 const createTestState = (): GameState => ({
   metadata: {

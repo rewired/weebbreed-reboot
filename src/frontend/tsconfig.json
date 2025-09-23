@@ -6,8 +6,7 @@
     "types": ["vite/client"],
     "paths": {
       "@/*": ["*"],
-      "@/ui/*": ["ui/*"],
-      "@/engine/*": ["../../engine/*"]
+      "@/ui/*": ["ui/*"]
     }
   },
   "include": ["src", "vite.config.ts"],

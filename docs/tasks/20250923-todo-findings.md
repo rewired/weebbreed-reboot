@@ -46,3 +46,4 @@ Revise AGENTS.MD and other .md files to reflect current architecture. Document t
 Create tasks to fix the issues:
 Declutter the sourcecode: move /src/physio/_ to /src/backend/src/engine/physio/_ to match other engine subsystems; remove dead alias @/engine from vite.config.ts (points to non-existent /engine at project root).
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Completed 2025-09-23 — Physio utilities now live under the engine, docs updated, and the unused @/engine Vite alias was removed.

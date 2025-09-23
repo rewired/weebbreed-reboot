@@ -3,12 +3,12 @@ import {
   actualVaporPressure,
   saturationVaporPressure,
   vaporPressureDeficit,
-} from '@/physio/vpd.js';
-import { lightSaturationResponse, ppfdToMoles } from '@/physio/ppfd.js';
-import { approachTemperature } from '@/physio/temp.js';
-import { approachRelativeHumidity } from '@/physio/rh.js';
-import { approachCo2, co2HalfSaturationResponse } from '@/physio/co2.js';
-import { estimateTranspirationLiters } from '@/physio/transpiration.js';
+} from '@/engine/physio/vpd.js';
+import { lightSaturationResponse, ppfdToMoles } from '@/engine/physio/ppfd.js';
+import { approachTemperature } from '@/engine/physio/temp.js';
+import { approachRelativeHumidity } from '@/engine/physio/rh.js';
+import { approachCo2, co2HalfSaturationResponse } from '@/engine/physio/co2.js';
+import { estimateTranspirationLiters } from '@/engine/physio/transpiration.js';
 
 const EPSILON = 1e-6;
 

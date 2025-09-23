@@ -1,6 +1,7 @@
 # Weed Breed Physiology Reference
 
-This note documents the simplified canopy physiology formulas implemented in `src/physio`. All
+This note documents the simplified canopy physiology formulas implemented in
+`src/backend/src/engine/physio`. All
 functions are deterministic, pure utilities that operate on **SI units** (unless noted) and are used by
 the simulation engine to derive environment deltas and plant growth responses.
 
