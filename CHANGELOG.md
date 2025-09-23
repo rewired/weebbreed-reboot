@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   automation toggles.
 - Documented Socket.IO transport parity across AGENTS.md, the README, and the
   socket protocol reference; recorded ADR 0006 with the upgrade policy.
+- Explained Socket.IO endpoint discovery (`src/frontend/src/config/socket.ts`,
+  `VITE_SOCKET_URL`, and the localhost default) across AGENTS.md, the socket
+  protocol guide, package READMEs, and ADR 0006 after wiring the shared
+  `SOCKET_URL` constant.
 
 ### Fixed
 

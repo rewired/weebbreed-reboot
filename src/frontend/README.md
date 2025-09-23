@@ -23,6 +23,13 @@ Run these from the repository root unless noted otherwise:
 The workspace-level scripts (e.g. `pnpm dev`) still work; they simply execute
 the same commands for both backend and frontend packages in parallel.
 
+The Socket.IO bridge imports `SOCKET_URL` from
+`src/frontend/src/config/socket.ts`. The helper inspects
+`import.meta.env.VITE_SOCKET_URL` (set via a `.env` file alongside this
+package). When unset it falls back to `http://localhost:7331/socket.io`, which
+matches the backend development default. Override the env variable when running
+the dashboard against a remote or proxied backend.
+
 ## Simulation bridge (`useSimulationBridge`)
 
 `src/frontend/src/hooks/useSimulationBridge.ts` encapsulates the Socket.IO

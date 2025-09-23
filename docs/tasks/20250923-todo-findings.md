@@ -33,6 +33,7 @@ Status: ✅ Duplicate of snapshot/time documentation update (2025-09-24).
 Create tasks to fix the issues:
 Unused config: src/frontend/src/config/socket.ts isn’t used by useSimulationBridge (hardcodes '/socket.io'); wire it up so VITE_SOCKET_URL works in non-proxied deployments.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
+Status: ✅ Completed 2025-09-25 — SOCKET_URL is now documented across AGENTS, READMEs, ADR 0006, and the socket protocol after wiring the shared config helper.
 
 Create tasks to fix the issues:
 Schema vs usage: deviceSchema.settings defines targetCo2 (camel) but code/JSON use targetCO2 (caps) plus other fields (targetTemperature, targetHumidity, targetCO2Range) not in schema; it’s allowed via .passthrough but consider documenting or extending zod for stronger validation.
