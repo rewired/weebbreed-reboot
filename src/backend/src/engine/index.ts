@@ -1,6 +1,7 @@
 export * from './environment/deviceEffects.js';
 export * from './environment/deviceDegradation.js';
 export * from './environment/zoneEnvironment.js';
+export * from './physio/index.js';
 export * from './economy/costAccounting.js';
 export * from './economy/inventoryLots.js';
 export * from './economy/pricing.js';

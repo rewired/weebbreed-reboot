@@ -15,7 +15,6 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/physio/*": ["../physio/*"],
       "@/*": ["src/*"],
       "@runtime/*": ["../runtime/*"]
     },

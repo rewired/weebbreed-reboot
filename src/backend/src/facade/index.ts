@@ -25,7 +25,7 @@ import type {
 import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
 import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
 import { findZone } from '@/engine/world/stateSelectors.js';
-import { saturationVaporPressure } from '@/physio/vpd.js';
+import { saturationVaporPressure } from '@/engine/physio/vpd.js';
 
 const cloneState = <T>(value: T): T => {
   if (typeof structuredClone === 'function') {

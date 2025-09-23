@@ -6,10 +6,10 @@ import {
 } from './climateController.js';
 import type { GameState, RoomState, StructureState, ZoneState } from '@/state/models.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
-import { approachTemperature } from '@/physio/temp.js';
-import { approachRelativeHumidity } from '@/physio/rh.js';
-import { approachCo2 } from '@/physio/co2.js';
-import { computeVpd } from '@/physio/vpd.js';
+import { approachTemperature } from '@/engine/physio/temp.js';
+import { approachRelativeHumidity } from '@/engine/physio/rh.js';
+import { approachCo2 } from '@/engine/physio/co2.js';
+import { computeVpd } from '@/engine/physio/vpd.js';
 import { getZoneGeometry, type ZoneGeometry } from '@/state/geometry.js';
 import {
   AMBIENT_CO2_PPM,

@@ -27,7 +27,8 @@
   run with the package directory as the working directory.
 - **Frontend package:** `src/frontend`. React + Vite application code resides in
   `src/frontend/src`; production assets land in `src/frontend/dist`.
-- **Shared TypeScript modules:** `src/physio` (domain formulas) and
+- **Shared TypeScript modules:** `src/backend/src/engine/physio` (domain
+  formulas packaged with the engine) and
   `src/runtime` (cross-cutting runtime helpers). These folders are consumed via
   the `@/` and `@runtime/` path aliases exposed through the workspace
   TypeScript configs.
@@ -87,14 +88,14 @@
 
 ### 4.2 Physio Modules (pure, unit‑aware)
 
-Create pure TS modules under `src/physio/`:
+Create pure TS modules under `src/backend/src/engine/physio/`:
 
 `vpd.ts`, `ppfd.ts`, `co2.ts`, `temp.ts`, `rh.ts`, `transpiration.ts`
 
 Each exports pure functions with explicit units in JSDoc and TS types.
 Add **Golden‑Master tests** for typical scenarios with tight tolerances (`ε_rel = 1e-6`, `ε_abs = 1e-9`).
 
-**Example stub (`src/physio/vpd.ts`)**
+**Example stub (`src/backend/src/engine/physio/vpd.ts`)**
 
 ```ts
 /**

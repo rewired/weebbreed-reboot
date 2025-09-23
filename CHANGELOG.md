@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normalized rent and maintenance accounting to use hourly base rates scaled by
   the active tick length, keeping recurring costs consistent across runtime tick
   changes.
+- Collocated the physiology helpers with the engine, removed redundant path
+  aliases, and recorded ADR 0007 to explain the consolidation.
 
 ### Fixed
 

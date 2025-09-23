@@ -19,11 +19,11 @@ import {
   type ResourceDemandResult,
   type ResourceSupply,
 } from './resourceDemand.js';
-import { lightSaturationResponse, ppfdToMoles } from '@/physio/ppfd.js';
-import { gaussianResponse } from '@/physio/temp.js';
-import { co2HalfSaturationResponse } from '@/physio/co2.js';
-import { vaporPressureDeficit } from '@/physio/vpd.js';
-import { estimateTranspirationLiters } from '@/physio/transpiration.js';
+import { lightSaturationResponse, ppfdToMoles } from '@/engine/physio/ppfd.js';
+import { gaussianResponse } from '@/engine/physio/temp.js';
+import { co2HalfSaturationResponse } from '@/engine/physio/co2.js';
+import { vaporPressureDeficit } from '@/engine/physio/vpd.js';
+import { estimateTranspirationLiters } from '@/engine/physio/transpiration.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -38,7 +38,7 @@ const HEALTH_ALERT_THRESHOLDS = [
   { threshold: 0.3, severity: 'critical' as const },
 ];
 
-export const computeVpd = vaporPressureDeficit;
+const computeVpd = vaporPressureDeficit;
 
 const resolveLightHalfSaturation = (strain: StrainBlueprint, stage: PlantStage): number => {
   const phase = mapStageToGrowthPhase(stage);
