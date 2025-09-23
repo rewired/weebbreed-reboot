@@ -131,10 +131,10 @@ export const startBackendServer = async (
       serverLogger.info(
         {
           personnelBootstrap: {
-            male: stats?.firstNamesMale?.length ?? 0,
-            female: stats?.firstNamesFemale?.length ?? 0,
+            male: stats?.firstNamesMale.length ?? 0,
+            female: stats?.firstNamesFemale.length ?? 0,
             lastNames: stats?.lastNames.length ?? 0,
-            seeds: stats?.randomSeeds?.length ?? 0,
+            seeds: stats?.randomSeeds.length ?? 0,
           },
         },
         'Provisioned personnel directory assets.',

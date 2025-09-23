@@ -117,7 +117,8 @@ const createPhaseContext = (
 
 describe('JobMarketService', () => {
   const directory: PersonnelNameDirectory = {
-    firstNames: ['Alice', 'Bob', 'Charlie'],
+    firstNamesMale: ['Liam', 'Noah', 'Ethan'],
+    firstNamesFemale: ['Ava', 'Emma', 'Olivia'],
     lastNames: ['Farmer', 'Grower', 'Harvester'],
     traits: [
       {
@@ -133,6 +134,7 @@ describe('JobMarketService', () => {
         type: 'negative',
       },
     ],
+    randomSeeds: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
   };
 
   it('refreshes candidates from remote provider with deterministic seed', async () => {
@@ -174,12 +176,17 @@ describe('JobMarketService', () => {
     const state = createGameState();
     const rng = new RngService('seed-offline-test');
     const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
+    const offlineDirectory: PersonnelNameDirectory = {
+      ...directory,
+      randomSeeds: ['alpha', 'beta'],
+    };
+
     const service = new JobMarketService({
       state,
       rng,
-      personnelDirectory: directory,
+      personnelDirectory: offlineDirectory,
       fetchImpl: fetchMock,
-      batchSize: 2,
+      batchSize: 3,
     });
 
     const context = createCommandContext(state);
@@ -187,9 +194,21 @@ describe('JobMarketService', () => {
 
     expect(result.ok).toBe(true);
     expect(result.data?.source).toBe('local');
-    expect(state.personnel.applicants).toHaveLength(2);
-    expect(state.personnel.applicants[0].personalSeed.startsWith('offline-')).toBe(true);
-    expect(state.personnel.applicants[0].gender).toBeDefined();
+    expect(state.personnel.applicants).toHaveLength(3);
+    expect(state.personnel.applicants[0]?.personalSeed).toBe('alpha');
+    expect(state.personnel.applicants[1]?.personalSeed).toBe('beta');
+    expect(state.personnel.applicants[2]?.personalSeed?.startsWith('offline-')).toBe(true);
+
+    const femaleNames = new Set(offlineDirectory.firstNamesFemale);
+    const maleNames = new Set(offlineDirectory.firstNamesMale);
+    for (const applicant of state.personnel.applicants) {
+      const [firstName] = applicant.name.split(' ');
+      if (femaleNames.has(firstName)) {
+        expect(applicant.gender).toBe('female');
+      } else if (maleNames.has(firstName)) {
+        expect(applicant.gender).toBe('male');
+      }
+    }
     expect(context.events.size).toBe(1);
   });
 
@@ -233,5 +252,30 @@ describe('JobMarketService', () => {
     await commitHook(thirdContext);
     state.clock.tick = 168;
     expect(thirdBuffer).toHaveLength(1);
+  });
+
+  it('consumes stored offline seeds sequentially across refreshes', async () => {
+    const state = createGameState();
+    const rng = new RngService('seed-offline-seq');
+    const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
+    const service = new JobMarketService({
+      state,
+      rng,
+      personnelDirectory: directory,
+      fetchImpl: fetchMock,
+      batchSize: 2,
+    });
+
+    const firstContext = createCommandContext(state);
+    const firstResult = await service.refreshCandidates({}, firstContext);
+    expect(firstResult.ok).toBe(true);
+    expect(state.personnel.applicants[0]?.personalSeed).toBe('alpha');
+    expect(state.personnel.applicants[1]?.personalSeed).toBe('beta');
+
+    const secondContext = createCommandContext(state);
+    const secondResult = await service.refreshCandidates({}, secondContext);
+    expect(secondResult.ok).toBe(true);
+    expect(state.personnel.applicants[0]?.personalSeed).toBe('gamma');
+    expect(state.personnel.applicants[1]?.personalSeed).toBe('delta');
   });
 });

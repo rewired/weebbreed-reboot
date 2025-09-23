@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
+import type { PersonnelNameDirectory } from '@/state/models.js';
 import { createPersonnel, loadPersonnelDirectory } from './personnel.js';
 
 describe('state/initialization/personnel', () => {
@@ -10,16 +11,18 @@ describe('state/initialization/personnel', () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-personnel-'));
     try {
       const personnelDir = path.join(tempDir, 'personnel');
+      const namesDir = path.join(personnelDir, 'names');
       await fs.mkdir(personnelDir, { recursive: true });
+      await fs.mkdir(namesDir, { recursive: true });
       await fs.writeFile(
-        path.join(personnelDir, 'firstNamesMale.json'),
+        path.join(namesDir, 'firstNamesMale.json'),
         JSON.stringify(['Alex', 'Brian']),
       );
       await fs.writeFile(
-        path.join(personnelDir, 'firstNamesFemale.json'),
+        path.join(namesDir, 'firstNamesFemale.json'),
         JSON.stringify(['Alice', 'Beatrice']),
       );
-      await fs.writeFile(path.join(personnelDir, 'lastNames.json'), JSON.stringify(['Patel']));
+      await fs.writeFile(path.join(namesDir, 'lastNames.json'), JSON.stringify(['Patel']));
       await fs.writeFile(path.join(personnelDir, 'randomSeeds.json'), JSON.stringify(['seed-0']));
       await fs.writeFile(
         path.join(personnelDir, 'traits.json'),
@@ -38,28 +41,8 @@ describe('state/initialization/personnel', () => {
       expect(directory.firstNamesMale).toEqual(['Alex', 'Brian']);
       expect(directory.firstNamesFemale).toEqual(['Alice', 'Beatrice']);
       expect(directory.randomSeeds).toEqual(['seed-0']);
-      expect(directory.firstNames).toEqual(['Alex', 'Alice', 'Beatrice', 'Brian']);
       expect(directory.lastNames).toContain('Patel');
       expect(directory.traits[0]?.id).toBe('trait_detail');
-    } finally {
-      await fs.rm(tempDir, { recursive: true, force: true });
-    }
-  });
-
-  it('falls back to legacy first name files when gendered lists are unavailable', async () => {
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-personnel-legacy-'));
-    try {
-      const personnelDir = path.join(tempDir, 'personnel');
-      await fs.mkdir(personnelDir, { recursive: true });
-      await fs.writeFile(path.join(personnelDir, 'firstNames.json'), JSON.stringify(['Alex']));
-      await fs.writeFile(path.join(personnelDir, 'lastNames.json'), JSON.stringify(['Patel']));
-      await fs.writeFile(path.join(personnelDir, 'traits.json'), JSON.stringify([]));
-
-      const directory = await loadPersonnelDirectory(tempDir);
-
-      expect(directory.firstNames).toEqual(['Alex']);
-      expect(directory.firstNamesMale).toBeUndefined();
-      expect(directory.firstNamesFemale).toBeUndefined();
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
@@ -68,10 +51,12 @@ describe('state/initialization/personnel', () => {
   it('creates personnel with role-based shift preferences and morale averages', () => {
     const rng = new RngService('personnel-roster');
     const idStream = rng.getStream(RNG_STREAM_IDS.ids);
-    const directory = {
-      firstNames: ['Morgan', 'Drew', 'Sasha'],
+    const directory: PersonnelNameDirectory = {
+      firstNamesMale: ['Morgan', 'Drew'],
+      firstNamesFemale: ['Sasha'],
       lastNames: ['Nguyen', 'Lopez'],
       traits: [],
+      randomSeeds: [],
     };
 
     const roster = createPersonnel(

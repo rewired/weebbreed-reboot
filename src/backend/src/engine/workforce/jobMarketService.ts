@@ -150,6 +150,8 @@ export class JobMarketService {
 
   private directoryPromise: Promise<PersonnelNameDirectory | undefined> | null = null;
 
+  private offlineSeedIndex = 0;
+
   private lastRefresh: LastRefreshState | null = null;
 
   private readonly dataDirectory?: string;
@@ -172,6 +174,9 @@ export class JobMarketService {
     }
     this.directory = options.personnelDirectory;
     this.dataDirectory = options.dataDirectory;
+    if (this.directory) {
+      this.offlineSeedIndex = 0;
+    }
   }
 
   createCommitHook(): SimulationPhaseHandler {
@@ -513,20 +518,40 @@ export class JobMarketService {
 
   private async generateOfflineCandidates(count: number, week: number): Promise<ApplicantState[]> {
     const directory = await this.getDirectory();
-    const firstNames = directory?.firstNames ?? [];
+    const firstNamesMale = directory?.firstNamesMale ?? [];
+    const firstNamesFemale = directory?.firstNamesFemale ?? [];
     const lastNames = directory?.lastNames ?? [];
     const applicants: ApplicantState[] = [];
     for (let index = 0; index < count; index += 1) {
-      const firstName =
-        firstNames.length > 0 ? this.jobStream.pick(firstNames) : `Candidate${week}-${index + 1}`;
-      const lastName = lastNames.length > 0 ? this.jobStream.pick(lastNames) : 'Applicant';
-      const gender = this.jobStream.nextBoolean() ? 'female' : 'male';
-      const personalSeed = this.generatePersonalSeed(week);
+      const fallbackFirstName = `Candidate${week}-${index + 1}`;
+      const maleAvailable = firstNamesMale.length > 0;
+      const femaleAvailable = firstNamesFemale.length > 0;
+      let chosenFirstName: string | undefined;
+      let gender: ApplicantState['gender'] = undefined;
+
+      if (maleAvailable && femaleAvailable) {
+        if (this.jobStream.nextBoolean()) {
+          chosenFirstName = this.jobStream.pick(firstNamesFemale);
+          gender = 'female';
+        } else {
+          chosenFirstName = this.jobStream.pick(firstNamesMale);
+          gender = 'male';
+        }
+      } else if (femaleAvailable) {
+        chosenFirstName = this.jobStream.pick(firstNamesFemale);
+        gender = 'female';
+      } else if (maleAvailable) {
+        chosenFirstName = this.jobStream.pick(firstNamesMale);
+        gender = 'male';
+      }
+
+      const lastNameBase = lastNames.length > 0 ? this.jobStream.pick(lastNames) : 'Applicant';
+      const personalSeed = this.takeOfflineSeed(directory, week);
       applicants.push(
         await this.createCandidate(
           {
-            firstName: this.normaliseName(firstName, `Candidate${index + 1}`),
-            lastName: this.normaliseName(lastName, 'Applicant'),
+            firstName: this.normaliseName(chosenFirstName, fallbackFirstName),
+            lastName: this.normaliseName(lastNameBase, 'Applicant'),
             gender,
             personalSeed,
           },
@@ -539,6 +564,21 @@ export class JobMarketService {
 
   private generatePersonalSeed(week: number): string {
     return `offline-${week}-${this.jobStream.nextString(10)}`;
+  }
+
+  private takeOfflineSeed(directory: PersonnelNameDirectory | undefined, week: number): string {
+    const seeds = directory?.randomSeeds ?? [];
+    while (this.offlineSeedIndex < seeds.length) {
+      const seed = seeds[this.offlineSeedIndex];
+      this.offlineSeedIndex += 1;
+      if (typeof seed === 'string') {
+        const trimmed = seed.trim();
+        if (trimmed.length > 0) {
+          return trimmed;
+        }
+      }
+    }
+    return this.generatePersonalSeed(week);
   }
 
   private normaliseName(value: string | undefined, fallback: string): string {
@@ -583,6 +623,7 @@ export class JobMarketService {
     this.directoryPromise = loadPersonnelDirectory(this.dataDirectory)
       .then((directory) => {
         this.directory = directory;
+        this.offlineSeedIndex = 0;
         return directory;
       })
       .catch((error) => {
