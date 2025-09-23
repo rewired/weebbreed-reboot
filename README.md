@@ -18,6 +18,10 @@ while a React front end streams telemetry for real-time visualization.
   controls, and analytics.
 - **Blueprint data** – Authoritative JSON bundles in `/data` define strains,
   devices, cultivation methods, and price tables per the data dictionary.
+- **Telemetry contract** – Socket and SSE gateways stream
+  `SimulationSnapshot` payloads plus scheduler `TimeStatus` metadata. The shape
+  is documented in [`docs/system/socket_protocol.md`](docs/system/socket_protocol.md)
+  and anchored by ADR 0005.
 
 Detailed architecture, module boundaries, and naming rules live in the
 workspace documentation. Start with the product vision and system references in
@@ -30,7 +34,9 @@ workspace documentation. Start with the product vision and system references in
   Keep a Changelog convention with Semantic Versioning.
 - Accepted architecture decisions are recorded in `docs/system/adr/`. The
   TypeScript toolchain direction lives in
-  [`docs/system/adr/0001-typescript-toolchain.md`](docs/system/adr/0001-typescript-toolchain.md).
+  [`docs/system/adr/0001-typescript-toolchain.md`](docs/system/adr/0001-typescript-toolchain.md)
+  and the snapshot/time-status contract is captured in
+  [`docs/system/adr/0005-snapshot-time-sync.md`](docs/system/adr/0005-snapshot-time-sync.md).
 
 ## Continuous Verification
 

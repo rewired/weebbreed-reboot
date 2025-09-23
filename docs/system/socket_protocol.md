@@ -33,7 +33,10 @@ buildSimulationSnapshot(state, repository))`.
    - `gateway.protocol` – `{ version: 1 }` to allow clients to negotiate
      breaking changes.
    - `time.status` – `{ status: TimeStatus }`, mirroring the façade scheduler
-     state (running/paused, tick, speed, targetTickRate).
+     state (running/paused, tick, speed, targetTickRate). This event is sent as
+     part of the handshake so dashboards can boot their clock, but ongoing time
+     deltas are conveyed inside every `simulationUpdate` payload (see `time`
+     below). There is no separate heartbeat event for the scheduler.
    - `simulationUpdate` – a seed payload containing the latest snapshot. The
      structure is identical to the regular update batches documented below and
      always contains exactly one entry.
@@ -78,19 +81,65 @@ Batched snapshot diff and event bundles. Payload:
       ],
       "snapshot": {
         "tick": 123,
-        "clock": { "tick": 123, "isPaused": false, "targetTickRate": 1 },
+        "clock": {
+          "tick": 123,
+          "isPaused": false,
+          "targetTickRate": 1,
+          "startedAt": "2025-09-23T08:00:00Z",
+          "lastUpdatedAt": "2025-09-23T08:05:00Z"
+        },
+        "structures": [
+          {
+            "id": "structure-1",
+            "name": "Flagship Campus",
+            "status": "active",
+            "footprint": { "length": 40, "width": 24, "height": 8, "area": 960, "volume": 7680 },
+            "rentPerTick": 540,
+            "roomIds": ["room-1"]
+          }
+        ],
+        "rooms": [
+          {
+            "id": "room-1",
+            "name": "Bloom Room A",
+            "structureId": "structure-1",
+            "structureName": "Flagship Campus",
+            "purposeId": "purpose-bloom",
+            "purposeKind": "bloom",
+            "purposeName": "Bloom Suite",
+            "purposeFlags": { "allowsFlowering": true },
+            "area": 240,
+            "height": 4,
+            "volume": 960,
+            "cleanliness": 0.92,
+            "maintenanceLevel": 0.88,
+            "zoneIds": ["zone-1"]
+          }
+        ],
         "zones": [
           {
             "id": "zone-1",
             "name": "North Bloom",
             "structureId": "structure-1",
+            "structureName": "Flagship Campus",
             "roomId": "room-1",
+            "roomName": "Bloom Room A",
+            "area": 240,
+            "ceilingHeight": 4,
+            "volume": 960,
             "environment": {
               "temperature": 24.1,
               "relativeHumidity": 0.52,
               "co2": 980,
               "ppfd": 540,
               "vpd": 1.28
+            },
+            "resources": {
+              "waterLiters": 180,
+              "nutrientSolutionLiters": 45,
+              "nutrientStrength": 1.1,
+              "substrateHealth": 0.84,
+              "reservoirLevel": 0.66
             },
             "metrics": {
               "averageTemperature": 23.8,
@@ -100,6 +149,26 @@ Batched snapshot diff and event bundles. Payload:
               "stressLevel": 0.12,
               "lastUpdatedTick": 123
             },
+            "devices": [
+              {
+                "id": "device-1",
+                "blueprintId": "hvac-basic",
+                "kind": "hvac",
+                "name": "HVAC A1",
+                "zoneId": "zone-1",
+                "status": "operational",
+                "efficiency": 0.95,
+                "runtimeHours": 320,
+                "maintenance": {
+                  "lastServiceTick": 90,
+                  "nextDueTick": 210,
+                  "condition": 0.92,
+                  "runtimeHoursAtLastService": 300,
+                  "degradation": 0.08
+                },
+                "settings": { "targetTemperature": 24 }
+              }
+            ],
             "plants": [
               {
                 "id": "plant-1",
@@ -110,11 +179,67 @@ Batched snapshot diff and event bundles. Payload:
                 "biomassDryGrams": 152.4,
                 "yieldDryGrams": 45.2
               }
-            ]
+            ],
+            "control": {
+              "setpoints": {
+                "temperature": 24,
+                "humidity": 0.52,
+                "co2": 1000,
+                "ppfd": 520,
+                "vpd": 1.2
+              }
+            },
+            "health": {
+              "diseases": 0,
+              "pests": 0,
+              "pendingTreatments": 0,
+              "appliedTreatments": 1,
+              "reentryRestrictedUntilTick": 1440,
+              "preHarvestRestrictedUntilTick": 1500
+            }
           }
-        ]
+        ],
+        "personnel": {
+          "employees": [
+            {
+              "id": "emp-1",
+              "name": "R. Botanist",
+              "role": "grower",
+              "salaryPerTick": 120,
+              "morale": 0.82,
+              "energy": 0.76,
+              "maxMinutesPerTick": 300,
+              "status": "active",
+              "assignedStructureId": "structure-1"
+            }
+          ],
+          "applicants": [
+            {
+              "id": "app-7",
+              "name": "J. Apprentice",
+              "desiredRole": "technician",
+              "expectedSalary": 80
+            }
+          ],
+          "overallMorale": 0.79
+        },
+        "finance": {
+          "cashOnHand": 125000,
+          "reservedCash": 5000,
+          "totalRevenue": 182000,
+          "totalExpenses": 76000,
+          "netIncome": 106000,
+          "lastTickRevenue": 2400,
+          "lastTickExpenses": 860
+        }
       },
-      "time": { "running": true, "paused": false, "speed": 1, "tick": 123, "targetTickRate": 1 }
+      "time": {
+        "running": true,
+        "paused": false,
+        "speed": 1,
+        "tick": 123,
+        "targetTickRate": 1
+      }
     }
   ]
 }
@@ -122,10 +247,27 @@ Batched snapshot diff and event bundles. Payload:
 
 - Batching window defaults to **120 ms** (configurable) or a maximum of five
   ticks before the buffer flushes.
-- `snapshot` is a light-weight view focusing on zone telemetry and plant status.
-  UI consumers should treat it as ephemeral state (never mutate in place).
+- `snapshot` is generated via `buildSimulationSnapshot` and mirrors the
+  `SimulationSnapshot` TypeScript contract (structures, rooms, zones, personnel,
+  finance). All nested objects are read-only views over the authoritative state;
+  clone before mutating.
+- `clock` is the persisted simulation clock (`GameState.clock`). The ISO string
+  fields (`startedAt`, `lastUpdatedAt`) represent wall-clock timestamps and are
+  stable across save/load.
+- `time` mirrors `SimulationFacade.getTimeStatus()` and carries
+  `{ running, paused, speed, tick, targetTickRate }`. It is computed when the
+  packet is produced and may briefly diverge from the persisted clock while a
+  control command is settling (e.g. `running: false`, `paused: false` during a
+  scheduler restart). `time.tick` always matches the snapshot tick emitted in
+  the same entry.
 - The `events` array repeats the domain events emitted during the tick for
   convenience and matches the structure forwarded via `domainEvents`.
+- `ts` represents the emission timestamp. If the originating simulation event
+  lacks a timestamp the gateway falls back to `Date.now()` when the packet is
+  assembled.
+- `durationMs` and `phaseTimings` surface tick duration metrics when the loop
+  supplies them. Manual `step` calls that short-circuit instrumentation omit
+  these fields.
 
 ### `sim.tickCompleted`
 
@@ -279,6 +421,11 @@ Discriminated union on `action`:
 All payloads are validated with Zod before the façade command is executed. If
 validation fails the façade is not touched and the client receives an
 `ERR_VALIDATION` response immediately.
+
+Successful control commands return the updated `TimeStatus` in
+`simulationControl.result.data` (mirroring the `time` block in telemetry) and may
+trigger a new `simulationUpdate` batch if a tick is processed as part of the
+operation.
 
 ### `config.update`
 
