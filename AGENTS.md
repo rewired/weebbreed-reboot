@@ -48,20 +48,22 @@
 
 ## 3) Toolchain & Config (frontend)
 
-- Vite React with TypeScript template under `src/frontend`.
-- No CRA. Keep it lean. Use ESLint + Prettier aligned with backend.
-- Eventually we have to consider to usa a library like TailWind
+- React + Vite TypeScript app under `src/frontend`. No CRA. Keep the setup lean and
+  align ESLint/Prettier rules with the backend package.
+- Tailwind CSS is part of the standard UI stack. It is wired through
+  `index.css`, `postcss.config.js`, and `tailwind.config.js` with design tokens
+  exposed as CSS custom properties.
 
-**`src/frontend/package.json` (key scripts)**
+**`src/frontend/package.json` scripts**
 
 ```json
 {
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
-    "format": "prettier --write ."
+    "lint": "eslint .",
+    "test": "vitest run",
+    "preview": "vite preview"
   }
 }
 ```
