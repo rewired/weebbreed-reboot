@@ -1,3 +1,4 @@
+import { promises as fs } from 'node:fs';
 import path from 'path';
 import { z } from 'zod';
 import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '../models.js';
@@ -9,6 +10,7 @@ import type {
   EmployeeSkills,
   EmployeeShiftAssignment,
   PersonnelRoleBlueprint,
+  PersonnelRoleBlueprintDraft,
   PersonnelRoleSalaryConfig,
   PersonnelRoleSkillRoll,
   PersonnelRoleSkillTemplate,
@@ -107,7 +109,9 @@ export const loadPersonnelDirectory = async (
   } satisfies PersonnelNameDirectory;
 };
 
-const PERSONNEL_ROLE_BLUEPRINT_FILE = 'personnelRoles.json';
+const PERSONNEL_ROLE_BLUEPRINT_DIR = path.join('personnel', 'roles');
+const PERSONNEL_ROLE_BLUEPRINT_EXTENSION = '.json';
+const LEGACY_PERSONNEL_ROLE_BLUEPRINT_FILE = 'personnelRoles.json';
 
 const FALLBACK_ROLE_INDEX = new Map<string, PersonnelRoleBlueprint>(
   DEFAULT_PERSONNEL_ROLE_BLUEPRINTS.map((role) => [role.id, role]),
@@ -193,27 +197,29 @@ const salaryRandomRangeSchema = z
 
 const salarySchema = z
   .object({
-    basePerTick: z.number(),
+    basePerTick: z.number().optional(),
     skillFactor: salaryFactorSchema.optional(),
     randomRange: salaryRandomRangeSchema.optional(),
     skillWeights: salaryWeightsSchema.optional(),
   })
   .passthrough();
 
-const roleBlueprintSchema: z.ZodType<PersonnelRoleBlueprint> = z
+const roleBlueprintSchema: z.ZodType<PersonnelRoleBlueprintDraft> = z
   .object({
     id: z.string().min(1),
-    name: z.string().min(1),
+    name: z.string().min(1).optional(),
     description: z.string().optional(),
     preferredShiftId: z.string().optional(),
     maxMinutesPerTick: z.number().positive().optional(),
     roleWeight: z.number().nonnegative().optional(),
-    salary: salarySchema,
-    skillProfile: z.object({
-      primary: skillTemplateSchema,
-      secondary: skillTemplateSchema.optional(),
-      tertiary: tertiarySkillSchema.optional(),
-    }),
+    salary: salarySchema.optional(),
+    skillProfile: z
+      .object({
+        primary: skillTemplateSchema.optional(),
+        secondary: skillTemplateSchema.optional(),
+        tertiary: tertiarySkillSchema.optional(),
+      })
+      .optional(),
   })
   .passthrough();
 
@@ -347,10 +353,13 @@ const normalizeTertiarySkills = (
   return normalized;
 };
 
-const normalizePersonnelRole = (role: PersonnelRoleBlueprint): PersonnelRoleBlueprint => {
+const normalizePersonnelRole = (
+  role: PersonnelRoleBlueprintDraft | PersonnelRoleBlueprint,
+): PersonnelRoleBlueprint => {
   const fallback = FALLBACK_ROLE_INDEX.get(role.id);
-  const basePerTick = isFiniteNumber(role.salary?.basePerTick)
-    ? role.salary.basePerTick
+  const overrideSalary = role.salary;
+  const basePerTick = isFiniteNumber(overrideSalary?.basePerTick)
+    ? overrideSalary.basePerTick
     : (fallback?.salary.basePerTick ?? 20);
   const fallbackFactor = fallback?.salary.skillFactor ?? GENERIC_SALARY_FACTOR;
   const fallbackRandomRange = fallback?.salary.randomRange ?? GENERIC_SALARY_RANDOM_RANGE;
@@ -359,24 +368,28 @@ const normalizePersonnelRole = (role: PersonnelRoleBlueprint): PersonnelRoleBlue
     basePerTick,
     skillFactor: {
       ...fallbackFactor,
-      ...(role.salary.skillFactor ?? {}),
+      ...(overrideSalary?.skillFactor ?? {}),
     },
     randomRange:
-      mergeRandomRange(fallbackRandomRange, role.salary.randomRange) ?? fallbackRandomRange,
+      mergeRandomRange(fallbackRandomRange, overrideSalary?.randomRange) ?? fallbackRandomRange,
     skillWeights: {
       ...fallbackSkillWeights,
-      ...(role.salary.skillWeights ?? {}),
+      ...(overrideSalary?.skillWeights ?? {}),
     },
   } satisfies PersonnelRoleSalaryConfig;
 
-  const primary = normalizeSkillTemplate(role.skillProfile.primary, fallback?.skillProfile.primary);
-  const secondarySource = role.skillProfile.secondary ?? fallback?.skillProfile.secondary;
+  const primarySource = role.skillProfile?.primary ?? fallback?.skillProfile.primary;
+  if (!primarySource) {
+    throw new Error(`Personnel role blueprint "${role.id}" is missing a primary skill definition.`);
+  }
+  const primary = normalizeSkillTemplate(primarySource, fallback?.skillProfile.primary);
+  const secondarySource = role.skillProfile?.secondary ?? fallback?.skillProfile.secondary;
   const secondary = secondarySource
     ? normalizeSkillTemplate(secondarySource, fallback?.skillProfile.secondary)
     : undefined;
   const tertiary = normalizeTertiarySkills(
     fallback?.skillProfile.tertiary,
-    role.skillProfile.tertiary,
+    role.skillProfile?.tertiary,
   );
 
   const skillProfile: PersonnelRoleBlueprint['skillProfile'] = { primary };
@@ -403,7 +416,7 @@ const normalizePersonnelRole = (role: PersonnelRoleBlueprint): PersonnelRoleBlue
 };
 
 export const normalizePersonnelRoleBlueprints = (
-  roles: readonly PersonnelRoleBlueprint[] | undefined,
+  roles: readonly (PersonnelRoleBlueprintDraft | PersonnelRoleBlueprint)[] | undefined,
 ): PersonnelRoleBlueprint[] => {
   const result = new Map<string, PersonnelRoleBlueprint>();
   for (const fallback of DEFAULT_PERSONNEL_ROLE_BLUEPRINTS) {
@@ -417,23 +430,95 @@ export const normalizePersonnelRoleBlueprints = (
   return Array.from(result.values());
 };
 
-export const loadPersonnelRoleBlueprints = async (
-  dataDirectory: string,
-): Promise<PersonnelRoleBlueprint[]> => {
-  const blueprintPath = path.join(dataDirectory, 'blueprints', PERSONNEL_ROLE_BLUEPRINT_FILE);
+const listBlueprintFiles = async (directory: string): Promise<string[] | undefined> => {
+  try {
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    const files = entries
+      .filter((entry) => entry.isFile())
+      .map((entry) => entry.name)
+      .filter((name) => name.toLowerCase().endsWith(PERSONNEL_ROLE_BLUEPRINT_EXTENSION))
+      .sort((a, b) => a.localeCompare(b));
+    return files.length > 0 ? files : undefined;
+  } catch (error) {
+    const cause = error as NodeJS.ErrnoException;
+    if (cause.code === 'ENOENT') {
+      return undefined;
+    }
+    throw new Error(
+      `Failed to read personnel role blueprint directory at ${directory}: ${cause.message}`,
+    );
+  }
+};
+
+const parseRoleBlueprintDraft = (
+  raw: unknown,
+  sourceLabel: string,
+): PersonnelRoleBlueprintDraft => {
+  const parsed = roleBlueprintSchema.safeParse(raw);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const pathInfo = issue?.path?.length ? ` at ${issue.path.join('.')}` : '';
+    throw new Error(
+      `Invalid personnel role blueprint in ${sourceLabel}${pathInfo}: ${issue?.message ?? 'unknown validation error'}`,
+    );
+  }
+  return parsed.data;
+};
+
+const loadBlueprintDraftsFromDirectory = async (
+  blueprintDirectory: string,
+): Promise<PersonnelRoleBlueprintDraft[] | undefined> => {
+  const files = await listBlueprintFiles(blueprintDirectory);
+  if (!files) {
+    return undefined;
+  }
+  const drafts: PersonnelRoleBlueprintDraft[] = [];
+  for (const fileName of files) {
+    const filePath = path.join(blueprintDirectory, fileName);
+    const raw = await readJsonFile<unknown>(filePath);
+    if (raw === undefined) {
+      continue;
+    }
+    drafts.push(parseRoleBlueprintDraft(raw, filePath));
+  }
+  return drafts;
+};
+
+const loadLegacyBlueprintDrafts = async (
+  blueprintPath: string,
+): Promise<PersonnelRoleBlueprintDraft[] | undefined> => {
   const raw = await readJsonFile<unknown>(blueprintPath);
   if (!raw) {
-    return normalizePersonnelRoleBlueprints(DEFAULT_PERSONNEL_ROLE_BLUEPRINTS);
+    return undefined;
   }
   const parsed = roleFileSchema.safeParse(raw);
   if (!parsed.success) {
     const issue = parsed.error.issues[0];
     const pathInfo = issue?.path?.length ? ` at ${issue.path.join('.')}` : '';
     throw new Error(
-      `Invalid personnel role blueprint${pathInfo}: ${issue?.message ?? 'unknown validation error'}`,
+      `Invalid personnel role blueprint in ${blueprintPath}${pathInfo}: ${
+        issue?.message ?? 'unknown validation error'
+      }`,
     );
   }
-  return normalizePersonnelRoleBlueprints(parsed.data.roles);
+  return parsed.data.roles;
+};
+
+export const loadPersonnelRoleBlueprints = async (
+  dataDirectory: string,
+): Promise<PersonnelRoleBlueprint[]> => {
+  const blueprintRoot = path.join(dataDirectory, 'blueprints');
+  const directoryPath = path.join(blueprintRoot, PERSONNEL_ROLE_BLUEPRINT_DIR);
+  const draftsFromDirectory = await loadBlueprintDraftsFromDirectory(directoryPath);
+  if (draftsFromDirectory && draftsFromDirectory.length > 0) {
+    return normalizePersonnelRoleBlueprints(draftsFromDirectory);
+  }
+  const legacyPath = path.join(blueprintRoot, LEGACY_PERSONNEL_ROLE_BLUEPRINT_FILE);
+  const draftsFromLegacy = await loadLegacyBlueprintDrafts(legacyPath);
+  if (draftsFromLegacy && draftsFromLegacy.length > 0) {
+    return normalizePersonnelRoleBlueprints(draftsFromLegacy);
+  }
+  return normalizePersonnelRoleBlueprints(DEFAULT_PERSONNEL_ROLE_BLUEPRINTS);
 };
 
 const NORMALIZED_DEFAULT_ROLE_BLUEPRINTS = normalizePersonnelRoleBlueprints(

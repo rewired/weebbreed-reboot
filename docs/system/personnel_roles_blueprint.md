@@ -4,50 +4,62 @@ Personnel role blueprints describe every playable staff role without touching co
 The simulation loads them from JSON during startup and uses them to drive initial
 roster creation, applicant synthesis, and persistence validation.
 
-- **Location:** `data/blueprints/personnelRoles.json`
+- **Location:** `data/blueprints/personnel/roles/*.json`
 - **Schema owner:** Workforce systems (job market + personnel initialization)
-- **Validation:** `loadPersonnelRoleBlueprints()` (`zod`) normalizes data and falls
-  back to `DEFAULT_PERSONNEL_ROLE_BLUEPRINTS` when fields are missing.
+- **Validation:** `loadPersonnelRoleBlueprints()` (`zod`) scans the directory,
+  normalizes every file, and falls back to
+  `DEFAULT_PERSONNEL_ROLE_BLUEPRINTS` when files are missing or invalid.
 
 ---
 
-## Top-Level Structure
+## Directory Layout
 
-```jsonc
-{
-  "version": "1.0.0", // optional semantic version tag
-  "roles": [
-    {
-      /* PersonnelRoleBlueprint */
-    },
-  ],
-}
+Each role lives in its own JSON file. Designers add, edit, or remove roles by
+dropping files into the directory — no manifest editing required.
+
+```text
+data/blueprints/personnel/roles/
+  Gardener.json
+  Janitor.json
+  Manager.json
+  Technician.json
+  Operator.json
+  Specialist.json        ← custom role example
 ```
 
-Each `roles[]` entry must declare a unique `id`. Unknown fields are ignored but
-preserved during normalization so designers can keep notes or tracking metadata
-alongside the required properties.
+Files are loaded in lexicographical order, but the resulting role map is keyed
+by `id`, so later files override earlier ones with the same identifier.
 
 ---
 
 ## PersonnelRoleBlueprint Fields
 
-| Field               | Type/Range                      | Notes                                                                                       |
-| ------------------- | ------------------------------- | ------------------------------------------------------------------------------------------- |
-| `id`                | `string`                        | Canonical role identifier (`EmployeeRole`).                                                 |
-| `name`              | `string`                        | Display name in UI. Defaults to `id` when omitted.                                          |
-| `description`       | `string?`                       | Optional flavor text for dashboards.                                                        |
-| `preferredShiftId`  | `string?`                       | Matches IDs from `SHIFT_TEMPLATES` (e.g. `shift.day`).                                      |
-| `maxMinutesPerTick` | `number? (> 0)`                 | Per-tick labor cap; defaults to 90 minutes.                                                 |
-| `roleWeight`        | `number? (>= 0)`                | Relative applicant generation weight. When missing or zero the default role weight is used. |
-| `salary`            | [Salary config](#salary-config) | Required. Base pay plus optional modifiers.                                                 |
-| `skillProfile`      | [Skill profile](#skill-profile) | Required. Defines primary/secondary/tertiary skills.                                        |
+| Field | Type/Range | Notes
+|
+| ------------------- | ------------------------------- | ----------------------------------------------------------------------
+--------------------- |
+| `id` | `string` | Canonical role identifier (`EmployeeRole`).
+|
+| `name` | `string?` | Display name in UI. Defaults to `id` when omitted.
+|
+| `description` | `string?` | Optional flavor text for dashboards.
+|
+| `preferredShiftId` | `string?` | Matches IDs from `SHIFT_TEMPLATES` (e.g. `shift.day`).
+|
+| `maxMinutesPerTick` | `number? (> 0)` | Per-tick labor cap; defaults to 90 minutes.
+|
+| `roleWeight` | `number? (>= 0)` | Relative applicant generation weight. When missing or zero the default
+role weight is used. |
+| `salary` | [Salary config](#salary-config) | Optional. Inherits the fallback/default salary when omitted (20 if no fallback exists).
+|
+| `skillProfile` | [Skill profile](#skill-profile) | Required for new roles. Primary skills must be present; secondary/tertiary data inherits defaults when omitted.
+|
 
 ### Salary Config
 
 ```jsonc
 {
-  "basePerTick": 24, // required base salary per tick
+  "basePerTick": 24, // recommended base salary per tick
   "skillFactor": {
     // optional scaling by rolled skills
     "base": 0.85,
@@ -96,7 +108,7 @@ alongside the required properties.
 }
 ```
 
-- Primary skills are mandatory. Secondary and tertiary blocks are optional but inherit rolls/weights from defaults when omitted.
+- Primary skills are mandatory for every role. Secondary and tertiary blocks are optional but inherit rolls/weights from defaults when omitted.
 - `roll` bounds are clamped and swapped automatically if `min > max`.
 - `weight` biases candidate selection when multiple tertiary skills exist.
 - Unknown skills are rejected during validation—only `EMPLOYEE_SKILL_NAMES` (`Gardening`, `Maintenance`, `Logistics`, `Cleanliness`, `Administration`) are allowed.
@@ -105,15 +117,40 @@ alongside the required properties.
 
 ## Normalization & Fallbacks
 
-`normalizePersonnelRoleBlueprints()` merges user-provided data with the shipped defaults. Key behaviours:
+`normalizePersonnelRoleBlueprints()` merges user-provided data with the shipped
+defaults. Key behaviours:
 
-1. **Missing roles inherit defaults.** Every default role is always present even if the JSON omits it.
-2. **New roles are allowed.** Any role with an unknown `id` is accepted and will be surfaced to the job market and personnel factory.
-3. **Graceful roll handling.** Invalid or missing roll bounds are coerced to non-negative integer ranges (0–5).
+1. **Missing roles inherit defaults.** Every default role is always present even
+   if the directory omits the file.
+2. **New roles are allowed.** Any role with an unknown `id` is accepted and will
+   be surfaced to the job market and personnel factory.
+3. **Graceful roll handling.** Invalid or missing roll bounds are coerced to
+   non-negative integer ranges (0–5).
 4. **Probability clamping.** Tertiary `chance` values are clamped to `[0, 1]`.
-5. **Salary guards.** Base salary defaults to the fallback role, and random ranges are sanitized so `min <= max` when both are provided.
+5. **Salary guards.** Missing base salaries inherit the fallback role’s value,
+   otherwise a generic `20` is used. Random ranges are sanitized so
+   `min <= max` when both are provided.
 
----
+Example file (`data/blueprints/personnel/roles/Specialist.json`):
+
+```jsonc
+{
+  "id": "Specialist",
+  "name": "IPM Specialist",
+  "roleWeight": 0.05,
+  "salary": { "basePerTick": 30 },
+  "skillProfile": {
+    "primary": {
+      "skill": "Cleanliness",
+      "startingLevel": 4,
+      "roll": { "min": 2, "max": 4 },
+    },
+  },
+}
+```
+
+Unknown fields are ignored but preserved during normalization so designers can
+keep notes or tracking metadata alongside the required properties.
 
 ## Runtime Consumers
 

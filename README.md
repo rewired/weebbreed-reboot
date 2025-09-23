@@ -77,10 +77,10 @@ tooling or architecture updates to stay aligned with previous decisions.
 ### Personnel Role Blueprints
 
 - Author editable role definitions under
-  [`data/blueprints/personnelRoles.json`](docs/system/personnel_roles_blueprint.md).
-  The backend validates and normalizes the file at startup so changes feed both
-  the initial roster factory and the job market without code edits. Keep the doc
-  in sync when adding new roles or fields and run `pnpm validate:data` before
+  [`data/blueprints/personnel/roles/`](docs/system/personnel_roles_blueprint.md).
+  The backend validates every file at startup so changes feed both the initial
+  roster factory and the job market without code edits. Keep the doc in sync
+  when adding new roles or fields and run `pnpm validate:data` before
   committing blueprint updates.
 
 ## Contributing

@@ -1,3 +1,6 @@
+import { promises as fs } from 'node:fs';
+import os from 'os';
+import path from 'path';
 import { describe, expect, it, vi } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
 import { RNG_STREAM_IDS, RngService, RngStream, createSeededStreamGenerator } from '@/lib/rng.js';
@@ -370,6 +373,52 @@ describe('JobMarketService', () => {
         },
       ]
     `);
+  });
+
+  it('loads personnel role blueprints from the data directory when available', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-job-market-roles-'));
+    try {
+      const blueprintDir = path.join(tempDir, 'blueprints', 'personnel', 'roles');
+      await fs.mkdir(blueprintDir, { recursive: true });
+      await fs.writeFile(
+        path.join(blueprintDir, 'Specialist.json'),
+        JSON.stringify(
+          {
+            id: 'Specialist',
+            name: 'IPM Specialist',
+            roleWeight: 5,
+            salary: { basePerTick: 30 },
+            skillProfile: {
+              primary: { skill: 'Cleanliness', startingLevel: 4, roll: { min: 2, max: 4 } },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const state = createGameState();
+      const rng = new RngService('seed-blueprint-directory');
+      const service = new JobMarketService({
+        state,
+        rng,
+        personnelDirectory: directory,
+        dataDirectory: tempDir,
+        httpEnabled: false,
+        batchSize: 4,
+        pDiverse: 0,
+      });
+
+      const context = createCommandContext(state);
+      await service.refreshCandidates({ force: true }, context);
+
+      expect(state.personnel.applicants).not.toHaveLength(0);
+      expect(
+        state.personnel.applicants.some((applicant) => applicant.desiredRole === 'Specialist'),
+      ).toBe(true);
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('respects diversity probability extremes for offline candidates', async () => {

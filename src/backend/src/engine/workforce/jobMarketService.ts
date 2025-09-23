@@ -157,7 +157,7 @@ export class JobMarketService {
 
   private roleBlueprintIndex = new Map<string, PersonnelRoleBlueprint>();
 
-  private roleBlueprintPromise: Promise<PersonnelRoleBlueprint[] | undefined> | null = null;
+  private roleBlueprintPromise: Promise<PersonnelRoleBlueprint[]> | null = null;
 
   constructor(options: JobMarketServiceOptions) {
     this.state = options.state;
@@ -179,12 +179,20 @@ export class JobMarketService {
     if (this.directory) {
       this.offlineSeedIndex = 0;
     }
-    const normalizedRoles =
+    const providedRoles =
       options.personnelRoleBlueprints && options.personnelRoleBlueprints.length > 0
         ? normalizePersonnelRoleBlueprints(options.personnelRoleBlueprints)
-        : FALLBACK_ROLE_BLUEPRINTS;
-    this.roleBlueprints = normalizedRoles;
-    this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+        : undefined;
+    if (providedRoles && providedRoles.length > 0) {
+      this.roleBlueprints = providedRoles;
+      this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+    } else if (this.dataDirectory) {
+      this.roleBlueprints = [];
+      this.roleBlueprintIndex = new Map();
+    } else {
+      this.roleBlueprints = FALLBACK_ROLE_BLUEPRINTS;
+      this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+    }
   }
 
   private rebuildRoleBlueprintIndex(roles: readonly PersonnelRoleBlueprint[]): void {
@@ -426,7 +434,7 @@ export class JobMarketService {
     }
     if (this.roleBlueprintPromise) {
       const roles = await this.roleBlueprintPromise;
-      return roles ?? FALLBACK_ROLE_BLUEPRINTS;
+      return roles;
     }
     if (!this.dataDirectory) {
       this.roleBlueprints = FALLBACK_ROLE_BLUEPRINTS;

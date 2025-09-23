@@ -442,6 +442,12 @@ export interface PersonnelRoleSkillProfile {
   tertiary?: PersonnelRoleTertiarySkillConfig;
 }
 
+export interface PersonnelRoleSkillProfileDraft {
+  primary?: PersonnelRoleSkillTemplate;
+  secondary?: PersonnelRoleSkillTemplate;
+  tertiary?: PersonnelRoleTertiarySkillConfig;
+}
+
 export interface PersonnelRoleSalaryWeights {
   primary?: number;
   secondary?: number;
@@ -467,6 +473,13 @@ export interface PersonnelRoleSalaryConfig {
   skillWeights?: PersonnelRoleSalaryWeights;
 }
 
+export interface PersonnelRoleSalaryConfigDraft {
+  basePerTick?: number;
+  skillFactor?: PersonnelRoleSalaryFactorConfig;
+  randomRange?: PersonnelRoleSalaryRandomRange;
+  skillWeights?: PersonnelRoleSalaryWeights;
+}
+
 export interface PersonnelRoleBlueprint {
   id: string;
   name: string;
@@ -476,6 +489,17 @@ export interface PersonnelRoleBlueprint {
   roleWeight?: number;
   salary: PersonnelRoleSalaryConfig;
   skillProfile: PersonnelRoleSkillProfile;
+}
+
+export interface PersonnelRoleBlueprintDraft {
+  id: string;
+  name?: string;
+  description?: string;
+  preferredShiftId?: string;
+  maxMinutesPerTick?: number;
+  roleWeight?: number;
+  salary?: PersonnelRoleSalaryConfigDraft;
+  skillProfile?: PersonnelRoleSkillProfileDraft;
 }
 
 export const DEFAULT_PERSONNEL_ROLE_BLUEPRINTS = [
