@@ -113,6 +113,8 @@ describe('SseGateway', () => {
   let activeRequest: ClientRequest | undefined;
   let activeResponse: IncomingMessage | undefined;
   let receivedEvents: ReceivedEvent[];
+  let initialState: GameState;
+  let initialTimeStatus: TimeStatus;
 
   beforeEach(async () => {
     receivedEvents = [];
@@ -120,18 +122,18 @@ describe('SseGateway', () => {
     await new Promise<void>((resolve) => server.listen(0, resolve));
     port = (server.address() as AddressInfo).port;
 
-    const state = createMinimalState();
-    const timeStatus: TimeStatus = {
+    initialState = createMinimalState();
+    initialTimeStatus = {
       running: false,
       paused: true,
       speed: 1,
-      tick: state.clock.tick,
-      targetTickRate: state.clock.targetTickRate,
+      tick: initialState.clock.tick,
+      targetTickRate: initialState.clock.targetTickRate,
     };
 
     const facade = {
-      select: <T>(selector: (value: GameState) => T): T => selector(state),
-      getTimeStatus: () => timeStatus,
+      select: <T>(selector: (value: GameState) => T): T => selector(initialState),
+      getTimeStatus: () => initialTimeStatus,
     } as unknown as SimulationFacade;
 
     const roomPurposeSource: RoomPurposeSource = {
@@ -260,10 +262,31 @@ describe('SseGateway', () => {
     await waitFor(() => receivedEvents.some((entry) => entry.event === 'simulationUpdate'));
     expect(subscribeSpy).toHaveBeenCalledTimes(1);
 
+    const handshakeEvent = receivedEvents.find((entry) => entry.event === 'simulationUpdate');
+    const handshakePayload = handshakeEvent?.data as
+      | { updates: Array<{ snapshot: SimulationSnapshot }> }
+      | undefined;
+    expect(handshakePayload?.updates[0]?.snapshot.clock).toEqual({
+      tick: initialState.clock.tick,
+      isPaused: initialState.clock.isPaused,
+      targetTickRate: initialState.clock.targetTickRate,
+      startedAt: initialState.clock.startedAt,
+      lastUpdatedAt: initialState.clock.lastUpdatedAt,
+    });
+
     receivedEvents = [];
 
-    const snapshot: SimulationSnapshot = {
-      tick: 5,
+    const timestamp = new Date(0).toISOString();
+
+    const createSnapshot = (tick: number): SimulationSnapshot => ({
+      tick,
+      clock: {
+        tick,
+        isPaused: true,
+        targetTickRate: 1,
+        startedAt: timestamp,
+        lastUpdatedAt: timestamp,
+      },
       structures: [],
       rooms: [],
       zones: [],
@@ -277,7 +300,10 @@ describe('SseGateway', () => {
         lastTickRevenue: 0,
         lastTickExpenses: 0,
       },
-    };
+    });
+
+    const snapshotAt5 = createSnapshot(5);
+    const snapshotAt6 = createSnapshot(6);
     const time: TimeStatus = {
       running: false,
       paused: true,
@@ -290,13 +316,13 @@ describe('SseGateway', () => {
       channel: 'simulationUpdate',
       payload: {
         updates: [
-          { tick: 5, ts: 1_000, durationMs: 12, events: [], snapshot, time },
+          { tick: 5, ts: 1_000, durationMs: 12, events: [], snapshot: snapshotAt5, time },
           {
             tick: 6,
             ts: 1_050,
             durationMs: 11,
             events: [],
-            snapshot: { ...snapshot, tick: 6 },
+            snapshot: snapshotAt6,
             time,
           },
         ],
@@ -310,13 +336,13 @@ describe('SseGateway', () => {
       .at(-1);
     expect(latestUpdate?.data).toEqual({
       updates: [
-        { tick: 5, ts: 1_000, durationMs: 12, events: [], snapshot, time },
+        { tick: 5, ts: 1_000, durationMs: 12, events: [], snapshot: snapshotAt5, time },
         {
           tick: 6,
           ts: 1_050,
           durationMs: 11,
           events: [],
-          snapshot: { ...snapshot, tick: 6 },
+          snapshot: snapshotAt6,
           time,
         },
       ],
