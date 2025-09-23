@@ -200,6 +200,8 @@ export interface SimulationSnapshot {
     tick: number;
     isPaused: boolean;
     targetTickRate: number;
+    startedAt: string;
+    lastUpdatedAt: string;
   };
   structures: StructureSnapshot[];
   rooms: RoomSnapshot[];

@@ -114,8 +114,25 @@ describe('SocketGateway uiStream integration', () => {
     expect(handshake).toBeDefined();
     expect(subscribeSpy).toHaveBeenCalledTimes(1);
 
+    expect(handshake?.updates[0]?.snapshot.clock).toEqual({
+      tick: facadeStub.state.clock.tick,
+      isPaused: facadeStub.state.clock.isPaused,
+      targetTickRate: facadeStub.state.clock.targetTickRate,
+      startedAt: facadeStub.state.clock.startedAt,
+      lastUpdatedAt: facadeStub.state.clock.lastUpdatedAt,
+    });
+
+    const timestamp = new Date(0).toISOString();
+
     const baseSnapshot: SimulationSnapshot = {
       tick: 0,
+      clock: {
+        tick: 0,
+        isPaused: true,
+        targetTickRate: 1,
+        startedAt: timestamp,
+        lastUpdatedAt: timestamp,
+      },
       structures: [],
       rooms: [],
       zones: [],
@@ -140,7 +157,11 @@ describe('SocketGateway uiStream integration', () => {
         eventCount: 0,
         events: [],
         phaseTimings: createPhaseTimings(),
-        snapshot: { ...baseSnapshot, tick: 5 },
+        snapshot: {
+          ...baseSnapshot,
+          tick: 5,
+          clock: { ...baseSnapshot.clock, tick: 5 },
+        },
         time: baseTime,
       },
       {
@@ -150,7 +171,11 @@ describe('SocketGateway uiStream integration', () => {
         eventCount: 0,
         events: [],
         phaseTimings: createPhaseTimings(),
-        snapshot: { ...baseSnapshot, tick: 6 },
+        snapshot: {
+          ...baseSnapshot,
+          tick: 6,
+          clock: { ...baseSnapshot.clock, tick: 6 },
+        },
         time: baseTime,
       },
     ];

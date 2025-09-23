@@ -124,8 +124,17 @@ export interface FinanceSummarySnapshot {
   lastTickExpenses: number;
 }
 
+export interface SimulationClockSnapshot {
+  tick: number;
+  isPaused: boolean;
+  targetTickRate: number;
+  startedAt: string;
+  lastUpdatedAt: string;
+}
+
 export interface SimulationSnapshot {
   tick: number;
+  clock: SimulationClockSnapshot;
   structures: StructureSnapshot[];
   rooms: RoomSnapshot[];
   zones: ZoneSnapshot[];
@@ -181,6 +190,14 @@ export const buildSimulationSnapshot = (
   const structures: StructureSnapshot[] = [];
   const rooms: RoomSnapshot[] = [];
   const zones: ZoneSnapshot[] = [];
+
+  const clock: SimulationClockSnapshot = {
+    tick: state.clock.tick,
+    isPaused: state.clock.isPaused,
+    targetTickRate: state.clock.targetTickRate,
+    startedAt: state.clock.startedAt,
+    lastUpdatedAt: state.clock.lastUpdatedAt,
+  };
 
   for (const structure of state.structures) {
     const roomIds: string[] = [];
@@ -293,6 +310,7 @@ export const buildSimulationSnapshot = (
 
   return {
     tick: state.clock.tick,
+    clock,
     structures,
     rooms,
     zones,
