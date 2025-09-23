@@ -19,6 +19,7 @@ import {
   type StateFactoryContext,
 } from '@/stateFactory.js';
 import type { PersonnelNameDirectory } from '@/state/models.js';
+import { provisionPersonnelDirectory } from '@/state/initialization/personnelProvisioner.js';
 import { SimulationLoop, type SimulationPhaseHandler } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
 import { WorldService } from '@/engine/world/worldService.js';
@@ -119,6 +120,33 @@ export const startBackendServer = async (
     },
     'Loaded blueprint repository.',
   );
+
+  try {
+    const provisioning = await provisionPersonnelDirectory({
+      dataDirectory,
+      rngSeed: rng.getSeed(),
+    });
+    if (provisioning.changed) {
+      const stats = provisioning.directory;
+      serverLogger.info(
+        {
+          personnelBootstrap: {
+            male: stats?.firstNamesMale?.length ?? 0,
+            female: stats?.firstNamesFemale?.length ?? 0,
+            lastNames: stats?.lastNames.length ?? 0,
+            seeds: stats?.randomSeeds?.length ?? 0,
+          },
+        },
+        'Provisioned personnel directory assets.',
+      );
+    }
+  } catch (error) {
+    serverLogger.error(
+      { err: error },
+      'Failed to provision personnel directory assets; aborting startup.',
+    );
+    throw error;
+  }
   const priceCatalog = createPriceCatalogFromRepository(repository);
   const costAccountingService = new CostAccountingService(priceCatalog);
   const context: StateFactoryContext = {

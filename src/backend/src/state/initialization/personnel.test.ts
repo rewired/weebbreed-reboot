@@ -6,13 +6,21 @@ import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { createPersonnel, loadPersonnelDirectory } from './personnel.js';
 
 describe('state/initialization/personnel', () => {
-  it('loads personnel name directories with graceful fallbacks', async () => {
+  it('loads personnel name directories with gender-specific files', async () => {
     const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-personnel-'));
     try {
       const personnelDir = path.join(tempDir, 'personnel');
       await fs.mkdir(personnelDir, { recursive: true });
-      await fs.writeFile(path.join(personnelDir, 'firstNames.json'), JSON.stringify(['Alex']));
+      await fs.writeFile(
+        path.join(personnelDir, 'firstNamesMale.json'),
+        JSON.stringify(['Alex', 'Brian']),
+      );
+      await fs.writeFile(
+        path.join(personnelDir, 'firstNamesFemale.json'),
+        JSON.stringify(['Alice', 'Beatrice']),
+      );
       await fs.writeFile(path.join(personnelDir, 'lastNames.json'), JSON.stringify(['Patel']));
+      await fs.writeFile(path.join(personnelDir, 'randomSeeds.json'), JSON.stringify(['seed-0']));
       await fs.writeFile(
         path.join(personnelDir, 'traits.json'),
         JSON.stringify([
@@ -27,9 +35,31 @@ describe('state/initialization/personnel', () => {
 
       const directory = await loadPersonnelDirectory(tempDir);
 
-      expect(directory.firstNames).toContain('Alex');
+      expect(directory.firstNamesMale).toEqual(['Alex', 'Brian']);
+      expect(directory.firstNamesFemale).toEqual(['Alice', 'Beatrice']);
+      expect(directory.randomSeeds).toEqual(['seed-0']);
+      expect(directory.firstNames).toEqual(['Alex', 'Alice', 'Beatrice', 'Brian']);
       expect(directory.lastNames).toContain('Patel');
       expect(directory.traits[0]?.id).toBe('trait_detail');
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
+  });
+
+  it('falls back to legacy first name files when gendered lists are unavailable', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-personnel-legacy-'));
+    try {
+      const personnelDir = path.join(tempDir, 'personnel');
+      await fs.mkdir(personnelDir, { recursive: true });
+      await fs.writeFile(path.join(personnelDir, 'firstNames.json'), JSON.stringify(['Alex']));
+      await fs.writeFile(path.join(personnelDir, 'lastNames.json'), JSON.stringify(['Patel']));
+      await fs.writeFile(path.join(personnelDir, 'traits.json'), JSON.stringify([]));
+
+      const directory = await loadPersonnelDirectory(tempDir);
+
+      expect(directory.firstNames).toEqual(['Alex']);
+      expect(directory.firstNamesMale).toBeUndefined();
+      expect(directory.firstNamesFemale).toBeUndefined();
     } finally {
       await fs.rm(tempDir, { recursive: true, force: true });
     }
