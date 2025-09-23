@@ -229,8 +229,8 @@ export const useZoneStore = create<ZoneStoreState>()((set) => ({
       }
       state.sendFacadeIntent?.({
         domain: 'world',
-        action: 'updateStructure',
-        payload: { structureId, patch: { name: trimmed } },
+        action: 'renameStructure',
+        payload: { structureId, name: trimmed },
       });
       return {};
     }),
