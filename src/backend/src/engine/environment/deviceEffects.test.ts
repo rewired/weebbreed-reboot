@@ -112,7 +112,7 @@ describe('deviceEffects', () => {
     );
 
     expect(deltas.temperatureDelta).toBeCloseTo(1.67, 2);
-    expect(deltas.ppfdDelta).toBeCloseTo(72, 4);
+    expect(deltas.ppfd).toBeCloseTo(72, 4);
     expect(deltas.airflow).toBe(0);
   });
 
@@ -142,7 +142,7 @@ describe('deviceEffects', () => {
 
     expect(deltas.temperatureDelta).toBeCloseTo(-4, 3);
     expect(deltas.airflow).toBeCloseTo(315, 6);
-    expect(deltas.ppfdDelta).toBe(0);
+    expect(deltas.ppfd).toBe(0);
   });
 
   it('injects CO2 when below target within safety bounds', () => {
