@@ -46,6 +46,38 @@ HTTP support is disabled or `fetch` is unavailable.
 
 ---
 
+## Startup Provisioning Service
+
+- **Responsibility.** `provisionPersonnelDirectory()` runs during backend
+  startup (before the initial game state is created). It verifies the presence of
+  the personnel directory assets and, when files are missing, bootstraps them by
+  calling RandomUser with deterministic seeds derived from the simulation seed.
+- **Generated files.** When provisioning succeeds the following files are
+  written under `/data/personnel/` (existing entries are merged and
+  de-duplicated):
+  - `names/firstNamesFemale.json`
+  - `names/firstNamesMale.json`
+  - `names/lastNames.json`
+  - `randomSeeds.json`
+    Each file is JSON formatted with sorted entries and a trailing newline so the
+    repo-friendly form matches runtime output.
+- **Deterministic batches.** The provisioner requests batches of 60 profiles by
+  default and iterates through 240 total profiles (configurable) using seeds of
+  the form `<gameSeed>-<batchIndex>`. This produces stable gendered name sets and
+  a reusable pool of `login.salt` values.
+- **Failure policy.** Provisioning is skipped entirely when all four files are
+  already present. If HTTP integrations are disabled (env var
+  `WEEBBREED_DISABLE_JOB_MARKET_HTTP=true`) or no `fetch` implementation is
+  available, startup aborts with an error because offline generations would lack
+  parity data. RandomUser payloads that do not contain usable first or last
+  names also trigger a fatal startup error.
+- **Operator workflow.** Production deployments should either bundle the
+  provisioned directory with the release artifact or allow outbound HTTPS during
+  the first boot so the service can populate the files. Provisioning logs include
+  counts of generated male names, female names, last names, and stored seeds.
+
+---
+
 ## Deterministic Seeding Strategy
 
 1. **Weekly API seed.** `apiSeed = override ?? "<gameSeed>-<weekIndex>"` keeps
@@ -88,12 +120,18 @@ HTTP support is disabled or `fetch` is unavailable.
 ## Fallback Strategy (Offline Mode)
 
 - **Name directory usage.** When a `PersonnelNameDirectory` is bundled, the
-  offline generator draws first/last names and trait IDs from that directory.
+  offline generator draws female first names, male first names, last names,
+  trait IDs, and pre-stored personal seeds from that directory. Gendered lists
+  let the generator alternate between male/female picks while still falling back
+  to whichever lists are populated.
 - **Synthetic names.** If the directory is missing or empty, the generator
   fabricates deterministic placeholders (`Candidate<week>-<n>`, `Applicant`).
 - **Parity with remote flow.** Offline candidates reuse the same RNG streams,
   trait logic, and salary computation so balancing remains identical across
   remote/offline runs.
+- **Stored seeds.** The generator consumes `randomSeeds.json` entries before
+  synthesising new seeds. This preserves RandomUser-provided `login.salt`
+  entropy for offline runs and keeps personal seeds stable between refreshes.
 - **Retry reuse.** When a remote call partially succeeds (fewer profiles than
   requested), offline synthesis tops up the batch to maintain the configured
   count.
