@@ -348,17 +348,20 @@ describe('SimulationLoop', () => {
     const zone = state.structures[0]?.rooms[0]?.zones[0];
     expect(zone).toBeDefined();
 
-    await loop.processTick();
-    const firstTickPpfd = zone?.environment.ppfd ?? 0;
+    const ppfdReadings: number[] = [];
 
-    await loop.processTick();
-    const secondTickPpfd = zone?.environment.ppfd ?? 0;
+    for (let index = 0; index < 5; index += 1) {
+      await loop.processTick();
+      ppfdReadings.push(zone?.environment.ppfd ?? 0);
+    }
 
-    await loop.processTick();
-    const thirdTickPpfd = zone?.environment.ppfd ?? 0;
+    expect(ppfdReadings).toHaveLength(5);
+
+    const [firstTickPpfd, ...subsequentReadings] = ppfdReadings;
 
     expect(firstTickPpfd).toBeCloseTo(21.6, 4);
-    expect(secondTickPpfd).toBeCloseTo(firstTickPpfd, 3);
-    expect(thirdTickPpfd).toBeCloseTo(firstTickPpfd, 3);
+    for (const reading of subsequentReadings) {
+      expect(reading).toBeCloseTo(firstTickPpfd, 3);
+    }
   });
 });

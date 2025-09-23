@@ -183,17 +183,19 @@ export class ZoneEnvironmentService {
             },
             tickLengthMinutes,
           );
+          let zoneLightingPpfd = 0;
+
           const effect = computeZoneDeviceDeltas(zone, geometry, {
             tickHours,
             powerLevels,
           });
 
-          const lightingPpfd = Math.max(0, effect.ppfd);
+          zoneLightingPpfd += effect.ppfd;
 
           zone.environment.temperature += effect.temperatureDelta;
           zone.environment.relativeHumidity += effect.humidityDelta;
           zone.environment.co2 += effect.co2Delta;
-          zone.environment.ppfd = lightingPpfd;
+          zone.environment.ppfd = Math.max(0, zoneLightingPpfd);
 
           this.deviceEffects.set(zone.id, { airflow: effect.airflow });
           if (accounting && effect.energyKwh > 0) {

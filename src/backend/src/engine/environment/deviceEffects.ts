@@ -440,13 +440,23 @@ export const computeZoneDeviceDeltas = (
   geometry: ZoneGeometry,
   context: DeviceEffectContext,
 ): DeviceEffect => {
-  return zone.devices.reduce<DeviceEffect>(
-    (accumulator, device) => {
-      const effect = computeSingleDeviceEffect(device, zone, geometry, context);
-      return addDeviceEffects(accumulator, effect);
-    },
-    { ...DEFAULT_DEVICE_EFFECT },
-  );
+  const aggregate: DeviceEffect = { ...DEFAULT_DEVICE_EFFECT };
+  let lightingPpfd = 0;
+
+  for (const device of zone.devices) {
+    const effect = computeSingleDeviceEffect(device, zone, geometry, context);
+
+    aggregate.temperatureDelta += effect.temperatureDelta;
+    aggregate.humidityDelta += effect.humidityDelta;
+    aggregate.co2Delta += effect.co2Delta;
+    aggregate.airflow += effect.airflow;
+    aggregate.energyKwh += effect.energyKwh;
+    lightingPpfd += effect.ppfd;
+  }
+
+  aggregate.ppfd = lightingPpfd;
+
+  return aggregate;
 };
 
 export const hasActiveDevices = (zone: ZoneState): boolean => {
