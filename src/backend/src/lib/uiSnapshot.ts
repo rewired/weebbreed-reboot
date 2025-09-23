@@ -106,6 +106,10 @@ export interface ApplicantSnapshot {
   name: string;
   desiredRole: ApplicantState['desiredRole'];
   expectedSalary: number;
+  traits: ApplicantState['traits'];
+  skills: ApplicantState['skills'];
+  personalSeed?: ApplicantState['personalSeed'];
+  gender?: ApplicantState['gender'];
 }
 
 export interface PersonnelSnapshot {
@@ -295,6 +299,10 @@ export const buildSimulationSnapshot = (
       name: applicant.name,
       desiredRole: applicant.desiredRole,
       expectedSalary: applicant.expectedSalary,
+      traits: [...applicant.traits],
+      skills: { ...applicant.skills },
+      personalSeed: applicant.personalSeed,
+      gender: applicant.gender,
     })),
     overallMorale: state.personnel.overallMorale,
   };
