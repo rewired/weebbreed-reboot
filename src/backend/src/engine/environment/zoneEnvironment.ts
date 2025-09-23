@@ -11,6 +11,14 @@ import { approachRelativeHumidity } from '@/physio/rh.js';
 import { approachCo2 } from '@/physio/co2.js';
 import { computeVpd } from '@/physio/vpd.js';
 import { getZoneGeometry, type ZoneGeometry } from '@/state/geometry.js';
+import {
+  AMBIENT_CO2_PPM,
+  AMBIENT_HUMIDITY_RH,
+  AMBIENT_TEMP_C,
+  CO2_NORMALIZATION_FACTOR,
+  HUMIDITY_NORMALIZATION_FACTOR,
+  TEMP_NORMALIZATION_FACTOR,
+} from '@/constants/environment.js';
 
 export interface AmbientEnvironment {
   temperature: number;
@@ -50,9 +58,9 @@ interface DeviceEffectCacheEntry {
 }
 
 const DEFAULT_AMBIENT: AmbientEnvironment = {
-  temperature: 20,
-  relativeHumidity: 0.5,
-  co2: 400,
+  temperature: AMBIENT_TEMP_C,
+  relativeHumidity: AMBIENT_HUMIDITY_RH,
+  co2: AMBIENT_CO2_PPM,
 };
 
 const DEFAULT_SAFETY: SafetyClamps = {
@@ -65,9 +73,9 @@ const DEFAULT_SAFETY: SafetyClamps = {
 };
 
 const DEFAULT_NORMALIZATION: NormalizationFactors = {
-  temperatureRate: 0.12,
-  humidityRate: 0.08,
-  co2Rate: 0.18,
+  temperatureRate: TEMP_NORMALIZATION_FACTOR,
+  humidityRate: HUMIDITY_NORMALIZATION_FACTOR,
+  co2Rate: CO2_NORMALIZATION_FACTOR,
   airflowTemperatureFactor: 0.25,
   airflowHumidityFactor: 0.2,
   airflowCo2Factor: 0.45,

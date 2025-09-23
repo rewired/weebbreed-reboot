@@ -2,6 +2,11 @@ import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { PlantStage, PlantState, ZoneEnvironmentState } from '@/state/models.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import {
+  PLANT_BASE_GROWTH_PER_TICK,
+  PLANT_RECOVERY_FACTOR,
+  PLANT_STRESS_IMPACT_FACTOR,
+} from '@/constants/balance.js';
+import {
   advancePhenology,
   createInitialPhenologyState,
   createPhenologyConfig,
@@ -299,9 +304,13 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
   const overallStress = clamp(1 - combinedResponse, 0, 1);
   const effectiveStress = clamp(overallStress - (resilience - 0.5) * 0.3, 0, 1);
 
+  const stressPenalty = effectiveStress * PLANT_STRESS_IMPACT_FACTOR * Math.max(tickHours, 0);
+  const recoveryBonus = (1 - effectiveStress) * PLANT_RECOVERY_FACTOR * Math.max(tickHours, 0);
+
   const healthTarget = clamp(1 - effectiveStress, 0, 1);
   const adjustmentRate = clamp(tickHours / 24, 0, 1) * (0.6 + resilience * 0.4);
-  const healthDelta = (healthTarget - plant.health) * adjustmentRate;
+  const baselineHealthDelta = (healthTarget - plant.health) * adjustmentRate;
+  const healthDelta = baselineHealthDelta - stressPenalty + recoveryBonus;
   const newHealth = clamp(plant.health + healthDelta, 0, 1);
 
   const { value: newQuality, delta: qualityDelta } = updateQuality(
@@ -319,7 +328,9 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
   const q10Factor = q10 ? Math.pow(q10, (environment.temperature - tref) / 10) : 1;
   const baseLueKgPerMol = strain.growthModel?.baseLightUseEfficiency ?? 0.0009;
   const lue = baseLueKgPerMol * 1_000 * q10Factor;
-  const grossBiomass = absorbedMol * lue * combinedResponse;
+  const baseBiomass =
+    Math.max(tickHours, 0) * PLANT_BASE_GROWTH_PER_TICK * clamp(combinedResponse, 0, 1);
+  const grossBiomass = baseBiomass + absorbedMol * lue * combinedResponse;
   const maintenance =
     plant.biomassDryGrams * (strain.growthModel?.maintenanceFracPerDay ?? 0) * (tickHours / 24);
   const netBiomassDelta = grossBiomass - maintenance;

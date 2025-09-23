@@ -250,15 +250,15 @@ describe('ZoneEnvironmentService', () => {
 
     service.applyDeviceDeltas(state, 15, undefined);
 
-    expect(zone.environment.temperature).toBeCloseTo(25.25, 2);
+    expect(zone.environment.temperature).toBeCloseTo(25.5, 2);
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);
     expect(zone.environment.co2).toBeCloseTo(1100, 5);
 
     service.normalize(state, 15);
 
-    expect(zone.environment.temperature).toBeCloseTo(24.28, 2);
+    expect(zone.environment.temperature).toBeCloseTo(24.51, 2);
     expect(zone.environment.relativeHumidity).toBeCloseTo(0.63, 2);
-    expect(zone.environment.co2).toBeCloseTo(890, 0);
+    expect(zone.environment.co2).toBeCloseTo(900, 0);
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);
   });
 

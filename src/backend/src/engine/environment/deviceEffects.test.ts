@@ -111,7 +111,7 @@ describe('deviceEffects', () => {
       { tickHours: 0.25 },
     );
 
-    expect(deltas.temperatureDelta).toBeCloseTo(0.84, 2);
+    expect(deltas.temperatureDelta).toBeCloseTo(1.67, 2);
     expect(deltas.ppfdDelta).toBeCloseTo(72, 4);
     expect(deltas.airflow).toBe(0);
   });

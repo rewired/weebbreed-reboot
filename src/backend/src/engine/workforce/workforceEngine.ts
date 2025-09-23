@@ -20,6 +20,11 @@ import {
   type WorkforcePolicies,
   type WorkforceTaskMetadata,
 } from './types.js';
+import {
+  ENERGY_COST_PER_TICK_WORKING,
+  ENERGY_REST_THRESHOLD,
+  IDLE_ENERGY_REGEN_PER_TICK,
+} from '@/constants/balance.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   if (Number.isNaN(value)) {
@@ -49,9 +54,9 @@ const compareTasksByCreation = (left: TaskState, right: TaskState): number => {
 
 const DEFAULT_POLICIES: WorkforcePolicies = {
   energy: {
-    minEnergyToClaim: 0.35,
-    energyCostPerHour: 0.08,
-    idleRecoveryPerTick: 0.05,
+    minEnergyToClaim: ENERGY_REST_THRESHOLD / 100,
+    energyCostPerHour: ENERGY_COST_PER_TICK_WORKING / 100,
+    idleRecoveryPerTick: IDLE_ENERGY_REGEN_PER_TICK / 100,
     overtimeCostMultiplier: 1.5,
   },
   overtime: {

@@ -336,7 +336,7 @@ describe('WorkforceEngine', () => {
     const updatedTech = state.personnel.employees[0];
     expect(updatedTech.overtimeHours).toBeCloseTo(1.5, 5);
     expect(updatedTech.hoursWorkedToday).toBeCloseTo(2, 5);
-    expect(updatedTech.energy).toBeCloseTo(0.78, 2);
+    expect(updatedTech.energy).toBeCloseTo(0.725, 3);
   });
 
   it('caps allocated hours and allows backlog to grow when maxMinutesPerTick is low', () => {
@@ -419,12 +419,12 @@ describe('WorkforceEngine', () => {
     const normalEmployeeAfter = normalState.personnel.employees[0];
 
     expect(limitedEmployeeAfter.hoursWorkedToday).toBeCloseTo(2.5, 5);
-    expect(normalEmployeeAfter.hoursWorkedToday).toBeCloseTo(20, 5);
+    expect(normalEmployeeAfter.hoursWorkedToday).toBeCloseTo(16, 5);
 
     expect(limitedState.tasks.backlog.length).toBeGreaterThan(0);
     expect(limitedState.tasks.completed).toHaveLength(1);
-    expect(normalState.tasks.completed).toHaveLength(5);
-    expect(normalState.tasks.backlog).toHaveLength(0);
+    expect(normalState.tasks.completed).toHaveLength(4);
+    expect(normalState.tasks.backlog).toHaveLength(1);
   });
 
   it('applies dynamic priority boosts in 10-point increments', () => {

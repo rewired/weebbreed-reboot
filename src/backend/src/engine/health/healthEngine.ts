@@ -22,6 +22,7 @@ import {
   type TreatmentOption,
   type TreatmentOptionIndex,
 } from './models.js';
+import { PLANT_DISEASE_IMPACT } from '@/constants/balance.js';
 
 const DISEASE_DETECTION_THRESHOLD = 0.18;
 const PEST_DETECTION_THRESHOLD = 0.22;
@@ -249,7 +250,7 @@ export class PlantHealthEngine {
               targetHealth.diseases.push({
                 id: `${disease.pathogenId}-${target.id}-${context.tick}`,
                 pathogenId: disease.pathogenId,
-                severity: 0.05,
+                severity: PLANT_DISEASE_IMPACT,
                 infection: 0.12,
                 detected: false,
                 symptomTimerTicks: diseaseSymptomDelayTicks,
