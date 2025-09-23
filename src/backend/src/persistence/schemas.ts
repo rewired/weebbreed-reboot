@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '@/state/models.js';
+import type { EmployeeRole } from '@/state/models.js';
 
 const isoDateString = z
   .string()
@@ -320,13 +322,7 @@ const financeStateSchema = z.object({
   summary: financialSummarySchema,
 });
 
-const skillNames = [
-  'Gardening',
-  'Maintenance',
-  'Logistics',
-  'Cleanliness',
-  'Administration',
-] as const;
+const skillNames = EMPLOYEE_SKILL_NAMES;
 const employeeSkillsSchema = z
   .object(
     Object.fromEntries(skillNames.map((name) => [name, z.number()])) as Record<
@@ -335,6 +331,12 @@ const employeeSkillsSchema = z
     >,
   )
   .partial();
+
+const employeeRoleValues = DEFAULT_PERSONNEL_ROLE_BLUEPRINTS.map((role) => role.id) as [
+  EmployeeRole,
+  ...EmployeeRole[],
+];
+const employeeRoleEnum = z.enum(employeeRoleValues);
 
 const employeeShiftSchema = z.object({
   shiftId: nonEmptyString,
@@ -347,7 +349,7 @@ const employeeShiftSchema = z.object({
 const employeeStateSchema = z.object({
   id: nonEmptyString,
   name: nonEmptyString,
-  role: z.enum(['Gardener', 'Technician', 'Janitor', 'Operator', 'Manager']),
+  role: employeeRoleEnum,
   salaryPerTick: z.number(),
   status: z.enum(['idle', 'assigned', 'offShift', 'training']),
   morale: z.number(),
@@ -369,7 +371,7 @@ const employeeStateSchema = z.object({
 const applicantStateSchema = z.object({
   id: nonEmptyString,
   name: nonEmptyString,
-  desiredRole: z.enum(['Gardener', 'Technician', 'Janitor', 'Operator', 'Manager']),
+  desiredRole: employeeRoleEnum,
   expectedSalary: z.number(),
   traits: z.array(nonEmptyString),
   skills: employeeSkillsSchema,
@@ -380,7 +382,7 @@ const applicantStateSchema = z.object({
 const trainingProgramSchema = z.object({
   id: nonEmptyString,
   name: nonEmptyString,
-  targetRole: z.enum(['Gardener', 'Technician', 'Janitor', 'Operator', 'Manager']),
+  targetRole: employeeRoleEnum,
   progress: z.number(),
   attendees: z.array(nonEmptyString),
 });

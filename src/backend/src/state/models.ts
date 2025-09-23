@@ -408,14 +408,244 @@ export interface FinanceState {
   summary: FinancialSummary;
 }
 
-export type EmployeeRole = 'Gardener' | 'Technician' | 'Janitor' | 'Operator' | 'Manager';
+export const EMPLOYEE_SKILL_NAMES = [
+  'Gardening',
+  'Maintenance',
+  'Logistics',
+  'Cleanliness',
+  'Administration',
+] as const;
 
-export type SkillName =
-  | 'Gardening'
-  | 'Maintenance'
-  | 'Logistics'
-  | 'Cleanliness'
-  | 'Administration';
+export type SkillName = (typeof EMPLOYEE_SKILL_NAMES)[number];
+
+export interface PersonnelRoleSkillRoll {
+  min: number;
+  max: number;
+}
+
+export interface PersonnelRoleSkillTemplate {
+  skill: SkillName;
+  startingLevel: number;
+  roll?: PersonnelRoleSkillRoll;
+  weight?: number;
+}
+
+export interface PersonnelRoleTertiarySkillConfig {
+  chance?: number;
+  roll?: PersonnelRoleSkillRoll;
+  candidates: PersonnelRoleSkillTemplate[];
+}
+
+export interface PersonnelRoleSkillProfile {
+  primary: PersonnelRoleSkillTemplate;
+  secondary?: PersonnelRoleSkillTemplate;
+  tertiary?: PersonnelRoleTertiarySkillConfig;
+}
+
+export interface PersonnelRoleSalaryWeights {
+  primary?: number;
+  secondary?: number;
+  tertiary?: number;
+}
+
+export interface PersonnelRoleSalaryRandomRange {
+  min?: number;
+  max?: number;
+}
+
+export interface PersonnelRoleSalaryFactorConfig {
+  base?: number;
+  perPoint?: number;
+  min?: number;
+  max?: number;
+}
+
+export interface PersonnelRoleSalaryConfig {
+  basePerTick: number;
+  skillFactor?: PersonnelRoleSalaryFactorConfig;
+  randomRange?: PersonnelRoleSalaryRandomRange;
+  skillWeights?: PersonnelRoleSalaryWeights;
+}
+
+export interface PersonnelRoleBlueprint {
+  id: string;
+  name: string;
+  description?: string;
+  preferredShiftId?: string;
+  maxMinutesPerTick?: number;
+  roleWeight?: number;
+  salary: PersonnelRoleSalaryConfig;
+  skillProfile: PersonnelRoleSkillProfile;
+}
+
+export const DEFAULT_PERSONNEL_ROLE_BLUEPRINTS = [
+  {
+    id: 'Gardener',
+    name: 'Gardener',
+    maxMinutesPerTick: 90,
+    roleWeight: 0.35,
+    salary: {
+      basePerTick: 24,
+      skillFactor: { base: 0.85, perPoint: 0.04, min: 0.85, max: 1.45 },
+      randomRange: { min: 0.9, max: 1.1 },
+      skillWeights: { primary: 1.2, secondary: 0.6, tertiary: 0.35 },
+    },
+    skillProfile: {
+      primary: {
+        skill: 'Gardening',
+        startingLevel: 4,
+        roll: { min: 3, max: 5 },
+      },
+      secondary: {
+        skill: 'Cleanliness',
+        startingLevel: 2,
+        roll: { min: 1, max: 4 },
+      },
+      tertiary: {
+        chance: 0.25,
+        roll: { min: 1, max: 3 },
+        candidates: [
+          { skill: 'Logistics', startingLevel: 1 },
+          { skill: 'Administration', startingLevel: 1 },
+          { skill: 'Maintenance', startingLevel: 1 },
+        ],
+      },
+    },
+  },
+  {
+    id: 'Technician',
+    name: 'Technician',
+    maxMinutesPerTick: 120,
+    roleWeight: 0.2,
+    salary: {
+      basePerTick: 28,
+      skillFactor: { base: 0.85, perPoint: 0.04, min: 0.85, max: 1.45 },
+      randomRange: { min: 0.9, max: 1.12 },
+      skillWeights: { primary: 1.25, secondary: 0.65, tertiary: 0.4 },
+    },
+    skillProfile: {
+      primary: {
+        skill: 'Maintenance',
+        startingLevel: 4,
+        roll: { min: 3, max: 5 },
+      },
+      secondary: {
+        skill: 'Logistics',
+        startingLevel: 2,
+        roll: { min: 1, max: 4 },
+      },
+      tertiary: {
+        chance: 0.25,
+        roll: { min: 1, max: 3 },
+        candidates: [
+          { skill: 'Gardening', startingLevel: 1 },
+          { skill: 'Administration', startingLevel: 1 },
+          { skill: 'Cleanliness', startingLevel: 1 },
+        ],
+      },
+    },
+  },
+  {
+    id: 'Janitor',
+    name: 'Janitor',
+    maxMinutesPerTick: 75,
+    preferredShiftId: 'shift.night',
+    roleWeight: 0.15,
+    salary: {
+      basePerTick: 18,
+      skillFactor: { base: 0.85, perPoint: 0.04, min: 0.85, max: 1.45 },
+      randomRange: { min: 0.88, max: 1.08 },
+      skillWeights: { primary: 1.1, secondary: 0.55, tertiary: 0.3 },
+    },
+    skillProfile: {
+      primary: {
+        skill: 'Cleanliness',
+        startingLevel: 4,
+        roll: { min: 3, max: 5 },
+      },
+      secondary: {
+        skill: 'Logistics',
+        startingLevel: 1,
+        roll: { min: 0, max: 3 },
+      },
+      tertiary: {
+        chance: 0.3,
+        roll: { min: 1, max: 3 },
+        candidates: [
+          { skill: 'Administration', startingLevel: 1 },
+          { skill: 'Gardening', startingLevel: 1 },
+          { skill: 'Maintenance', startingLevel: 1 },
+        ],
+      },
+    },
+  },
+  {
+    id: 'Operator',
+    name: 'Operator',
+    maxMinutesPerTick: 90,
+    preferredShiftId: 'shift.day',
+    roleWeight: 0.18,
+    salary: {
+      basePerTick: 22,
+      skillFactor: { base: 0.85, perPoint: 0.04, min: 0.85, max: 1.45 },
+      randomRange: { min: 0.9, max: 1.1 },
+      skillWeights: { primary: 1.15, secondary: 0.6, tertiary: 0.35 },
+    },
+    skillProfile: {
+      primary: {
+        skill: 'Logistics',
+        startingLevel: 3,
+        roll: { min: 2, max: 4 },
+      },
+      secondary: {
+        skill: 'Administration',
+        startingLevel: 2,
+        roll: { min: 1, max: 4 },
+      },
+      tertiary: {
+        chance: 0.25,
+        roll: { min: 1, max: 3 },
+        candidates: [
+          { skill: 'Cleanliness', startingLevel: 1 },
+          { skill: 'Gardening', startingLevel: 1 },
+          { skill: 'Maintenance', startingLevel: 1 },
+        ],
+      },
+    },
+  },
+  {
+    id: 'Manager',
+    name: 'Manager',
+    maxMinutesPerTick: 60,
+    preferredShiftId: 'shift.day',
+    roleWeight: 0.12,
+    salary: {
+      basePerTick: 35,
+      skillFactor: { base: 0.85, perPoint: 0.04, min: 0.85, max: 1.5 },
+      randomRange: { min: 0.95, max: 1.18 },
+      skillWeights: { primary: 1.3, secondary: 0.7, tertiary: 0.45 },
+    },
+    skillProfile: {
+      primary: {
+        skill: 'Administration',
+        startingLevel: 4,
+        roll: { min: 3, max: 5 },
+      },
+      secondary: {
+        skill: 'Logistics',
+        startingLevel: 2,
+        roll: { min: 1, max: 4 },
+      },
+      tertiary: {
+        chance: 0.4,
+        roll: { min: 1, max: 3 },
+        candidates: [{ skill: 'Cleanliness', startingLevel: 2, weight: 2 }],
+      },
+    },
+  },
+] as const satisfies readonly PersonnelRoleBlueprint[];
+
+export type EmployeeRole = (typeof DEFAULT_PERSONNEL_ROLE_BLUEPRINTS)[number]['id'];
 
 export type EmployeeSkills = Partial<Record<SkillName, number>>;
 

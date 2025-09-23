@@ -24,7 +24,11 @@ strategy, and operator-facing configuration levers.
   dashboards and audit tooling can react.
 
 Manual refreshes (`facade.workforce.refreshCandidates`) reuse the same path and
-force regeneration when `force` is set.
+force regeneration when `force` is set. Applicant composition (role mix, skill
+rolls, salaries) is data-driven via
+[`data/blueprints/personnelRoles.json`](./personnel_roles_blueprint.md); the
+service hot-loads updated blueprints on demand and falls back to the shipped
+defaults when the file is missing.
 
 ---
 
@@ -108,14 +112,19 @@ HTTP support is disabled or `fetch` is unavailable.
 4. **Gender draw.** Seeded RNG selects gender with `P(other) = pDiverse` and
    `P(male) = P(female) = (1 - pDiverse) / 2`, unless the profile forces a
    specific value.
-5. **Role selection.** Weighted draw (`Gardener 35%`, `Technician 20%`,
-   `Operator 18%`, `Janitor 15%`, `Manager 12%`).
-6. **Skill roll.** Apply role templates for primary/secondary skills and an
-   optional tertiary skill using bounded random draws (levels clamp between 1–5).
+5. **Role selection.** Weighted draw using each blueprint’s `roleWeight`
+   (defaults baked into the fallback data mirror the historical 35/20/18/15/12
+   distribution). Custom roles inherit the same logic once added to the
+   blueprint file.
+6. **Skill roll.** Apply the blueprint `skillProfile` for primary/secondary
+   skills and the optional tertiary pool using bounded random draws (levels
+   clamp between 0–5). Missing rolls inherit the fallback defaults.
 7. **Trait roll.** Sample distinct trait IDs from the personnel directory (if
    available) with a 60% chance to assign at least one trait.
-8. **Salary computation.** Start from `DEFAULT_SALARY_BY_ROLE`, scale by skills,
-   trait modifiers, and a small randomness factor, then clamp to ≥ 12.
+8. **Salary computation.** Start from the role blueprint’s `salary.basePerTick`,
+   scale by the weighted skill score (`salary.skillWeights`), apply the
+   `salary.skillFactor` curve, blend in trait modifiers, sprinkle bounded
+   randomness (`salary.randomRange`), and clamp to ≥ 12.
 9. **Assembly.** Produce `ApplicantState` records with `id`, `name`,
    `desiredRole`, `expectedSalary`, `skills`, `traits`, and `personalSeed`, plus
    `gender` when known.
