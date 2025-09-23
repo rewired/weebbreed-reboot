@@ -24,6 +24,7 @@ const createZone = (overrides: Partial<ZoneState> = {}): ZoneState => ({
     nutrientStrength: 1,
     substrateHealth: 1,
     reservoirLevel: 0.75,
+    lastTranspirationLiters: 0,
   },
   plants: [],
   devices: [],

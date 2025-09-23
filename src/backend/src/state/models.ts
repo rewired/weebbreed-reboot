@@ -112,6 +112,7 @@ export interface ZoneResourceState {
   nutrientStrength: number;
   substrateHealth: number;
   reservoirLevel: number;
+  lastTranspirationLiters: number;
 }
 
 export interface ZoneMetricState {

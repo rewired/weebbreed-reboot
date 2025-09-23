@@ -71,6 +71,7 @@ describe('state/initialization/tasks', () => {
       nutrientStrength: 1,
       substrateHealth: 1,
       reservoirLevel: 0.75,
+      lastTranspirationLiters: 0,
     };
     const metrics: ZoneMetricState = {
       averageTemperature: 24,

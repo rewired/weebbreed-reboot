@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import type { PlantState, ZoneEnvironmentState } from '@/state/models.js';
+import type { PlantState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import { createInitialPhenologyState, createPhenologyConfig } from './phenology.js';
 import type { PhenologyState } from './phenology.js';
 import { updatePlantGrowth } from './growthModel.js';
 import { computeVpd } from '@/engine/physio/vpd.js';
+import { TranspirationFeedbackService } from '@/engine/environment/transpirationFeedback.js';
 
 const createTestStrain = (): StrainBlueprint => ({
   id: 'strain-test',
@@ -262,6 +263,70 @@ describe('updatePlantGrowth', () => {
     expect(limited.biomassDelta).toBeLessThan(ample.biomassDelta);
     expect(limited.plant.health).toBeLessThan(ample.plant.health);
     expect(limited.transpirationLiters).toBeLessThan(ample.transpirationLiters);
+  });
+
+  it('feeds transpiration back into zone humidity and reservoirs', () => {
+    const strain = createTestStrain();
+    const config = createPhenologyConfig(strain);
+    const plant = createPlant({ stage: 'vegetative' });
+    const environment = createEnvironment({ relativeHumidity: 0.5 });
+
+    const zone: ZoneState = {
+      id: 'zone-1',
+      roomId: 'room-1',
+      name: 'Test Zone',
+      cultivationMethodId: 'method-1',
+      strainId: plant.strainId,
+      area: 10,
+      ceilingHeight: 3,
+      volume: 40,
+      environment: { ...environment },
+      resources: {
+        waterLiters: 120,
+        nutrientSolutionLiters: 80,
+        nutrientStrength: 0.9,
+        substrateHealth: 1,
+        reservoirLevel: 0.75,
+        lastTranspirationLiters: 0,
+      },
+      plants: [],
+      devices: [],
+      metrics: {
+        averageTemperature: environment.temperature,
+        averageHumidity: environment.relativeHumidity,
+        averageCo2: environment.co2,
+        averagePpfd: environment.ppfd,
+        stressLevel: 0,
+        lastUpdatedTick: 0,
+      },
+      control: { setpoints: {} },
+      health: { plantHealth: {}, pendingTreatments: [], appliedTreatments: [] },
+      activeTaskIds: [],
+    } satisfies ZoneState;
+
+    const result = updatePlantGrowth({
+      plant,
+      strain,
+      environment,
+      tickHours: 1,
+      phenology: createInitialPhenologyState('vegetative'),
+      phenologyConfig: config,
+      resourceSupply: { waterSupplyFraction: 1, nutrientSupplyFraction: 1 },
+    });
+
+    const feedback = new TranspirationFeedbackService();
+    const initialHumidity = zone.environment.relativeHumidity;
+    const initialWater = zone.resources.waterLiters;
+    const initialStrength = zone.resources.nutrientStrength;
+    const initialReservoir = zone.resources.reservoirLevel;
+
+    feedback.apply(zone, result.transpirationLiters);
+
+    expect(zone.resources.lastTranspirationLiters).toBeCloseTo(result.transpirationLiters, 9);
+    expect(zone.environment.relativeHumidity).toBeGreaterThan(initialHumidity);
+    expect(zone.resources.waterLiters).toBeLessThan(initialWater);
+    expect(zone.resources.nutrientStrength).toBeLessThan(initialStrength);
+    expect(zone.resources.reservoirLevel).toBeLessThan(initialReservoir);
   });
 });
 

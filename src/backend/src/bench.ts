@@ -12,6 +12,7 @@ import type { SimulationPhaseContext } from './sim/loop.js';
 import { createPhenologyConfig } from './engine/plants/phenology.js';
 import type { PhenologyState } from './engine/plants/phenology.js';
 import { updatePlantGrowth } from './engine/plants/growthModel.js';
+import { TranspirationFeedbackService } from '@/engine/environment/transpirationFeedback.js';
 import { createBlueprintRepositoryStub, createStateFactoryContext } from '@/testing/fixtures.js';
 import { logger } from '@runtime/logger.js';
 
@@ -126,6 +127,7 @@ const createPlantPhase = (
   phenologies: Map<string, PhenologyState>,
   metrics: Map<number, { biomassDelta: number; avgVpd: number; avgHealth: number }>,
 ) => {
+  const transpirationFeedback = new TranspirationFeedbackService();
   return (context: SimulationPhaseContext) => {
     const tickHours = context.tickLengthMinutes / 60;
     let biomassDelta = 0;
@@ -141,6 +143,9 @@ const createPlantPhase = (
             continue;
           }
           const phenologyConfig = createPhenologyConfig(strain);
+          let zoneTranspiration = 0;
+          let zoneVpdSum = 0;
+          let zonePlantCount = 0;
           zone.plants = zone.plants.map((plant) => {
             const result = updatePlantGrowth({
               plant,
@@ -161,11 +166,15 @@ const createPlantPhase = (
             vpdSum += result.metrics.vpd.value;
             healthSum += result.plant.health;
             plantCount += 1;
+            zoneTranspiration += result.transpirationLiters;
+            zoneVpdSum += result.metrics.vpd.value;
+            zonePlantCount += 1;
             return result.plant;
           });
-          if (plantCount > 0) {
-            zone.environment.vpd = vpdSum / plantCount;
+          if (zonePlantCount > 0) {
+            zone.environment.vpd = zoneVpdSum / zonePlantCount;
           }
+          transpirationFeedback.apply(zone, zoneTranspiration, context.accounting);
         }
       }
     }

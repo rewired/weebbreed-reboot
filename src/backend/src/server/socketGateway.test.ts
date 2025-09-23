@@ -276,6 +276,7 @@ const createTestState = (): GameState => {
                   nutrientStrength: 1,
                   substrateHealth: 0.9,
                   reservoirLevel: 0.8,
+                  lastTranspirationLiters: 0,
                 },
                 plants: [
                   {

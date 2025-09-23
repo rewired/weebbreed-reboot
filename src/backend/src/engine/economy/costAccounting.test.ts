@@ -163,6 +163,7 @@ const attachDeviceToState = (state: GameState, device: DeviceInstanceState): voi
                 nutrientStrength: 0,
                 substrateHealth: 0,
                 reservoirLevel: 0,
+                lastTranspirationLiters: 0,
               },
               plants: [],
               devices: [device],

@@ -100,6 +100,7 @@ const createTestState = (): GameState => ({
                 nutrientStrength: 1,
                 substrateHealth: 0.9,
                 reservoirLevel: 0.7,
+                lastTranspirationLiters: 0,
               },
               plants: [],
               devices: [

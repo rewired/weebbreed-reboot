@@ -16,6 +16,8 @@ import {
 import { createPhenologyConfig } from '@/engine/plants/phenology.js';
 import type { PhenologyState } from '@/engine/plants/phenology.js';
 import { updatePlantGrowth } from '@/engine/plants/growthModel.js';
+import { TranspirationFeedbackService } from '@/engine/environment/transpirationFeedback.js';
+import { SATURATION_VAPOR_DENSITY_KG_PER_M3 } from '@/constants/environment.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { SimulationPhaseContext } from './loop.js';
 
@@ -83,6 +85,7 @@ const createPlantPhaseHandler = (
   phenologies: Map<string, PhenologyState>,
   metrics: Map<number, TickMetrics>,
 ) => {
+  const transpirationFeedback = new TranspirationFeedbackService();
   return (context: SimulationPhaseContext) => {
     const tickHours = context.tickLengthMinutes / 60;
     let biomassDelta = 0;
@@ -99,6 +102,9 @@ const createPlantPhaseHandler = (
             continue;
           }
           const phenologyConfig = createPhenologyConfig(strain);
+          let zoneTranspiration = 0;
+          let zoneVpdSum = 0;
+          let zonePlantCount = 0;
           const updatedPlants = zone.plants.map((plant) => {
             const result = updatePlantGrowth({
               plant,
@@ -120,9 +126,16 @@ const createPlantPhaseHandler = (
             stressSum += result.metrics.overallStress;
             healthSum += result.plant.health;
             plantCount += 1;
+            zoneTranspiration += result.transpirationLiters;
+            zoneVpdSum += result.metrics.vpd.value;
+            zonePlantCount += 1;
             return result.plant;
           });
           zone.plants = updatedPlants;
+          if (zonePlantCount > 0) {
+            zone.environment.vpd = zoneVpdSum / zonePlantCount;
+          }
+          transpirationFeedback.apply(zone, zoneTranspiration, context.accounting);
         }
       }
     }
@@ -134,17 +147,6 @@ const createPlantPhaseHandler = (
       avgStress: stressSum / normaliser,
       avgHealth: healthSum / normaliser,
     });
-
-    if (plantCount > 0) {
-      const averageVpd = vpdSum / plantCount;
-      for (const structure of context.state.structures) {
-        for (const room of structure.rooms) {
-          for (const zone of room.zones) {
-            zone.environment.vpd = averageVpd;
-          }
-        }
-      }
-    }
   };
 };
 
@@ -240,6 +242,64 @@ describe('integration scenarios', () => {
     expect(dryMetrics!.avgVpd).toBeGreaterThan(baselineMetrics!.avgVpd);
     expect(dryMetrics!.avgStress).toBeGreaterThan(baselineMetrics!.avgStress);
     expect(dryMetrics!.avgHealth).toBeLessThan(baselineMetrics!.avgHealth);
+  });
+
+  it('transpiration raises humidity and drains zone reservoirs', async () => {
+    const repository = buildRepository();
+    const context = createStateFactoryContext('transpiration-feedback', {
+      repository,
+      structureBlueprints: [
+        createStructureBlueprint({ footprint: { length: 12, width: 6, height: 4 } }),
+      ],
+    });
+    const state = await createInitialState(context);
+    const zone = state.structures[0].rooms[0].zones[0];
+
+    const initialHumidity = zone.environment.relativeHumidity;
+    const initialWater = zone.resources.waterLiters;
+    const initialSolution = zone.resources.nutrientSolutionLiters;
+    const initialStrength = zone.resources.nutrientStrength;
+    const initialReservoir = zone.resources.reservoirLevel;
+
+    const phenologies = new Map<string, PhenologyState>();
+    const metrics = new Map<number, TickMetrics>();
+    const loop = new SimulationLoop({
+      state,
+      eventBus: new EventBus(),
+      phases: {
+        applyDevices: () => undefined,
+        deriveEnvironment: () => undefined,
+        updatePlants: createPlantPhaseHandler(repository, phenologies, metrics),
+      },
+    });
+
+    await loop.processTick();
+
+    const transpirationLiters = zone.resources.lastTranspirationLiters;
+    expect(transpirationLiters).toBeGreaterThan(0);
+
+    const saturationCapacity = SATURATION_VAPOR_DENSITY_KG_PER_M3 * zone.volume;
+    const expectedHumidityDelta = Math.min(
+      transpirationLiters / Math.max(saturationCapacity, Number.EPSILON),
+      1 - initialHumidity,
+    );
+
+    expect(zone.environment.relativeHumidity).toBeGreaterThan(initialHumidity);
+    expect(zone.environment.relativeHumidity - initialHumidity).toBeCloseTo(
+      expectedHumidityDelta,
+      6,
+    );
+
+    const waterConsumed = initialWater - zone.resources.waterLiters;
+    expect(waterConsumed).toBeGreaterThan(0);
+    expect(waterConsumed).toBeCloseTo(Math.min(transpirationLiters, initialWater), 6);
+
+    const solutionConsumed = initialSolution - zone.resources.nutrientSolutionLiters;
+    expect(solutionConsumed).toBeGreaterThanOrEqual(0);
+    expect(solutionConsumed).toBeCloseTo(Math.min(transpirationLiters, initialSolution), 6);
+
+    expect(zone.resources.nutrientStrength).toBeLessThan(initialStrength);
+    expect(zone.resources.reservoirLevel).toBeLessThan(initialReservoir);
   });
 
   it('additional lighting overcomes coverage limits for PPFD', async () => {

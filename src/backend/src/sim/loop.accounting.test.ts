@@ -60,6 +60,7 @@ const createAccountingTestState = (): GameState => {
       nutrientStrength: 0,
       substrateHealth: 1,
       reservoirLevel: 0.5,
+      lastTranspirationLiters: 0,
     } satisfies ZoneResourceState,
     plants: [],
     devices: [
