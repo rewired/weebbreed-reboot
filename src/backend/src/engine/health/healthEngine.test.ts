@@ -123,6 +123,7 @@ const createResources = (): ZoneResourceState => ({
   nutrientStrength: 1,
   substrateHealth: 1,
   reservoirLevel: 0.6,
+  lastTranspirationLiters: 0,
 });
 
 const createMetrics = (environment: ZoneEnvironmentState): ZoneMetricState => ({

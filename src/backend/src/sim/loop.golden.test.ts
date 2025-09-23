@@ -20,6 +20,7 @@ import type { GameState, ZoneState } from '@/state/models.js';
 import { createPhenologyConfig } from '@/engine/plants/phenology.js';
 import type { PhenologyState } from '@/engine/plants/phenology.js';
 import { updatePlantGrowth } from '@/engine/plants/growthModel.js';
+import { TranspirationFeedbackService } from '@/engine/environment/transpirationFeedback.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { SimulationPhaseContext } from './loop.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
@@ -163,6 +164,7 @@ const createPlantPhaseHandler = (
   phenologies: Map<string, PhenologyState>,
   metrics: Map<number, TickMetrics>,
 ) => {
+  const transpirationFeedback = new TranspirationFeedbackService();
   return (context: SimulationPhaseContext) => {
     const tickHours = context.tickLengthMinutes / 60;
     let biomassDelta = 0;
@@ -179,6 +181,9 @@ const createPlantPhaseHandler = (
             continue;
           }
           const phenologyConfig = createPhenologyConfig(strain);
+          let zoneTranspiration = 0;
+          let zoneVpdSum = 0;
+          let zonePlantCount = 0;
           const updatedPlants = zone.plants.map((plant) => {
             const result = updatePlantGrowth({
               plant,
@@ -200,13 +205,16 @@ const createPlantPhaseHandler = (
             stressSum += result.metrics.overallStress;
             healthSum += result.plant.health;
             plantCount += 1;
+            zoneTranspiration += result.transpirationLiters;
+            zoneVpdSum += result.metrics.vpd.value;
+            zonePlantCount += 1;
             return result.plant;
           });
           zone.plants = updatedPlants;
-          if (plantCount > 0) {
-            const averageVpd = vpdSum / plantCount;
-            zone.environment.vpd = averageVpd;
+          if (zonePlantCount > 0) {
+            zone.environment.vpd = zoneVpdSum / zonePlantCount;
           }
+          transpirationFeedback.apply(zone, zoneTranspiration, context.accounting);
         }
       }
     }

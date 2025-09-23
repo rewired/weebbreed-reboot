@@ -12,6 +12,7 @@ export interface ZoneResourceSnapshot {
   nutrientStrength: number;
   substrateHealth: number;
   reservoirLevel: number;
+  lastTranspirationLiters: number;
 }
 
 export interface DeviceMaintenanceSnapshot {

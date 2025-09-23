@@ -138,6 +138,7 @@ const createGameStateWithZone = (): GameState => {
       nutrientStrength: 1,
       substrateHealth: 1,
       reservoirLevel: 0.6,
+      lastTranspirationLiters: 0,
     } satisfies ZoneResourceState,
     plants: [],
     devices: [

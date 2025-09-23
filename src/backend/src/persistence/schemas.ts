@@ -26,6 +26,7 @@ const zoneResourceSchema = z.object({
   nutrientStrength: z.number(),
   substrateHealth: z.number(),
   reservoirLevel: z.number(),
+  lastTranspirationLiters: z.number(),
 });
 
 const zoneMetricSchema = z.object({

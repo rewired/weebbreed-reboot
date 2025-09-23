@@ -49,6 +49,7 @@ const createDefaultResources = (): ZoneResourceState => ({
   nutrientStrength: 1,
   substrateHealth: 1,
   reservoirLevel: DEFAULT_ZONE_RESERVOIR_LEVEL,
+  lastTranspirationLiters: 0,
 });
 
 const createEmptyHealth = (): ZoneHealthState => ({

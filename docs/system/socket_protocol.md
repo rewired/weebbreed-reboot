@@ -147,7 +147,8 @@ Batched snapshot diff and event bundles. Payload:
               "nutrientSolutionLiters": 45,
               "nutrientStrength": 1.1,
               "substrateHealth": 0.84,
-              "reservoirLevel": 0.66
+              "reservoirLevel": 0.66,
+              "lastTranspirationLiters": 3.2
             },
             "metrics": {
               "averageTemperature": 23.8,

@@ -171,6 +171,7 @@ const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
   nutrientStrength: resources.nutrientStrength,
   substrateHealth: resources.substrateHealth,
   reservoirLevel: resources.reservoirLevel,
+  lastTranspirationLiters: resources.lastTranspirationLiters,
 });
 
 const cloneControl = (control: ZoneControlState): ZoneControlState => ({

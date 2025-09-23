@@ -49,7 +49,10 @@ See [WB Physiology Reference](./wb-physio.md) for the concrete formulas and unit
      - `SATURATION_VAPOR_DENSITY_KG_PER_M3 ≈ 0.0173 kg·m⁻³` (20 °C reference) anchors the simple moisture balance; outputs are clamped to `[0,1]` after device hysteresis and controller modulation (`humidityHumidify` / `humidityDehumidify`).
    - **CO2Injector**: move `CO2` toward `targetCO2_ppm`, capped by `maxSafeCO2_ppm`.
 3. **Plant deltas** (coarse canopy physiology)
-   - **Transpiration**: `+ΔRH` (scaled by PPFD, temperature, phenological phase).
+   - **Transpiration**: convert the zone’s aggregated `transpirationLiters` into a humidity delta using
+     `SATURATION_VAPOR_DENSITY_KG_PER_M3` and the zone volume. The same liter quantity is removed from the
+     zone’s water/nutrient reservoirs, lowering `reservoirLevel` and weakening `nutrientStrength` before
+     clamps are applied.
    - **Photosynthesis**: `−ΔCO2` (scaled by PPFD and saturation curve).
 4. **Normalization toward ambient**
    - Exponential pull: `Δ = k_mix * (ambient − current)`.
@@ -99,6 +102,13 @@ Plants respond to environment and resources; **stress** reduces **health**; **he
    Accumulate quality within `harvest.windowDays`; outside this window, quality decays faster.
 
 **Outputs**: plant metrics (biomass, health, stress), resource consumption, warnings.
+
+During the same `updatePlants` phase the engine now aggregates the returned
+`transpirationLiters` per zone and immediately applies the irrigation feedback:
+humidity is increased according to the zone volume while the corresponding water
+and nutrient solution volumes are depleted (`reservoirLevel` and
+`nutrientStrength` drop accordingly). This keeps the environment and resource
+state in lockstep with plant transpiration before the tick commits.
 
 ---
 
