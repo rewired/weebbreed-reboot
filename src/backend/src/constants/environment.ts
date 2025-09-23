@@ -37,6 +37,12 @@ export const DEHUMIDIFIER_HEAT_FACTOR = 0.2;
 /** The amount of relative humidity (as a fraction from 0 to 1) that a single plant adds to the zone each hour through transpiration. */
 export const PLANT_TRANSPIRATION_RH_PER_PLANT = 0.00005;
 
+/**
+ * Approximate saturated water vapour density of air at 20 °C in kg·m⁻³. Used to convert
+ * humidifier/dehumidifier water mass flow into relative humidity deltas for a zone volume.
+ */
+export const SATURATION_VAPOR_DENSITY_KG_PER_M3 = 0.0173;
+
 /** The amount of CO₂ (in ppm) that a single plant removes from the zone each hour during photosynthesis. */
 export const PLANT_CO2_CONSUMPTION_PPM_PER_PLANT = 0.2;
 

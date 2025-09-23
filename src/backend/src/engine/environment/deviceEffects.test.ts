@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { SATURATION_VAPOR_DENSITY_KG_PER_M3 } from '@/constants/environment.js';
 import { computeZoneDeviceDeltas } from './deviceEffects.js';
 import type {
   DeviceInstanceState,
@@ -85,6 +86,7 @@ const createZone = (
     plants: [],
     devices,
     metrics: createMetrics(env),
+    control: { setpoints: {} },
     health: createHealth(),
     activeTaskIds: [],
   };
@@ -167,5 +169,92 @@ describe('deviceEffects', () => {
     expect(deltas.co2Delta).toBeCloseTo(300, 5);
     expect(deltas.temperatureDelta).toBe(0);
     expect(deltas.airflow).toBe(0);
+  });
+
+  it('humidifies zone humidity according to controller output and device efficiency', () => {
+    const tickHours = 0.25;
+    const zone = createZone(
+      [
+        createDevice(
+          'HumidityControlUnit',
+          {
+            power: 0.4,
+            targetHumidity: 0.65,
+            hysteresis: 0.04,
+            humidifyRateKgPerTick: 0.1,
+            dehumidifyRateKgPerTick: 0.06,
+          },
+          0.85,
+        ),
+      ],
+      createEnvironment({ relativeHumidity: 0.45 }),
+    );
+    zone.control.setpoints.humidity = 0.65;
+
+    const geometry = { area: 40, ceilingHeight: 3, volume: 120 } as const;
+
+    const deltas = computeZoneDeviceDeltas(zone, geometry, {
+      tickHours,
+      powerLevels: {
+        temperatureHeating: 0,
+        temperatureCooling: 0,
+        humidityHumidify: 60,
+        humidityDehumidify: 0,
+        co2Injection: 0,
+      },
+    });
+
+    const fullPowerMass = 0.1 * tickHours * 0.85;
+    const expectedFullPowerDelta =
+      fullPowerMass / (geometry.volume * SATURATION_VAPOR_DENSITY_KG_PER_M3);
+    const expectedDelta = expectedFullPowerDelta * 0.6;
+
+    expect(deltas.humidityDelta).toBeCloseTo(expectedDelta, 6);
+    expect(deltas.humidityDelta).toBeGreaterThan(0);
+    expect(deltas.energyKwh).toBeCloseTo(0.4 * tickHours * 0.6, 6);
+  });
+
+  it('dehumidifies zone humidity down toward the setpoint while respecting bounds', () => {
+    const tickHours = 0.5;
+    const zone = createZone(
+      [
+        createDevice(
+          'HumidityControlUnit',
+          {
+            power: 0.5,
+            targetHumidity: 0.55,
+            hysteresis: 0.06,
+            humidifyRateKgPerTick: 0.08,
+            dehumidifyRateKgPerTick: 0.12,
+          },
+          0.8,
+        ),
+      ],
+      createEnvironment({ relativeHumidity: 0.9 }),
+    );
+    zone.control.setpoints.humidity = 0.55;
+
+    const geometry = { area: 40, ceilingHeight: 3, volume: 120 } as const;
+
+    const deltas = computeZoneDeviceDeltas(zone, geometry, {
+      tickHours,
+      powerLevels: {
+        temperatureHeating: 0,
+        temperatureCooling: 0,
+        humidityHumidify: 0,
+        humidityDehumidify: 80,
+        co2Injection: 0,
+      },
+    });
+
+    const fullPowerMass = 0.12 * tickHours * 0.8;
+    const expectedFullPowerDelta =
+      fullPowerMass / (geometry.volume * SATURATION_VAPOR_DENSITY_KG_PER_M3);
+    const expectedDelta = -expectedFullPowerDelta * 0.8;
+
+    expect(deltas.humidityDelta).toBeCloseTo(expectedDelta, 6);
+    expect(deltas.humidityDelta).toBeLessThan(0);
+    expect(deltas.humidityDelta).toBeGreaterThanOrEqual(-zone.environment.relativeHumidity);
+    expect(deltas.energyKwh).toBeCloseTo(0.5 * tickHours * 0.8, 6);
   });
 });
