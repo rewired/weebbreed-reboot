@@ -24,6 +24,11 @@ while a React front end streams telemetry for real-time visualization.
   and anchored by ADR 0005. Keep the Socket.IO server (`socket.io`) and client
   (`socket.io-client`) dependencies on the **same minor version** across
   packages to avoid protocol drift in the wire format and handshake helpers.
+- **Socket endpoint discovery** – The dashboard imports `SOCKET_URL` from
+  `src/frontend/src/config/socket.ts`. It reads `import.meta.env.VITE_SOCKET_URL`
+  (set via a `.env` file beside `src/frontend`) and falls back to
+  `http://localhost:7331/socket.io`, the backend development default
+  (`WEEBBREED_BACKEND_PORT=7331`).
 
 Detailed architecture, module boundaries, and naming rules live in the
 workspace documentation. Start with the product vision and system references in

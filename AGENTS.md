@@ -115,6 +115,7 @@ export function vpdProxy(T: number, RH: number, Tbase = 10): number {
 - Minimal API: `emit(type, payload, tick, level = 'info')`.
 - Provide `uiStream$` with basic filtering/buffering for UI consumption.
 - **Transports:** Socket.IO gateway (`src/backend/src/server/socketGateway.ts`) and SSE gateway (`src/backend/src/server/sseGateway.ts`) both subscribe to the shared stream. Keep docs (`docs/system/socket_protocol.md`) and frontend bridge hooks in sync with payload updates.
+- **Socket endpoint discovery:** The dashboard resolves its Socket.IO endpoint through `src/frontend/src/config/socket.ts`. It exports a `SOCKET_URL` constant derived from `import.meta.env.VITE_SOCKET_URL` and falls back to `http://localhost:7331/socket.io` (backend dev default). Update the docs whenever this lookup changes so integrators can point non-proxied deployments at a custom URL.
 - **No commands through the event bus.**
 
 ### 4.4 Factories + JSON Blueprints

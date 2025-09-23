@@ -15,6 +15,11 @@ pnpm --filter @weebbreed/backend dev
 The CLI entry point starts the blueprint loader, seeds the initial game state,
 attaches the Socket.IO and SSE gateways, and starts the simulation clock. Use
 `WEEBBREED_BACKEND_PORT` and `WEEBBREED_BACKEND_SEED` to override the defaults.
+The frontend resolves its Socket.IO endpoint from the `SOCKET_URL` export in
+`src/frontend/src/config/socket.ts`, which inspects
+`import.meta.env.VITE_SOCKET_URL` and otherwise defaults to
+`http://localhost:7331/socket.io`. Keep the backend port and the frontend env
+variable aligned when running the packages separately.
 
 ## Production build
 

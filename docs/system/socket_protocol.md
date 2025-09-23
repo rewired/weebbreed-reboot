@@ -47,11 +47,15 @@ buildSimulationSnapshot(state, repository))`.
 
 ### Frontend Configuration
 
-- The Vite dashboard reads the socket endpoint from the `VITE_SOCKET_URL`
-  environment variable. Create a `.env` file next to the frontend package (see
-  `.env.example`) to point the UI at a different host/port during development.
-- When the variable is omitted the UI falls back to
-  `http://localhost:7331/socket.io`, matching the default backend dev server.
+- `src/frontend/src/config/socket.ts` centralises the browser endpoint lookup
+  and exports a `SOCKET_URL` constant for hooks/components to consume.
+- `SOCKET_URL` inspects `import.meta.env.VITE_SOCKET_URL`; create a `.env` file
+  next to the frontend package (see `.env.example`) to point the UI at a
+  different host/port during development or when the app is served separately
+  from the backend.
+- When `VITE_SOCKET_URL` is omitted the helper falls back to
+  `http://localhost:7331/socket.io`, matching the default backend dev server
+  (`WEEBBREED_BACKEND_PORT=7331`).
 
 ## Outgoing Events
 

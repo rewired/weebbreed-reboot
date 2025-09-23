@@ -32,6 +32,10 @@ future upgrades cannot regress the dashboard connection behaviour.
   and the SSE fallback because both transports share the latest server features.
 - The ADR provides an audit trail for why cross-package version bumps are
   required, avoiding accidental downgrades during targeted fixes.
+- Configuration guidance now points to
+  `src/frontend/src/config/socket.ts`, which derives `SOCKET_URL` from
+  `VITE_SOCKET_URL` (defaulting to `http://localhost:7331/socket.io`) so ops and
+  developers have a single knob for non-proxied deployments.
 
 ## Alternatives Considered
 
