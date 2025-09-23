@@ -1,7 +1,6 @@
-﻿
-# All JSON configurations file, currently available in `/data`
+﻿# All JSON configurations file, currently available in `/data`
 
-*Important rule for the consistency* if in other documents attributes are listed but not in this document, the other document is right and attributes and data has to be added to the following files!
+_Important rule for the consistency_ if in other documents attributes are listed but not in this document, the other document is right and attributes and data has to be added to the following files!
 These files are crucial! The blueprinted Objects will be rehidrated from these configuration files, so there is no need, for hardcoded representation!
 
 ## blueprints/cultivationMethods/basic_soil_pot.json
@@ -31,30 +30,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "strainTraitCompatibility": {},
   "idealConditions": {
-    "idealTemperature": [
-      20,
-      28
-    ],
-    "idealHumidity": [
-      0.5,
-      0.7
-    ]
+    "idealTemperature": [20, 28],
+    "idealHumidity": [0.5, 0.7]
   },
   "meta": {
     "description": "Simple cultivation method: one plant per pot in soil. Low setup cost, minimal labor, universally compatible.",
-    "advantages": [
-      "Very low initial cost",
-      "Compatible with most strains",
-      "Easy to manage"
-    ],
-    "disadvantages": [
-      "Moderate space usage",
-      "Lower productivity than advanced methods"
-    ]
+    "advantages": ["Very low initial cost", "Compatible with most strains", "Easy to manage"],
+    "disadvantages": ["Moderate space usage", "Lower productivity than advanced methods"]
   }
 }
 ```
-
 
 ## blueprints/cultivationMethods/scrog.json
 
@@ -94,14 +79,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     }
   },
   "idealConditions": {
-    "idealTemperature": [
-      21,
-      27
-    ],
-    "idealHumidity": [
-      0.55,
-      0.7
-    ]
+    "idealTemperature": [21, 27],
+    "idealHumidity": [0.55, 0.7]
   },
   "meta": {
     "description": "Screen of Green (SCROG) is a low-density cultivation method that uses a screen to train plants to grow horizontally, creating a flat, even canopy. It maximizes light exposure for a smaller number of larger plants.",
@@ -118,7 +97,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   }
 }
 ```
-
 
 ## blueprints/cultivationMethods/sog.json
 
@@ -164,22 +142,12 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     }
   },
   "idealConditions": {
-    "idealTemperature": [
-      22,
-      28
-    ],
-    "idealHumidity": [
-      0.5,
-      0.65
-    ]
+    "idealTemperature": [22, 28],
+    "idealHumidity": [0.5, 0.65]
   },
   "meta": {
     "description": "Sea of Green (SOG) is a high-density cultivation method where many small plants are grown close together to quickly fill a canopy. It emphasizes short vegetative phases and rapid cycling, ideal for fast-flowering indica-dominant strains.",
-    "advantages": [
-      "Shorter grow cycles",
-      "Efficient use of space",
-      "Lower training effort"
-    ],
+    "advantages": ["Shorter grow cycles", "Efficient use of space", "Lower training effort"],
     "disadvantages": [
       "More plants to manage",
       "Legal limitations in plant count (IRL)",
@@ -188,7 +156,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   }
 }
 ```
-
 
 ## blueprints/devices/climate_unit_01.json
 
@@ -224,9 +191,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "notes": "Recommended for vegetative and early flowering stages in temperate climates."
   }
 }
-
 ```
-
 
 ## blueprints/devices/co2injector-01.json
 
@@ -247,18 +212,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "Automated CO2 injector for controlled enrichment.",
-    "advantages": [
-      "Precise dosing",
-      "Energy efficient"
-    ],
-    "disadvantages": [
-      "Requires CO2 supply",
-      "Overuse can harm plants"
-    ]
+    "advantages": ["Precise dosing", "Energy efficient"],
+    "disadvantages": ["Requires CO2 supply", "Overuse can harm plants"]
   }
 }
 ```
-
 
 ## blueprints/devices/dehumidifier-01.json
 
@@ -276,25 +234,15 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "Compact unit for reducing ambient humidity.",
-    "advantages": [
-      "Efficient moisture removal",
-      "Low energy consumption"
-    ],
-    "disadvantages": [
-      "Limited capacity for large rooms",
-      "Generates heat"
-    ]
+    "advantages": ["Efficient moisture removal", "Low energy consumption"],
+    "disadvantages": ["Limited capacity for large rooms", "Generates heat"]
   }
 }
-
-
 ```
-
 
 ## blueprints/devices/exhaust_fan_01.json
 
 ```json
-
 {
   "id": "f5d5c5a0-1b2c-4d3e-8f9a-0b1c2d3e4f5a",
   "kind": "Ventilation",
@@ -322,7 +270,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-
 ## blueprints/devices/humidity_control_unit_01.json
 
 ```json
@@ -342,20 +289,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "A standard unit to control humidity.",
-    "advantages": [
-      "Handles both humidification and dehumidification",
-      "Simple to operate"
-    ],
-    "disadvantages": [
-      "Limited capacity for large rooms",
-      "Requires regular maintenance"
-    ]
+    "advantages": ["Handles both humidification and dehumidification", "Simple to operate"],
+    "disadvantages": ["Limited capacity for large rooms", "Requires regular maintenance"]
   }
 }
-
-
 ```
-
 
 ## blueprints/devices/veg_light_01.json
 
@@ -371,28 +309,17 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "power": 0.6,
     "ppfd": 800,
     "coverageArea": 1.2,
-    "spectralRange": [
-      400,
-      700
-    ],
+    "spectralRange": [400, 700],
     "heatFraction": 0.3
   },
   "meta": {
     "description": "Full-spectrum LED grow light optimized for the vegetative phase of cannabis plants. Balanced light distribution with low heat generation.",
-    "advantages": [
-      "High energy efficiency",
-      "Low heat output",
-      "Ideal for early growth stages"
-    ],
-    "disadvantages": [
-      "Limited effectiveness for flowering",
-      "Higher upfront cost compared to HPS"
-    ],
+    "advantages": ["High energy efficiency", "Low heat output", "Ideal for early growth stages"],
+    "disadvantages": ["Limited effectiveness for flowering", "Higher upfront cost compared to HPS"],
     "notes": "Best used in enclosed environments with adequate canopy management."
   }
 }
 ```
-
 
 ## blueprints/diseases/anthracnose.json
 
@@ -402,25 +329,13 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Anthracnose",
   "pathogenType": "fungus",
-  "targets": [
-    "leaves",
-    "stems"
-  ],
+  "targets": ["leaves", "stems"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.6,
-      0.9
-    ],
-    "temperatureRange": [
-      18,
-      28
-    ],
+    "idealHumidityRange": [0.6, 0.9],
+    "temperatureRange": [18, 28],
     "leafWetnessRequired": true
   },
-  "transmission": [
-    "splashingWater",
-    "tools"
-  ],
+  "transmission": ["splashingWater", "tools"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.05,
@@ -431,23 +346,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.93
   },
   "detection": {
-    "symptoms": [
-      "Dark, sunken lesions on leaves and stems",
-      "Possible spore rings"
-    ]
+    "symptoms": ["Dark, sunken lesions on leaves and stems", "Possible spore rings"]
   },
   "treatments": {
-    "cultural": [
-      "Avoid overhead irrigation",
-      "Disinfect tools"
-    ],
-    "mechanical": [
-      "Remove infected shoots"
-    ]
+    "cultural": ["Avoid overhead irrigation", "Disinfect tools"],
+    "mechanical": ["Remove infected shoots"]
   }
 }
 ```
-
 
 ## blueprints/diseases/bacterial_leaf_spot.json
 
@@ -457,25 +363,13 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Bacterial Leaf Spot",
   "pathogenType": "bacteria",
-  "targets": [
-    "leaves"
-  ],
+  "targets": ["leaves"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.6,
-      0.95
-    ],
-    "temperatureRange": [
-      18,
-      28
-    ],
+    "idealHumidityRange": [0.6, 0.95],
+    "temperatureRange": [18, 28],
     "leafWetnessRequired": true
   },
-  "transmission": [
-    "splashingWater",
-    "tools",
-    "workers"
-  ],
+  "transmission": ["splashingWater", "tools", "workers"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.06,
@@ -492,17 +386,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     ]
   },
   "treatments": {
-    "cultural": [
-      "Keep foliage dry",
-      "Disinfect tools"
-    ],
-    "mechanical": [
-      "Remove heavily infected leaves"
-    ]
+    "cultural": ["Keep foliage dry", "Disinfect tools"],
+    "mechanical": ["Remove heavily infected leaves"]
   }
 }
 ```
-
 
 ## blueprints/diseases/bacterial_wilt.json
 
@@ -512,26 +400,13 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Bacterial Wilt (Erwinia-like)",
   "pathogenType": "bacteria",
-  "targets": [
-    "stems",
-    "vascular"
-  ],
+  "targets": ["stems", "vascular"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.5,
-      0.9
-    ],
-    "temperatureRange": [
-      20,
-      30
-    ],
+    "idealHumidityRange": [0.5, 0.9],
+    "temperatureRange": [20, 30],
     "woundEntryRisk": 0.8
   },
-  "transmission": [
-    "tools",
-    "substrate",
-    "splashingWater"
-  ],
+  "transmission": ["tools", "substrate", "splashingWater"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.07,
@@ -542,24 +417,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.96
   },
   "detection": {
-    "symptoms": [
-      "Sudden wilting despite sufficient soil moisture",
-      "Darkened vascular tissue"
-    ]
+    "symptoms": ["Sudden wilting despite sufficient soil moisture", "Darkened vascular tissue"]
   },
   "treatments": {
-    "cultural": [
-      "Avoid wounding",
-      "Increase hygiene",
-      "Maintain low rH"
-    ],
-    "mechanical": [
-      "Remove heavily infected plants"
-    ]
+    "cultural": ["Avoid wounding", "Increase hygiene", "Maintain low rH"],
+    "mechanical": ["Remove heavily infected plants"]
   }
 }
 ```
-
 
 ## blueprints/diseases/botrytis_gray_mold.json
 
@@ -569,28 +434,15 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Botrytis (Gray Mold / Bud Rot)",
   "pathogenType": "fungus",
-  "targets": [
-    "buds",
-    "flowers",
-    "leaves"
-  ],
+  "targets": ["buds", "flowers", "leaves"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.6,
-      0.9
-    ],
-    "temperatureRange": [
-      15,
-      22
-    ],
+    "idealHumidityRange": [0.6, 0.9],
+    "temperatureRange": [15, 22],
     "leafWetnessRequired": true,
     "lowAirflowRisk": 0.8,
     "denseCanopyRisk": 0.85
   },
-  "transmission": [
-    "airborneSpores",
-    "wounds"
-  ],
+  "transmission": ["airborneSpores", "wounds"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.08,
@@ -604,23 +456,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "budLossFractionPerDay": 0.05
   },
   "detection": {
-    "symptoms": [
-      "Brown-gray, mushy spots inside buds",
-      "Cottony mold growth with musty smell"
-    ]
+    "symptoms": ["Brown-gray, mushy spots inside buds", "Cottony mold growth with musty smell"]
   },
   "treatments": {
-    "cultural": [
-      "Maintain rH < 0.55 in late flowering",
-      "Increase air circulation"
-    ],
-    "mechanical": [
-      "Remove affected buds"
-    ]
+    "cultural": ["Maintain rH < 0.55 in late flowering", "Increase air circulation"],
+    "mechanical": ["Remove affected buds"]
   }
 }
 ```
-
 
 ## blueprints/diseases/downy_mildew.json
 
@@ -630,25 +473,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Downy Mildew",
   "pathogenType": "fungus",
-  "targets": [
-    "leaves"
-  ],
+  "targets": ["leaves"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.7,
-      0.95
-    ],
-    "temperatureRange": [
-      15,
-      24
-    ],
+    "idealHumidityRange": [0.7, 0.95],
+    "temperatureRange": [15, 24],
     "leafWetnessRequired": true,
     "lowAirflowRisk": 0.7
   },
-  "transmission": [
-    "airborneSpores",
-    "splashingWater"
-  ],
+  "transmission": ["airborneSpores", "splashingWater"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.055,
@@ -659,23 +491,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.92
   },
   "detection": {
-    "symptoms": [
-      "Yellowish angular leaf spots",
-      "Gray-white fungal growth on leaf undersides"
-    ]
+    "symptoms": ["Yellowish angular leaf spots", "Gray-white fungal growth on leaf undersides"]
   },
   "treatments": {
-    "cultural": [
-      "Avoid night condensation",
-      "Irrigate during day"
-    ],
-    "mechanical": [
-      "Remove infected leaves"
-    ]
+    "cultural": ["Avoid night condensation", "Irrigate during day"],
+    "mechanical": ["Remove infected leaves"]
   }
 }
 ```
-
 
 ## blueprints/diseases/hop_latent_viroid.json
 
@@ -685,20 +508,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Hop Latent Viroid (HpLVd)",
   "pathogenType": "viroid",
-  "targets": [
-    "systemic"
-  ],
+  "targets": ["systemic"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      28
-    ]
+    "temperatureRange": [18, 28]
   },
-  "transmission": [
-    "clones",
-    "sap",
-    "tools"
-  ],
+  "transmission": ["clones", "sap", "tools"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.03,
@@ -715,17 +529,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     ]
   },
   "treatments": {
-    "cultural": [
-      "Use tested clones only",
-      "Strict tool hygiene"
-    ],
-    "mechanical": [
-      "Screen and remove infected mother plants"
-    ]
+    "cultural": ["Use tested clones only", "Strict tool hygiene"],
+    "mechanical": ["Screen and remove infected mother plants"]
   }
 }
 ```
-
 
 ## blueprints/diseases/mosaic_virus.json
 
@@ -735,21 +543,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Mosaic Virus (TMV/CMV-like)",
   "pathogenType": "virus",
-  "targets": [
-    "leaves",
-    "systemic"
-  ],
+  "targets": ["leaves", "systemic"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      28
-    ]
+    "temperatureRange": [18, 28]
   },
-  "transmission": [
-    "sap",
-    "tools",
-    "pests"
-  ],
+  "transmission": ["sap", "tools", "pests"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.04,
@@ -766,17 +564,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     ]
   },
   "treatments": {
-    "cultural": [
-      "Use pathogen-free plant material",
-      "Disinfect tools"
-    ],
-    "mechanical": [
-      "Remove infected plants"
-    ]
+    "cultural": ["Use pathogen-free plant material", "Disinfect tools"],
+    "mechanical": ["Remove infected plants"]
   }
 }
 ```
-
 
 ## blueprints/diseases/powdery_mildew.json
 
@@ -786,28 +578,15 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Powdery Mildew",
   "pathogenType": "fungus",
-  "targets": [
-    "leaves",
-    "stems"
-  ],
+  "targets": ["leaves", "stems"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.5,
-      0.7
-    ],
-    "temperatureRange": [
-      20,
-      28
-    ],
+    "idealHumidityRange": [0.5, 0.7],
+    "temperatureRange": [20, 28],
     "leafWetnessRequired": false,
     "lowAirflowRisk": 0.8,
     "overcrowdingRisk": 0.7
   },
-  "transmission": [
-    "airborneSpores",
-    "tools",
-    "workers"
-  ],
+  "transmission": ["airborneSpores", "tools", "workers"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.06,
@@ -818,32 +597,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.9
   },
   "detection": {
-    "symptoms": [
-      "White, powdery coating on leaf surfaces",
-      "Yellowish spots leading to necrosis"
-    ],
+    "symptoms": ["White, powdery coating on leaf surfaces", "Yellowish spots leading to necrosis"],
     "scoutingHints": [
       "Inspect leaf surfaces in dense canopies",
       "Check during humidity fluctuations"
     ]
   },
   "treatments": {
-    "cultural": [
-      "Increase air circulation",
-      "Prune dense leaves",
-      "Avoid humidity spikes"
-    ],
-    "biological": [
-      "Bacillus subtilis",
-      "Low-dose sulfur sprays"
-    ],
-    "mechanical": [
-      "Remove heavily infected leaves"
-    ]
+    "cultural": ["Increase air circulation", "Prune dense leaves", "Avoid humidity spikes"],
+    "biological": ["Bacillus subtilis", "Low-dose sulfur sprays"],
+    "mechanical": ["Remove heavily infected leaves"]
   }
 }
 ```
-
 
 ## blueprints/diseases/root_rot.json
 
@@ -853,27 +619,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Disease",
   "name": "Root Rot (Pythium/Fusarium/Rhizoctonia)",
   "pathogenType": "fungus-complex",
-  "targets": [
-    "roots",
-    "crown"
-  ],
+  "targets": ["roots", "crown"],
   "environmentalRisk": {
-    "idealHumidityRange": [
-      0.4,
-      0.7
-    ],
-    "temperatureRange": [
-      18,
-      26
-    ],
+    "idealHumidityRange": [0.4, 0.7],
+    "temperatureRange": [18, 26],
     "substrateWaterloggingRisk": 0.9,
     "poorDrainageRisk": 0.85
   },
-  "transmission": [
-    "contaminatedWater",
-    "substrate",
-    "tools"
-  ],
+  "transmission": ["contaminatedWater", "substrate", "tools"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.07,
@@ -884,27 +637,15 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.98
   },
   "detection": {
-    "symptoms": [
-      "Plants wilting despite wet soil",
-      "Brown, slimy roots with foul smell"
-    ]
+    "symptoms": ["Plants wilting despite wet soil", "Brown, slimy roots with foul smell"]
   },
   "treatments": {
-    "cultural": [
-      "Avoid overwatering",
-      "Improve drainage",
-      "Extend irrigation intervals"
-    ],
-    "biological": [
-      "Trichoderma spp."
-    ],
-    "mechanical": [
-      "Remove heavily affected plants"
-    ]
+    "cultural": ["Avoid overwatering", "Improve drainage", "Extend irrigation intervals"],
+    "biological": ["Trichoderma spp."],
+    "mechanical": ["Remove heavily affected plants"]
   }
 }
 ```
-
 
 ## blueprints/pests/aphids.json
 
@@ -914,19 +655,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Aphids",
   "category": "sap-sucking",
-  "targets": [
-    "leaves",
-    "stems"
-  ],
+  "targets": ["leaves", "stems"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      28
-    ],
-    "humidityRange": [
-      0.4,
-      0.8
-    ]
+    "temperatureRange": [18, 28],
+    "humidityRange": [0.4, 0.8]
   },
   "populationDynamics": {
     "dailyReproductionRate": 0.32,
@@ -946,32 +678,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Sticky honeydew leading to sooty mold",
       "Leaf curling"
     ],
-    "monitoring": [
-      "Yellow sticky cards",
-      "Visual scouting on new growth"
-    ]
+    "monitoring": ["Yellow sticky cards", "Visual scouting on new growth"]
   },
   "controlOptions": {
-    "biological": [
-      "Lady beetles (Coccinellidae)",
-      "Aphidius parasitoids"
-    ],
-    "cultural": [
-      "Remove infested shoots",
-      "Avoid over-fertilizing with N"
-    ],
-    "mechanical": [
-      "Water jet dislodging",
-      "Pruning"
-    ],
-    "chemical": [
-      "Soaps and oils",
-      "Azadirachtin (where compliant)"
-    ]
+    "biological": ["Lady beetles (Coccinellidae)", "Aphidius parasitoids"],
+    "cultural": ["Remove infested shoots", "Avoid over-fertilizing with N"],
+    "mechanical": ["Water jet dislodging", "Pruning"],
+    "chemical": ["Soaps and oils", "Azadirachtin (where compliant)"]
   }
 }
 ```
-
 
 ## blueprints/pests/broad_mites.json
 
@@ -981,20 +697,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Broad Mites / Russet Mites",
   "category": "sap-sucking",
-  "targets": [
-    "meristems",
-    "flowers",
-    "leaves"
-  ],
+  "targets": ["meristems", "flowers", "leaves"],
   "environmentalRisk": {
-    "temperatureRange": [
-      20,
-      28
-    ],
-    "humidityRange": [
-      0.4,
-      0.8
-    ]
+    "temperatureRange": [20, 28],
+    "humidityRange": [0.4, 0.8]
   },
   "populationDynamics": {
     "dailyReproductionRate": 0.33,
@@ -1014,29 +720,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Bronzed, rough leaf surfaces",
       "Flower deformities"
     ],
-    "monitoring": [
-      "High-magnification scope (≥60x) on meristems",
-      "Sentinel plants in hotspots"
-    ]
+    "monitoring": ["High-magnification scope (≥60x) on meristems", "Sentinel plants in hotspots"]
   },
   "controlOptions": {
-    "biological": [
-      "Predatory mites (Amblyseius swirskii, A. andersoni)"
-    ],
-    "cultural": [
-      "Quarantine and destroy heavily infested stock",
-      "Strict sanitation"
-    ],
-    "mechanical": [
-      "Remove infested tips"
-    ],
-    "chemical": [
-      "Targeted miticides where compliant; rotate modes"
-    ]
+    "biological": ["Predatory mites (Amblyseius swirskii, A. andersoni)"],
+    "cultural": ["Quarantine and destroy heavily infested stock", "Strict sanitation"],
+    "mechanical": ["Remove infested tips"],
+    "chemical": ["Targeted miticides where compliant; rotate modes"]
   }
 }
 ```
-
 
 ## blueprints/pests/caterpillars.json
 
@@ -1046,19 +739,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Caterpillars",
   "category": "chewing",
-  "targets": [
-    "leaves",
-    "buds"
-  ],
+  "targets": ["leaves", "buds"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      30
-    ],
-    "humidityRange": [
-      0.4,
-      0.8
-    ]
+    "temperatureRange": [18, 30],
+    "humidityRange": [0.4, 0.8]
   },
   "populationDynamics": {
     "dailyReproductionRate": 0.2,
@@ -1078,30 +762,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Holes and tunnels in buds",
       "Secondary bud rot (Botrytis)"
     ],
-    "monitoring": [
-      "Blacklight scouting outdoors",
-      "Pheromone traps where available"
-    ]
+    "monitoring": ["Blacklight scouting outdoors", "Pheromone traps where available"]
   },
   "controlOptions": {
-    "biological": [
-      "Bacillus thuringiensis kurstaki (Btk)",
-      "Trichogramma wasps"
-    ],
-    "cultural": [
-      "Remove plant debris",
-      "Timing: treat early instars"
-    ],
-    "mechanical": [
-      "Hand-pick, inspect buds"
-    ],
-    "chemical": [
-      "Selective stomach poisons (where allowed)"
-    ]
+    "biological": ["Bacillus thuringiensis kurstaki (Btk)", "Trichogramma wasps"],
+    "cultural": ["Remove plant debris", "Timing: treat early instars"],
+    "mechanical": ["Hand-pick, inspect buds"],
+    "chemical": ["Selective stomach poisons (where allowed)"]
   }
 }
 ```
-
 
 ## blueprints/pests/fungus_gnats.json
 
@@ -1111,19 +781,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Fungus Gnats",
   "category": "soil-dwelling",
-  "targets": [
-    "roots",
-    "substrate"
-  ],
+  "targets": ["roots", "substrate"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      26
-    ],
-    "humidityRange": [
-      0.5,
-      0.9
-    ],
+    "temperatureRange": [18, 26],
+    "humidityRange": [0.5, 0.9],
     "overwateringRisk": 0.9
   },
   "populationDynamics": {
@@ -1144,31 +805,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Larvae feed on roots causing stunting",
       "Algae growth on wet media"
     ],
-    "monitoring": [
-      "Yellow sticky cards at substrate level",
-      "Potato slice test for larvae"
-    ]
+    "monitoring": ["Yellow sticky cards at substrate level", "Potato slice test for larvae"]
   },
   "controlOptions": {
-    "biological": [
-      "Steinernema feltiae (nematodes)",
-      "Bacillus thuringiensis israelensis (Bti)"
-    ],
-    "cultural": [
-      "Dry-down cycles",
-      "Improve drainage",
-      "Avoid algae"
-    ],
-    "mechanical": [
-      "Top-dress with sand/perlite layer"
-    ],
-    "chemical": [
-      "H2O2 drenches (careful), compliant larvicides where allowed"
-    ]
+    "biological": ["Steinernema feltiae (nematodes)", "Bacillus thuringiensis israelensis (Bti)"],
+    "cultural": ["Dry-down cycles", "Improve drainage", "Avoid algae"],
+    "mechanical": ["Top-dress with sand/perlite layer"],
+    "chemical": ["H2O2 drenches (careful), compliant larvicides where allowed"]
   }
 }
 ```
-
 
 ## blueprints/pests/root_aphids.json
 
@@ -1178,18 +824,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Root Aphids",
   "category": "sap-sucking",
-  "targets": [
-    "roots"
-  ],
+  "targets": ["roots"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      26
-    ],
-    "humidityRange": [
-      0.5,
-      0.9
-    ],
+    "temperatureRange": [18, 26],
+    "humidityRange": [0.5, 0.9],
     "overfertilizationRisk": 0.5
   },
   "populationDynamics": {
@@ -1210,29 +848,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "White waxy residue on roots",
       "Poor response to fertilization"
     ],
-    "monitoring": [
-      "Root inspections during repotting",
-      "Yellow sticky cards at substrate level"
-    ]
+    "monitoring": ["Root inspections during repotting", "Yellow sticky cards at substrate level"]
   },
   "controlOptions": {
-    "biological": [
-      "Beneficial nematodes (Steinernema/ Heterorhabditis)"
-    ],
-    "cultural": [
-      "Avoid overwatering and excess N",
-      "Sterilize media/tools"
-    ],
-    "mechanical": [
-      "Discard heavily infested media"
-    ],
-    "chemical": [
-      "Drenches permitted by regulation (jurisdiction-dependent)"
-    ]
+    "biological": ["Beneficial nematodes (Steinernema/ Heterorhabditis)"],
+    "cultural": ["Avoid overwatering and excess N", "Sterilize media/tools"],
+    "mechanical": ["Discard heavily infested media"],
+    "chemical": ["Drenches permitted by regulation (jurisdiction-dependent)"]
   }
 }
 ```
-
 
 ## blueprints/pests/spider_mites.json
 
@@ -1242,19 +867,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Spider Mites",
   "category": "sap-sucking",
-  "targets": [
-    "leaves",
-    "stems"
-  ],
+  "targets": ["leaves", "stems"],
   "environmentalRisk": {
-    "temperatureRange": [
-      24,
-      32
-    ],
-    "humidityRange": [
-      0.3,
-      0.6
-    ],
+    "temperatureRange": [24, 32],
+    "humidityRange": [0.3, 0.6],
     "lowAirflowRisk": 0.6,
     "dustyCanopyRisk": 0.5
   },
@@ -1276,31 +892,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Webbing under leaves at high density",
       "Leaves bronzing and drying out"
     ],
-    "monitoring": [
-      "Use hand lens (≥40x) under leaves",
-      "Sticky traps for presence trends"
-    ]
+    "monitoring": ["Use hand lens (≥40x) under leaves", "Sticky traps for presence trends"]
   },
   "controlOptions": {
-    "biological": [
-      "Predatory mites (Phytoseiulus persimilis, Amblyseius californicus)"
-    ],
-    "cultural": [
-      "Increase humidity short-term",
-      "Improve airflow",
-      "Quarantine new plants"
-    ],
-    "mechanical": [
-      "Rinse undersides, remove heavily infested leaves"
-    ],
-    "chemical": [
-      "Horticultural oils",
-      "Soaps (rotate actives to avoid resistance)"
-    ]
+    "biological": ["Predatory mites (Phytoseiulus persimilis, Amblyseius californicus)"],
+    "cultural": ["Increase humidity short-term", "Improve airflow", "Quarantine new plants"],
+    "mechanical": ["Rinse undersides, remove heavily infested leaves"],
+    "chemical": ["Horticultural oils", "Soaps (rotate actives to avoid resistance)"]
   }
 }
 ```
-
 
 ## blueprints/pests/thrips.json
 
@@ -1310,19 +911,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Thrips",
   "category": "sap-sucking",
-  "targets": [
-    "leaves",
-    "flowers"
-  ],
+  "targets": ["leaves", "flowers"],
   "environmentalRisk": {
-    "temperatureRange": [
-      20,
-      30
-    ],
-    "humidityRange": [
-      0.3,
-      0.7
-    ]
+    "temperatureRange": [20, 30],
+    "humidityRange": [0.3, 0.7]
   },
   "populationDynamics": {
     "dailyReproductionRate": 0.3,
@@ -1342,31 +934,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Black fecal spots",
       "Distorted new growth"
     ],
-    "monitoring": [
-      "Blue sticky cards near canopy",
-      "Tap test over white paper"
-    ]
+    "monitoring": ["Blue sticky cards near canopy", "Tap test over white paper"]
   },
   "controlOptions": {
-    "biological": [
-      "Orius spp.",
-      "Amblyseius cucumeris"
-    ],
-    "cultural": [
-      "Remove weeds/volunteers",
-      "Screen intakes"
-    ],
-    "mechanical": [
-      "Sticky cards mass-trapping"
-    ],
-    "chemical": [
-      "Spinosad where allowed",
-      "Soaps and oils (rotate)"
-    ]
+    "biological": ["Orius spp.", "Amblyseius cucumeris"],
+    "cultural": ["Remove weeds/volunteers", "Screen intakes"],
+    "mechanical": ["Sticky cards mass-trapping"],
+    "chemical": ["Spinosad where allowed", "Soaps and oils (rotate)"]
   }
 }
 ```
-
 
 ## blueprints/pests/whiteflies.json
 
@@ -1376,18 +953,10 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Pest",
   "name": "Whiteflies",
   "category": "sap-sucking",
-  "targets": [
-    "leaves"
-  ],
+  "targets": ["leaves"],
   "environmentalRisk": {
-    "temperatureRange": [
-      22,
-      30
-    ],
-    "humidityRange": [
-      0.4,
-      0.8
-    ]
+    "temperatureRange": [22, 30],
+    "humidityRange": [0.4, 0.8]
   },
   "populationDynamics": {
     "dailyReproductionRate": 0.28,
@@ -1407,30 +976,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Sticky honeydew, sooty mold",
       "Leaf yellowing and drop"
     ],
-    "monitoring": [
-      "Yellow sticky cards just above canopy",
-      "Check leaf undersides for nymphs"
-    ]
+    "monitoring": ["Yellow sticky cards just above canopy", "Check leaf undersides for nymphs"]
   },
   "controlOptions": {
-    "biological": [
-      "Encarsia formosa",
-      "Eretmocerus spp."
-    ],
-    "cultural": [
-      "Sanitation, remove lower leaves",
-      "Screen air intakes"
-    ],
-    "mechanical": [
-      "Vacuum adults routinely"
-    ],
-    "chemical": [
-      "Soaps/oils (rotate modes)"
-    ]
+    "biological": ["Encarsia formosa", "Eretmocerus spp."],
+    "cultural": ["Sanitation, remove lower leaves", "Screen air intakes"],
+    "mechanical": ["Vacuum adults routinely"],
+    "chemical": ["Soaps/oils (rotate modes)"]
   }
 }
 ```
-
 
 ## blueprints/roomPurposes/breakroom.json
 
@@ -1440,9 +995,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Break Room",
   "description": "A space for employees to rest and recover energy."
 }
-
 ```
-
 
 ## blueprints/roomPurposes/growroom.json
 
@@ -1452,9 +1005,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Grow Room",
   "description": "A room designed for cultivating plants under controlled conditions."
 }
-
 ```
-
 
 ## blueprints/roomPurposes/lab.json
 
@@ -1464,9 +1015,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Laboratory",
   "description": "A facility for research and breeding new plant strains."
 }
-
 ```
-
 
 ## blueprints/roomPurposes/salesroom.json
 
@@ -1476,9 +1025,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Sales Room",
   "description": "A commercial space for selling harvested products."
 }
-
 ```
-
 
 ## blueprints/strains/ak-47.json
 
@@ -1532,59 +1079,26 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "environmentalPreferences": {
     "lightSpectrum": {
-      "vegetation": [
-        400,
-        700
-      ],
-      "flowering": [
-        300,
-        650
-      ]
+      "vegetation": [400, 700],
+      "flowering": [300, 650]
     },
     "lightIntensity": {
-      "vegetation": [
-        400,
-        600
-      ],
-      "flowering": [
-        600,
-        1000
-      ]
+      "vegetation": [400, 600],
+      "flowering": [600, 1000]
     },
     "lightCycle": {
-      "vegetation": [
-        18,
-        6
-      ],
-      "flowering": [
-        12,
-        12
-      ]
+      "vegetation": [18, 6],
+      "flowering": [12, 12]
     },
     "idealTemperature": {
-      "vegetation": [
-        20,
-        28
-      ],
-      "flowering": [
-        22,
-        30
-      ]
+      "vegetation": [20, 28],
+      "flowering": [22, 30]
     },
     "idealHumidity": {
-      "vegetation": [
-        0.6,
-        0.7
-      ],
-      "flowering": [
-        0.5,
-        0.6
-      ]
+      "vegetation": [0.6, 0.7],
+      "flowering": [0.5, 0.6]
     },
-    "phRange": [
-      5.8,
-      6.2
-    ]
+    "phRange": [5.8, 6.2]
   },
   "nutrientDemand": {
     "dailyNutrientDemand": {
@@ -1638,10 +1152,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [
-    60,
-    75
-  ],
+  "harvestWindowInDays": [60, 75],
   "harvestProperties": {
     "ripeningTimeInHours": 48,
     "maxStorageTimeInHours": 120,
@@ -1649,11 +1160,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "AK-47 is a classic hybrid cannabis strain known for its high THC levels and fast flowering. It combines strong sativa effects with compact indica growth.",
-    "advantages": [
-      "High THC potential",
-      "Reliable yields",
-      "Adaptable to indoor systems"
-    ],
+    "advantages": ["High THC potential", "Reliable yields", "Adaptable to indoor systems"],
     "disadvantages": [
       "Humidity-sensitive during flowering",
       "Not ideal for low-light environments"
@@ -1662,7 +1169,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   }
 }
 ```
-
 
 ## blueprints/strains/northern-lights.json
 
@@ -1732,59 +1238,26 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "environmentalPreferences": {
     "lightSpectrum": {
-      "vegetation": [
-        400,
-        700
-      ],
-      "flowering": [
-        300,
-        650
-      ]
+      "vegetation": [400, 700],
+      "flowering": [300, 650]
     },
     "lightIntensity": {
-      "vegetation": [
-        400,
-        600
-      ],
-      "flowering": [
-        600,
-        1000
-      ]
+      "vegetation": [400, 600],
+      "flowering": [600, 1000]
     },
     "lightCycle": {
-      "vegetation": [
-        18,
-        6
-      ],
-      "flowering": [
-        12,
-        12
-      ]
+      "vegetation": [18, 6],
+      "flowering": [12, 12]
     },
     "idealTemperature": {
-      "vegetation": [
-        20,
-        28
-      ],
-      "flowering": [
-        22,
-        30
-      ]
+      "vegetation": [20, 28],
+      "flowering": [22, 30]
     },
     "idealHumidity": {
-      "vegetation": [
-        0.6,
-        0.7
-      ],
-      "flowering": [
-        0.5,
-        0.6
-      ]
+      "vegetation": [0.6, 0.7],
+      "flowering": [0.5, 0.6]
     },
-    "phRange": [
-      5.8,
-      6.2
-    ]
+    "phRange": [5.8, 6.2]
   },
   "nutrientDemand": {
     "dailyNutrientDemand": {
@@ -1838,10 +1311,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [
-    48,
-    60
-  ],
+  "harvestWindowInDays": [48, 60],
   "harvestProperties": {
     "ripeningTimeInHours": 48,
     "maxStorageTimeInHours": 120,
@@ -1849,20 +1319,12 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "Northern Lights is a legendary indica strain prized for its resilience and fast flowering time.",
-    "advantages": [
-      "Compact growth",
-      "Resistant to stress",
-      "Classic indica effects"
-    ],
-    "disadvantages": [
-      "Moderate yields",
-      "Prefers stable climates"
-    ],
+    "advantages": ["Compact growth", "Resistant to stress", "Classic indica effects"],
+    "disadvantages": ["Moderate yields", "Prefers stable climates"],
     "notes": "Often used as a baseline in breeding projects."
   }
 }
 ```
-
 
 ## blueprints/strains/skunk-1.json
 
@@ -1932,59 +1394,26 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "environmentalPreferences": {
     "lightSpectrum": {
-      "vegetation": [
-        400,
-        700
-      ],
-      "flowering": [
-        300,
-        650
-      ]
+      "vegetation": [400, 700],
+      "flowering": [300, 650]
     },
     "lightIntensity": {
-      "vegetation": [
-        400,
-        600
-      ],
-      "flowering": [
-        600,
-        1000
-      ]
+      "vegetation": [400, 600],
+      "flowering": [600, 1000]
     },
     "lightCycle": {
-      "vegetation": [
-        18,
-        6
-      ],
-      "flowering": [
-        12,
-        12
-      ]
+      "vegetation": [18, 6],
+      "flowering": [12, 12]
     },
     "idealTemperature": {
-      "vegetation": [
-        20,
-        28
-      ],
-      "flowering": [
-        22,
-        30
-      ]
+      "vegetation": [20, 28],
+      "flowering": [22, 30]
     },
     "idealHumidity": {
-      "vegetation": [
-        0.6,
-        0.7
-      ],
-      "flowering": [
-        0.5,
-        0.6
-      ]
+      "vegetation": [0.6, 0.7],
+      "flowering": [0.5, 0.6]
     },
-    "phRange": [
-      5.8,
-      6.2
-    ]
+    "phRange": [5.8, 6.2]
   },
   "nutrientDemand": {
     "dailyNutrientDemand": {
@@ -2038,10 +1467,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [
-    55,
-    65
-  ],
+  "harvestWindowInDays": [55, 65],
   "harvestProperties": {
     "ripeningTimeInHours": 48,
     "maxStorageTimeInHours": 120,
@@ -2049,20 +1475,12 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "Skunk #1 set the standard for modern hybrids with its skunky aroma and balanced growth.",
-    "advantages": [
-      "Stable genetics",
-      "Fast flowering",
-      "Classic flavor"
-    ],
-    "disadvantages": [
-      "Strong odor",
-      "Can stretch in veg"
-    ],
+    "advantages": ["Stable genetics", "Fast flowering", "Classic flavor"],
+    "disadvantages": ["Strong odor", "Can stretch in veg"],
     "notes": "Widely used as a benchmark strain since the 1970s."
   }
 }
 ```
-
 
 ## blueprints/strains/sour-diesel.json
 
@@ -2132,59 +1550,26 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "environmentalPreferences": {
     "lightSpectrum": {
-      "vegetation": [
-        400,
-        700
-      ],
-      "flowering": [
-        300,
-        650
-      ]
+      "vegetation": [400, 700],
+      "flowering": [300, 650]
     },
     "lightIntensity": {
-      "vegetation": [
-        400,
-        600
-      ],
-      "flowering": [
-        600,
-        1000
-      ]
+      "vegetation": [400, 600],
+      "flowering": [600, 1000]
     },
     "lightCycle": {
-      "vegetation": [
-        18,
-        6
-      ],
-      "flowering": [
-        12,
-        12
-      ]
+      "vegetation": [18, 6],
+      "flowering": [12, 12]
     },
     "idealTemperature": {
-      "vegetation": [
-        20,
-        28
-      ],
-      "flowering": [
-        22,
-        30
-      ]
+      "vegetation": [20, 28],
+      "flowering": [22, 30]
     },
     "idealHumidity": {
-      "vegetation": [
-        0.6,
-        0.7
-      ],
-      "flowering": [
-        0.5,
-        0.6
-      ]
+      "vegetation": [0.6, 0.7],
+      "flowering": [0.5, 0.6]
     },
-    "phRange": [
-      5.8,
-      6.2
-    ]
+    "phRange": [5.8, 6.2]
   },
   "nutrientDemand": {
     "dailyNutrientDemand": {
@@ -2238,10 +1623,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [
-    65,
-    80
-  ],
+  "harvestWindowInDays": [65, 80],
   "harvestProperties": {
     "ripeningTimeInHours": 48,
     "maxStorageTimeInHours": 120,
@@ -2249,20 +1631,12 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "Sour Diesel delivers pungent aromas and energizing effects, popular among sativa enthusiasts.",
-    "advantages": [
-      "High vigor",
-      "Strong aroma",
-      "Excellent for daytime use"
-    ],
-    "disadvantages": [
-      "Long flowering period",
-      "Requires ample light"
-    ],
+    "advantages": ["High vigor", "Strong aroma", "Excellent for daytime use"],
+    "disadvantages": ["Long flowering period", "Requires ample light"],
     "notes": "Originates from the U.S. East Coast underground scene."
   }
 }
 ```
-
 
 ## blueprints/strains/white-widow.json
 
@@ -2316,59 +1690,26 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "environmentalPreferences": {
     "lightSpectrum": {
-      "vegetation": [
-        400,
-        700
-      ],
-      "flowering": [
-        300,
-        650
-      ]
+      "vegetation": [400, 700],
+      "flowering": [300, 650]
     },
     "lightIntensity": {
-      "vegetation": [
-        350,
-        550
-      ],
-      "flowering": [
-        550,
-        950
-      ]
+      "vegetation": [350, 550],
+      "flowering": [550, 950]
     },
     "lightCycle": {
-      "vegetation": [
-        18,
-        6
-      ],
-      "flowering": [
-        12,
-        12
-      ]
+      "vegetation": [18, 6],
+      "flowering": [12, 12]
     },
     "idealTemperature": {
-      "vegetation": [
-        21,
-        27
-      ],
-      "flowering": [
-        20,
-        26
-      ]
+      "vegetation": [21, 27],
+      "flowering": [20, 26]
     },
     "idealHumidity": {
-      "vegetation": [
-        0.55,
-        0.65
-      ],
-      "flowering": [
-        0.45,
-        0.55
-      ]
+      "vegetation": [0.55, 0.65],
+      "flowering": [0.45, 0.55]
     },
-    "phRange": [
-      5.8,
-      6.2
-    ]
+    "phRange": [5.8, 6.2]
   },
   "nutrientDemand": {
     "dailyNutrientDemand": {
@@ -2422,10 +1763,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.25
     }
   },
-  "harvestWindowInDays": [
-    58,
-    70
-  ],
+  "harvestWindowInDays": [58, 70],
   "harvestProperties": {
     "ripeningTimeInHours": 48,
     "maxStorageTimeInHours": 120,
@@ -2433,20 +1771,12 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "meta": {
     "description": "White Widow is a balanced hybrid strain, a cross between a Brazilian sativa landrace and a resin-heavy South Indian indica. It is known for its resin production and relatively easy growth.",
-    "advantages": [
-      "High resin production",
-      "Balanced effects",
-      "Good for beginners"
-    ],
-    "disadvantages": [
-      "Can be sensitive to nutrients",
-      "Prefers stable temperatures"
-    ],
+    "advantages": ["High resin production", "Balanced effects", "Good for beginners"],
+    "disadvantages": ["Can be sensitive to nutrients", "Prefers stable temperatures"],
     "notes": "A classic Dutch coffee-shop strain that remains popular worldwide."
   }
 }
 ```
-
 
 ## blueprints/structures/medium_warehouse.json
 
@@ -2464,7 +1794,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-
 ## blueprints/structures/shed.json
 
 ```json
@@ -2481,7 +1810,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-
 ## blueprints/structures/small_warehouse.json
 
 ```json
@@ -2497,7 +1825,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "upfrontFee": 500
 }
 ```
-
 
 ## configs/difficulty.json
 
@@ -2564,9 +1891,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     }
   }
 }
-
 ```
-
 
 ## configs/disease_balancing.json
 
@@ -2618,19 +1943,13 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "environmentModifiers": {
     "relativeHumidity": {
       "sensitivity": 1.0,
-      "optimalRange": [
-        0.5,
-        0.65
-      ],
+      "optimalRange": [0.5, 0.65],
       "aboveOptimalInfectionMultPer+0.05": 1.1,
       "belowOptimalInfectionMultPer-0.05": 1.05
     },
     "temperature": {
       "sensitivity": 0.8,
-      "optimalRange": [
-        22,
-        26
-      ],
+      "optimalRange": [22, 26],
       "distanceToOptimalMultPer+2C": 1.05
     },
     "leafWetness": {
@@ -2690,7 +2009,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   }
 }
 ```
-
 
 ## configs/pest_balancing.json
 
@@ -2813,11 +2131,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-
 ## configs/task_definitions.json
 
 ```json
-
 {
   "repair_device": {
     "costModel": { "basis": "perAction", "laborMinutes": 90 },
@@ -2900,9 +2216,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "description": "Adjust light cycle in {zoneName} for flowering"
   }
 }
-
 ```
-
 
 ## configs/treatment_options.json
 
@@ -2919,14 +2233,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "cooldownDaysDefault": 3
     },
     "sideEffects": {
-      "phytotoxicityRiskKeys": [
-        "oilOnBloom",
-        "uvcOnTenderLeaves"
-      ],
-      "beneficialsHarmRiskKeys": [
-        "broadSpectrumInsecticide",
-        "sulfurHighDose"
-      ]
+      "phytotoxicityRiskKeys": ["oilOnBloom", "uvcOnTenderLeaves"],
+      "beneficialsHarmRiskKeys": ["broadSpectrumInsecticide", "sulfurHighDose"]
     },
     "costModel": {
       "costBasis": {
@@ -2942,17 +2250,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "defbc266-d4a8-4d1d-bb90-c603ea4574d6",
       "name": "Increase Airflow",
       "category": "cultural",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower",
-        "lateFlower",
-        "ripening"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower", "lateFlower", "ripening"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.92,
@@ -2977,14 +2276,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "97187f66-817f-4e8a-b0cb-db237b663743",
       "name": "Dehumidify Night Cycle",
       "category": "cultural",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "earlyFlower",
-        "lateFlower",
-        "ripening"
-      ],
+      "targets": ["disease"],
+      "applicability": ["earlyFlower", "lateFlower", "ripening"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.85,
@@ -3005,15 +2298,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "0828046f-3986-456b-9abe-3f35f5a1f9c4",
       "name": "Dry-Down Irrigation Cycle",
       "category": "cultural",
-      "targets": [
-        "pest",
-        "disease"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest", "disease"],
+      "applicability": ["seedling", "vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.85,
@@ -3037,14 +2323,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "fa328792-9539-4254-bd5d-cbe8233b6289",
       "name": "Predatory Mites (Phytoseiulus/Amblyseius)",
       "category": "biological",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower",
-        "lateFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation", "earlyFlower", "lateFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.75,
@@ -3067,13 +2347,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "a0e34f90-c9de-4a95-a88d-9a1a615dd747",
       "name": "Bacillus subtilis (foliar)",
       "category": "biological",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["disease"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.8,
@@ -3093,15 +2368,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "80edee83-4577-4063-877c-68f8d6ab35bc",
       "name": "Trichoderma (root drench)",
       "category": "biological",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.82,
@@ -3125,14 +2393,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "26eba5ec-66e0-41e9-98b5-cce64ebbc079",
       "name": "Bti (Bacillus thuringiensis israelensis)",
       "category": "biological",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.7,
@@ -3152,14 +2414,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "8241536e-1b0e-4f7b-8857-63bca0179c3e",
       "name": "Remove Infected Tissue",
       "category": "mechanical",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower",
-        "lateFlower"
-      ],
+      "targets": ["disease"],
+      "applicability": ["vegetation", "earlyFlower", "lateFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.85,
@@ -3179,16 +2435,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "40d709c5-5cc6-4bbf-92d0-7e172057170c",
       "name": "Sticky Cards (yellow/blue)",
       "category": "mechanical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower",
-        "lateFlower",
-        "ripening"
-      ],
+      "targets": ["pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower", "lateFlower", "ripening"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.95,
@@ -3208,12 +2456,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "327a4266-caba-4129-8538-0f7f2c12fbd0",
       "name": "Rinse/Jet Wash",
       "category": "mechanical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.85,
@@ -3233,14 +2477,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "91d9ee39-32e5-4d83-9702-1365d171a5ea",
       "name": "Horticultural Oil (foliar)",
       "category": "chemical",
-      "targets": [
-        "pest",
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest", "disease"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.7,
@@ -3267,13 +2505,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "ba30fafa-3751-4c56-9315-c289c8780dd0",
       "name": "Potassium Bicarbonate (foliar)",
       "category": "chemical",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["disease"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.75,
@@ -3293,13 +2526,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "131fe37b-967b-4ff3-a9fd-d15cab018dc0",
       "name": "Sulfur (vapor/low-dose spray)",
       "category": "chemical",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "vegetation"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["vegetation"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.7,
@@ -3326,13 +2554,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "b5792994-eb74-4d89-8c50-246308b138a2",
       "name": "Spinosad (where permitted)",
       "category": "chemical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.6,
@@ -3355,14 +2578,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "dfac9a95-ea56-4606-9417-e5e1382892ed",
       "name": "Btk (Bacillus thuringiensis kurstaki)",
       "category": "chemical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower",
-        "lateFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation", "earlyFlower", "lateFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.7,
@@ -3382,13 +2599,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "id": "5dc92d86-7f0f-4e7f-8577-69b50f71ee78",
       "name": "UV-C Pass (controlled exposure)",
       "category": "physical",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "vegetation"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["vegetation"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.85,
@@ -3415,91 +2627,815 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-
-## personnel/firstNames.json
-
-```json
-
-[
-  "Aaliyah", "Aaron", "Abigail", "Adam", "Aditya", "Ahmed", "Aisha", "Alex", "Alexander", "Alexandra", 
-  "Ali", "Alice", "Amelia", "An", "Ana", "Andrea", "Andrei", "Anna", "Anthony", "Anton", 
-  "Aria", "Arthur", "Ashley", "Astrid", "Atsuki", "Ava", "Ayako", "Benjamin", "Camila", "Carlos", 
-  "Carmen", "Chen", "Chloe", "Cho", "Christian", "Christopher", "Clara", "Daniel", "David", "Dmitry", 
-  "Elena", "Elijah", "Elizabeth", "Ella", "Emily", "Emma", "Enrique", "Eric", "Ethan", "Eva", 
-  "Evelyn", "Fatima", "Felix", "Finn", "Fiona", "Francisco", "Freja", "Gabriel", "Gabriela", "George", 
-  "Grace", "Guadalupe", "Gustav", "Hailey", "Hajun", "Han", "Hana", "Hannah", "Hans", "Haru", 
-  "Harper", "Hassan", "He", "Heinrich", "Helena", "Henry", "Hiroki", "Hiroshi", "Hugo", "Ibrahim", 
-  "Ida", "Igor", "Illya", "Imani", "Ingrid", "Irina", "Isabella", "Isabelle", "Isla", "Ivan", 
-  "Jack", "Jacob", "Jakub", "James", "Jasmine", "Javier", "Jayden", "Jessica", "Ji-hoon", "Jin", 
-  "Joao", "John", "Jose", "Joseph", "Joshua", "Juan", "Julia", "Julian", "Jung", "Kai", 
-  "Kaito", "Katarina", "Kate", "Katsumi", "Kenji", "Khaled", "Kim", "Klaus", "Kristina", "Laura", 
-  "Lea", "Leo", "Leon", "Li", "Liam", "Lila", "Lily", "Lin", "Linda", "Logan", 
-  "Lotte", "Louis", "Lucas", "Ludwig", "Luka", "Luke", "Luna", "Madison", "Maja", "Manuel", 
-  "Marco", "Maria", "Mariam", "Mario", "Mark", "Marta", "Martin", "Mary", "Mateo", "Matthew", 
-  "Mei", "Mia", "Michael", "Miguel", "Mila", "Min-jun", "Mohammed", "Muhammad", "Naoki", "Natalia", 
-  "Nathan", "Nikolai", "Nikola", "Noah", "Noe", "Nora", "Nur", "Olga", "Oliver", "Olivia", 
-  "Omar", "Oscar", "Owen", "Pablo", "Park", "Patricia", "Patrick", "Paul", "Penelope", "Peter", 
-  "Priya", "Rahul", "Raj", "Riku", "Robert", "Rodrigo", "Rohan", "Ronan", "Rosa", "Rose", 
-  "Ruben", "Ryan", "Sakura", "Sam", "Samantha", "Samuel", "Sandra", "Santiago", "Sara", "Sasha", 
-  "Sebastian", "Seo-yeon", "Sergei", "Shinji", "Sofia", "Sofie", "Sonya", "Sophia", "Sophie", "Stefan", 
-  "Stella", "Sven", "Takashi", "Taro", "Tatiana", "Tatsuo", "Tatyana", "Thomas", "Tom", "Tomoya", 
-  "Valentina", "Valeria", "Vera", "Victor", "Victoria", "Viktor", "Vincent", "Vladimir", "Wei", "William", 
-  "Xin", "Yadav", "Yamada", "Yan", "Yara", "Ying", "Yua", "Yuki", "Yuri", "Yusuf", 
-  "Zoe", "Zofia"
-]
-
-```
-
-
-## personnel/lastNames.json
+## personnel/names/firstNamesFemale.json
 
 ```json
-
 [
-  "Abbas", "Abbott", "Abe", "Abebe", "Abramson", "Ackerman", "Adams", "Adler", "Agarwal", "Aguilar", 
-  "Ahmed", "Aitken", "Akhtar", "Al-Farsi", "Al-Ghassani", "Al-Hamad", "Al-Jamil", "Al-Rashid", "Al-Saeed", "Ali", 
-  "Allen", "Almeida", "Alonso", "Alvarez", "Anand", "Andersen", "Anderson", "Andersson", "Ando", "Andrews", 
-  "Antonelli", "Antonopoulos", "Aoki", "Araya", "Araújo", "Arnold", "Aronsson", "Arora", "Ashton", "Auer", 
-  "Baba", "Bach", "Bae", "Baek", "Bailey", "Baker", "Bakker", "Balakrishnan", "Banerjee", "Bang", 
-  "Baranov", "Barbieri", "Barnes", "Barros", "Bauer", "Becker", "Bell", "Ben-David", "Bennett", "Berendsen", 
-  "Berg", "Berger", "Bergman", "Bernard", "Bernstein", "Bhatt", "Bianchi", "Bibi", "Bjork", "Black", 
-  "Blanc", "Blanco", "Blau", "Blom", "Böhm", "Bondarenko", "Bos", "Botha", "Boucher", "Boyko", 
-  "Braun", "Bravo", "Breuer", "Brooks", "Brown", "Browne", "Brun", "Bruno", "Bryant", "Burke", 
-  "Burns", "Bustos", "Byrne", "Campbell", "Campos", "Cardoso", "Carlson", "Carlsson", "Carr", "Carroll", 
-  "Carter", "Carvalho", "Castillo", "Castro", "Chae", "Chakrabarti", "Chan", "Chandran", "Chang", "Chapman", 
-  "Chaudhari", "Chavez", "Chen", "Cheng", "Cheung", "Cho", "Choi", "Chopra", "Chow", "Christensen", 
-  "Christiansen", "Chu", "Chung", "Ciobanu", "Clark", "Clarke", "Cohen", "Cole", "Coleman", "Collins", 
-  "Conti", "Cook", "Cooper", "Correa", "Costa", "Cox", "Craig", "Crawford", "Cruz", "Cullen", 
-  "Cunningham", "Da Silva", "Dahl", "Dalton", "Dam", "Das", "Dasgupta", "Davies", "Davis", "De Boer", 
-  "De Haan", "De Jong", "De Lange", "De Luca", "De Vries", "Deng", "Desai", "Deshpande", "Devi", "Dias", 
-  "Diaz", "Dijkstra", "Dimitrov", "Dixon", "Djordjevic", "Do", "Dominguez", "Doshi", "Doyle", "Dubois", 
-  "Dunn", "Dutta", "Edwards", "Egorov", "Ek", "Eliassen", "Endo", "Eriksson", "Espinoza", "Estevez", 
-  "Evans", "Fabre", "Falk", "Fan", "Farah", "Farrell", "Faulkner", "Fedorov", "Feng", "Ferguson", 
-  "Fernandes", "Fernandez", "Ferreira", "Fiedler", "Fischer", "Fisher", "Fitzgerald", "Fleming", "Fletcher", "Flores", 
-  "Flynn", "Fodor", "Foley", "Fonseca", "Fontaine", "Ford", "Forster", "Foster", "Fournier", "Fox", 
-  "Frank", "Franke", "Fraser", "Freeman", "Friedman", "Friesen", "Fu", "Fujii", "Fujimoto", "Fujita", 
-  "Fukuda", "Fung", "Gallagher", "Gallo", "Gao", "Garcia", "Garg", "Gauthier", "Geisler", "Gentile", 
-  "Georgiev", "Gerber", "Ghosh", "Gibson", "Gillespie", "Gimenez", "Giri", "Gomes", "Gomez", "Gonçalves", 
-  "Gonzalez", "Goodman", "Gorbachev", "Gordon", "Goto", "Gould", "Goyal", "Graf", "Graham", "Grant", 
-  "Gray", "Green", "Greene", "Greer", "Griffin", "Griffiths", "Gruber", "Gu", "Guan", "Guerrero", 
-  "Guo", "Gupta", "Gutierrez", "Ha", "Haas", "Hahn", "Hall", "Hamalainen", "Hamid", "Hamilton", 
-  "Han", "Hansen", "Hansson", "Hara", "Harb", "Harris", "Harrison", "Hart", "Hartmann", "Hasan", 
-  "Hasegawa", "Hashimoto", "Hassan", "Hayashi", "Hayes", "He", "Heikkila", "Heinonen", "Henderson", "Hendriks", 
-  "Henry", "Hernandez", "Herrmann", "Hertz", "Hess", "Hill", "Hirano", "Ho", "Hoffman", "Hoffmann", 
-  "Hofmann", "Holland", "Holm", "Holmgren", "Hong", "Horvath", "Hosseini", "Howard", "Howell", "Hsu", 
-  "Hu", "Huang", "Huber", "Hughes", "Huh", "Hunt", "Hunter", "Husain", "Hussain", "Hwang", 
-  "Ibrahim", "Ichikawa", "Iglesias", "Iida", "Ikeda", "Im", "Inoue", "Ishida", "Ishii", "Ishikawa", 
-  "Ito", "Ivanov", "Ivanova", "Iversen", "Jackson", "Jacobs", "Jacobsen", "Jaeger", "Jain", "Jakobsson", 
-  "Jansen", "Janssen", "Janssens", "Jarvinen", "Jensen", "Jeong", "Jimenez", "Jin", "Jo", "Johansen"
+  "Aaliyah",
+  "Abigail",
+  "Aisha",
+  "Alexandra",
+  "Alice",
+  "Alicia",
+  "Amelia",
+  "Ana",
+  "Andrea",
+  "Anna",
+  "Aria",
+  "Ashley",
+  "Astrid",
+  "Ava",
+  "Beatrice",
+  "Camila",
+  "Carmen",
+  "Chloe",
+  "Clara",
+  "Elena",
+  "Elizabeth",
+  "Ella",
+  "Emily",
+  "Emma",
+  "Eva",
+  "Evelyn",
+  "Fatima",
+  "Fiona",
+  "Gabriela",
+  "Grace",
+  "Guadalupe",
+  "Hailey",
+  "Hana",
+  "Hannah",
+  "Harper",
+  "Helena",
+  "Ida",
+  "Imani",
+  "Ingrid",
+  "Irina",
+  "Isabella",
+  "Isabelle",
+  "Isla",
+  "Jasmine",
+  "Jessica",
+  "Julia",
+  "Katarina",
+  "Kate",
+  "Kristina",
+  "Laura",
+  "Lea",
+  "Lila",
+  "Lily",
+  "Linda",
+  "Lotte",
+  "Luna",
+  "Madison",
+  "Maja",
+  "Maria",
+  "Mariam",
+  "Marta",
+  "Mary",
+  "Mei",
+  "Mia",
+  "Mila",
+  "Natalia",
+  "Nora",
+  "Olivia",
+  "Penelope",
+  "Priya",
+  "Rosa",
+  "Rose",
+  "Sakura",
+  "Samantha",
+  "Sandra",
+  "Sara",
+  "Sasha",
+  "Sofia",
+  "Sofie",
+  "Sonya",
+  "Sophia",
+  "Sophie",
+  "Stella",
+  "Tatiana",
+  "Tatyana",
+  "Valentina",
+  "Valeria",
+  "Vera",
+  "Victoria",
+  "Yara",
+  "Ying",
+  "Yua",
+  "Zoe",
+  "Zofia"
 ]
-
 ```
 
+## personnel/names/firstNamesMale.json
+
+```json
+[
+  "Aaron",
+  "Adam",
+  "Aditya",
+  "Ahmed",
+  "Alex",
+  "Alexander",
+  "Ali",
+  "Andrei",
+  "Anthony",
+  "Anton",
+  "Arthur",
+  "Atsuki",
+  "Benjamin",
+  "Carlos",
+  "Chen",
+  "Cho",
+  "Christian",
+  "Christopher",
+  "Daniel",
+  "David",
+  "Dmitry",
+  "Elijah",
+  "Enrique",
+  "Eric",
+  "Ethan",
+  "Felix",
+  "Finn",
+  "Francisco",
+  "Gabriel",
+  "George",
+  "Gustav",
+  "Han",
+  "Hassan",
+  "Heinrich",
+  "Henry",
+  "Hiroki",
+  "Hiroshi",
+  "Hugo",
+  "Ibrahim",
+  "Igor",
+  "Illya",
+  "Ivan",
+  "Jack",
+  "Jacob",
+  "Jakub",
+  "James",
+  "Javier",
+  "Jayden",
+  "Ji-hoon",
+  "Jin",
+  "Joao",
+  "John",
+  "Jose",
+  "Joseph",
+  "Joshua",
+  "Juan",
+  "Julian",
+  "Jung",
+  "Kai",
+  "Kaito",
+  "Katsumi",
+  "Kenji",
+  "Khaled",
+  "Kim",
+  "Klaus",
+  "Leon",
+  "Li",
+  "Liam",
+  "Logan",
+  "Louis",
+  "Lucas",
+  "Ludwig",
+  "Luka",
+  "Luke",
+  "Manuel",
+  "Marco",
+  "Mario",
+  "Mark",
+  "Martin",
+  "Mateo",
+  "Matthew",
+  "Michael",
+  "Miguel",
+  "Min-jun",
+  "Mohammed",
+  "Muhammad",
+  "Naoki",
+  "Nathan",
+  "Nikolai",
+  "Nikola",
+  "Noah",
+  "Omar",
+  "Oscar",
+  "Owen",
+  "Pablo",
+  "Park",
+  "Patrick",
+  "Paul",
+  "Peter",
+  "Rahul",
+  "Raj",
+  "Riku",
+  "Robert",
+  "Rodrigo",
+  "Rohan",
+  "Ronan",
+  "Ruben",
+  "Ryan",
+  "Samuel",
+  "Santiago",
+  "Sebastian",
+  "Sergei",
+  "Shinji",
+  "Stefan",
+  "Sven",
+  "Takashi",
+  "Taro",
+  "Tatsuo",
+  "Thomas",
+  "Tom",
+  "Tomoya",
+  "Victor",
+  "Viktor",
+  "Vincent",
+  "Vladimir",
+  "Wei",
+  "William",
+  "Xin",
+  "Yadav",
+  "Yamada",
+  "Yan",
+  "Yuki",
+  "Yuri",
+  "Yusuf"
+]
+```
+
+## personnel/names/lastNames.json
+
+```json
+[
+  "Abbas",
+  "Abbott",
+  "Abe",
+  "Abebe",
+  "Abramson",
+  "Ackerman",
+  "Adams",
+  "Adler",
+  "Agarwal",
+  "Aguilar",
+  "Ahmed",
+  "Aitken",
+  "Akhtar",
+  "Al-Farsi",
+  "Al-Ghassani",
+  "Al-Hamad",
+  "Al-Jamil",
+  "Al-Rashid",
+  "Al-Saeed",
+  "Ali",
+  "Allen",
+  "Almeida",
+  "Alonso",
+  "Alvarez",
+  "Anand",
+  "Andersen",
+  "Anderson",
+  "Andersson",
+  "Ando",
+  "Andrews",
+  "Antonelli",
+  "Antonopoulos",
+  "Aoki",
+  "Araya",
+  "Araújo",
+  "Arnold",
+  "Aronsson",
+  "Arora",
+  "Ashton",
+  "Auer",
+  "Baba",
+  "Bach",
+  "Bae",
+  "Baek",
+  "Bailey",
+  "Baker",
+  "Bakker",
+  "Balakrishnan",
+  "Banerjee",
+  "Bang",
+  "Baranov",
+  "Barbieri",
+  "Barnes",
+  "Barros",
+  "Bauer",
+  "Becker",
+  "Bell",
+  "Ben-David",
+  "Bennett",
+  "Berendsen",
+  "Berg",
+  "Berger",
+  "Bergman",
+  "Bernard",
+  "Bernstein",
+  "Bhatt",
+  "Bianchi",
+  "Bibi",
+  "Bjork",
+  "Black",
+  "Blanc",
+  "Blanco",
+  "Blau",
+  "Blom",
+  "Böhm",
+  "Bondarenko",
+  "Bos",
+  "Botha",
+  "Boucher",
+  "Boyko",
+  "Braun",
+  "Bravo",
+  "Breuer",
+  "Brooks",
+  "Brown",
+  "Browne",
+  "Brun",
+  "Bruno",
+  "Bryant",
+  "Burke",
+  "Burns",
+  "Bustos",
+  "Byrne",
+  "Campbell",
+  "Campos",
+  "Cardoso",
+  "Carlson",
+  "Carlsson",
+  "Carr",
+  "Carroll",
+  "Carter",
+  "Carvalho",
+  "Castillo",
+  "Castro",
+  "Chae",
+  "Chakrabarti",
+  "Chan",
+  "Chandran",
+  "Chang",
+  "Chapman",
+  "Chaudhari",
+  "Chavez",
+  "Chen",
+  "Cheng",
+  "Cheung",
+  "Cho",
+  "Choi",
+  "Chopra",
+  "Chow",
+  "Christensen",
+  "Christiansen",
+  "Chu",
+  "Chung",
+  "Ciobanu",
+  "Clark",
+  "Clarke",
+  "Cohen",
+  "Cole",
+  "Coleman",
+  "Collins",
+  "Conti",
+  "Cook",
+  "Cooper",
+  "Correa",
+  "Costa",
+  "Cox",
+  "Craig",
+  "Crawford",
+  "Cruz",
+  "Cullen",
+  "Cunningham",
+  "Da Silva",
+  "Dahl",
+  "Dalton",
+  "Dam",
+  "Das",
+  "Dasgupta",
+  "Davies",
+  "Davis",
+  "De Boer",
+  "De Haan",
+  "De Jong",
+  "De Lange",
+  "De Luca",
+  "De Vries",
+  "Deng",
+  "Desai",
+  "Deshpande",
+  "Devi",
+  "Dias",
+  "Diaz",
+  "Dijkstra",
+  "Dimitrov",
+  "Dixon",
+  "Djordjevic",
+  "Do",
+  "Dominguez",
+  "Doshi",
+  "Doyle",
+  "Dubois",
+  "Dunn",
+  "Dutta",
+  "Edwards",
+  "Egorov",
+  "Ek",
+  "Eliassen",
+  "Endo",
+  "Eriksson",
+  "Espinoza",
+  "Estevez",
+  "Evans",
+  "Fabre",
+  "Falk",
+  "Fan",
+  "Farah",
+  "Farrell",
+  "Faulkner",
+  "Fedorov",
+  "Feng",
+  "Ferguson",
+  "Fernandes",
+  "Fernandez",
+  "Ferreira",
+  "Fiedler",
+  "Fischer",
+  "Fisher",
+  "Fitzgerald",
+  "Fleming",
+  "Fletcher",
+  "Flores",
+  "Flynn",
+  "Fodor",
+  "Foley",
+  "Fonseca",
+  "Fontaine",
+  "Ford",
+  "Forster",
+  "Foster",
+  "Fournier",
+  "Fox",
+  "Frank",
+  "Franke",
+  "Fraser",
+  "Freeman",
+  "Friedman",
+  "Friesen",
+  "Fu",
+  "Fujii",
+  "Fujimoto",
+  "Fujita",
+  "Fukuda",
+  "Fung",
+  "Gallagher",
+  "Gallo",
+  "Gao",
+  "Garcia",
+  "Garg",
+  "Gauthier",
+  "Geisler",
+  "Gentile",
+  "Georgiev",
+  "Gerber",
+  "Ghosh",
+  "Gibson",
+  "Gillespie",
+  "Gimenez",
+  "Giri",
+  "Gomes",
+  "Gomez",
+  "Gonçalves",
+  "Gonzalez",
+  "Goodman",
+  "Gorbachev",
+  "Gordon",
+  "Goto",
+  "Gould",
+  "Goyal",
+  "Graf",
+  "Graham",
+  "Grant",
+  "Gray",
+  "Green",
+  "Greene",
+  "Greer",
+  "Griffin",
+  "Griffiths",
+  "Gruber",
+  "Gu",
+  "Guan",
+  "Guerrero",
+  "Guo",
+  "Gupta",
+  "Gutierrez",
+  "Ha",
+  "Haas",
+  "Hahn",
+  "Hall",
+  "Hamalainen",
+  "Hamid",
+  "Hamilton",
+  "Han",
+  "Hansen",
+  "Hansson",
+  "Hara",
+  "Harb",
+  "Harris",
+  "Harrison",
+  "Hart",
+  "Hartmann",
+  "Hasan",
+  "Hasegawa",
+  "Hashimoto",
+  "Hassan",
+  "Hayashi",
+  "Hayes",
+  "He",
+  "Heikkila",
+  "Heinonen",
+  "Henderson",
+  "Hendriks",
+  "Henry",
+  "Hernandez",
+  "Herrmann",
+  "Hertz",
+  "Hess",
+  "Hill",
+  "Hirano",
+  "Ho",
+  "Hoffman",
+  "Hoffmann",
+  "Hofmann",
+  "Holland",
+  "Holm",
+  "Holmgren",
+  "Hong",
+  "Horvath",
+  "Hosseini",
+  "Howard",
+  "Howell",
+  "Hsu",
+  "Hu",
+  "Huang",
+  "Huber",
+  "Hughes",
+  "Huh",
+  "Hunt",
+  "Hunter",
+  "Husain",
+  "Hussain",
+  "Hwang",
+  "Ibrahim",
+  "Ichikawa",
+  "Iglesias",
+  "Iida",
+  "Ikeda",
+  "Im",
+  "Inoue",
+  "Ishida",
+  "Ishii",
+  "Ishikawa",
+  "Ito",
+  "Ivanov",
+  "Ivanova",
+  "Iversen",
+  "Jackson",
+  "Jacobs",
+  "Jacobsen",
+  "Jaeger",
+  "Jain",
+  "Jakobsson",
+  "Jansen",
+  "Janssen",
+  "Janssens",
+  "Jarvinen",
+  "Jensen",
+  "Jeong",
+  "Jimenez",
+  "Jin",
+  "Jo",
+  "Johansen"
+]
+```
+
+## personnel/randomSeeds.json
+
+```json
+[
+  "wb-seed-0001",
+  "wb-seed-0002",
+  "wb-seed-0003",
+  "wb-seed-0004",
+  "wb-seed-0005",
+  "wb-seed-0006",
+  "wb-seed-0007",
+  "wb-seed-0008",
+  "wb-seed-0009",
+  "wb-seed-0010",
+  "wb-seed-0011",
+  "wb-seed-0012",
+  "wb-seed-0013",
+  "wb-seed-0014",
+  "wb-seed-0015",
+  "wb-seed-0016",
+  "wb-seed-0017",
+  "wb-seed-0018",
+  "wb-seed-0019",
+  "wb-seed-0020",
+  "wb-seed-0021",
+  "wb-seed-0022",
+  "wb-seed-0023",
+  "wb-seed-0024",
+  "wb-seed-0025",
+  "wb-seed-0026",
+  "wb-seed-0027",
+  "wb-seed-0028",
+  "wb-seed-0029",
+  "wb-seed-0030",
+  "wb-seed-0031",
+  "wb-seed-0032",
+  "wb-seed-0033",
+  "wb-seed-0034",
+  "wb-seed-0035",
+  "wb-seed-0036",
+  "wb-seed-0037",
+  "wb-seed-0038",
+  "wb-seed-0039",
+  "wb-seed-0040",
+  "wb-seed-0041",
+  "wb-seed-0042",
+  "wb-seed-0043",
+  "wb-seed-0044",
+  "wb-seed-0045",
+  "wb-seed-0046",
+  "wb-seed-0047",
+  "wb-seed-0048",
+  "wb-seed-0049",
+  "wb-seed-0050",
+  "wb-seed-0051",
+  "wb-seed-0052",
+  "wb-seed-0053",
+  "wb-seed-0054",
+  "wb-seed-0055",
+  "wb-seed-0056",
+  "wb-seed-0057",
+  "wb-seed-0058",
+  "wb-seed-0059",
+  "wb-seed-0060",
+  "wb-seed-0061",
+  "wb-seed-0062",
+  "wb-seed-0063",
+  "wb-seed-0064",
+  "wb-seed-0065",
+  "wb-seed-0066",
+  "wb-seed-0067",
+  "wb-seed-0068",
+  "wb-seed-0069",
+  "wb-seed-0070",
+  "wb-seed-0071",
+  "wb-seed-0072",
+  "wb-seed-0073",
+  "wb-seed-0074",
+  "wb-seed-0075",
+  "wb-seed-0076",
+  "wb-seed-0077",
+  "wb-seed-0078",
+  "wb-seed-0079",
+  "wb-seed-0080",
+  "wb-seed-0081",
+  "wb-seed-0082",
+  "wb-seed-0083",
+  "wb-seed-0084",
+  "wb-seed-0085",
+  "wb-seed-0086",
+  "wb-seed-0087",
+  "wb-seed-0088",
+  "wb-seed-0089",
+  "wb-seed-0090",
+  "wb-seed-0091",
+  "wb-seed-0092",
+  "wb-seed-0093",
+  "wb-seed-0094",
+  "wb-seed-0095",
+  "wb-seed-0096",
+  "wb-seed-0097",
+  "wb-seed-0098",
+  "wb-seed-0099",
+  "wb-seed-0100",
+  "wb-seed-0101",
+  "wb-seed-0102",
+  "wb-seed-0103",
+  "wb-seed-0104",
+  "wb-seed-0105",
+  "wb-seed-0106",
+  "wb-seed-0107",
+  "wb-seed-0108",
+  "wb-seed-0109",
+  "wb-seed-0110",
+  "wb-seed-0111",
+  "wb-seed-0112",
+  "wb-seed-0113",
+  "wb-seed-0114",
+  "wb-seed-0115",
+  "wb-seed-0116",
+  "wb-seed-0117",
+  "wb-seed-0118",
+  "wb-seed-0119",
+  "wb-seed-0120",
+  "wb-seed-0121",
+  "wb-seed-0122",
+  "wb-seed-0123",
+  "wb-seed-0124",
+  "wb-seed-0125",
+  "wb-seed-0126",
+  "wb-seed-0127",
+  "wb-seed-0128",
+  "wb-seed-0129",
+  "wb-seed-0130",
+  "wb-seed-0131",
+  "wb-seed-0132",
+  "wb-seed-0133",
+  "wb-seed-0134",
+  "wb-seed-0135",
+  "wb-seed-0136",
+  "wb-seed-0137",
+  "wb-seed-0138",
+  "wb-seed-0139",
+  "wb-seed-0140",
+  "wb-seed-0141",
+  "wb-seed-0142",
+  "wb-seed-0143",
+  "wb-seed-0144",
+  "wb-seed-0145",
+  "wb-seed-0146",
+  "wb-seed-0147",
+  "wb-seed-0148",
+  "wb-seed-0149",
+  "wb-seed-0150",
+  "wb-seed-0151",
+  "wb-seed-0152",
+  "wb-seed-0153",
+  "wb-seed-0154",
+  "wb-seed-0155",
+  "wb-seed-0156",
+  "wb-seed-0157",
+  "wb-seed-0158",
+  "wb-seed-0159",
+  "wb-seed-0160",
+  "wb-seed-0161",
+  "wb-seed-0162",
+  "wb-seed-0163",
+  "wb-seed-0164",
+  "wb-seed-0165",
+  "wb-seed-0166",
+  "wb-seed-0167",
+  "wb-seed-0168",
+  "wb-seed-0169",
+  "wb-seed-0170",
+  "wb-seed-0171",
+  "wb-seed-0172",
+  "wb-seed-0173",
+  "wb-seed-0174",
+  "wb-seed-0175",
+  "wb-seed-0176",
+  "wb-seed-0177",
+  "wb-seed-0178",
+  "wb-seed-0179",
+  "wb-seed-0180",
+  "wb-seed-0181",
+  "wb-seed-0182",
+  "wb-seed-0183",
+  "wb-seed-0184",
+  "wb-seed-0185",
+  "wb-seed-0186",
+  "wb-seed-0187",
+  "wb-seed-0188",
+  "wb-seed-0189",
+  "wb-seed-0190",
+  "wb-seed-0191",
+  "wb-seed-0192",
+  "wb-seed-0193",
+  "wb-seed-0194",
+  "wb-seed-0195",
+  "wb-seed-0196",
+  "wb-seed-0197",
+  "wb-seed-0198",
+  "wb-seed-0199",
+  "wb-seed-0200"
+]
+```
 
 ## personnel/traits.json
 
 ```json
-
 [
   {
     "id": "trait_green_thumb",
@@ -3580,27 +3516,46 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "type": "negative"
   }
 ]
-
 ```
-
 
 ## prices/devicePrices.json
 
 ```json
-
 {
   "devicePrices": {
-    "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b": { "capitalExpenditure": 1200, "baseMaintenanceCostPerTick": 0.004, "costIncreasePer1000Ticks": 0.001 },
-    "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e": { "capitalExpenditure": 600,  "baseMaintenanceCostPerTick": 0.002, "costIncreasePer1000Ticks": 0.0008 },
-    "3d762260-88a5-4104-b03c-9860bbac34b6": { "capitalExpenditure": 250, "baseMaintenanceCostPerTick": 0.002, "costIncreasePer1000Ticks": 0.1 },
-    "7a639d3d-4750-440a-a200-f90d11dc3c62": { "capitalExpenditure": 350,  "baseMaintenanceCostPerTick": 0.0015, "costIncreasePer1000Ticks": 0.0006 },
-    "c701efa6-1e90-4f28-8934-ea9c584596e4": { "capitalExpenditure": 220,  "baseMaintenanceCostPerTick": 0.0008, "costIncreasePer1000Ticks": 0.0004 },
-    "f5d5c5a0-1b2c-4d3e-8f9a-0b1c2d3e4f5a": { "capitalExpenditure": 75, "baseMaintenanceCostPerTick": 0.0005, "costIncreasePer1000Ticks": 0.0002 }
+    "7d3d3f1a-8c6f-4e9c-926d-5a2a4a3b6f1b": {
+      "capitalExpenditure": 1200,
+      "baseMaintenanceCostPerTick": 0.004,
+      "costIncreasePer1000Ticks": 0.001
+    },
+    "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e": {
+      "capitalExpenditure": 600,
+      "baseMaintenanceCostPerTick": 0.002,
+      "costIncreasePer1000Ticks": 0.0008
+    },
+    "3d762260-88a5-4104-b03c-9860bbac34b6": {
+      "capitalExpenditure": 250,
+      "baseMaintenanceCostPerTick": 0.002,
+      "costIncreasePer1000Ticks": 0.1
+    },
+    "7a639d3d-4750-440a-a200-f90d11dc3c62": {
+      "capitalExpenditure": 350,
+      "baseMaintenanceCostPerTick": 0.0015,
+      "costIncreasePer1000Ticks": 0.0006
+    },
+    "c701efa6-1e90-4f28-8934-ea9c584596e4": {
+      "capitalExpenditure": 220,
+      "baseMaintenanceCostPerTick": 0.0008,
+      "costIncreasePer1000Ticks": 0.0004
+    },
+    "f5d5c5a0-1b2c-4d3e-8f9a-0b1c2d3e4f5a": {
+      "capitalExpenditure": 75,
+      "baseMaintenanceCostPerTick": 0.0005,
+      "costIncreasePer1000Ticks": 0.0002
+    }
   }
 }
-
 ```
-
 
 ## prices/strainPrices.json
 
@@ -3631,14 +3586,12 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-
 ## prices/utilityPrices.json
 
 ```json
 {
   "pricePerKwh": 0.15,
   "pricePerLiterWater": 0.02,
-  "pricePerGramNutrients": 0.10
+  "pricePerGramNutrients": 0.1
 }
 ```
-

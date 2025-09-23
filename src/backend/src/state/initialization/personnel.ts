@@ -57,28 +57,42 @@ const toUniqueSortedList = (values: readonly string[] | undefined): string[] => 
   return Array.from(new Set(filtered)).sort((a, b) => a.localeCompare(b));
 };
 
-const combineFirstNames = (
-  male: readonly string[] | undefined,
-  female: readonly string[] | undefined,
-  legacy: readonly string[] | undefined,
-): string[] => {
+const toUniqueOrderedList = (values: readonly string[] | undefined): string[] => {
+  if (!values) {
+    return [];
+  }
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const entry of values) {
+    if (typeof entry !== 'string') {
+      continue;
+    }
+    const trimmed = entry.trim();
+    if (trimmed.length === 0 || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    result.push(trimmed);
+  }
+  return result;
+};
+
+const combineFirstNames = (...lists: Array<readonly string[] | undefined>): string[] => {
   const combined = new Set<string>();
-  const pushAll = (entries: readonly string[] | undefined) => {
+  for (const entries of lists) {
     if (!entries) {
-      return;
+      continue;
     }
     for (const entry of entries) {
-      if (typeof entry === 'string') {
-        const trimmed = entry.trim();
-        if (trimmed.length > 0) {
-          combined.add(trimmed);
-        }
+      if (typeof entry !== 'string') {
+        continue;
+      }
+      const trimmed = entry.trim();
+      if (trimmed.length > 0) {
+        combined.add(trimmed);
       }
     }
-  };
-  pushAll(male);
-  pushAll(female);
-  pushAll(legacy);
+  }
   return Array.from(combined).sort((a, b) => a.localeCompare(b));
 };
 
@@ -86,36 +100,26 @@ export const loadPersonnelDirectory = async (
   dataDirectory: string,
 ): Promise<PersonnelNameDirectory> => {
   const personnelDir = path.join(dataDirectory, 'personnel');
-  const [
-    firstNamesMaleRaw,
-    firstNamesFemaleRaw,
-    legacyFirstNamesRaw,
-    lastNamesRaw,
-    traits,
-    randomSeedsRaw,
-  ] = await Promise.all([
-    readJsonFile<string[]>(path.join(personnelDir, 'firstNamesMale.json')),
-    readJsonFile<string[]>(path.join(personnelDir, 'firstNamesFemale.json')),
-    readJsonFile<string[]>(path.join(personnelDir, 'firstNames.json')),
-    readJsonFile<string[]>(path.join(personnelDir, 'lastNames.json')),
-    readJsonFile<PersonnelNameDirectory['traits']>(path.join(personnelDir, 'traits.json')),
-    readJsonFile<string[]>(path.join(personnelDir, 'randomSeeds.json')),
-  ]);
+  const [firstNamesMaleRaw, firstNamesFemaleRaw, lastNamesRaw, traits, randomSeedsRaw] =
+    await Promise.all([
+      readJsonFile<string[]>(path.join(personnelDir, 'names', 'firstNamesMale.json')),
+      readJsonFile<string[]>(path.join(personnelDir, 'names', 'firstNamesFemale.json')),
+      readJsonFile<string[]>(path.join(personnelDir, 'names', 'lastNames.json')),
+      readJsonFile<PersonnelNameDirectory['traits']>(path.join(personnelDir, 'traits.json')),
+      readJsonFile<string[]>(path.join(personnelDir, 'randomSeeds.json')),
+    ]);
 
   const firstNamesMale = toUniqueSortedList(firstNamesMaleRaw);
   const firstNamesFemale = toUniqueSortedList(firstNamesFemaleRaw);
-  const legacyFirstNames = toUniqueSortedList(legacyFirstNamesRaw);
   const lastNames = toUniqueSortedList(lastNamesRaw);
-  const randomSeeds = toUniqueSortedList(randomSeedsRaw);
-  const firstNames = combineFirstNames(firstNamesMale, firstNamesFemale, legacyFirstNames);
+  const randomSeeds = toUniqueOrderedList(randomSeedsRaw);
 
   return {
-    firstNames,
-    firstNamesMale: firstNamesMale.length > 0 ? firstNamesMale : undefined,
-    firstNamesFemale: firstNamesFemale.length > 0 ? firstNamesFemale : undefined,
+    firstNamesMale,
+    firstNamesFemale,
     lastNames,
     traits: traits ?? [],
-    randomSeeds: randomSeeds.length > 0 ? randomSeeds : undefined,
+    randomSeeds,
   } satisfies PersonnelNameDirectory;
 };
 
@@ -179,7 +183,7 @@ export const createPersonnel = (
   rng: RngService,
   idStream: RngStream,
 ): PersonnelRoster => {
-  const firstNames = directory?.firstNames ?? [];
+  const firstNames = combineFirstNames(directory?.firstNamesMale, directory?.firstNamesFemale);
   const lastNames = directory?.lastNames ?? [];
   const traits = directory?.traits ?? [];
   const nameStream = rng.getStream(RNG_STREAM_IDS.personnelNames);

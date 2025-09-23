@@ -288,8 +288,10 @@ Catalog of actionable treatments; global stacking/safety/cost rules; tick-based 
 
 ---
 
-## 10) Personnel Pools — `/data/personnel/*.json`
+## 10) Personnel Pools — `/data/personnel`
 
-- `firstNames.json: string[]`
-- `lastNames.json: string[]`
+- `names/firstNamesMale.json: string[]`
+- `names/firstNamesFemale.json: string[]`
+- `names/lastNames.json: string[]`
+- `randomSeeds.json: string[]`
 - `traits.json: Array<{ id: string, name: string, description: string, type: "positive"|"negative"|string }>` _(HR roles/skills/wages can be separate or engine defaults.)_

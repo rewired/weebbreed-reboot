@@ -15,6 +15,7 @@ const DEFAULT_MAX_RETRIES = 2;
 interface RandomUserProfile {
   gender?: string;
   name?: { first?: string; last?: string };
+  login?: { salt?: string };
 }
 
 interface RandomUserResponse {
@@ -110,7 +111,7 @@ const fetchProfilesForSeed = async (
     try {
       const url = new URL('https://randomuser.me/api/');
       url.searchParams.set('results', String(batchSize));
-      url.searchParams.set('inc', 'name,gender');
+      url.searchParams.set('inc', 'name,gender,login');
       url.searchParams.set('seed', seed);
       const response = await fetchImpl(url.toString());
       if (!response.ok) {
@@ -153,9 +154,9 @@ export const provisionPersonnelDirectory = async (
   options: ProvisionPersonnelDirectoryOptions,
 ): Promise<ProvisionPersonnelDirectoryResult> => {
   const personnelDir = path.join(options.dataDirectory, 'personnel');
-  const maleFile = path.join(personnelDir, 'firstNamesMale.json');
-  const femaleFile = path.join(personnelDir, 'firstNamesFemale.json');
-  const lastNamesFile = path.join(personnelDir, 'lastNames.json');
+  const maleFile = path.join(personnelDir, 'names', 'firstNamesMale.json');
+  const femaleFile = path.join(personnelDir, 'names', 'firstNamesFemale.json');
+  const lastNamesFile = path.join(personnelDir, 'names', 'lastNames.json');
   const seedsFile = path.join(personnelDir, 'randomSeeds.json');
 
   const [maleExists, femaleExists, lastExists, seedsExists] = await Promise.all([
@@ -198,9 +199,9 @@ export const provisionPersonnelDirectory = async (
 
   for (let index = 0; index < requestCount; index += 1) {
     const seed = `${options.rngSeed}-${index}`;
-    seeds.push(seed);
     const profiles = await fetchProfilesForSeed(seed, batchSize, fetchImpl, maxRetries);
-    for (const profile of profiles) {
+    for (let profileIndex = 0; profileIndex < profiles.length; profileIndex += 1) {
+      const profile = profiles[profileIndex];
       const gender = toGender(profile?.gender);
       const firstName = normaliseName(profile?.name?.first);
       const lastName = normaliseName(profile?.name?.last);
@@ -219,6 +220,11 @@ export const provisionPersonnelDirectory = async (
       if (lastName) {
         lastNames.add(lastName);
       }
+
+      const salt = profile?.login?.salt;
+      const trimmedSalt = typeof salt === 'string' ? salt.trim() : '';
+      const candidateSeed = trimmedSalt.length > 0 ? trimmedSalt : `${seed}-${profileIndex}`;
+      seeds.push(candidateSeed);
     }
   }
 
@@ -258,7 +264,6 @@ export const provisionPersonnelDirectory = async (
   await writeJsonFile(seedsFile, mergedSeeds);
 
   const directory: PersonnelNameDirectory = {
-    firstNames: mergeNames([], [...mergedMale, ...mergedFemale]),
     firstNamesMale: mergedMale,
     firstNamesFemale: mergedFemale,
     lastNames: mergedLastNames,
