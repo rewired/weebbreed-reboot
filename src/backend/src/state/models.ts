@@ -472,9 +472,18 @@ export interface ApplicantState {
   expectedSalary: number;
   traits: string[];
   skills: EmployeeSkills;
-  personalSeed: string;
+  personalSeed?: string;
   gender?: 'male' | 'female' | 'other';
 }
+
+export const getApplicantPersonalSeed = (applicant: ApplicantState): string | undefined => {
+  const value = applicant.personalSeed;
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
 
 export interface TrainingProgramState {
   id: string;

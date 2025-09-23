@@ -1,15 +1,16 @@
 import { requireRoomPurpose, type RoomPurposeSource } from '@/engine/roomPurposes/index.js';
-import type {
-  ApplicantState,
-  DeviceInstanceState,
-  EmployeeState,
-  GameState,
-  PlantState,
-  StructureState,
-  ZoneControlState,
-  ZoneEnvironmentState,
-  ZoneMetricState,
-  ZoneResourceState,
+import {
+  getApplicantPersonalSeed,
+  type ApplicantState,
+  type DeviceInstanceState,
+  type EmployeeState,
+  type GameState,
+  type PlantState,
+  type StructureState,
+  type ZoneControlState,
+  type ZoneEnvironmentState,
+  type ZoneMetricState,
+  type ZoneResourceState,
 } from '@/state/models.js';
 
 export interface StructureSnapshot {
@@ -294,16 +295,27 @@ export const buildSimulationSnapshot = (
       status: employee.status,
       assignedStructureId: employee.assignedStructureId,
     })),
-    applicants: state.personnel.applicants.map((applicant) => ({
-      id: applicant.id,
-      name: applicant.name,
-      desiredRole: applicant.desiredRole,
-      expectedSalary: applicant.expectedSalary,
-      traits: [...applicant.traits],
-      skills: { ...applicant.skills },
-      personalSeed: applicant.personalSeed,
-      gender: applicant.gender,
-    })),
+    applicants: state.personnel.applicants.map((applicant) => {
+      const snapshot: ApplicantSnapshot = {
+        id: applicant.id,
+        name: applicant.name,
+        desiredRole: applicant.desiredRole,
+        expectedSalary: applicant.expectedSalary,
+        traits: [...applicant.traits],
+        skills: { ...applicant.skills },
+      };
+
+      const personalSeed = getApplicantPersonalSeed(applicant);
+      if (personalSeed) {
+        snapshot.personalSeed = personalSeed;
+      }
+
+      if (applicant.gender) {
+        snapshot.gender = applicant.gender;
+      }
+
+      return snapshot;
+    }),
     overallMorale: state.personnel.overallMorale,
   };
 

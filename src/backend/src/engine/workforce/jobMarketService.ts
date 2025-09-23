@@ -88,7 +88,7 @@ interface CandidateBaseProfile {
   firstName: string;
   lastName: string;
   gender?: ApplicantState['gender'];
-  personalSeed: string;
+  personalSeed?: string;
 }
 
 export type CandidateSource = 'remote' | 'local';
@@ -367,10 +367,9 @@ export class JobMarketService {
   }
 
   private async createCandidate(base: CandidateBaseProfile, week: number): Promise<ApplicantState> {
+    const normalizedSeed = typeof base.personalSeed === 'string' ? base.personalSeed.trim() : '';
     const personalSeed =
-      base.personalSeed.trim().length > 0
-        ? base.personalSeed.trim()
-        : this.generatePersonalSeed(week);
+      normalizedSeed.length > 0 ? normalizedSeed : this.generatePersonalSeed(week);
     const hashedSeed = this.hashSeed(personalSeed);
     const generator = createSeededStreamGenerator(
       String(hashedSeed),
@@ -384,7 +383,7 @@ export class JobMarketService {
     const id = generateId(this.jobStream, 'applicant');
     const fullName = `${base.firstName} ${base.lastName}`.trim();
 
-    return {
+    const candidate: ApplicantState = {
       id,
       name: fullName,
       desiredRole: role,
@@ -392,8 +391,13 @@ export class JobMarketService {
       traits,
       skills,
       personalSeed,
-      gender: base.gender,
-    } satisfies ApplicantState;
+    };
+
+    if (base.gender) {
+      candidate.gender = base.gender;
+    }
+
+    return candidate;
   }
 
   private pickRole(stream: RngStream): EmployeeRole {
