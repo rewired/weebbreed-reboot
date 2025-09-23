@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { SOCKET_URL } from '@/config/socket';
 import type {
   FacadeIntentCommand,
   SimulationConfigUpdate,
@@ -175,7 +176,8 @@ const processDomainEvents = (
 export const useSimulationBridge = (
   options: UseSimulationBridgeOptions = {},
 ): SimulationBridgeHandle => {
-  const { url = '/socket.io', autoConnect = true, debug = false } = options;
+  const { url: overrideUrl, autoConnect = true, debug = false } = options;
+  const resolvedUrl = overrideUrl ?? SOCKET_URL;
   const setConnectionStatus = useGameStore((state) => state.setConnectionStatus);
   const ingestGameUpdate = useGameStore((state) => state.ingestUpdate);
   const appendEvents = useGameStore((state) => state.appendEvents);
@@ -258,7 +260,7 @@ export const useSimulationBridge = (
   }, []);
 
   useEffect(() => {
-    const socket = io(url, {
+    const socket = io(resolvedUrl, {
       autoConnect: false,
       transports: ['websocket'],
     });
@@ -368,7 +370,7 @@ export const useSimulationBridge = (
     recordHREvent,
     registerTickCompleted,
     setConnectionStatus,
-    url,
+    resolvedUrl,
   ]);
 
   return useMemo(
