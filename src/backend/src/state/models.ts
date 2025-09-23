@@ -438,8 +438,11 @@ export interface PersonnelTrait {
 
 export interface PersonnelNameDirectory {
   firstNames: string[];
+  firstNamesMale?: string[];
+  firstNamesFemale?: string[];
   lastNames: string[];
   traits: PersonnelTrait[];
+  randomSeeds?: string[];
 }
 
 export interface EmployeeState {

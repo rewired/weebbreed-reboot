@@ -47,21 +47,76 @@ const ROLE_SHIFT_PREFERENCES: Partial<Record<EmployeeRole, string>> = {
   Manager: 'shift.day',
 };
 
+const toUniqueSortedList = (values: readonly string[] | undefined): string[] => {
+  if (!values) {
+    return [];
+  }
+  const filtered = values
+    .map((entry) => (typeof entry === 'string' ? entry.trim() : ''))
+    .filter((entry) => entry.length > 0);
+  return Array.from(new Set(filtered)).sort((a, b) => a.localeCompare(b));
+};
+
+const combineFirstNames = (
+  male: readonly string[] | undefined,
+  female: readonly string[] | undefined,
+  legacy: readonly string[] | undefined,
+): string[] => {
+  const combined = new Set<string>();
+  const pushAll = (entries: readonly string[] | undefined) => {
+    if (!entries) {
+      return;
+    }
+    for (const entry of entries) {
+      if (typeof entry === 'string') {
+        const trimmed = entry.trim();
+        if (trimmed.length > 0) {
+          combined.add(trimmed);
+        }
+      }
+    }
+  };
+  pushAll(male);
+  pushAll(female);
+  pushAll(legacy);
+  return Array.from(combined).sort((a, b) => a.localeCompare(b));
+};
+
 export const loadPersonnelDirectory = async (
   dataDirectory: string,
 ): Promise<PersonnelNameDirectory> => {
   const personnelDir = path.join(dataDirectory, 'personnel');
-  const [firstNames, lastNames, traits] = await Promise.all([
+  const [
+    firstNamesMaleRaw,
+    firstNamesFemaleRaw,
+    legacyFirstNamesRaw,
+    lastNamesRaw,
+    traits,
+    randomSeedsRaw,
+  ] = await Promise.all([
+    readJsonFile<string[]>(path.join(personnelDir, 'firstNamesMale.json')),
+    readJsonFile<string[]>(path.join(personnelDir, 'firstNamesFemale.json')),
     readJsonFile<string[]>(path.join(personnelDir, 'firstNames.json')),
     readJsonFile<string[]>(path.join(personnelDir, 'lastNames.json')),
     readJsonFile<PersonnelNameDirectory['traits']>(path.join(personnelDir, 'traits.json')),
+    readJsonFile<string[]>(path.join(personnelDir, 'randomSeeds.json')),
   ]);
 
+  const firstNamesMale = toUniqueSortedList(firstNamesMaleRaw);
+  const firstNamesFemale = toUniqueSortedList(firstNamesFemaleRaw);
+  const legacyFirstNames = toUniqueSortedList(legacyFirstNamesRaw);
+  const lastNames = toUniqueSortedList(lastNamesRaw);
+  const randomSeeds = toUniqueSortedList(randomSeedsRaw);
+  const firstNames = combineFirstNames(firstNamesMale, firstNamesFemale, legacyFirstNames);
+
   return {
-    firstNames: firstNames ?? [],
-    lastNames: lastNames ?? [],
+    firstNames,
+    firstNamesMale: firstNamesMale.length > 0 ? firstNamesMale : undefined,
+    firstNamesFemale: firstNamesFemale.length > 0 ? firstNamesFemale : undefined,
+    lastNames,
     traits: traits ?? [],
-  };
+    randomSeeds: randomSeeds.length > 0 ? randomSeeds : undefined,
+  } satisfies PersonnelNameDirectory;
 };
 
 const drawUnique = <T>(items: readonly T[], count: number, stream: RngStream): T[] => {
