@@ -44,6 +44,9 @@ See [WB Physiology Reference](./wb-physio.md) for the concrete formulas and unit
      - Cooling/heating: proportional approach to `targetTemperature` within `targetTemperatureRange`.
      - **Dehumidifier**: `moistureRemoval_Lph` ⇒ `−ΔRH` via moisture balance.
      - **Exhaust/Fan**: boosts mixing/exchange factor (see normalization).
+   - **Humidifier/Dehumidifier**
+     - Water mass flow (`humidifyRateKgPerTick`, `dehumidifyRateKgPerTick` or `latentRemovalKgPerTick`) converts to relative humidity deltas with `ΔRH = (mass_kg ÷ (volume_m3 × SATURATION_VAPOR_DENSITY_KG_PER_M3)) × efficiency × powerMod`.
+     - `SATURATION_VAPOR_DENSITY_KG_PER_M3 ≈ 0.0173 kg·m⁻³` (20 °C reference) anchors the simple moisture balance; outputs are clamped to `[0,1]` after device hysteresis and controller modulation (`humidityHumidify` / `humidityDehumidify`).
    - **CO2Injector**: move `CO2` toward `targetCO2_ppm`, capped by `maxSafeCO2_ppm`.
 3. **Plant deltas** (coarse canopy physiology)
    - **Transpiration**: `+ΔRH` (scaled by PPFD, temperature, phenological phase).

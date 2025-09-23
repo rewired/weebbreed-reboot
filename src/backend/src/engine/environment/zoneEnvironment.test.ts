@@ -268,6 +268,66 @@ describe('ZoneEnvironmentService', () => {
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);
   });
 
+  it('raises humidity toward the setpoint without exceeding the safety clamp', () => {
+    const environment = createEnvironment({ relativeHumidity: 0.4 });
+    const devices: DeviceInstanceState[] = [
+      createDevice(
+        'humidity-1',
+        'HumidityControlUnit',
+        {
+          power: 0.4,
+          targetHumidity: 0.65,
+          hysteresis: 0.05,
+          humidifyRateKgPerTick: 0.12,
+          dehumidifyRateKgPerTick: 0.08,
+        },
+        0.85,
+      ),
+    ];
+
+    const zone = createZone(devices, environment);
+    zone.control.setpoints.humidity = 0.65;
+    const room = createRoom(zone);
+    const structure = createStructure(room);
+    const state = createGameState(structure);
+    const service = new ZoneEnvironmentService();
+
+    service.applyDeviceDeltas(state, 15, undefined);
+
+    expect(zone.environment.relativeHumidity).toBeGreaterThan(0.4);
+    expect(zone.environment.relativeHumidity).toBeLessThanOrEqual(1);
+  });
+
+  it('reduces humidity toward the setpoint without dropping below zero', () => {
+    const environment = createEnvironment({ relativeHumidity: 0.92 });
+    const devices: DeviceInstanceState[] = [
+      createDevice(
+        'humidity-1',
+        'HumidityControlUnit',
+        {
+          power: 0.45,
+          targetHumidity: 0.55,
+          hysteresis: 0.05,
+          humidifyRateKgPerTick: 0.08,
+          dehumidifyRateKgPerTick: 0.15,
+        },
+        0.8,
+      ),
+    ];
+
+    const zone = createZone(devices, environment);
+    zone.control.setpoints.humidity = 0.55;
+    const room = createRoom(zone);
+    const structure = createStructure(room);
+    const state = createGameState(structure);
+    const service = new ZoneEnvironmentService();
+
+    service.applyDeviceDeltas(state, 15, undefined);
+
+    expect(zone.environment.relativeHumidity).toBeLessThan(0.92);
+    expect(zone.environment.relativeHumidity).toBeGreaterThanOrEqual(0);
+  });
+
   it('resets PPFD based on device contributions each tick', () => {
     const environment = createEnvironment();
     const devices: DeviceInstanceState[] = [
