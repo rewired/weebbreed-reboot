@@ -442,7 +442,7 @@ Currently supported targets:
 | Type | Payload fields | Behaviour |
 | ------------ | --------------------------- | ------------------------------------------------------------------------------------------- |
 | `tickLength` | `minutes` (> 0) | Reconfigures the scheduler (restarts if required) and emits a `sim.tickLengthChanged` event. |
-| `setpoint` | `zoneId`, `metric`, `value` | Routes a zone setpoint to device settings; see the metric table below. |
+| `setpoint` | `zoneId`, `metric`, `value` | Routes a zone setpoint to device settings. Use the `zones[].id` string from telemetry (UUID v4 or legacy slug); see the metric table below. |
 
 Supported setpoint metrics:
 
@@ -456,6 +456,7 @@ Supported setpoint metrics:
 
 Additional notes:
 
+- `zoneId` must match the zone identifier emitted in snapshots. The gateway trims whitespace and accepts any non-empty string, so UUID v4 identifiers work without prefixes.
 - All values must be finite. Clamps trigger warning strings in the
   `config.update.result` payload so the UI can surface them alongside the
   successful response.

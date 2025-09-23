@@ -122,9 +122,7 @@ const simulationControlSchema = requestMetadataSchema.and(
 const zoneIdSchema = z
   .string({ invalid_type_error: 'zoneId must be a string.' })
   .trim()
-  .regex(/^zone[-_][a-z0-9]+$/i, {
-    message: 'zoneId must be a zone identifier using the zone_ prefix.',
-  });
+  .min(1, { message: 'zoneId must be a non-empty string.' });
 
 const configUpdateSchema = requestMetadataSchema.and(
   z.discriminatedUnion('type', [
