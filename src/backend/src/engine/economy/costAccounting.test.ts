@@ -174,6 +174,7 @@ const attachDeviceToState = (state: GameState, device: DeviceInstanceState): voi
                 stressLevel: 0,
                 lastUpdatedTick: 0,
               },
+              control: { setpoints: {} },
               health: { plantHealth: {}, pendingTreatments: [], appliedTreatments: [] },
               activeTaskIds: [],
             },

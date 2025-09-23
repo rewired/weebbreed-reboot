@@ -123,6 +123,18 @@ export interface ZoneMetricState {
   lastUpdatedTick: number;
 }
 
+export interface ZoneControlSetpoints {
+  temperature?: number;
+  humidity?: number;
+  co2?: number;
+  ppfd?: number;
+  vpd?: number;
+}
+
+export interface ZoneControlState {
+  setpoints: ZoneControlSetpoints;
+}
+
 export interface ZonePlantingPlanState {
   id: string;
   strainId: string;
@@ -233,6 +245,7 @@ export interface ZoneState {
   plants: PlantState[];
   devices: DeviceInstanceState[];
   metrics: ZoneMetricState;
+  control: ZoneControlState;
   health: ZoneHealthState;
   activeTaskIds: string[];
   plantingPlan?: ZonePlantingPlanState | null;

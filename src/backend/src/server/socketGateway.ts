@@ -119,6 +119,13 @@ const simulationControlSchema = requestMetadataSchema.and(
   ]),
 );
 
+const zoneIdSchema = z
+  .string({ invalid_type_error: 'zoneId must be a string.' })
+  .trim()
+  .regex(/^zone[-_][a-z0-9]+$/i, {
+    message: 'zoneId must be a zone identifier using the zone_ prefix.',
+  });
+
 const configUpdateSchema = requestMetadataSchema.and(
   z.discriminatedUnion('type', [
     z.object({
@@ -127,7 +134,7 @@ const configUpdateSchema = requestMetadataSchema.and(
     }),
     z.object({
       type: z.literal('setpoint'),
-      zoneId: z.string().uuid({ message: 'zoneId must be a UUID.' }),
+      zoneId: zoneIdSchema,
       metric: z.enum(['temperature', 'relativeHumidity', 'co2', 'ppfd', 'vpd']),
       value: z.number({ invalid_type_error: 'Value must be a number.' }),
     }),
@@ -461,16 +468,7 @@ export class SocketGateway {
       case 'tickLength':
         return this.facade.setTickLength(command.minutes);
       case 'setpoint':
-        return {
-          ok: false,
-          errors: [
-            {
-              code: 'ERR_INVALID_STATE',
-              message: 'Setpoint updates are not supported in the current build.',
-              path: ['config.update', 'setpoint'],
-            },
-          ],
-        } satisfies CommandResult<TimeStatus>;
+        return this.facade.setZoneSetpoint(command.zoneId, command.metric, command.value);
       default:
         return {
           ok: false,

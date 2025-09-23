@@ -276,6 +276,24 @@ export class ZoneEnvironmentService {
     let humidity = this.baseSetpoints.humidity;
     let co2 = this.baseSetpoints.co2;
 
+    const controlSetpoints = zone.control?.setpoints ?? {};
+    const controlTemperature = this.extractNumeric(controlSetpoints.temperature);
+    const controlHumidity = this.extractNumeric(controlSetpoints.humidity);
+    const controlCo2 = this.extractNumeric(controlSetpoints.co2);
+    const hasControlTemperature = controlTemperature !== undefined;
+    const hasControlHumidity = controlHumidity !== undefined;
+    const hasControlCo2 = controlCo2 !== undefined;
+
+    if (hasControlTemperature) {
+      temperature = controlTemperature;
+    }
+    if (hasControlHumidity) {
+      humidity = controlHumidity;
+    }
+    if (hasControlCo2) {
+      co2 = controlCo2;
+    }
+
     for (const device of zone.devices) {
       if (device.status !== 'operational') {
         continue;
@@ -283,7 +301,7 @@ export class ZoneEnvironmentService {
 
       const settings = device.settings ?? {};
 
-      if (TEMPERATURE_DEVICE_KINDS.has(device.kind)) {
+      if (TEMPERATURE_DEVICE_KINDS.has(device.kind) && !hasControlTemperature) {
         const targetTemperature = this.extractNumeric(settings.targetTemperature);
         if (targetTemperature !== undefined) {
           temperature = targetTemperature;
@@ -296,14 +314,14 @@ export class ZoneEnvironmentService {
         }
       }
 
-      if (HUMIDITY_DEVICE_KINDS.has(device.kind)) {
+      if (HUMIDITY_DEVICE_KINDS.has(device.kind) && !hasControlHumidity) {
         const targetHumidity = this.extractNumeric(settings.targetHumidity);
         if (targetHumidity !== undefined) {
           humidity = targetHumidity;
         }
       }
 
-      if (CO2_DEVICE_KINDS.has(device.kind)) {
+      if (CO2_DEVICE_KINDS.has(device.kind) && !hasControlCo2) {
         const targetCo2 = this.extractNumeric(settings.targetCO2);
         if (targetCo2 !== undefined) {
           co2 = targetCo2;

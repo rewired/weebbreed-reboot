@@ -173,6 +173,7 @@ const createStateWithDevice = (device: DeviceInstanceState): GameState => {
               plants: [],
               devices: [device],
               metrics: createMetrics(environment),
+              control: { setpoints: {} },
               health: { plantHealth: {}, pendingTreatments: [], appliedTreatments: [] },
               activeTaskIds: [],
             },

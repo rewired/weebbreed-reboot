@@ -49,6 +49,11 @@ const createZone = (overrides: Partial<ZoneState> = {}): ZoneState => ({
       stressLevel: 0,
       lastUpdatedTick: 0,
     } satisfies ZoneState['metrics']),
+  control:
+    overrides.control ??
+    ({
+      setpoints: { ...(overrides.control?.setpoints ?? {}) },
+    } satisfies ZoneState['control']),
   health:
     overrides.health ??
     ({

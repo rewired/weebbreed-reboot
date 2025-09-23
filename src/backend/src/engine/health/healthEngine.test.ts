@@ -191,6 +191,7 @@ const createGameState = (): GameState => {
     plants,
     devices: [],
     metrics: createMetrics(environment),
+    control: { setpoints: {} },
     health: createZoneHealth(plants),
     activeTaskIds: [],
   };

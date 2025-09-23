@@ -17,7 +17,7 @@ import { SocketGateway } from '@/server/socketGateway.js';
 
 const STRUCTURE_ID = '11111111-1111-1111-1111-111111111111';
 const ROOM_ID = '22222222-2222-2222-2222-222222222222';
-const ZONE_ID = '33333333-3333-3333-3333-333333333333';
+const ZONE_ID = 'zone_3333333333';
 const DEVICE_ID = '44444444-4444-4444-4444-444444444444';
 const DEVICE_BLUEPRINT_ID = '55555555-5555-5555-5555-555555555555';
 const METHOD_ID = '66666666-6666-6666-6666-666666666666';
@@ -34,6 +34,33 @@ const createPriceCatalog = (): PriceCatalog => ({
         capitalExpenditure: 500,
         baseMaintenanceCostPerTick: 0,
         costIncreasePer1000Ticks: 0,
+      },
+    ],
+    [
+      'hvac-blueprint',
+      {
+        id: 'hvac-blueprint',
+        capitalExpenditure: 900,
+        baseMaintenanceCostPerTick: 0.002,
+        costIncreasePer1000Ticks: 0.0005,
+      },
+    ],
+    [
+      'humidity-blueprint',
+      {
+        id: 'humidity-blueprint',
+        capitalExpenditure: 600,
+        baseMaintenanceCostPerTick: 0.0015,
+        costIncreasePer1000Ticks: 0.0004,
+      },
+    ],
+    [
+      'co2-blueprint',
+      {
+        id: 'co2-blueprint',
+        capitalExpenditure: 400,
+        baseMaintenanceCostPerTick: 0.001,
+        costIncreasePer1000Ticks: 0.0003,
       },
     ],
   ]),
@@ -124,7 +151,75 @@ const createTestState = (): GameState => ({
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
                   },
-                  settings: { power: 0.8 },
+                  settings: { power: 0.8, ppfd: 500, coverageArea: 10 },
+                },
+                {
+                  id: 'device-hvac',
+                  blueprintId: 'hvac-blueprint',
+                  kind: 'ClimateUnit',
+                  name: 'Climate Control',
+                  zoneId: ZONE_ID,
+                  status: 'operational',
+                  efficiency: 0.9,
+                  runtimeHours: 0,
+                  maintenance: {
+                    lastServiceTick: 0,
+                    nextDueTick: 720,
+                    condition: 1,
+                    runtimeHoursAtLastService: 0,
+                    degradation: 0,
+                  },
+                  settings: {
+                    airflow: 320,
+                    coolingCapacity: 1.2,
+                    targetTemperature: 22,
+                    targetTemperatureRange: [20, 25],
+                    fullPowerAtDeltaK: 2,
+                  },
+                },
+                {
+                  id: 'device-humidity',
+                  blueprintId: 'humidity-blueprint',
+                  kind: 'HumidityControlUnit',
+                  name: 'Humidity Control',
+                  zoneId: ZONE_ID,
+                  status: 'operational',
+                  efficiency: 0.9,
+                  runtimeHours: 0,
+                  maintenance: {
+                    lastServiceTick: 0,
+                    nextDueTick: 720,
+                    condition: 1,
+                    runtimeHoursAtLastService: 0,
+                    degradation: 0,
+                  },
+                  settings: {
+                    targetHumidity: 0.55,
+                    humidifyRateKgPerTick: 0.1,
+                    dehumidifyRateKgPerTick: 0.1,
+                  },
+                },
+                {
+                  id: 'device-co2',
+                  blueprintId: 'co2-blueprint',
+                  kind: 'CO2Injector',
+                  name: 'CO2 Injector',
+                  zoneId: ZONE_ID,
+                  status: 'operational',
+                  efficiency: 0.9,
+                  runtimeHours: 0,
+                  maintenance: {
+                    lastServiceTick: 0,
+                    nextDueTick: 720,
+                    condition: 1,
+                    runtimeHoursAtLastService: 0,
+                    degradation: 0,
+                  },
+                  settings: {
+                    targetCO2: 900,
+                    targetCO2Range: [400, 1500],
+                    hysteresis: 50,
+                  },
                 },
               ],
               metrics: {
@@ -135,6 +230,7 @@ const createTestState = (): GameState => ({
                 stressLevel: 0.1,
                 lastUpdatedTick: 0,
               },
+              control: { setpoints: {} },
               health: { plantHealth: {}, pendingTreatments: [], appliedTreatments: [] },
               activeTaskIds: [],
               plantingPlan: {
@@ -300,6 +396,7 @@ describe('SocketGateway facade intents integration', () => {
               environment: zone.environment,
               resources: zone.resources,
               metrics: zone.metrics,
+              control: zone.control,
               devices: zone.devices,
               plants: zone.plants,
               health: zone.health,
@@ -435,5 +532,37 @@ describe('SocketGateway facade intents integration', () => {
     expect(response.ok).toBe(true);
     expect(state.structures[0]!.rooms[0]!.zones[0]!.plantingPlan?.enabled).toBe(false);
     await expectDomainEvent('plant.plantingPlanToggled');
+  });
+
+  it('applies zone setpoint updates via config.update', async () => {
+    const setpointEvents: SimulationEvent[] = [];
+    const unsubscribe = facade.subscribe('env.setpointUpdated', (event) => {
+      setpointEvents.push(event);
+    });
+
+    const response = await new Promise<CommandResult<TimeStatus>>((resolve) => {
+      client.emit(
+        'config.update',
+        {
+          requestId: 'cfg-setpoint',
+          type: 'setpoint',
+          zoneId: ZONE_ID,
+          metric: 'temperature',
+          value: 21,
+        },
+        (payload: CommandResult<TimeStatus>) => resolve(payload),
+      );
+    });
+
+    expect(response.ok).toBe(true);
+    await expectDomainEvent('env.setpointUpdated');
+    await waitFor(() => setpointEvents.length > 0);
+
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    expect(zone.control.setpoints.temperature).toBe(21);
+    const climateUnit = zone.devices.find((device) => device.kind === 'ClimateUnit');
+    expect(climateUnit?.settings.targetTemperature).toBe(21);
+
+    unsubscribe();
   });
 });
