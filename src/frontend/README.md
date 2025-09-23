@@ -36,13 +36,20 @@ client lifecycle. The hook:
   - `useGameStore` captures raw events, time metadata, and exposes handlers for
     issuing `simulationControl` and `config.update` commands back to the
     backend,
-  - `useZoneStore` normalises zone/room/structure snapshots, maintains rolling
-    timelines and finance history, and stores the latest setpoints,
+- `useZoneStore` normalises zone/room/structure snapshots, maintains rolling
+  timelines and finance history, and stores the latest setpoints,
   - `usePersonnelStore` aggregates HR roster changes and domain events.
 - exposes helper methods (`sendControlCommand`, `sendConfigUpdate`,
   `sendFacadeIntent`) that store slices call when the UI triggers actions, and
 - provides a `subscribe` helper so features can hook into additional socket
   channels without re-implementing connection management.
+
+Setpoint controls call `sendConfigUpdate({ type: 'setpoint', zoneId, metric, value })`
+with backend-supported metrics (`temperature`, `relativeHumidity`, `vpd`, `co2`,
+`ppfd`). Responses may include warning strings when the backend clamps
+out-of-range values, and successful updates are echoed via
+`env.setpointUpdated` domain events—follow the socket protocol reference for the
+latest contract details.
 
 The bridge also performs light domain-specific shaping (e.g. mapping finance
 payloads, splitting HR events) so components can consume ready-to-render data.

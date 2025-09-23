@@ -255,6 +255,12 @@ Users navigate through containers forming the core gameplay loop.
 
 - Clicking the indicator toggles **all devices in the group** on/off.
 - **Tuning** (`tune`) for climate/CO₂ devices opens **editDevice** modal for setpoints (temperature, humidity, etc.).
+- Setpoint modals send `config.update` commands with `metric`
+  (`temperature`, `relativeHumidity`, `vpd`, `co2`, `ppfd`) and surface
+  backend warnings (e.g., clamp notifications) returned in
+  `config.update.result`. The UI should also react to the
+  `env.setpointUpdated` event to keep forms in sync when other clients adjust
+  targets.
 - **Edit Light Cycle** (`schedule`) available for lights; opens **editLightCycle** modal to change on/off cycle for the entire zone.
 
 ---

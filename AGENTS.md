@@ -151,6 +151,27 @@ All randomness (pests/events/market) comes from here.
   `/docs/system` + `/docs/tasks`. Keep Socket docs in sync so UI teams can
   adopt new actions without spelunking through code.
 
+### 4.7 Zone Setpoint Contract
+
+- Socket clients issue zone setpoint updates via
+  `config.update { type: 'setpoint', zoneId, metric, value }`.
+- Supported metrics and their routing:
+  - `temperature` → writes `targetTemperature` on HVAC-capable devices.
+  - `relativeHumidity` → writes `targetHumidity` on humidifier/dehumidifier
+    devices (also clears active VPD setpoint).
+  - `vpd` → converts the VPD target (at the zone control reference
+    temperature) into a humidity value and programs it on humidity devices
+    while storing both humidity and VPD setpoints.
+  - `co2` → writes `targetCO2` on enrichment/scrubber devices.
+  - `ppfd` → writes `ppfd` (and scales `power` when present) on dimmable
+    lighting.
+- Values are validated and clamped (finite numbers, non-negative for PPFD/CO₂
+  /VPD, humidity forced to `[0,1]`); clamp warnings are returned to the client
+  in the command response.
+- A zone without supporting devices returns `ERR_INVALID_STATE`.
+- Successful updates emit `env.setpointUpdated` with `{ zoneId, metric, value,
+control }` and, when humidity is derived (RH/VPD), `effectiveHumidity`.
+
 ---
 
 ## 5) Developer Ergonomics

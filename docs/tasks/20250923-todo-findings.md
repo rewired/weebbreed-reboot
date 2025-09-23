@@ -13,6 +13,7 @@ Revise AGENTS.MD and other .md files to reflect current architecture. Document t
 
 Create tasks to fix the issues:
 Setpoints not implemented: frontend emits config.update {type:'setpoint', ...}, but backend explicitly returns ERR_INVALID_STATE; implement setpoint handling. check for other devices, which can handle settings.
+Status: ✅ Completed 2025-09-23 — façade now routes zone setpoints to device targets, clamps invalid values, and emits env.setpointUpdated events.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
 
 Create tasks to fix the issues:

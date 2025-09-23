@@ -283,11 +283,30 @@ validation fails the façade is not touched and the client receives an
 ### `config.update`
 
 Currently supported targets:
+| Type | Payload fields | Behaviour |
+| ------------ | --------------------------- | ------------------------------------------------------------------------------------------- |
+| `tickLength` | `minutes` (> 0) | Reconfigures the scheduler (restarts if required) and emits a `sim.tickLengthChanged` event. |
+| `setpoint` | `zoneId`, `metric`, `value` | Routes a zone setpoint to device settings; see the metric table below. |
 
-| Type         | Payload fields              | Behaviour                                                                                    |
-| ------------ | --------------------------- | -------------------------------------------------------------------------------------------- |
-| `tickLength` | `minutes` (> 0)             | Reconfigures the scheduler (restarts if required) and emits a `sim.tickLengthChanged` event. |
-| `setpoint`   | `zoneId`, `metric`, `value` | Not yet implemented – returns `ERR_INVALID_STATE`.                                           |
+Supported setpoint metrics:
+
+| Metric             | Device routing & behaviour                                                                                                                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `temperature`      | Requires at least one HVAC device in the zone. Writes `targetTemperature` to each eligible device and stores the target on the zone control state.                                                                                                                                                           |
+| `relativeHumidity` | Requires humidifier/dehumidifier coverage. Clamps the value to `[0,1]`, updates `targetHumidity` on each device, clears any active VPD target, and stores the humidity setpoint.                                                                                                                             |
+| `vpd`              | Requires humidity control. Clamps the VPD to ≥ 0, converts it to a humidity target using the zone control reference temperature, applies the derived `targetHumidity` to devices, and stores both humidity and VPD setpoints. The derived humidity is echoed in the command response as `effectiveHumidity`. |
+| `co2`              | Requires CO₂ enrichment/scrubber devices. Clamps the value to ≥ 0, writes `targetCO2` on devices, and stores the CO₂ setpoint.                                                                                                                                                                               |
+| `ppfd`             | Requires dimmable lighting. Clamps the value to ≥ 0, updates each light’s `ppfd` setting, and if the device exposes a finite `power` setting scales it proportionally to the new PPFD (power is forced to zero when the target PPFD is zero).                                                                |
+
+Additional notes:
+
+- All values must be finite. Clamps trigger warning strings in the
+  `config.update.result` payload so the UI can surface them alongside the
+  successful response.
+- When a zone lacks the required devices the command returns
+  `ERR_INVALID_STATE`.
+- Successful updates emit an `env.setpointUpdated` domain event containing the
+  updated `control` snapshot (including derived humidity when applicable).
 
 Additional configuration mutations can be layered onto the same endpoint in the
 future without breaking existing clients.
