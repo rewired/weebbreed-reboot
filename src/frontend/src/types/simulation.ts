@@ -210,7 +210,7 @@ export interface SimulationSnapshot {
 
 export interface SimulationEvent {
   type: string;
-  severity?: 'debug' | 'info' | 'warning' | 'error';
+  level?: 'debug' | 'info' | 'warning' | 'error';
   message?: string;
   tick?: number;
   ts?: number;

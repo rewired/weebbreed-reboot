@@ -70,7 +70,7 @@ const toSimulationEvent = (payload: unknown): SimulationEvent => {
 
   return {
     type: 'domain.untyped',
-    severity: 'debug',
+    level: 'debug',
     message: typeof payload === 'string' ? payload : JSON.stringify(payload),
   };
 };
