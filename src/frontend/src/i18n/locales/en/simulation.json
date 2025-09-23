@@ -231,13 +231,13 @@
   "events": {
     "empty": "No events yet.",
     "columns": {
-      "severity": "Severity",
+      "level": "Level",
       "type": "Type",
       "message": "Message",
       "tick": "Tick",
       "timestamp": "Timestamp"
     },
-    "severity": {
+    "level": {
       "debug": "Debug",
       "info": "Info",
       "warning": "Warning",

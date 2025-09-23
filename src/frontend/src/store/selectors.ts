@@ -52,7 +52,7 @@ export const selectCurrentSpeed = (state: GameStoreState): number => {
 };
 
 export const selectAlertEvents = (state: GameStoreState) => {
-  return state.events.filter((event) => event.severity === 'warning' || event.severity === 'error');
+  return state.events.filter((event) => event.level === 'warning' || event.level === 'error');
 };
 
 export const selectRecentEvents = (limit: number) => (state: GameStoreState) => {
@@ -64,7 +64,7 @@ export const selectRecentEvents = (limit: number) => (state: GameStoreState) => 
 
 export const selectAlertCount = (state: GameStoreState): number => {
   return state.events.reduce((count, event) => {
-    return count + (event.severity === 'warning' || event.severity === 'error' ? 1 : 0);
+    return count + (event.level === 'warning' || event.level === 'error' ? 1 : 0);
   }, 0);
 };
 
