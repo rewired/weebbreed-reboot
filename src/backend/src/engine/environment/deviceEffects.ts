@@ -1,5 +1,6 @@
 import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
 import type { ZoneGeometry } from '@/state/geometry.js';
+import { COOLING_CAPACITY_FACTOR, LAMP_HEAT_FACTOR } from '@/constants/environment.js';
 import type { ClimateControlOutput } from './climateController.js';
 
 export interface DeviceEffect {
@@ -27,8 +28,8 @@ const DEFAULT_DEVICE_EFFECT: DeviceEffect = {
 
 const SPECIFIC_HEAT_AIR_KWH_PER_M3K = 0.000336;
 const MIN_HEAT_CAPACITY_KWH_PER_K = 0.0001;
-const LAMP_HEAT_TRANSFER_COEFFICIENT = 0.25;
-const HVAC_HEAT_TRANSFER_COEFFICIENT = 0.8;
+const LAMP_HEAT_TRANSFER_COEFFICIENT = LAMP_HEAT_FACTOR;
+const HVAC_HEAT_TRANSFER_COEFFICIENT = COOLING_CAPACITY_FACTOR;
 const DEFAULT_LIGHT_HEAT_FRACTION = 0.4;
 const DEFAULT_LIGHT_COVERAGE_M2 = 1;
 const DEFAULT_FULL_POWER_DELTA_K = 1;

@@ -322,7 +322,7 @@ describe('SimulationLoop', () => {
 
     const zone = state.structures[0]?.rooms[0]?.zones[0];
     expect(zone?.environment.temperature).toBeLessThan(initialTemperature);
-    expect(zone?.environment.temperature).toBeCloseTo(24.81, 2);
+    expect(zone?.environment.temperature).toBeCloseTo(24.83, 2);
   });
 
   it('applies default environment handling when not overridden', async () => {
@@ -333,9 +333,9 @@ describe('SimulationLoop', () => {
     await loop.processTick();
 
     const zone = state.structures[0]?.rooms[0]?.zones[0];
-    expect(zone?.environment.temperature).toBeCloseTo(24.28, 2);
+    expect(zone?.environment.temperature).toBeCloseTo(24.51, 2);
     expect(zone?.environment.relativeHumidity).toBeCloseTo(0.63, 2);
-    expect(zone?.environment.co2).toBeCloseTo(890, 0);
+    expect(zone?.environment.co2).toBeCloseTo(900, 0);
     expect(zone?.environment.ppfd).toBeCloseTo(21.6, 4);
   });
 });
