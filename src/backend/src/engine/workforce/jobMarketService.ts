@@ -8,12 +8,17 @@ import type {
   EmployeeSkills,
   GameState,
   PersonnelNameDirectory,
+  PersonnelRoleBlueprint,
+  PersonnelRoleSkillRoll,
+  PersonnelRoleSkillTemplate,
   SkillName,
 } from '@/state/models.js';
+import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '@/state/models.js';
 import { generateId } from '@/state/initialization/common.js';
 import {
-  DEFAULT_SALARY_BY_ROLE,
   loadPersonnelDirectory,
+  loadPersonnelRoleBlueprints,
+  normalizePersonnelRoleBlueprints,
 } from '@/state/initialization/personnel.js';
 import type {
   CommandExecutionContext,
@@ -30,37 +35,21 @@ const JOB_MARKET_STREAM_ID = RNG_STREAM_IDS.jobMarket;
 const JOB_MARKET_CANDIDATE_STREAM_ID = RNG_STREAM_IDS.jobMarketCandidates;
 const JOB_MARKET_GENDER_STREAM_ID = RNG_STREAM_IDS.jobMarketGender;
 
-const SKILL_NAMES: SkillName[] = [
-  'Gardening',
-  'Maintenance',
-  'Logistics',
-  'Cleanliness',
-  'Administration',
-];
+const FALLBACK_ROLE_BLUEPRINTS = normalizePersonnelRoleBlueprints(
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+);
 
-const ROLE_SKILL_PROFILE: Record<
-  EmployeeRole,
-  { primary: SkillName; secondary?: SkillName; tertiary?: SkillName }
-> = {
-  Gardener: { primary: 'Gardening', secondary: 'Cleanliness' },
-  Technician: { primary: 'Maintenance', secondary: 'Logistics' },
-  Janitor: { primary: 'Cleanliness', secondary: 'Logistics' },
-  Operator: { primary: 'Logistics', secondary: 'Administration' },
-  Manager: { primary: 'Administration', secondary: 'Logistics', tertiary: 'Cleanliness' },
-};
-
-const ROLE_WEIGHTS: Array<{ role: EmployeeRole; weight: number }> = [
-  { role: 'Gardener', weight: 0.35 },
-  { role: 'Technician', weight: 0.2 },
-  { role: 'Operator', weight: 0.18 },
-  { role: 'Janitor', weight: 0.15 },
-  { role: 'Manager', weight: 0.12 },
-];
+const FALLBACK_ROLE_MAP = new Map<string, PersonnelRoleBlueprint>(
+  FALLBACK_ROLE_BLUEPRINTS.map((role) => [role.id, role]),
+);
 
 const SALARY_TRAIT_MODIFIERS: Record<string, number> = {
   trait_frugal: 0.95,
   trait_demanding: 1.08,
 };
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
 
 const toGender = (value: unknown): ApplicantState['gender'] => {
   if (typeof value !== 'string') {
@@ -126,6 +115,7 @@ export interface JobMarketServiceOptions {
   state: GameState;
   rng: RngService;
   personnelDirectory?: PersonnelNameDirectory;
+  personnelRoleBlueprints?: PersonnelRoleBlueprint[];
   dataDirectory?: string;
   fetchImpl?: typeof globalThis.fetch;
   httpEnabled?: boolean;
@@ -163,6 +153,12 @@ export class JobMarketService {
 
   private readonly diversityProbability: number;
 
+  private roleBlueprints: PersonnelRoleBlueprint[];
+
+  private roleBlueprintIndex = new Map<string, PersonnelRoleBlueprint>();
+
+  private roleBlueprintPromise: Promise<PersonnelRoleBlueprint[] | undefined> | null = null;
+
   constructor(options: JobMarketServiceOptions) {
     this.state = options.state;
     this.rng = options.rng;
@@ -183,6 +179,16 @@ export class JobMarketService {
     if (this.directory) {
       this.offlineSeedIndex = 0;
     }
+    const normalizedRoles =
+      options.personnelRoleBlueprints && options.personnelRoleBlueprints.length > 0
+        ? normalizePersonnelRoleBlueprints(options.personnelRoleBlueprints)
+        : FALLBACK_ROLE_BLUEPRINTS;
+    this.roleBlueprints = normalizedRoles;
+    this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+  }
+
+  private rebuildRoleBlueprintIndex(roles: readonly PersonnelRoleBlueprint[]): void {
+    this.roleBlueprintIndex = new Map(roles.map((role) => [role.id, role]));
   }
 
   createCommitHook(): SimulationPhaseHandler {
@@ -387,10 +393,12 @@ export class JobMarketService {
       JOB_MARKET_CANDIDATE_STREAM_ID,
     );
     const stream = new RngStream(JOB_MARKET_CANDIDATE_STREAM_ID, generator);
-    const role = this.pickRole(stream);
-    const skills = this.rollSkills(role, stream);
+    const roleBlueprints = await this.getRoleBlueprints();
+    const role = this.pickRole(stream, roleBlueprints);
+    const roleBlueprint = this.findRoleBlueprint(role);
+    const skills = this.rollSkills(roleBlueprint, stream);
     const traits = await this.rollTraits(stream);
-    const expectedSalary = this.computeSalary(role, skills, traits, stream);
+    const expectedSalary = this.computeSalary(roleBlueprint, skills, traits, stream);
     const id = generateId(this.jobStream, 'applicant');
     const fullName = `${base.firstName} ${base.lastName}`.trim();
 
@@ -410,6 +418,197 @@ export class JobMarketService {
     }
 
     return candidate;
+  }
+
+  private async getRoleBlueprints(): Promise<PersonnelRoleBlueprint[]> {
+    if (this.roleBlueprints && this.roleBlueprints.length > 0) {
+      return this.roleBlueprints;
+    }
+    if (this.roleBlueprintPromise) {
+      const roles = await this.roleBlueprintPromise;
+      return roles ?? FALLBACK_ROLE_BLUEPRINTS;
+    }
+    if (!this.dataDirectory) {
+      this.roleBlueprints = FALLBACK_ROLE_BLUEPRINTS;
+      this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+      return this.roleBlueprints;
+    }
+    this.roleBlueprintPromise = loadPersonnelRoleBlueprints(this.dataDirectory)
+      .then((roles) => {
+        this.roleBlueprints = roles.length > 0 ? roles : FALLBACK_ROLE_BLUEPRINTS;
+        this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+        return this.roleBlueprints;
+      })
+      .catch((error) => {
+        this.logger.warn(
+          { error: this.describeError(error) },
+          'Failed to load personnel role blueprints; using defaults.',
+        );
+        this.roleBlueprints = FALLBACK_ROLE_BLUEPRINTS;
+        this.rebuildRoleBlueprintIndex(this.roleBlueprints);
+        return this.roleBlueprints;
+      })
+      .finally(() => {
+        this.roleBlueprintPromise = null;
+      });
+    return this.roleBlueprintPromise;
+  }
+
+  private findRoleBlueprint(role: EmployeeRole): PersonnelRoleBlueprint {
+    return (
+      this.roleBlueprintIndex.get(role) ??
+      FALLBACK_ROLE_MAP.get(role) ??
+      FALLBACK_ROLE_BLUEPRINTS[0]!
+    );
+  }
+
+  private getRoleWeight(blueprint: PersonnelRoleBlueprint): number {
+    if (isFiniteNumber(blueprint.roleWeight) && blueprint.roleWeight! > 0) {
+      return blueprint.roleWeight!;
+    }
+    const fallback = FALLBACK_ROLE_MAP.get(blueprint.id);
+    if (fallback && isFiniteNumber(fallback.roleWeight) && fallback.roleWeight! > 0) {
+      return fallback.roleWeight!;
+    }
+    return 1;
+  }
+
+  private clampProbability(value: number | undefined, fallback = 0): number {
+    if (isFiniteNumber(value)) {
+      return this.clamp(value, 0, 1);
+    }
+    if (isFiniteNumber(fallback)) {
+      return this.clamp(fallback, 0, 1);
+    }
+    return 0;
+  }
+
+  private rollSkillLevel(
+    template: PersonnelRoleSkillTemplate,
+    stream: RngStream,
+    fallbackRoll?: PersonnelRoleSkillRoll,
+  ): number {
+    const roll = template.roll ?? fallbackRoll;
+    const fallbackLevel = isFiniteNumber(template.startingLevel) ? template.startingLevel : 0;
+    if (!roll) {
+      return this.clamp(Math.round(fallbackLevel), 0, 5);
+    }
+    const min = isFiniteNumber(roll.min) ? roll.min! : fallbackLevel;
+    const max = isFiniteNumber(roll.max) ? roll.max! : min;
+    if (!isFiniteNumber(min)) {
+      return this.clamp(Math.round(fallbackLevel), 0, 5);
+    }
+    if (!isFiniteNumber(max) || max <= min) {
+      return this.clamp(Math.round(min), 0, 5);
+    }
+    const rolled = stream.nextRange(min, max);
+    return this.clamp(Math.round(rolled), 0, 5);
+  }
+
+  private pickWeightedTemplate(
+    templates: readonly PersonnelRoleSkillTemplate[],
+    stream: RngStream,
+  ): PersonnelRoleSkillTemplate {
+    if (templates.length === 0) {
+      throw new Error('No skill templates available for selection.');
+    }
+    const weights = templates.map((template) => {
+      const weight = template.weight;
+      return isFiniteNumber(weight) && weight! > 0 ? weight! : 1;
+    });
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    if (total <= 0) {
+      return templates[stream.nextInt(templates.length)]!;
+    }
+    let roll = stream.next() * total;
+    for (let index = 0; index < templates.length; index += 1) {
+      const weight = weights[index] ?? 0;
+      if (weight <= 0) {
+        continue;
+      }
+      if (roll <= weight) {
+        return templates[index]!;
+      }
+      roll -= weight;
+    }
+    return templates[templates.length - 1]!;
+  }
+
+  private buildFallbackTertiaryCandidates(
+    primary: SkillName,
+    secondary?: SkillName,
+  ): PersonnelRoleSkillTemplate[] {
+    return EMPLOYEE_SKILL_NAMES.filter((skill) => skill !== primary && skill !== secondary).map(
+      (skill) =>
+        ({
+          skill,
+          startingLevel: 1,
+          roll: { min: 1, max: 3 },
+          weight: 1,
+        }) satisfies PersonnelRoleSkillTemplate,
+    );
+  }
+
+  private rollSkills(blueprint: PersonnelRoleBlueprint, stream: RngStream): EmployeeSkills {
+    const fallback = FALLBACK_ROLE_MAP.get(blueprint.id);
+    const result: EmployeeSkills = {};
+    const primaryTemplate = blueprint.skillProfile.primary;
+    const primaryFallback = fallback?.skillProfile.primary;
+    result[primaryTemplate.skill] = this.rollSkillLevel(
+      primaryTemplate,
+      stream,
+      primaryFallback?.roll,
+    );
+
+    const secondaryTemplate = blueprint.skillProfile.secondary ?? fallback?.skillProfile.secondary;
+    if (secondaryTemplate) {
+      const secondaryFallback =
+        blueprint.skillProfile.secondary && fallback?.skillProfile.secondary
+          ? fallback.skillProfile.secondary
+          : secondaryTemplate;
+      result[secondaryTemplate.skill] = this.rollSkillLevel(
+        secondaryTemplate,
+        stream,
+        secondaryFallback?.roll,
+      );
+    }
+
+    const tertiaryConfig = blueprint.skillProfile.tertiary ?? fallback?.skillProfile.tertiary;
+    if (tertiaryConfig) {
+      const fallbackTertiary = fallback?.skillProfile.tertiary;
+      const tertiaryChance = this.clampProbability(
+        tertiaryConfig.chance,
+        fallbackTertiary?.chance ?? 0.25,
+      );
+      if (tertiaryChance > 0 && stream.nextBoolean(tertiaryChance)) {
+        const sourceCandidates =
+          tertiaryConfig.candidates.length > 0
+            ? tertiaryConfig.candidates
+            : (fallbackTertiary?.candidates ?? []);
+        const filteredCandidates = sourceCandidates.filter(
+          (candidate) =>
+            candidate.skill !== primaryTemplate.skill &&
+            candidate.skill !== secondaryTemplate?.skill,
+        );
+        const candidatePool =
+          filteredCandidates.length > 0
+            ? filteredCandidates
+            : this.buildFallbackTertiaryCandidates(primaryTemplate.skill, secondaryTemplate?.skill);
+        if (candidatePool.length > 0) {
+          const chosen = this.pickWeightedTemplate(candidatePool, stream);
+          const level = this.rollSkillLevel(
+            chosen,
+            stream,
+            tertiaryConfig.roll ?? fallbackTertiary?.roll,
+          );
+          if (level > 0) {
+            result[chosen.skill] = level;
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   private resolveGender(
@@ -448,41 +647,31 @@ export class JobMarketService {
     return 'male';
   }
 
-  private pickRole(stream: RngStream): EmployeeRole {
-    const roll = stream.next();
-    let accumulator = 0;
-    for (const entry of ROLE_WEIGHTS) {
-      accumulator += entry.weight;
-      if (roll <= accumulator) {
-        return entry.role;
+  private pickRole(
+    stream: RngStream,
+    roleBlueprints: readonly PersonnelRoleBlueprint[],
+  ): EmployeeRole {
+    if (roleBlueprints.length === 0) {
+      return FALLBACK_ROLE_BLUEPRINTS[0]?.id as EmployeeRole;
+    }
+    const weights = roleBlueprints.map((blueprint) => this.getRoleWeight(blueprint));
+    const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+    if (totalWeight <= 0) {
+      const index = stream.nextInt(roleBlueprints.length);
+      return roleBlueprints[index]?.id as EmployeeRole;
+    }
+    let roll = stream.next() * totalWeight;
+    for (let index = 0; index < roleBlueprints.length; index += 1) {
+      const weight = weights[index] ?? 0;
+      if (weight <= 0) {
+        continue;
       }
+      if (roll <= weight) {
+        return roleBlueprints[index]!.id as EmployeeRole;
+      }
+      roll -= weight;
     }
-    return ROLE_WEIGHTS[ROLE_WEIGHTS.length - 1]?.role ?? 'Gardener';
-  }
-
-  private rollSkills(role: EmployeeRole, stream: RngStream): EmployeeSkills {
-    const profile = ROLE_SKILL_PROFILE[role];
-    const result: EmployeeSkills = {};
-    const primaryLevel = this.clamp(Math.round(2 + stream.nextRange(0, 3)), 1, 5);
-    result[profile.primary] = primaryLevel;
-
-    if (profile.secondary) {
-      const secondaryBase = this.clamp(Math.round(stream.nextRange(1, 4)), 1, 4);
-      result[profile.secondary] = secondaryBase;
-    }
-
-    const shouldAddTertiary = profile.tertiary ? stream.nextBoolean(0.4) : stream.nextBoolean(0.25);
-    if (shouldAddTertiary) {
-      const candidates = SKILL_NAMES.filter(
-        (skill) =>
-          skill !== profile.primary && skill !== profile.secondary && skill !== profile.tertiary,
-      );
-      const tertiarySkill = profile.tertiary ?? candidates[stream.nextInt(candidates.length)];
-      const tertiaryLevel = this.clamp(Math.round(stream.nextRange(1, 3)), 1, 3);
-      result[tertiarySkill] = tertiaryLevel;
-    }
-
-    return result;
+    return roleBlueprints[roleBlueprints.length - 1]!.id as EmployeeRole;
   }
 
   private async rollTraits(stream: RngStream): Promise<string[]> {
@@ -503,21 +692,56 @@ export class JobMarketService {
   }
 
   private computeSalary(
-    role: EmployeeRole,
+    blueprint: PersonnelRoleBlueprint,
     skills: EmployeeSkills,
     traits: string[],
     stream: RngStream,
   ): number {
-    const baseSalary = DEFAULT_SALARY_BY_ROLE[role] ?? 20;
-    const profile = ROLE_SKILL_PROFILE[role];
-    const primary = skills[profile.primary] ?? 1;
-    const secondary = profile.secondary ? (skills[profile.secondary] ?? 0) : 0;
-    const tertiarySkills = Object.entries(skills)
-      .filter(([name]) => name !== profile.primary && name !== profile.secondary)
+    const fallback = FALLBACK_ROLE_MAP.get(blueprint.id);
+    const baseSalary = isFiniteNumber(blueprint.salary.basePerTick)
+      ? blueprint.salary.basePerTick
+      : (fallback?.salary.basePerTick ?? 20);
+    const primarySkill = blueprint.skillProfile.primary.skill;
+    const secondarySkill =
+      blueprint.skillProfile.secondary?.skill ?? fallback?.skillProfile.secondary?.skill;
+    const primaryLevel = skills[primarySkill] ?? 0;
+    const secondaryLevel = secondarySkill ? (skills[secondarySkill] ?? 0) : 0;
+    const tertiaryLevels = Object.entries(skills)
+      .filter(([name]) => name !== primarySkill && name !== secondarySkill)
       .reduce((sum, [, value]) => sum + (value ?? 0), 0);
-    const skillScore = primary * 1.2 + secondary * 0.6 + tertiarySkills * 0.35;
-    const skillFactor = this.clamp(0.85 + skillScore * 0.04, 0.85, 1.45);
-    const randomness = 0.9 + stream.nextRange(0, 0.2);
+
+    const weightConfig = {
+      ...(fallback?.salary.skillWeights ?? {}),
+      ...(blueprint.salary.skillWeights ?? {}),
+    } as Record<string, number | undefined>;
+    const primaryWeight = isFiniteNumber(weightConfig.primary) ? weightConfig.primary! : 1.2;
+    const secondaryWeight = isFiniteNumber(weightConfig.secondary) ? weightConfig.secondary! : 0.6;
+    const tertiaryWeight = isFiniteNumber(weightConfig.tertiary) ? weightConfig.tertiary! : 0.35;
+
+    const skillScore =
+      primaryLevel * primaryWeight +
+      secondaryLevel * secondaryWeight +
+      tertiaryLevels * tertiaryWeight;
+
+    const factorConfig = {
+      ...(fallback?.salary.skillFactor ?? {}),
+      ...(blueprint.salary.skillFactor ?? {}),
+    } as Record<string, number | undefined>;
+    const factorBase = isFiniteNumber(factorConfig.base) ? factorConfig.base! : 0.85;
+    const factorPerPoint = isFiniteNumber(factorConfig.perPoint) ? factorConfig.perPoint! : 0.04;
+    const factorMin = isFiniteNumber(factorConfig.min) ? factorConfig.min! : 0.85;
+    const factorMax = isFiniteNumber(factorConfig.max) ? factorConfig.max! : 1.45;
+    const skillFactor = this.clamp(factorBase + skillScore * factorPerPoint, factorMin, factorMax);
+
+    const randomRangeConfig = {
+      ...(fallback?.salary.randomRange ?? {}),
+      ...(blueprint.salary.randomRange ?? {}),
+    } as Record<string, number | undefined>;
+    const randomMin = isFiniteNumber(randomRangeConfig.min) ? randomRangeConfig.min! : 0.9;
+    const randomMax = isFiniteNumber(randomRangeConfig.max) ? randomRangeConfig.max! : 1.1;
+    const randomness =
+      randomMax > randomMin ? randomMin + stream.nextRange(0, randomMax - randomMin) : randomMin;
+
     const traitModifier = traits.reduce(
       (modifier, traitId) => modifier * (SALARY_TRAIT_MODIFIERS[traitId] ?? 1),
       1,

@@ -74,6 +74,15 @@ Refer to the docs for simulation tuning, schema updates, and naming conventions
 before changing blueprints or code. Review the changelog and ADRs when planning
 tooling or architecture updates to stay aligned with previous decisions.
 
+### Personnel Role Blueprints
+
+- Author editable role definitions under
+  [`data/blueprints/personnelRoles.json`](docs/system/personnel_roles_blueprint.md).
+  The backend validates and normalizes the file at startup so changes feed both
+  the initial roster factory and the job market without code edits. Keep the doc
+  in sync when adding new roles or fields and run `pnpm validate:data` before
+  committing blueprint updates.
+
 ## Contributing
 
 Contribution guidelines, review expectations, and commit hygiene requirements

@@ -5,9 +5,11 @@ import type { CommandExecutionContext } from '@/facade/index.js';
 import type {
   GameState,
   PersonnelNameDirectory,
+  PersonnelRoleBlueprint,
   SimulationClockState,
   SimulationNote,
 } from '@/state/models.js';
+import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS } from '@/state/models.js';
 import { JobMarketService } from '../jobMarketService.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
 
@@ -179,6 +181,7 @@ describe('JobMarketService', () => {
       state,
       rng,
       personnelDirectory: directory,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
       fetchImpl: fetchMock,
       batchSize: 2,
       pDiverse: 1,
@@ -213,6 +216,7 @@ describe('JobMarketService', () => {
       state,
       rng,
       personnelDirectory: offlineDirectory,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
       fetchImpl: fetchMock,
       batchSize: 3,
       pDiverse: diversityProbability,
@@ -236,6 +240,138 @@ describe('JobMarketService', () => {
     expect(context.events.size).toBe(1);
   });
 
+  it('generates blueprint-driven applicants deterministically (golden snapshot)', async () => {
+    const state = createGameState();
+    const rng = new RngService('seed-blueprint-golden');
+    const directoryWithSeeds: PersonnelNameDirectory = {
+      firstNamesMale: ['River', 'Phoenix', 'Sage'],
+      firstNamesFemale: ['Willow', 'Nova', 'Aria'],
+      lastNames: ['Fern', 'Vale', 'Quill'],
+      traits: [
+        { id: 'trait_frugal', name: 'Frugal', description: '', type: 'positive' },
+        { id: 'trait_demanding', name: 'Demanding', description: '', type: 'negative' },
+      ],
+      randomSeeds: ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'zeta'],
+    };
+
+    const service = new JobMarketService({
+      state,
+      rng,
+      personnelDirectory: directoryWithSeeds,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+      httpEnabled: false,
+      batchSize: 6,
+      pDiverse: 0.2,
+    });
+
+    const context = createCommandContext(state);
+    const result = await service.refreshCandidates({ force: true }, context);
+    expect(result.ok).toBe(true);
+
+    const snapshot = state.personnel.applicants.map((applicant) => ({
+      name: applicant.name,
+      role: applicant.desiredRole,
+      expectedSalary: applicant.expectedSalary,
+      skills: applicant.skills,
+      traits: applicant.traits,
+      personalSeed: applicant.personalSeed,
+      gender: applicant.gender,
+    }));
+
+    expect(snapshot).toMatchInlineSnapshot(`
+      [
+        {
+          "expectedSalary": 31,
+          "gender": "male",
+          "name": "Aria Quill",
+          "personalSeed": "alpha",
+          "role": "Gardener",
+          "skills": {
+            "Cleanliness": 3,
+            "Gardening": 4,
+          },
+          "traits": [
+            "trait_demanding",
+          ],
+        },
+        {
+          "expectedSalary": 23,
+          "gender": "female",
+          "name": "Sage Vale",
+          "personalSeed": "beta",
+          "role": "Operator",
+          "skills": {
+            "Administration": 4,
+            "Logistics": 2,
+          },
+          "traits": [
+            "trait_demanding",
+            "trait_frugal",
+          ],
+        },
+        {
+          "expectedSalary": 28,
+          "gender": "male",
+          "name": "Nova Quill",
+          "personalSeed": "gamma",
+          "role": "Gardener",
+          "skills": {
+            "Cleanliness": 2,
+            "Gardening": 4,
+            "Logistics": 1,
+          },
+          "traits": [
+            "trait_demanding",
+          ],
+        },
+        {
+          "expectedSalary": 24,
+          "gender": "male",
+          "name": "Sage Quill",
+          "personalSeed": "delta",
+          "role": "Operator",
+          "skills": {
+            "Administration": 3,
+            "Logistics": 3,
+          },
+          "traits": [
+            "trait_frugal",
+            "trait_demanding",
+          ],
+        },
+        {
+          "expectedSalary": 31,
+          "gender": "female",
+          "name": "Phoenix Quill",
+          "personalSeed": "epsilon",
+          "role": "Technician",
+          "skills": {
+            "Logistics": 3,
+            "Maintenance": 3,
+          },
+          "traits": [
+            "trait_frugal",
+          ],
+        },
+        {
+          "expectedSalary": 28,
+          "gender": "female",
+          "name": "Nova Fern",
+          "personalSeed": "zeta",
+          "role": "Gardener",
+          "skills": {
+            "Cleanliness": 3,
+            "Gardening": 5,
+            "Maintenance": 1,
+          },
+          "traits": [
+            "trait_frugal",
+          ],
+        },
+      ]
+    `);
+  });
+
   it('respects diversity probability extremes for offline candidates', async () => {
     const state = createGameState();
     const rng = new RngService('seed-offline-extremes');
@@ -245,6 +381,7 @@ describe('JobMarketService', () => {
       state,
       rng,
       personnelDirectory: directory,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
       fetchImpl: fetchMock,
       batchSize: 2,
       pDiverse: 1,
@@ -260,6 +397,7 @@ describe('JobMarketService', () => {
       state,
       rng,
       personnelDirectory: directory,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
       fetchImpl: fetchMock,
       batchSize: 2,
       pDiverse: 0,
@@ -287,6 +425,7 @@ describe('JobMarketService', () => {
       state,
       rng,
       personnelDirectory: directory,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
       fetchImpl: fetchMock,
       batchSize: 1,
     });
@@ -322,6 +461,7 @@ describe('JobMarketService', () => {
       state,
       rng,
       personnelDirectory: directory,
+      personnelRoleBlueprints: DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
       fetchImpl: fetchMock,
       batchSize: 2,
     });
@@ -337,5 +477,54 @@ describe('JobMarketService', () => {
     expect(secondResult.ok).toBe(true);
     expect(state.personnel.applicants[0]?.personalSeed).toBe('gamma');
     expect(state.personnel.applicants[1]?.personalSeed).toBe('delta');
+  });
+
+  it('respects blueprint salary and skill configuration when tertiary data is missing', async () => {
+    const state = createGameState();
+    const rng = new RngService('seed-blueprint-salary');
+    const customRole: PersonnelRoleBlueprint = {
+      id: 'Specialist',
+      name: 'IPM Specialist',
+      maxMinutesPerTick: 80,
+      roleWeight: 1,
+      salary: {
+        basePerTick: 30,
+        skillFactor: { base: 1, perPoint: 0.1, min: 1, max: 2 },
+        randomRange: { min: 1, max: 1 },
+        skillWeights: { primary: 2, secondary: 1 },
+      },
+      skillProfile: {
+        primary: { skill: 'Gardening', startingLevel: 3, roll: { min: 3, max: 3 } },
+        secondary: { skill: 'Maintenance', startingLevel: 2, roll: { min: 2, max: 2 } },
+      },
+    };
+
+    const directoryNoTraits: PersonnelNameDirectory = {
+      firstNamesMale: ['Robin'],
+      firstNamesFemale: [],
+      lastNames: ['Evergreen'],
+      traits: [],
+      randomSeeds: ['custom-seed'],
+    };
+
+    const service = new JobMarketService({
+      state,
+      rng,
+      personnelDirectory: directoryNoTraits,
+      personnelRoleBlueprints: [customRole],
+      httpEnabled: false,
+      batchSize: 1,
+      pDiverse: 0,
+    });
+
+    const context = createCommandContext(state);
+    await service.refreshCandidates({}, context);
+
+    expect(state.personnel.applicants).toHaveLength(1);
+    const applicant = state.personnel.applicants[0]!;
+    expect(applicant.desiredRole).toBe('Specialist');
+    expect(applicant.skills).toEqual({ Gardening: 3, Maintenance: 2 });
+    expect(applicant.traits).toEqual([]);
+    expect(applicant.expectedSalary).toBe(54);
   });
 });

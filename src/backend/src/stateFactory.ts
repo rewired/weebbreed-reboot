@@ -16,6 +16,7 @@ import type {
   GlobalInventoryState,
   HarvestBatch,
   PersonnelNameDirectory,
+  PersonnelRoleBlueprint,
   PlantHealthState,
   PlantState,
   ResourceInventory,
@@ -40,7 +41,11 @@ import {
   selectBlueprint,
 } from './state/initialization/blueprints.js';
 import { createFinanceState } from './state/initialization/finance.js';
-import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
+import {
+  createPersonnel,
+  loadPersonnelDirectory,
+  loadPersonnelRoleBlueprints,
+} from './state/initialization/personnel.js';
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
 import { resolveRoomPurposeId, requireRoomPurposeByName } from './engine/roomPurposes/index.js';
 import type { RoomPurpose, RoomPurposeSlug } from './engine/roomPurposes/index.js';
@@ -48,7 +53,10 @@ import { validateStructureGeometry } from './state/geometry.js';
 import { addDeviceToZone } from './state/devices.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
-export { loadPersonnelDirectory } from './state/initialization/personnel.js';
+export {
+  loadPersonnelDirectory,
+  loadPersonnelRoleBlueprints,
+} from './state/initialization/personnel.js';
 export { loadTaskDefinitions } from './state/initialization/tasks.js';
 
 const DEFAULT_TICK_LENGTH_MINUTES = 60;
@@ -125,6 +133,7 @@ export interface StateFactoryContext {
   dataDirectory?: string;
   structureBlueprints?: StructureBlueprint[];
   personnelDirectory?: PersonnelNameDirectory;
+  personnelRoleBlueprints?: PersonnelRoleBlueprint[];
   taskDefinitions?: TaskDefinitionMap;
   defaultStructureHeightMeters?: number;
 }
@@ -496,6 +505,10 @@ export const createInitialState = async (
     context.personnelDirectory ??
     (context.dataDirectory ? await loadPersonnelDirectory(context.dataDirectory) : undefined);
 
+  const personnelRoleBlueprints =
+    context.personnelRoleBlueprints ??
+    (context.dataDirectory ? await loadPersonnelRoleBlueprints(context.dataDirectory) : undefined);
+
   const employeeCounts: Record<EmployeeRole, number> = {
     ...DEFAULT_EMPLOYEE_COUNTS,
     ...options.employeeCountByRole,
@@ -507,6 +520,7 @@ export const createInitialState = async (
     personnelDirectory,
     context.rng,
     idStream,
+    { roleBlueprints: personnelRoleBlueprints },
   );
 
   const inventory = createInventory(strain, structureResult.plantCount, idStream);

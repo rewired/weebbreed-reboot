@@ -1,4 +1,6 @@
 import path from 'path';
+import { z } from 'zod';
+import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '../models.js';
 import type {
   PersonnelNameDirectory,
   PersonnelRoster,
@@ -6,28 +8,16 @@ import type {
   EmployeeState,
   EmployeeSkills,
   EmployeeShiftAssignment,
+  PersonnelRoleBlueprint,
+  PersonnelRoleSalaryConfig,
+  PersonnelRoleSkillRoll,
+  PersonnelRoleSkillTemplate,
+  PersonnelRoleTertiarySkillConfig,
 } from '../models.js';
 import { RngService, RngStream, RNG_STREAM_IDS } from '@/lib/rng.js';
 import { generateId, readJsonFile } from './common.js';
 
-const DEFAULT_SALARY_BY_ROLE: Record<EmployeeRole, number> = {
-  Gardener: 24,
-  Technician: 28,
-  Janitor: 18,
-  Operator: 22,
-  Manager: 35,
-};
-
 const DEFAULT_MAX_MINUTES_PER_TICK = 90;
-
-const DEFAULT_MAX_MINUTES_PER_TICK_BY_ROLE: Partial<Record<EmployeeRole, number>> = {
-  Gardener: 90,
-  Technician: 120,
-  Janitor: 75,
-  Operator: 90,
-  Manager: 60,
-};
-
 const MINUTES_PER_DAY = 24 * 60;
 
 const SHIFT_TEMPLATES: readonly EmployeeShiftAssignment[] = [
@@ -40,12 +30,6 @@ const SHIFT_TEMPLATES: readonly EmployeeShiftAssignment[] = [
     overlapMinutes: 60,
   },
 ];
-
-const ROLE_SHIFT_PREFERENCES: Partial<Record<EmployeeRole, string>> = {
-  Janitor: 'shift.night',
-  Operator: 'shift.day',
-  Manager: 'shift.day',
-};
 
 const toUniqueSortedList = (values: readonly string[] | undefined): string[] => {
   if (!values) {
@@ -123,6 +107,343 @@ export const loadPersonnelDirectory = async (
   } satisfies PersonnelNameDirectory;
 };
 
+const PERSONNEL_ROLE_BLUEPRINT_FILE = 'personnelRoles.json';
+
+const FALLBACK_ROLE_INDEX = new Map<string, PersonnelRoleBlueprint>(
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS.map((role) => [role.id, role]),
+);
+
+const GENERIC_SALARY_FACTOR: Required<PersonnelRoleSalaryConfig['skillFactor']> = {
+  base: 0.85,
+  perPoint: 0.04,
+  min: 0.85,
+  max: 1.45,
+};
+
+const GENERIC_SALARY_RANDOM_RANGE: Required<PersonnelRoleSalaryConfig['randomRange']> = {
+  min: 0.9,
+  max: 1.1,
+};
+
+const GENERIC_SALARY_WEIGHTS: Required<PersonnelRoleSalaryConfig['skillWeights']> = {
+  primary: 1.2,
+  secondary: 0.6,
+  tertiary: 0.35,
+};
+
+const skillRollSchema = z
+  .object({
+    min: z.number(),
+    max: z.number(),
+  })
+  .superRefine((value, ctx) => {
+    if (!Number.isFinite(value.min) || !Number.isFinite(value.max)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'roll bounds must be finite numbers',
+      });
+    } else if (value.max < value.min) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'roll.max must be greater than or equal to roll.min',
+      });
+    }
+  });
+
+const skillTemplateSchema: z.ZodType<PersonnelRoleSkillTemplate> = z
+  .object({
+    skill: z.enum(EMPLOYEE_SKILL_NAMES),
+    startingLevel: z.number(),
+    roll: skillRollSchema.optional(),
+    weight: z.number().optional(),
+  })
+  .passthrough();
+
+const tertiarySkillSchema: z.ZodType<PersonnelRoleTertiarySkillConfig> = z
+  .object({
+    chance: z.number().min(0).max(1).optional(),
+    roll: skillRollSchema.optional(),
+    candidates: z.array(skillTemplateSchema).min(1),
+  })
+  .passthrough();
+
+const salaryFactorSchema = z
+  .object({
+    base: z.number().optional(),
+    perPoint: z.number().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+  })
+  .passthrough();
+
+const salaryWeightsSchema = z
+  .object({
+    primary: z.number().optional(),
+    secondary: z.number().optional(),
+    tertiary: z.number().optional(),
+  })
+  .passthrough();
+
+const salaryRandomRangeSchema = z
+  .object({
+    min: z.number().optional(),
+    max: z.number().optional(),
+  })
+  .passthrough();
+
+const salarySchema = z
+  .object({
+    basePerTick: z.number(),
+    skillFactor: salaryFactorSchema.optional(),
+    randomRange: salaryRandomRangeSchema.optional(),
+    skillWeights: salaryWeightsSchema.optional(),
+  })
+  .passthrough();
+
+const roleBlueprintSchema: z.ZodType<PersonnelRoleBlueprint> = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    description: z.string().optional(),
+    preferredShiftId: z.string().optional(),
+    maxMinutesPerTick: z.number().positive().optional(),
+    roleWeight: z.number().nonnegative().optional(),
+    salary: salarySchema,
+    skillProfile: z.object({
+      primary: skillTemplateSchema,
+      secondary: skillTemplateSchema.optional(),
+      tertiary: tertiarySkillSchema.optional(),
+    }),
+  })
+  .passthrough();
+
+const roleFileSchema = z
+  .object({
+    version: z.string().optional(),
+    roles: z.array(roleBlueprintSchema),
+  })
+  .passthrough();
+
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+const clampProbability = (value: number | undefined): number | undefined => {
+  if (!isFiniteNumber(value)) {
+    return undefined;
+  }
+  if (value <= 0) {
+    return 0;
+  }
+  if (value >= 1) {
+    return 1;
+  }
+  return value;
+};
+
+const normalizeRoll = (
+  roll: PersonnelRoleSkillRoll | undefined,
+): PersonnelRoleSkillRoll | undefined => {
+  if (!roll) {
+    return undefined;
+  }
+  const min = isFiniteNumber(roll.min) ? roll.min : 0;
+  const max = isFiniteNumber(roll.max) ? roll.max : min;
+  if (max < min) {
+    return { min: max, max: min } satisfies PersonnelRoleSkillRoll;
+  }
+  return { min, max } satisfies PersonnelRoleSkillRoll;
+};
+
+const mergeRoll = (
+  fallback: PersonnelRoleSkillRoll | undefined,
+  override: PersonnelRoleSkillRoll | undefined,
+): PersonnelRoleSkillRoll | undefined => {
+  if (!fallback && !override) {
+    return undefined;
+  }
+  const merged: PersonnelRoleSkillRoll = {
+    min: override?.min ?? fallback?.min ?? 0,
+    max: override?.max ?? fallback?.max ?? override?.min ?? fallback?.min ?? 0,
+  } satisfies PersonnelRoleSkillRoll;
+  return normalizeRoll(merged);
+};
+
+const normalizeSkillTemplate = (
+  template: PersonnelRoleSkillTemplate,
+  fallback?: PersonnelRoleSkillTemplate,
+): PersonnelRoleSkillTemplate => {
+  const startingLevel = isFiniteNumber(template.startingLevel)
+    ? template.startingLevel
+    : (fallback?.startingLevel ?? 1);
+  const normalized: PersonnelRoleSkillTemplate = {
+    skill: template.skill,
+    startingLevel,
+  } satisfies PersonnelRoleSkillTemplate;
+  const mergedRoll = mergeRoll(fallback?.roll, template.roll);
+  if (mergedRoll) {
+    normalized.roll = mergedRoll;
+  }
+  if (isFiniteNumber(template.weight)) {
+    normalized.weight = template.weight;
+  } else if (fallback?.weight !== undefined) {
+    normalized.weight = fallback.weight;
+  }
+  return normalized;
+};
+
+const mergeRandomRange = (
+  fallbackRange: PersonnelRoleSalaryConfig['randomRange'] | undefined,
+  overrideRange: PersonnelRoleSalaryConfig['randomRange'] | undefined,
+): PersonnelRoleSalaryConfig['randomRange'] | undefined => {
+  if (!fallbackRange && !overrideRange) {
+    return undefined;
+  }
+  const min = overrideRange?.min ?? fallbackRange?.min;
+  const max = overrideRange?.max ?? fallbackRange?.max;
+  if (min === undefined && max === undefined) {
+    return undefined;
+  }
+  if (isFiniteNumber(min) && isFiniteNumber(max) && max < min) {
+    return { min: max, max: min } satisfies PersonnelRoleSalaryConfig['randomRange'];
+  }
+  const result: PersonnelRoleSalaryConfig['randomRange'] = {};
+  if (isFiniteNumber(min)) {
+    result.min = min;
+  }
+  if (isFiniteNumber(max)) {
+    result.max = max;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
+};
+
+const normalizeTertiarySkills = (
+  fallback: PersonnelRoleTertiarySkillConfig | undefined,
+  override: PersonnelRoleTertiarySkillConfig | undefined,
+): PersonnelRoleTertiarySkillConfig | undefined => {
+  if (!fallback && !override) {
+    return undefined;
+  }
+  const fallbackCandidates = new Map<string, PersonnelRoleSkillTemplate>(
+    (fallback?.candidates ?? []).map((candidate) => [candidate.skill, candidate]),
+  );
+  const sourceCandidates = override?.candidates ?? fallback?.candidates ?? [];
+  if (sourceCandidates.length === 0) {
+    return undefined;
+  }
+  const candidates = sourceCandidates.map((candidate) =>
+    normalizeSkillTemplate(candidate, fallbackCandidates.get(candidate.skill)),
+  );
+  const normalized: PersonnelRoleTertiarySkillConfig = {
+    candidates,
+  } satisfies PersonnelRoleTertiarySkillConfig;
+  const roll = mergeRoll(fallback?.roll, override?.roll);
+  if (roll) {
+    normalized.roll = roll;
+  }
+  const chance = clampProbability(override?.chance ?? fallback?.chance);
+  if (chance !== undefined) {
+    normalized.chance = chance;
+  }
+  return normalized;
+};
+
+const normalizePersonnelRole = (role: PersonnelRoleBlueprint): PersonnelRoleBlueprint => {
+  const fallback = FALLBACK_ROLE_INDEX.get(role.id);
+  const basePerTick = isFiniteNumber(role.salary?.basePerTick)
+    ? role.salary.basePerTick
+    : (fallback?.salary.basePerTick ?? 20);
+  const fallbackFactor = fallback?.salary.skillFactor ?? GENERIC_SALARY_FACTOR;
+  const fallbackRandomRange = fallback?.salary.randomRange ?? GENERIC_SALARY_RANDOM_RANGE;
+  const fallbackSkillWeights = fallback?.salary.skillWeights ?? GENERIC_SALARY_WEIGHTS;
+  const salary: PersonnelRoleSalaryConfig = {
+    basePerTick,
+    skillFactor: {
+      ...fallbackFactor,
+      ...(role.salary.skillFactor ?? {}),
+    },
+    randomRange:
+      mergeRandomRange(fallbackRandomRange, role.salary.randomRange) ?? fallbackRandomRange,
+    skillWeights: {
+      ...fallbackSkillWeights,
+      ...(role.salary.skillWeights ?? {}),
+    },
+  } satisfies PersonnelRoleSalaryConfig;
+
+  const primary = normalizeSkillTemplate(role.skillProfile.primary, fallback?.skillProfile.primary);
+  const secondarySource = role.skillProfile.secondary ?? fallback?.skillProfile.secondary;
+  const secondary = secondarySource
+    ? normalizeSkillTemplate(secondarySource, fallback?.skillProfile.secondary)
+    : undefined;
+  const tertiary = normalizeTertiarySkills(
+    fallback?.skillProfile.tertiary,
+    role.skillProfile.tertiary,
+  );
+
+  const skillProfile: PersonnelRoleBlueprint['skillProfile'] = { primary };
+  if (secondary) {
+    skillProfile.secondary = secondary;
+  }
+  if (tertiary) {
+    skillProfile.tertiary = tertiary;
+  }
+
+  const normalized: PersonnelRoleBlueprint = {
+    id: role.id,
+    name: role.name ?? fallback?.name ?? role.id,
+    description: role.description ?? fallback?.description,
+    preferredShiftId: role.preferredShiftId ?? fallback?.preferredShiftId,
+    maxMinutesPerTick:
+      role.maxMinutesPerTick ?? fallback?.maxMinutesPerTick ?? DEFAULT_MAX_MINUTES_PER_TICK,
+    roleWeight: role.roleWeight ?? fallback?.roleWeight,
+    salary,
+    skillProfile,
+  } satisfies PersonnelRoleBlueprint;
+
+  return normalized;
+};
+
+export const normalizePersonnelRoleBlueprints = (
+  roles: readonly PersonnelRoleBlueprint[] | undefined,
+): PersonnelRoleBlueprint[] => {
+  const result = new Map<string, PersonnelRoleBlueprint>();
+  for (const fallback of DEFAULT_PERSONNEL_ROLE_BLUEPRINTS) {
+    result.set(fallback.id, normalizePersonnelRole(fallback));
+  }
+  if (roles) {
+    for (const role of roles) {
+      result.set(role.id, normalizePersonnelRole(role));
+    }
+  }
+  return Array.from(result.values());
+};
+
+export const loadPersonnelRoleBlueprints = async (
+  dataDirectory: string,
+): Promise<PersonnelRoleBlueprint[]> => {
+  const blueprintPath = path.join(dataDirectory, 'blueprints', PERSONNEL_ROLE_BLUEPRINT_FILE);
+  const raw = await readJsonFile<unknown>(blueprintPath);
+  if (!raw) {
+    return normalizePersonnelRoleBlueprints(DEFAULT_PERSONNEL_ROLE_BLUEPRINTS);
+  }
+  const parsed = roleFileSchema.safeParse(raw);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const pathInfo = issue?.path?.length ? ` at ${issue.path.join('.')}` : '';
+    throw new Error(
+      `Invalid personnel role blueprint${pathInfo}: ${issue?.message ?? 'unknown validation error'}`,
+    );
+  }
+  return normalizePersonnelRoleBlueprints(parsed.data.roles);
+};
+
+const NORMALIZED_DEFAULT_ROLE_BLUEPRINTS = normalizePersonnelRoleBlueprints(
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+);
+
+const NORMALIZED_DEFAULT_ROLE_MAP = new Map<string, PersonnelRoleBlueprint>(
+  NORMALIZED_DEFAULT_ROLE_BLUEPRINTS.map((role) => [role.id, role]),
+);
+
 const drawUnique = <T>(items: readonly T[], count: number, stream: RngStream): T[] => {
   if (items.length === 0 || count <= 0) {
     return [];
@@ -137,21 +458,22 @@ const drawUnique = <T>(items: readonly T[], count: number, stream: RngStream): T
   return result;
 };
 
-const createEmployeeSkills = (role: EmployeeRole): EmployeeSkills => {
-  switch (role) {
-    case 'Gardener':
-      return { Gardening: 4, Cleanliness: 2 };
-    case 'Technician':
-      return { Maintenance: 4, Logistics: 2 };
-    case 'Janitor':
-      return { Cleanliness: 4, Logistics: 1 };
-    case 'Operator':
-      return { Logistics: 3, Administration: 2 };
-    case 'Manager':
-      return { Administration: 4, Logistics: 2 };
-    default:
-      return {};
+const sanitizeSkillLevel = (value: number | undefined): number => {
+  if (!isFiniteNumber(value)) {
+    return 0;
   }
+  return Math.max(0, value);
+};
+
+const createEmployeeSkillsFromBlueprint = (blueprint: PersonnelRoleBlueprint): EmployeeSkills => {
+  const skills: EmployeeSkills = {};
+  const primary = blueprint.skillProfile.primary;
+  skills[primary.skill] = sanitizeSkillLevel(primary.startingLevel);
+  const secondary = blueprint.skillProfile.secondary;
+  if (secondary) {
+    skills[secondary.skill] = sanitizeSkillLevel(secondary.startingLevel);
+  }
+  return skills;
 };
 
 const createExperienceStub = (skills: EmployeeSkills): EmployeeSkills => {
@@ -176,13 +498,39 @@ const isShiftActiveAtMinute = (shift: EmployeeShiftAssignment, minuteOfDay: numb
   return minuteOfDay >= startMinutes || minuteOfDay < endMinutes;
 };
 
+export interface CreatePersonnelOptions {
+  roleBlueprints?: readonly PersonnelRoleBlueprint[];
+}
+
 export const createPersonnel = (
   structureId: string,
   counts: Record<EmployeeRole, number>,
   directory: PersonnelNameDirectory | undefined,
   rng: RngService,
   idStream: RngStream,
+  options: CreatePersonnelOptions = {},
 ): PersonnelRoster => {
+  const normalizedRoles =
+    options.roleBlueprints && options.roleBlueprints.length > 0
+      ? normalizePersonnelRoleBlueprints(options.roleBlueprints)
+      : NORMALIZED_DEFAULT_ROLE_BLUEPRINTS;
+  const roleMap = new Map<string, PersonnelRoleBlueprint>(
+    normalizedRoles.map((role) => [role.id, role]),
+  );
+
+  const getRoleBlueprint = (role: EmployeeRole): PersonnelRoleBlueprint => {
+    const blueprint = roleMap.get(role);
+    if (blueprint) {
+      return blueprint;
+    }
+    const fallback = NORMALIZED_DEFAULT_ROLE_MAP.get(role);
+    if (fallback) {
+      roleMap.set(role, fallback);
+      return fallback;
+    }
+    return NORMALIZED_DEFAULT_ROLE_BLUEPRINTS[0]!;
+  };
+
   const firstNames = combineFirstNames(directory?.firstNamesMale, directory?.firstNamesFemale);
   const lastNames = directory?.lastNames ?? [];
   const traits = directory?.traits ?? [];
@@ -229,7 +577,7 @@ export const createPersonnel = (
   };
 
   const assignShift = (role: EmployeeRole): EmployeeShiftAssignment => {
-    const preferredId = ROLE_SHIFT_PREFERENCES[role];
+    const preferredId = getRoleBlueprint(role).preferredShiftId;
     if (preferredId) {
       const template =
         SHIFT_TEMPLATES.find((item) => item.shiftId === preferredId) ?? SHIFT_TEMPLATES[0];
@@ -245,11 +593,12 @@ export const createPersonnel = (
 
   for (const role of Object.keys(counts) as EmployeeRole[]) {
     const count = counts[role] ?? 0;
+    const roleBlueprint = getRoleBlueprint(role);
     for (let index = 0; index < count; index += 1) {
       const firstName = firstNames.length > 0 ? nameStream.pick(firstNames) : `Crew${index + 1}`;
       const lastName = lastNames.length > 0 ? nameStream.pick(lastNames) : role;
       const fullName = `${firstName} ${lastName}`;
-      const skills = createEmployeeSkills(role);
+      const skills = createEmployeeSkillsFromBlueprint(roleBlueprint);
       const employeeTraits = drawUnique(
         traits,
         traits.length > 0 ? 1 + Number(traitStream.nextBoolean(0.35)) : 0,
@@ -257,13 +606,20 @@ export const createPersonnel = (
       ).map((trait) => trait.id);
       const shift = assignShift(role);
       const isActiveAtStart = isShiftActiveAtMinute(shift, 0);
-      const maxMinutesPerTick =
-        DEFAULT_MAX_MINUTES_PER_TICK_BY_ROLE[role] ?? DEFAULT_MAX_MINUTES_PER_TICK;
+      const maxMinutesPerTick = Math.max(
+        0,
+        isFiniteNumber(roleBlueprint.maxMinutesPerTick)
+          ? roleBlueprint.maxMinutesPerTick
+          : DEFAULT_MAX_MINUTES_PER_TICK,
+      );
+      const baseSalary = isFiniteNumber(roleBlueprint.salary.basePerTick)
+        ? roleBlueprint.salary.basePerTick
+        : 20;
       employees.push({
         id: generateId(idStream, 'emp'),
         name: fullName,
         role,
-        salaryPerTick: DEFAULT_SALARY_BY_ROLE[role] ?? 20,
+        salaryPerTick: baseSalary,
         status: isActiveAtStart ? 'idle' : 'offShift',
         morale: 0.82 + moraleStream.nextRange(0, 0.08),
         energy: 1,
@@ -294,4 +650,4 @@ export const createPersonnel = (
   };
 };
 
-export { DEFAULT_SALARY_BY_ROLE, SHIFT_TEMPLATES, ROLE_SHIFT_PREFERENCES };
+export { SHIFT_TEMPLATES };
