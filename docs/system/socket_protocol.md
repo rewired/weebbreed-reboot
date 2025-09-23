@@ -197,9 +197,11 @@ including pests/diseases). Payload:
 
 Every command payload may include an optional `requestId` string. When present it
 is mirrored in the corresponding `*.result` response message and in the
-acknowledgement callback.
+acknowledgement callback. All command responses follow the façade’s
+`CommandResult<T>` contract and are echoed back over Socket.IO so UIs without ACK
+handlers can still observe outcomes.
 
-Responses follow the façade’s `CommandResult<T>` structure:
+Generic response structure:
 
 ```json
 {
@@ -211,6 +213,56 @@ Responses follow the façade’s `CommandResult<T>` structure:
   ]
 }
 ```
+
+### `facade.intent` — Domain Command Envelope
+
+Unified entry point for all simulation-side mutations beyond scheduler control.
+Payloads contain the target domain and action name plus an optional payload
+object:
+
+```json
+{
+  "domain": "world",
+  "action": "duplicateRoom",
+  "payload": { "roomId": "room_8d92e4", "name": "North Bloom Copy" },
+  "requestId": "intent-42"
+}
+```
+
+- `domain` must match one of the façade-registered intent domains. Current
+  values: `world`, `devices`, `plants`, `health`, `workforce`, `finance`.
+- `action` selects a command within that domain. Actions are validated against
+  the domain catalog that `SimulationFacade` builds during startup.
+- `payload` is validated with the command’s Zod schema before any engine service
+  executes. Missing payloads default to `{}` when a schema allows it.
+- Responses are emitted on `<domain>.intent.result` and include the merged
+  `CommandResult` (`{ ok, data?, warnings?, errors? }`). Unknown domains/actions
+  yield `ERR_VALIDATION` with the offending field path (`['facade.intent',
+'domain']` or `['facade.intent', 'action']`). Internal failures surface as
+  `ERR_INTERNAL` while preserving the request id.
+
+#### Supported actions per domain
+
+- **world** — `rentStructure`, `createRoom`, `updateRoom`, `deleteRoom`,
+  `createZone`, `updateZone`, `deleteZone`, `renameStructure`, `deleteStructure`,
+  `duplicateStructure`, `duplicateRoom`, `duplicateZone`. Duplication commands
+  accept an optional `name` override and return `{ structureId | roomId | zoneId
+}` for the newly created copy.
+- **devices** — `installDevice`, `updateDevice`, `moveDevice`, `removeDevice`,
+  `toggleDeviceGroup`. The toggle action returns `{ deviceIds: string[] }` with
+  every instance that changed status.
+- **plants** — `addPlanting`, `cullPlanting`, `harvestPlanting`,
+  `applyIrrigation`, `applyFertilizer`, `togglePlantingPlan`. The automation
+  toggle responds with `{ enabled: boolean }` and emits a follow-up maintenance
+  task when the state flips.
+- **health** — `scheduleScouting`, `applyTreatment`, `quarantineZone`.
+- **workforce** — `refreshCandidates`, `hire`, `fire`, `setOvertimePolicy`,
+  `assignStructure`, `enqueueTask` (payload defaults to `{}` when omitted).
+- **finance** — `sellInventory`, `setUtilityPrices`, `setMaintenancePolicy`.
+
+Clients may optimistically update UI state after receiving a successful
+`*.intent.result` packet but must still observe follow-up telemetry for the
+authoritative snapshot.
 
 ### `simulationControl`
 

@@ -9,6 +9,7 @@ _A tech‑agnostic, simulation‑first façade that cleanly decouples UI and eng
 **Goal.** Provide a **stable, high‑level API** between any client (UI, tests, CLI, worker) and the simulation engine. The façade exposes **intents** and **queries**, never internal object graphs.
 
 **Responsibilities**
+
 - Own the **authoritative state** handle and expose **read‑only snapshots**.
 - Accept **commands** (player/AI intents), route to engine services, enforce **invariants**.
 - Coordinate the **tick loop** (start/stop/speed/catch‑up) or proxy to an external scheduler.
@@ -16,6 +17,7 @@ _A tech‑agnostic, simulation‑first façade that cleanly decouples UI and eng
 - Handle **persistence** (save/load/export/import) and **hot‑reload** of data.
 
 **Non‑Responsibilities**
+
 - No rendering or UI logic.
 - No direct mutation of deep objects by callers (strictly through intents).
 
@@ -30,6 +32,7 @@ _A tech‑agnostic, simulation‑first façade that cleanly decouples UI and eng
 - **Validation:** Commands and hot‑reloads are validated against the **Data Dictionary** before effect.
 
 ---
+
 ## 3) Data Surfaces
 
 ### 3.1 Read API (snapshots & queries)
@@ -40,9 +43,15 @@ _A tech‑agnostic, simulation‑first façade that cleanly decouples UI and eng
 
 ### 3.2 Write API (intents/commands)
 
-Commands are **idempotent per tick** where reasonably possible and validate against DD constraints. Common categories are below.
+Commands are **idempotent per tick** where reasonably possible and validate against DD constraints. The façade builds domain
+registries (`world`, `devices`, `plants`, `health`, `workforce`, `finance`) and exposes them through both the in-process API
+(`facade.world.createRoom(payload)`) and the Socket.IO envelope (`facade.intent`). Each registration binds a Zod schema to a
+service handler and emits results on `<domain>.intent.result`.
+
+Common categories are below.
 
 ---
+
 ## 4) Command Surface (categories)
 
 ### 4.1 Time & Simulation Control
@@ -51,6 +60,7 @@ Commands are **idempotent per tick** where reasonably possible and validate agai
 - `pause()` / `resume()`
 - `step(nTicks = 1)` — advance deterministically by n ticks.
 - `setSpeed(multiplier: number)`
+
 ### 4.2 Data Lifecycle
 
 - `loadBlueprints(blueprintBundle | paths)` — validate then stage.
@@ -58,31 +68,43 @@ Commands are **idempotent per tick** where reasonably possible and validate agai
 - `newGame(options)` — seed, initial capital, difficulty.
 - `save(): Snapshot` / `load(snapshot)`
 - `exportState()` / `importState(serialized)`
+
 ### 4.3 World Building (Structures → Rooms → Zones)
 
 - `rentStructure(structureId: UUID)` — validates availability; applies CapEx/Fixed cost rules.
-- `createRoom(structureId, { name, purpose, area_m2, height_m? })`
+- `renameStructure(structureId, name)` — trims whitespace, preserves determinism, emits rename events.
+- `deleteStructure(structureId)` — enforces empty structure + accounting clean-up.
+- `createRoom(structureId, { name, purpose, area, height? })`
 - `updateRoom(roomId, patch)` / `deleteRoom(roomId)`
-- `createZone(roomId, { name, area_m2, methodId, targetCounts? })`
+- `duplicateRoom({ roomId, name? })` — clones geometry, zones, and device loadout; returns `{ roomId }` for the copy.
+- `createZone(roomId, { name, area, methodId, targetPlantCount? })`
 - `updateZone(zoneId, patch)` / `deleteZone(zoneId)`
-- Guards: areas must respect geometry; room/zone purposes validated.
+- `duplicateZone({ zoneId, name? })` — copies cultivation method, automation, and device placement (subject to allowed purposes).
+- `duplicateStructure({ structureId, name? })` — creates a structure-level clone including rooms/zones; returns `{ structureId }`.
+- Guards: geometry, purpose bindings, and blueprint availability validated for every mutation.
+
 ### 4.4 Devices
 
-- `installDevice(zoneId | roomId, deviceId, settings?)` — checks **`allowedRoomPurposes`**.
+- `installDevice(targetId, deviceId, settings?)` — checks **`allowedRoomPurposes`**.
 - `updateDevice(instanceId, settingsPatch)`
 - `moveDevice(instanceId, targetZoneId)` — re‑validate purpose.
 - `removeDevice(instanceId)`
+- `toggleDeviceGroup({ zoneId, kind, enabled })` — flips operational status in bulk and returns `{ deviceIds }` of affected units.
+
 ### 4.5 Plants & Plantings
 
 - `addPlanting(zoneId, { strainId, count, startTick? })`
 - `cullPlanting(plantingId, count?)`
 - `harvestPlanting(plantingId)` — creates inventory lots, emits events.
 - `applyIrrigation(zoneId, liters)` / `applyFertilizer(zoneId, { N,P,K } in g)` — optional manual overrides.
+- `togglePlantingPlan({ zoneId, enabled })` — activates/deactivates automation; returns `{ enabled }` plus a follow-up task event.
+
 ### 4.6 Health (Pests/Diseases & Treatments)
 
 - `scheduleScouting(zoneId)` — generates scouting tasks.
 - `applyTreatment(zoneId, treatmentOptionId)` — enforces **`reentryIntervalTicks`**, **`preHarvestIntervalTicks`**, cooldowns, and certifications.
 - `quarantineZone(zoneId, enabled)` — affects spread graph & safety constraints.
+
 ### 4.7 Personnel & Tasks
 
 - `refreshCandidates()` — seeded refresh per policy; uses external name provider iff enabled, fallback to local lists.
@@ -90,6 +112,7 @@ Commands are **idempotent per tick** where reasonably possible and validate agai
 - `setOvertimePolicy({ policy: "payout"|"timeOff", multiplier? })`
 - `assignStructure(employeeId, structureId?)`
 - `enqueueTask(taskKind, payload)` — manual job board additions.
+
 ### 4.8 Finance & Market
 
 - `sellInventory(lotId, quantity_g)` — revenue = `harvestBasePricePerGram × modifiers`.
@@ -99,6 +122,7 @@ Commands are **idempotent per tick** where reasonably possible and validate agai
 **All commands** return `{ ok: boolean, warnings?: string[], errors?: string[] }` and emit events on success.
 
 ---
+
 ## 5) Error Handling & Validation
 
 - **Schema validation** for every payload (types, ranges).
@@ -111,42 +135,53 @@ Commands are **idempotent per tick** where reasonably possible and validate agai
 - `ERR_NOT_FOUND`, `ERR_FORBIDDEN`, `ERR_CONFLICT`, `ERR_INVALID_STATE`, `ERR_VALIDATION`, `ERR_RATE_LIMIT`, `ERR_DATA_RELOAD_PENDING`.
 
 ---
+
 ## 6) Events (taxonomy)
 
 **Simulation**
+
 - `sim.tickCompleted`, `sim.speedChanged`, `sim.paused`, `sim.resumed`, `sim.hotReloaded`, `sim.reloadFailed`.
 
 **World**
+
 - `world.structureRented`, `world.roomCreated`, `world.zoneCreated`, `world.deviceInstalled`, `world.deviceMoved`, `world.deviceRemoved`.
 
 **Plants**
+
 - `plant.stageChanged`, `plant.harvested`, `plant.qualityUpdated`.
 
 **Environment**
+
 - `env.safetyExceeded`, `env.setpointReached`, `env.setpointLost`.
 
 **Health**
+
 - `pest.detected`, `disease.confirmed`, `health.spread`, `treatment.applied`, `treatment.blocked`.
 
 **Tasks & HR**
+
 - `task.created`, `task.claimed`, `task.completed`, `task.failed`, `task.abandoned`.
 - `hr.candidatesRefreshed`, `hr.hired`, `hr.fired`, `hr.overtimeAccrued`, `hr.overtimePaid`, `hr.timeOffScheduled`.
 
 **Finance**
+
 - `finance.capex`, `finance.opex`, `finance.saleCompleted`, `finance.tick`.
 
 _All event payloads are minimal, serializable, and reference entities by UUID `id`._
 
 ---
+
 ## 7) Concurrency Models
 
 - **Same‑thread:** façade calls engine methods directly; use micro‑task queue for event delivery.
 - **Worker/Process:** façade marshals commands/events over a message bus. Contract remains identical (opaque transport). Back‑pressure by command queue with ordering guarantees.
 
 ---
+
 ## 8) Tick Orchestration (conformance to Simulation Deep Dive)
 
 Default phase order per tick:
+
 1. **Device Control** (evaluate setpoints & hysteresis)
 2. **Apply Device Deltas** (T/RH/CO₂/PPFD)
 3. **Normalize to Ambient** (mixing, airflow)
@@ -161,6 +196,7 @@ Default phase order per tick:
 Façade controls `start/pause/step/setSpeed` and publishes `sim.tickCompleted` after commit.
 
 ---
+
 ## 9) Identity & Referencing
 
 - Only **`id` (UUID v4)** is authoritative.
@@ -168,6 +204,7 @@ Façade controls `start/pause/step/setSpeed` and publishes `sim.tickCompleted` a
 - Strain `lineage.parents` is an array of parent UUIDs; empty/missing ⇒ ur‑plant.
 
 ---
+
 ## 10) Security & Safety
 
 - **Read isolation:** snapshots are immutable; no shared mutability leaks.
@@ -175,6 +212,7 @@ Façade controls `start/pause/step/setSpeed` and publishes `sim.tickCompleted` a
 - **Budget fences:** per‑phase time budgets; commands may be deferred to preserve frame budgets.
 
 ---
+
 ## 11) Testing & Observability
 
 - **Mockable façade**: swap engine with a stub; same contract.
@@ -183,6 +221,7 @@ Façade controls `start/pause/step/setSpeed` and publishes `sim.tickCompleted` a
 - **Tracing**: correlate commands → events → state deltas.
 
 ---
+
 ## 12) Example API Shape (pseudo‑types)
 
 ```ts
@@ -240,12 +279,14 @@ All `Event` payloads include minimal fields and entity UUIDs.
 - Event payloads containing heavy object graphs; pass UUIDs and query on demand.
 
 ---
+
 ## 14) Migration & Hot‑Reload Notes
 
 - During hot‑reload, façade queues commands until the new data set is staged and validated, then swaps atomically and emits `sim.hotReloaded`.
 - If validation fails, keep last good set; emit `sim.reloadFailed` with diagnostics.
 
 ---
+
 ## 15) Extensibility
 
 - Additional services (research, contracts, dynamic market, predictive control) plug into the same façade via new intents and events without breaking existing ones.

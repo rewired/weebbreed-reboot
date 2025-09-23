@@ -127,6 +127,30 @@ export function vpdProxy(T: number, RH: number, Tbase = 10): number {
 Provide `lib/rng.ts` with `createRng(seed: string, streamId?: string)`.
 All randomness (pests/events/market) comes from here.
 
+### 4.6 Facade Intent Catalog & Command Routing
+
+- **Modular registry.** `SimulationFacade` owns a domain registry built via
+  `registerDomain(domain, commands)`. Each domain maps actions to Zod schemas
+  and service handlers; Socket.IO clients issue `facade.intent` payloads with
+  `{ domain, action, payload?, requestId? }`.
+- **Result channels.** Responses for façade intents are emitted on
+  `<domain>.intent.result` and mirror the `CommandResult` shape
+  (`{ ok, data?, warnings?, errors? }`). Validation failures always return
+  `ERR_VALIDATION` with a dotted `path` back to the offending field.
+- **World intents** (beyond the original CRUD):
+  `renameStructure`, `deleteStructure`, `duplicateStructure`, `duplicateRoom`,
+  `duplicateZone` — all accept optional `name` overrides where applicable.
+- **Device intents** include `toggleDeviceGroup` (batch enable/disable by
+  domain/kind) alongside `installDevice`, `updateDevice`, `moveDevice`,
+  `removeDevice`.
+- **Plant intents** include `togglePlantingPlan` (automation enable/disable)
+  plus `addPlanting`, `cullPlanting`, `harvestPlanting`, `applyIrrigation`,
+  `applyFertilizer`.
+- **Future extensions.** When adding a domain/action, register it through the
+  façade builders, export the typed intent, and document it under
+  `/docs/system` + `/docs/tasks`. Keep Socket docs in sync so UI teams can
+  adopt new actions without spelunking through code.
+
 ---
 
 ## 5) Developer Ergonomics

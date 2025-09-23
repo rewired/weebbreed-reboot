@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Introduced the changelog to capture noteworthy changes for upcoming releases.
+- Recorded ADR 0003 describing the façade messaging overhaul and modular intent registry.
 
 ### Changed
 
@@ -17,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and documentation touchpoints.
 - Realigned workspace documentation and ADR 0001 with the `src/backend` and
   `src/frontend` layout plus the ESM backend build output.
+- Refreshed AGENTS.md, socket protocol, façade, and UI interaction docs to cover
+  `facade.intent`, duplication workflows, structure rename support, and
+  automation toggles.
 
 ### Fixed
 
