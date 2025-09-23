@@ -147,6 +147,35 @@ describe('deviceEffects', () => {
     expect(deltas.ppfd).toBe(0);
   });
 
+  it('exchanges air and trends toward ambient conditions for ventilation devices', () => {
+    const zone = createZone(
+      [
+        createDevice(
+          'Ventilation',
+          {
+            power: 0.05,
+            airflow: 170,
+          },
+          0.75,
+        ),
+      ],
+      createEnvironment({ temperature: 28, relativeHumidity: 0.7, co2: 900 }),
+    );
+
+    const deltas = computeZoneDeviceDeltas(
+      zone,
+      { area: 40, ceilingHeight: 3, volume: 120 },
+      { tickHours: 0.25 },
+    );
+
+    expect(deltas.airflow).toBeCloseTo(127.5, 4);
+    expect(deltas.temperatureDelta).toBeLessThan(0);
+    expect(deltas.temperatureDelta).toBeCloseTo(-2.13, 2);
+    expect(deltas.humidityDelta).toBeCloseTo(-0.053, 3);
+    expect(deltas.co2Delta).toBeCloseTo(-133, 0);
+    expect(deltas.energyKwh).toBeCloseTo(0.0125, 6);
+  });
+
   it('injects CO2 when below target within safety bounds', () => {
     const zone = createZone(
       [

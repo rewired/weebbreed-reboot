@@ -1,7 +1,9 @@
 import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
 import type { ZoneGeometry } from '@/state/geometry.js';
 import {
+  AMBIENT_CO2_PPM,
   AMBIENT_HUMIDITY_RH,
+  AMBIENT_TEMP_C,
   COOLING_CAPACITY_FACTOR,
   LAMP_HEAT_FACTOR,
   SATURATION_VAPOR_DENSITY_KG_PER_M3,
@@ -51,9 +53,11 @@ const HVAC_KINDS = new Set([
   'HumidityControlUnit',
   'Dehumidifier',
   'ExhaustFan',
+  'Ventilation',
 ]);
 const CO2_KINDS = new Set(['CO2Injector']);
 const HUMIDITY_KINDS = new Set(['HumidityControlUnit', 'Dehumidifier']);
+const VENTILATION_KINDS = new Set(['Ventilation', 'ExhaustFan']);
 
 const clamp = (value: number, min: number, max: number): number => {
   if (Number.isNaN(value)) {
@@ -228,6 +232,49 @@ const computeHvacTemperatureEffect = (
     ppfd: 0,
     airflow,
     energyKwh: totalEnergy,
+  };
+};
+
+const computeVentilationEffect = (
+  device: DeviceInstanceState,
+  environment: ZoneEnvironmentState,
+  geometry: ZoneGeometry,
+  context: DeviceEffectContext,
+): DeviceEffect => {
+  const efficiency = clamp(device.efficiency, 0, 1);
+  const airflowSetting = Math.max(toNumber(device.settings.airflow, 0), 0);
+  const airflow = airflowSetting * efficiency;
+  const tickHours = Math.max(context.tickHours, 0);
+  const powerKw = Math.max(toNumber(device.settings.power, 0), 0);
+  const energyKwh = powerKw * tickHours;
+
+  if (airflow <= 0 || tickHours <= 0) {
+    return {
+      ...DEFAULT_DEVICE_EFFECT,
+      airflow,
+      energyKwh,
+    };
+  }
+
+  const airChangesPerHour = airflow / Math.max(geometry.volume, 0.0001);
+  const exchangeFraction = Math.min(Math.max(airChangesPerHour * tickHours, 0), 1);
+
+  const temperatureDelta = (AMBIENT_TEMP_C - environment.temperature) * exchangeFraction;
+  const humidityDeltaRaw = (AMBIENT_HUMIDITY_RH - environment.relativeHumidity) * exchangeFraction;
+  const humidityDelta = clamp(
+    humidityDeltaRaw,
+    -environment.relativeHumidity,
+    1 - environment.relativeHumidity,
+  );
+  const co2Delta = (AMBIENT_CO2_PPM - environment.co2) * exchangeFraction;
+
+  return {
+    temperatureDelta,
+    humidityDelta,
+    co2Delta,
+    ppfd: 0,
+    airflow,
+    energyKwh,
   };
 };
 
@@ -417,7 +464,12 @@ const computeSingleDeviceEffect = (
     effect = addDeviceEffects(effect, computeGrowLightEffect(device, geometry, context));
   }
 
-  if (HVAC_KINDS.has(device.kind)) {
+  if (VENTILATION_KINDS.has(device.kind)) {
+    effect = addDeviceEffects(
+      effect,
+      computeVentilationEffect(device, zone.environment, geometry, context),
+    );
+  } else if (HVAC_KINDS.has(device.kind)) {
     effect = addDeviceEffects(
       effect,
       computeHvacTemperatureEffect(device, zone.environment, geometry, context),

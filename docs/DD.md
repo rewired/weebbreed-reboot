@@ -108,7 +108,7 @@ Declares physical equipment (lights, HVAC, CO₂, dehumidifiers, fans, furniture
 - `id: string (UUID v4)`
 - `slug?: string`
 - `name: string`
-- `kind: string` — e.g., `GrowLight`, `ClimateUnit`, `Dehumidifier`, `ExhaustFan`, `CO2Injector`, `Shelf`, `Sensor`.
+- `kind: string` — e.g., `GrowLight`, `ClimateUnit`, `Dehumidifier`, `Ventilation`, `ExhaustFan`, `CO2Injector`, `Shelf`, `Sensor`.
 - `quality?: number (0–1)` — Reliability proxy.
 - `complexity?: number (0–1)` — Maintenance difficulty proxy.
 - `lifespanInHours?: number` — Technical lifetime horizon.
@@ -124,7 +124,7 @@ Declares physical equipment (lights, HVAC, CO₂, dehumidifiers, fans, furniture
 - `coverage_m2?: number` — Recommended coverage area.
 - `dliTarget_mol_m2_day?: number` — Optional DLI target.
 
-**Climate/HVAC (incl. AC, dehumidifier, exhaust/fan)**
+**Climate/HVAC (incl. AC, dehumidifier, ventilation/exhaust fan)**
 
 - `power?: number (kW)`
 - `coolingCapacity?: number (kW)`

@@ -4,6 +4,7 @@ import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { ClimateController } from './climateController.js';
+import { AMBIENT_CO2_PPM, AMBIENT_HUMIDITY_RH, AMBIENT_TEMP_C } from '@/constants/environment.js';
 import type {
   DeviceInstanceState,
   FootprintDimensions,
@@ -213,6 +214,88 @@ const createGameState = (structure: StructureState): GameState => {
 };
 
 describe('ZoneEnvironmentService', () => {
+  it('uses ventilation airflow to accelerate normalization', () => {
+    const ventilationDevice = createDevice(
+      'vent-1',
+      'Ventilation',
+      { power: 0.05, airflow: 170 },
+      0.8,
+    );
+    const ventilatedEnvironment = createEnvironment({
+      temperature: 30,
+      relativeHumidity: 0.8,
+      co2: 1100,
+    });
+    const ventilationZone = createZone([ventilationDevice], ventilatedEnvironment);
+    ventilationZone.id = 'zone-vent';
+    ventilationZone.roomId = 'room-vent';
+    ventilationZone.name = 'Ventilated Zone';
+    ventilationZone.devices.forEach((device) => {
+      device.zoneId = ventilationZone.id;
+    });
+    const ventilationRoom = createRoom(ventilationZone);
+    ventilationRoom.id = 'room-vent';
+    ventilationRoom.zones = [ventilationZone];
+    const ventilationStructure = createStructure(ventilationRoom);
+    ventilationStructure.id = 'structure-vent';
+    ventilationStructure.rooms = [ventilationRoom];
+    const ventilationState = createGameState(ventilationStructure);
+
+    const baselineEnvironment = createEnvironment({
+      temperature: 30,
+      relativeHumidity: 0.8,
+      co2: 1100,
+    });
+    const baselineZone = createZone([], baselineEnvironment);
+    baselineZone.id = 'zone-base';
+    baselineZone.roomId = 'room-base';
+    baselineZone.name = 'Baseline Zone';
+    const baselineRoom = createRoom(baselineZone);
+    baselineRoom.id = 'room-base';
+    baselineRoom.zones = [baselineZone];
+    const baselineStructure = createStructure(baselineRoom);
+    baselineStructure.id = 'structure-base';
+    baselineStructure.rooms = [baselineRoom];
+    const baselineState = createGameState(baselineStructure);
+
+    const ventilationService = new ZoneEnvironmentService();
+    const baselineService = new ZoneEnvironmentService();
+
+    ventilationService.applyDeviceDeltas(ventilationState, 15, undefined);
+    baselineService.applyDeviceDeltas(baselineState, 15, undefined);
+
+    const ventilationAirflow =
+      (
+        ventilationService as unknown as { deviceEffects: Map<string, { airflow: number }> }
+      ).deviceEffects.get(ventilationZone.id)?.airflow ?? 0;
+    const baselineAirflow =
+      (
+        baselineService as unknown as { deviceEffects: Map<string, { airflow: number }> }
+      ).deviceEffects.get(baselineZone.id)?.airflow ?? 0;
+
+    expect(ventilationAirflow).toBeGreaterThan(0);
+    expect(baselineAirflow).toBe(0);
+
+    ventilationService.normalize(ventilationState, 15);
+    baselineService.normalize(baselineState, 15);
+
+    const ventilationTempDiff = Math.abs(ventilationZone.environment.temperature - AMBIENT_TEMP_C);
+    const baselineTempDiff = Math.abs(baselineZone.environment.temperature - AMBIENT_TEMP_C);
+    expect(ventilationTempDiff).toBeLessThan(baselineTempDiff);
+
+    const ventilationHumidityDiff = Math.abs(
+      ventilationZone.environment.relativeHumidity - AMBIENT_HUMIDITY_RH,
+    );
+    const baselineHumidityDiff = Math.abs(
+      baselineZone.environment.relativeHumidity - AMBIENT_HUMIDITY_RH,
+    );
+    expect(ventilationHumidityDiff).toBeLessThan(baselineHumidityDiff);
+
+    const ventilationCo2Diff = Math.abs(ventilationZone.environment.co2 - AMBIENT_CO2_PPM);
+    const baselineCo2Diff = Math.abs(baselineZone.environment.co2 - AMBIENT_CO2_PPM);
+    expect(ventilationCo2Diff).toBeLessThan(baselineCo2Diff);
+  });
+
   it('applies device deltas and normalization per tick', () => {
     const environment = createEnvironment();
     const devices: DeviceInstanceState[] = [
