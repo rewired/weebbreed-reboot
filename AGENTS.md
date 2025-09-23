@@ -13,6 +13,7 @@
 - **Do not rename JSON keys.** Only additive, user‑approved fields (optional) are allowed.
 - **Tick‑based engine, explicit phase order.** Events are **telemetry only** (no commands through the bus).
 - **Economics externalized.** Prices/maintenance are outside device blueprints (separate price maps). Do **not** re‑introduce prices into device JSONs.
+- **Socket transport parity.** Keep `socket.io` and `socket.io-client` on the **same minor version** across backend and frontend packages. Update both sides together to avoid wire-protocol drift.
 - **No breaking directory churn.** Prefer additive refactors with clear commits, green CI at every step.
 
 ---
@@ -109,10 +110,11 @@ export function vpdProxy(T: number, RH: number, Tbase = 10): number {
 }
 ```
 
-### 4.3 Event Bus (telemetry only)
+### 4.3 Event Bus & Real-Time Transports (telemetry only)
 
 - Minimal API: `emit(type, payload, tick, level = 'info')`.
 - Provide `uiStream$` with basic filtering/buffering for UI consumption.
+- **Transports:** Socket.IO gateway (`src/backend/src/server/socketGateway.ts`) and SSE gateway (`src/backend/src/server/sseGateway.ts`) both subscribe to the shared stream. Keep docs (`docs/system/socket_protocol.md`) and frontend bridge hooks in sync with payload updates.
 - **No commands through the event bus.**
 
 ### 4.4 Factories + JSON Blueprints

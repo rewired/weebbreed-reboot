@@ -6,6 +6,10 @@ adapters. Both the Socket.IO gateway and the server-sent events (SSE) gateway
 subscribe to the same observable, ensuring identical payloads regardless of
 transport. All payloads are JSON and use SI units unless stated otherwise.
 
+> **Version parity.** The Socket.IO server (`socket.io`) and browser client
+> (`socket.io-client`) **must** stay on the same minor version. See ADR 0006 for
+> the rationale and upgrade checklist.
+
 ## UI Stream (`uiStream$`)
 
 - `createUiStream` (from `runtime/eventBus.ts`) returns an observable of
