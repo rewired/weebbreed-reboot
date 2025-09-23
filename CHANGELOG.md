@@ -14,3 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Updated ADR 0001 to reflect the accepted CommonJS-first TypeScript toolchain decision and documentation touchpoints.
+
+### Fixed
+
+- Corrected the validate-data CLI import path to target the actual data loader module location.
