@@ -89,7 +89,9 @@ HTTP support is disabled or `fetch` is unavailable.
 3. **RNG stream isolation.** Each personal seed is hashed and fed into
    `createSeededStreamGenerator` for the dedicated
    `job-market.candidates` stream, ensuring the attribute rolls for one
-   candidate never perturb another stream (e.g., tasks or physics).
+   candidate never perturb another stream (e.g., tasks or physics). Gender
+   selection uses a separate `job-market.gender` stream so probability tuning
+   stays deterministic regardless of name availability.
 4. **ID generation.** Applicant IDs come from the stable `job-market` RNG stream
    so list ordering and references stay deterministic between refreshes.
 
@@ -103,15 +105,18 @@ HTTP support is disabled or `fetch` is unavailable.
    back to `Candidate<N>` / `Applicant` placeholders.
 3. **Personal seed resolution.** Missing seeds are replaced with an offline seed
    tied to the week; all seeds are hashed before RNG usage.
-4. **Role selection.** Weighted draw (`Gardener 35%`, `Technician 20%`,
+4. **Gender draw.** Seeded RNG selects gender with `P(other) = pDiverse` and
+   `P(male) = P(female) = (1 - pDiverse) / 2`, unless the profile forces a
+   specific value.
+5. **Role selection.** Weighted draw (`Gardener 35%`, `Technician 20%`,
    `Operator 18%`, `Janitor 15%`, `Manager 12%`).
-5. **Skill roll.** Apply role templates for primary/secondary skills and an
+6. **Skill roll.** Apply role templates for primary/secondary skills and an
    optional tertiary skill using bounded random draws (levels clamp between 1–5).
-6. **Trait roll.** Sample distinct trait IDs from the personnel directory (if
+7. **Trait roll.** Sample distinct trait IDs from the personnel directory (if
    available) with a 60% chance to assign at least one trait.
-7. **Salary computation.** Start from `DEFAULT_SALARY_BY_ROLE`, scale by skills,
+8. **Salary computation.** Start from `DEFAULT_SALARY_BY_ROLE`, scale by skills,
    trait modifiers, and a small randomness factor, then clamp to ≥ 12.
-8. **Assembly.** Produce `ApplicantState` records with `id`, `name`,
+9. **Assembly.** Produce `ApplicantState` records with `id`, `name`,
    `desiredRole`, `expectedSalary`, `skills`, `traits`, and `personalSeed`, plus
    `gender` when known.
 
@@ -120,10 +125,10 @@ HTTP support is disabled or `fetch` is unavailable.
 ## Fallback Strategy (Offline Mode)
 
 - **Name directory usage.** When a `PersonnelNameDirectory` is bundled, the
-  offline generator draws female first names, male first names, last names,
-  trait IDs, and pre-stored personal seeds from that directory. Gendered lists
-  let the generator alternate between male/female picks while still falling back
-  to whichever lists are populated.
+  offline generator draws first names from the combined female/male lists,
+  random last names, trait IDs, and pre-stored personal seeds from that
+  directory. Gender draws happen independently so probability tuning does not
+  depend on which name lists are populated.
 - **Synthetic names.** If the directory is missing or empty, the generator
   fabricates deterministic placeholders (`Candidate<week>-<n>`, `Applicant`).
 - **Parity with remote flow.** Offline candidates reuse the same RNG streams,
@@ -140,14 +145,15 @@ HTTP support is disabled or `fetch` is unavailable.
 
 ## Configuration & Operations
 
-| Knob             | Default          | Description                                                                                              |
-| ---------------- | ---------------- | -------------------------------------------------------------------------------------------------------- |
-| `batchSize`      | 12               | Number of candidates requested per refresh (`results` query param).                                      |
-| `maxRetries`     | 2                | Maximum remote fetch attempts before falling back to offline generation.                                 |
-| `httpEnabled`    | `true`           | Feature toggle; disabled automatically when `fetch` is unavailable or the environment flag below is set. |
-| `TICKS_PER_WEEK` | 168              | Interval between automatic refreshes (commit hook compares `tick / 168`).                                |
-| `fetchImpl`      | global `fetch`   | Injectable fetch implementation for tests or alternative transports.                                     |
-| `dataDirectory`  | resolved at boot | Source for personnel names/traits used during offline fallback.                                          |
+| Knob             | Default          | Description                                                                                                                           |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `batchSize`      | 12               | Number of candidates requested per refresh (`results` query param).                                                                   |
+| `maxRetries`     | 2                | Maximum remote fetch attempts before falling back to offline generation.                                                              |
+| `httpEnabled`    | `true`           | Feature toggle; disabled automatically when `fetch` is unavailable or the environment flag below is set.                              |
+| `TICKS_PER_WEEK` | 168              | Interval between automatic refreshes (commit hook compares `tick / 168`).                                                             |
+| `fetchImpl`      | global `fetch`   | Injectable fetch implementation for tests or alternative transports.                                                                  |
+| `dataDirectory`  | resolved at boot | Source for personnel names/traits used during offline fallback.                                                                       |
+| `pDiverse`       | 0.1              | Probability that a candidate is assigned the `other` gender; the remaining probability is split evenly between male and female draws. |
 
 **Environment variables**
 
