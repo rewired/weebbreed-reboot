@@ -115,7 +115,7 @@ const createGameStateWithZone = (): GameState => {
     maintenance: {
       lastServiceTick: 0,
       nextDueTick: 1000,
-      condition: 1,
+      condition: efficiency,
       runtimeHoursAtLastService: 0,
       degradation: 0,
     },
@@ -338,5 +338,27 @@ describe('SimulationLoop', () => {
     expect(zone?.environment.relativeHumidity).toBeCloseTo(0.63, 2);
     expect(zone?.environment.co2).toBeCloseTo(900, 0);
     expect(zone?.environment.ppfd).toBeCloseTo(21.6, 4);
+  });
+
+  it('maintains steady PPFD when lighting remains constant', async () => {
+    const state = createGameStateWithZone();
+    const bus = new EventBus();
+    const loop = new SimulationLoop({ state, eventBus: bus });
+
+    const zone = state.structures[0]?.rooms[0]?.zones[0];
+    expect(zone).toBeDefined();
+
+    await loop.processTick();
+    const firstTickPpfd = zone?.environment.ppfd ?? 0;
+
+    await loop.processTick();
+    const secondTickPpfd = zone?.environment.ppfd ?? 0;
+
+    await loop.processTick();
+    const thirdTickPpfd = zone?.environment.ppfd ?? 0;
+
+    expect(firstTickPpfd).toBeCloseTo(21.6, 4);
+    expect(secondTickPpfd).toBeCloseTo(firstTickPpfd, 3);
+    expect(thirdTickPpfd).toBeCloseTo(firstTickPpfd, 3);
   });
 });

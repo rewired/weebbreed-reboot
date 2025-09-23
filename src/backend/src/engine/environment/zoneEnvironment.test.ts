@@ -268,6 +268,39 @@ describe('ZoneEnvironmentService', () => {
     expect(zone.environment.ppfd).toBeCloseTo(21.6, 4);
   });
 
+  it('resets PPFD based on device contributions each tick', () => {
+    const environment = createEnvironment();
+    const devices: DeviceInstanceState[] = [
+      createDevice(
+        'lamp-1',
+        'Lamp',
+        {
+          power: 0.6,
+          heatFraction: 0.3,
+          coverageArea: 1.2,
+          ppfd: 800,
+        },
+        0.9,
+      ),
+    ];
+
+    const zone = createZone(devices, environment);
+    const room = createRoom(zone);
+    const structure = createStructure(room);
+    const state = createGameState(structure);
+    const service = new ZoneEnvironmentService();
+
+    service.applyDeviceDeltas(state, 15, undefined);
+    const firstTickPpfd = zone.environment.ppfd;
+
+    service.normalize(state, 15);
+    service.applyDeviceDeltas(state, 15, undefined);
+    const secondTickPpfd = zone.environment.ppfd;
+
+    expect(firstTickPpfd).toBeCloseTo(21.6, 4);
+    expect(secondTickPpfd).toBeCloseTo(firstTickPpfd, 6);
+  });
+
   it('prefers zone control setpoints when resolving climate targets', () => {
     const environment = createEnvironment();
     const devices: DeviceInstanceState[] = [

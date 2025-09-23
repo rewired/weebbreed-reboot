@@ -188,10 +188,12 @@ export class ZoneEnvironmentService {
             powerLevels,
           });
 
+          const lightingPpfd = Math.max(0, effect.ppfd);
+
           zone.environment.temperature += effect.temperatureDelta;
           zone.environment.relativeHumidity += effect.humidityDelta;
           zone.environment.co2 += effect.co2Delta;
-          zone.environment.ppfd = Math.max(0, zone.environment.ppfd + effect.ppfdDelta);
+          zone.environment.ppfd = lightingPpfd;
 
           this.deviceEffects.set(zone.id, { airflow: effect.airflow });
           if (accounting && effect.energyKwh > 0) {

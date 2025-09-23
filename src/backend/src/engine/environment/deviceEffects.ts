@@ -7,7 +7,7 @@ export interface DeviceEffect {
   temperatureDelta: number;
   humidityDelta: number;
   co2Delta: number;
-  ppfdDelta: number;
+  ppfd: number;
   airflow: number;
   energyKwh: number;
 }
@@ -21,7 +21,7 @@ const DEFAULT_DEVICE_EFFECT: DeviceEffect = {
   temperatureDelta: 0,
   humidityDelta: 0,
   co2Delta: 0,
-  ppfdDelta: 0,
+  ppfd: 0,
   airflow: 0,
   energyKwh: 0,
 };
@@ -102,13 +102,13 @@ const computeGrowLightEffect = (
     baseDelta * LAMP_HEAT_TRANSFER_COEFFICIENT * clamp(device.efficiency, 0, 1);
 
   const coverageRatio = clamp(coverage / Math.max(geometry.area, 0.0001), 0, 1);
-  const ppfdDelta = ppfd * coverageRatio * clamp(device.efficiency, 0, 1);
+  const ppfdContribution = ppfd * coverageRatio * clamp(device.efficiency, 0, 1);
 
   return {
     temperatureDelta,
     humidityDelta: 0,
     co2Delta: 0,
-    ppfdDelta,
+    ppfd: ppfdContribution,
     airflow: 0,
     energyKwh: totalEnergy,
   };
@@ -197,7 +197,7 @@ const computeHvacTemperatureEffect = (
     temperatureDelta: appliedDelta,
     humidityDelta: 0,
     co2Delta: 0,
-    ppfdDelta: 0,
+    ppfd: 0,
     airflow,
     energyKwh: totalEnergy,
   };
@@ -241,7 +241,7 @@ const computeCo2Effect = (
     temperatureDelta: 0,
     humidityDelta: 0,
     co2Delta: Math.max(0, safetyLimited),
-    ppfdDelta: 0,
+    ppfd: 0,
     airflow: 0,
     energyKwh: 0,
   };
@@ -284,7 +284,7 @@ export const computeZoneDeviceDeltas = (
         temperatureDelta: accumulator.temperatureDelta + effect.temperatureDelta,
         humidityDelta: accumulator.humidityDelta + effect.humidityDelta,
         co2Delta: accumulator.co2Delta + effect.co2Delta,
-        ppfdDelta: accumulator.ppfdDelta + effect.ppfdDelta,
+        ppfd: accumulator.ppfd + effect.ppfd,
         airflow: accumulator.airflow + effect.airflow,
         energyKwh: accumulator.energyKwh + effect.energyKwh,
       };
