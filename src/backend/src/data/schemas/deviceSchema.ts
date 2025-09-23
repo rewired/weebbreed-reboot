@@ -23,7 +23,7 @@ export const deviceSchema = z
         airflow: z.number().optional(),
         coolingCapacity: z.number().optional(),
         moistureRemoval: z.number().optional(),
-        targetCo2: z.number().optional(),
+        targetCO2: z.number().optional(),
       })
       .passthrough(),
     meta: z
