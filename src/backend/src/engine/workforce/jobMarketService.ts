@@ -13,7 +13,11 @@ import type {
   PersonnelRoleSkillTemplate,
   SkillName,
 } from '@/state/models.js';
-import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '@/state/models.js';
+import {
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+  DEFAULT_PERSONNEL_SKILL_BLUEPRINTS,
+  getEmployeeSkillNames,
+} from '@/state/models.js';
 import { generateId } from '@/state/initialization/common.js';
 import {
   loadPersonnelDirectory,
@@ -546,15 +550,22 @@ export class JobMarketService {
     primary: SkillName,
     secondary?: SkillName,
   ): PersonnelRoleSkillTemplate[] {
-    return EMPLOYEE_SKILL_NAMES.filter((skill) => skill !== primary && skill !== secondary).map(
-      (skill) =>
-        ({
-          skill,
-          startingLevel: 1,
-          roll: { min: 1, max: 3 },
-          weight: 1,
-        }) satisfies PersonnelRoleSkillTemplate,
-    );
+    const available = getEmployeeSkillNames();
+    const source =
+      available.length > 0
+        ? available
+        : DEFAULT_PERSONNEL_SKILL_BLUEPRINTS.map((skill) => skill.id);
+    return source
+      .filter((skill) => skill !== primary && skill !== secondary)
+      .map(
+        (skill) =>
+          ({
+            skill,
+            startingLevel: 1,
+            roll: { min: 1, max: 3 },
+            weight: 1,
+          }) satisfies PersonnelRoleSkillTemplate,
+      );
   }
 
   private rollSkills(blueprint: PersonnelRoleBlueprint, stream: RngStream): EmployeeSkills {

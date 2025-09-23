@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS, EMPLOYEE_SKILL_NAMES } from '@/state/models.js';
+import {
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+  getEmployeeSkillNames,
+  isKnownSkillName,
+} from '@/state/models.js';
 import type { EmployeeRole } from '@/state/models.js';
 
 const isoDateString = z
@@ -322,15 +326,21 @@ const financeStateSchema = z.object({
   summary: financialSummarySchema,
 });
 
-const skillNames = EMPLOYEE_SKILL_NAMES;
-const employeeSkillsSchema = z
-  .object(
-    Object.fromEntries(skillNames.map((name) => [name, z.number()])) as Record<
-      (typeof skillNames)[number],
-      z.ZodNumber
-    >,
-  )
-  .partial();
+const employeeSkillsSchema = z.record(z.number()).superRefine((value, ctx) => {
+  const allowed = getEmployeeSkillNames();
+  for (const key of Object.keys(value)) {
+    if (!isKnownSkillName(key)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message:
+          allowed.length > 0
+            ? `Unknown skill "${key}". Allowed skills: ${allowed.join(', ')}`
+            : `Unknown skill "${key}".`,
+        path: [key],
+      });
+    }
+  }
+});
 
 const employeeRoleValues = DEFAULT_PERSONNEL_ROLE_BLUEPRINTS.map((role) => role.id) as [
   EmployeeRole,

@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import os from 'os';
 import path from 'path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
 import { RNG_STREAM_IDS, RngService, RngStream, createSeededStreamGenerator } from '@/lib/rng.js';
 import type { CommandExecutionContext } from '@/facade/index.js';
@@ -12,7 +12,11 @@ import type {
   SimulationClockState,
   SimulationNote,
 } from '@/state/models.js';
-import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS } from '@/state/models.js';
+import {
+  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
+  getEmployeeSkillNames,
+  resetPersonnelSkillBlueprints,
+} from '@/state/models.js';
 import { JobMarketService } from '../jobMarketService.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
 
@@ -121,6 +125,9 @@ const createPhaseContext = (
 };
 
 describe('JobMarketService', () => {
+  afterEach(() => {
+    resetPersonnelSkillBlueprints();
+  });
   const directory: PersonnelNameDirectory = {
     firstNamesMale: ['Liam', 'Noah', 'Ethan'],
     firstNamesFemale: ['Ava', 'Emma', 'Olivia'],
@@ -241,6 +248,61 @@ describe('JobMarketService', () => {
     const actualGenders = state.personnel.applicants.map((applicant) => applicant.gender);
     expect(actualGenders).toEqual(expectedGenders);
     expect(context.events.size).toBe(1);
+  });
+
+  it('uses fallback skill names when no skill blueprints are present', async () => {
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'wb-job-market-skills-'));
+    try {
+      const blueprintDir = path.join(tempDir, 'blueprints');
+      const rolesDir = path.join(blueprintDir, 'personnel', 'roles');
+      await fs.mkdir(rolesDir, { recursive: true });
+      await fs.writeFile(
+        path.join(rolesDir, 'Operator.json'),
+        JSON.stringify(
+          {
+            id: 'Operator',
+            name: 'Operator',
+            salary: { basePerTick: 22 },
+            skillProfile: {
+              primary: { skill: 'Logistics', startingLevel: 3 },
+            },
+          },
+          null,
+          2,
+        ),
+      );
+
+      const state = createGameState();
+      const rng = new RngService('job-market-fallback');
+      const service = new JobMarketService({
+        state,
+        rng,
+        personnelDirectory: directory,
+        dataDirectory: tempDir,
+        httpEnabled: false,
+        batchSize: 1,
+      });
+
+      const context = createCommandContext(state);
+      const result = await service.refreshCandidates({}, context);
+
+      expect(result.ok).toBe(true);
+      expect(state.personnel.applicants).not.toHaveLength(0);
+      const applicant = state.personnel.applicants[0];
+      const skillNames = getEmployeeSkillNames();
+      expect(skillNames).toEqual(
+        expect.arrayContaining([
+          'Gardening',
+          'Maintenance',
+          'Logistics',
+          'Cleanliness',
+          'Administration',
+        ]),
+      );
+      expect(Object.keys(applicant.skills).every((skill) => skillNames.includes(skill))).toBe(true);
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
   });
 
   it('generates blueprint-driven applicants deterministically (golden snapshot)', async () => {
