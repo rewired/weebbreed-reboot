@@ -25,8 +25,10 @@ import type { SimulationPhaseContext, SimulationPhaseHandler } from '@/sim/loop.
 const TICKS_PER_WEEK = 168;
 const DEFAULT_BATCH_SIZE = 12;
 const DEFAULT_MAX_RETRIES = 2;
+const DEFAULT_DIVERSE_PROBABILITY = 0.1;
 const JOB_MARKET_STREAM_ID = RNG_STREAM_IDS.jobMarket;
 const JOB_MARKET_CANDIDATE_STREAM_ID = RNG_STREAM_IDS.jobMarketCandidates;
+const JOB_MARKET_GENDER_STREAM_ID = RNG_STREAM_IDS.jobMarketGender;
 
 const SKILL_NAMES: SkillName[] = [
   'Gardening',
@@ -129,6 +131,7 @@ export interface JobMarketServiceOptions {
   httpEnabled?: boolean;
   batchSize?: number;
   maxRetries?: number;
+  pDiverse?: number;
 }
 
 export class JobMarketService {
@@ -158,6 +161,8 @@ export class JobMarketService {
 
   private readonly logger = logger.child({ component: 'engine.jobMarket' });
 
+  private readonly diversityProbability: number;
+
   constructor(options: JobMarketServiceOptions) {
     this.state = options.state;
     this.rng = options.rng;
@@ -174,6 +179,7 @@ export class JobMarketService {
     }
     this.directory = options.personnelDirectory;
     this.dataDirectory = options.dataDirectory;
+    this.diversityProbability = this.clamp(options.pDiverse ?? DEFAULT_DIVERSE_PROBABILITY, 0, 1);
     if (this.directory) {
       this.offlineSeedIndex = 0;
     }
@@ -398,11 +404,48 @@ export class JobMarketService {
       personalSeed,
     };
 
-    if (base.gender) {
-      candidate.gender = base.gender;
+    const resolvedGender = this.resolveGender(base.gender, hashedSeed);
+    if (resolvedGender) {
+      candidate.gender = resolvedGender;
     }
 
     return candidate;
+  }
+
+  private resolveGender(
+    forcedGender: ApplicantState['gender'],
+    hashedSeed: number,
+  ): ApplicantState['gender'] {
+    if (forcedGender === 'male' || forcedGender === 'female' || forcedGender === 'other') {
+      return forcedGender;
+    }
+    return this.drawGenderFromSeed(hashedSeed);
+  }
+
+  private drawGenderFromSeed(hashedSeed: number): ApplicantState['gender'] {
+    const generator = createSeededStreamGenerator(String(hashedSeed), JOB_MARKET_GENDER_STREAM_ID);
+    const stream = new RngStream(JOB_MARKET_GENDER_STREAM_ID, generator);
+    return this.drawGenderFromStream(stream);
+  }
+
+  private drawGenderFromStream(stream: RngStream): ApplicantState['gender'] {
+    const probabilityDiverse = this.diversityProbability;
+    if (probabilityDiverse >= 1) {
+      return 'other';
+    }
+    if (probabilityDiverse <= 0) {
+      return stream.next() < 0.5 ? 'female' : 'male';
+    }
+    const roll = stream.next();
+    if (roll < probabilityDiverse) {
+      return 'other';
+    }
+    const remaining = 1 - probabilityDiverse;
+    const femaleThreshold = probabilityDiverse + remaining / 2;
+    if (roll < femaleThreshold) {
+      return 'female';
+    }
+    return 'male';
   }
 
   private pickRole(stream: RngStream): EmployeeRole {
@@ -522,29 +565,12 @@ export class JobMarketService {
     const firstNamesFemale = directory?.firstNamesFemale ?? [];
     const lastNames = directory?.lastNames ?? [];
     const applicants: ApplicantState[] = [];
+    const combinedFirstNames = [...firstNamesFemale, ...firstNamesMale];
+
     for (let index = 0; index < count; index += 1) {
       const fallbackFirstName = `Candidate${week}-${index + 1}`;
-      const maleAvailable = firstNamesMale.length > 0;
-      const femaleAvailable = firstNamesFemale.length > 0;
-      let chosenFirstName: string | undefined;
-      let gender: ApplicantState['gender'] = undefined;
-
-      if (maleAvailable && femaleAvailable) {
-        if (this.jobStream.nextBoolean()) {
-          chosenFirstName = this.jobStream.pick(firstNamesFemale);
-          gender = 'female';
-        } else {
-          chosenFirstName = this.jobStream.pick(firstNamesMale);
-          gender = 'male';
-        }
-      } else if (femaleAvailable) {
-        chosenFirstName = this.jobStream.pick(firstNamesFemale);
-        gender = 'female';
-      } else if (maleAvailable) {
-        chosenFirstName = this.jobStream.pick(firstNamesMale);
-        gender = 'male';
-      }
-
+      const chosenFirstName =
+        combinedFirstNames.length > 0 ? this.jobStream.pick(combinedFirstNames) : undefined;
       const lastNameBase = lastNames.length > 0 ? this.jobStream.pick(lastNames) : 'Applicant';
       const personalSeed = this.takeOfflineSeed(directory, week);
       applicants.push(
@@ -552,7 +578,6 @@ export class JobMarketService {
           {
             firstName: this.normaliseName(chosenFirstName, fallbackFirstName),
             lastName: this.normaliseName(lastNameBase, 'Applicant'),
-            gender,
             personalSeed,
           },
           week,

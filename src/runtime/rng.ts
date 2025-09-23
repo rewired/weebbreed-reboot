@@ -20,6 +20,7 @@ export const RNG_STREAM_IDS = {
   personnelMorale: 'personnel-morale',
   jobMarket: 'job-market',
   jobMarketCandidates: 'job-market.candidates',
+  jobMarketGender: 'job-market.gender',
   simulationTest: 'sim.test',
 } as const;
 

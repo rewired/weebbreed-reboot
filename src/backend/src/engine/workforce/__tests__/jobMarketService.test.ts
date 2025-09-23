@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
-import { RngService } from '@/lib/rng.js';
+import { RNG_STREAM_IDS, RngService, RngStream, createSeededStreamGenerator } from '@/lib/rng.js';
 import type { CommandExecutionContext } from '@/facade/index.js';
 import type {
   GameState,
@@ -137,6 +137,32 @@ describe('JobMarketService', () => {
     randomSeeds: ['alpha', 'beta', 'gamma', 'delta', 'epsilon'],
   };
 
+  const hashSeed = (value: string): number => {
+    let hash = 0;
+    for (let index = 0; index < value.length; index += 1) {
+      hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
+    }
+    return hash === 0 ? 1 : hash;
+  };
+
+  const deriveGender = (personalSeed: string, pDiverse: number): 'male' | 'female' | 'other' => {
+    const hashed = hashSeed(personalSeed);
+    const generator = createSeededStreamGenerator(String(hashed), RNG_STREAM_IDS.jobMarketGender);
+    const stream = new RngStream(RNG_STREAM_IDS.jobMarketGender, generator);
+    if (pDiverse >= 1) {
+      return 'other';
+    }
+    if (pDiverse <= 0) {
+      return stream.next() < 0.5 ? 'female' : 'male';
+    }
+    const roll = stream.next();
+    if (roll < pDiverse) {
+      return 'other';
+    }
+    const femaleThreshold = pDiverse + (1 - pDiverse) / 2;
+    return roll < femaleThreshold ? 'female' : 'male';
+  };
+
   it('refreshes candidates from remote provider with deterministic seed', async () => {
     const state = createGameState();
     const rng = new RngService('seed-remote-test');
@@ -155,6 +181,7 @@ describe('JobMarketService', () => {
       personnelDirectory: directory,
       fetchImpl: fetchMock,
       batchSize: 2,
+      pDiverse: 1,
     });
 
     const context = createCommandContext(state);
@@ -180,6 +207,7 @@ describe('JobMarketService', () => {
       ...directory,
       randomSeeds: ['alpha', 'beta'],
     };
+    const diversityProbability = 0.3;
 
     const service = new JobMarketService({
       state,
@@ -187,6 +215,7 @@ describe('JobMarketService', () => {
       personnelDirectory: offlineDirectory,
       fetchImpl: fetchMock,
       batchSize: 3,
+      pDiverse: diversityProbability,
     });
 
     const context = createCommandContext(state);
@@ -198,18 +227,49 @@ describe('JobMarketService', () => {
     expect(state.personnel.applicants[0]?.personalSeed).toBe('alpha');
     expect(state.personnel.applicants[1]?.personalSeed).toBe('beta');
     expect(state.personnel.applicants[2]?.personalSeed?.startsWith('offline-')).toBe(true);
-
-    const femaleNames = new Set(offlineDirectory.firstNamesFemale);
-    const maleNames = new Set(offlineDirectory.firstNamesMale);
-    for (const applicant of state.personnel.applicants) {
-      const [firstName] = applicant.name.split(' ');
-      if (femaleNames.has(firstName)) {
-        expect(applicant.gender).toBe('female');
-      } else if (maleNames.has(firstName)) {
-        expect(applicant.gender).toBe('male');
-      }
-    }
+    const expectedGenders = state.personnel.applicants.map((applicant) => {
+      expect(applicant.personalSeed).toBeDefined();
+      return deriveGender(applicant.personalSeed!, diversityProbability);
+    });
+    const actualGenders = state.personnel.applicants.map((applicant) => applicant.gender);
+    expect(actualGenders).toEqual(expectedGenders);
     expect(context.events.size).toBe(1);
+  });
+
+  it('respects diversity probability extremes for offline candidates', async () => {
+    const state = createGameState();
+    const rng = new RngService('seed-offline-extremes');
+    const fetchMock = vi.fn().mockRejectedValue(new Error('offline'));
+
+    const alwaysDiverse = new JobMarketService({
+      state,
+      rng,
+      personnelDirectory: directory,
+      fetchImpl: fetchMock,
+      batchSize: 2,
+      pDiverse: 1,
+    });
+
+    const context = createCommandContext(state);
+    await alwaysDiverse.refreshCandidates({}, context);
+    expect(new Set(state.personnel.applicants.map((applicant) => applicant.gender))).toEqual(
+      new Set(['other']),
+    );
+
+    const binaryOnly = new JobMarketService({
+      state,
+      rng,
+      personnelDirectory: directory,
+      fetchImpl: fetchMock,
+      batchSize: 2,
+      pDiverse: 0,
+    });
+
+    const secondContext = createCommandContext(state);
+    await binaryOnly.refreshCandidates({}, secondContext);
+    for (const applicant of state.personnel.applicants) {
+      expect(applicant.gender === 'male' || applicant.gender === 'female').toBe(true);
+    }
   });
 
   it('refreshes automatically once per simulated week via commit hook', async () => {
