@@ -350,6 +350,9 @@ const buildStructureState = (
     }
   }
 
+  const hoursPerMonth = 30 * 24;
+  const rentPerHour = (blueprint.rentalCostPerSqmPerMonth * footprint.area) / hoursPerMonth;
+
   const structure: StructureState = {
     id: structureId,
     blueprintId: blueprint.id,
@@ -357,7 +360,7 @@ const buildStructureState = (
     status: 'active',
     footprint,
     rooms: [growRoom, supportRoom],
-    rentPerTick: (blueprint.rentalCostPerSqmPerMonth * footprint.area) / (30 * 24),
+    rentPerTick: rentPerHour,
     upfrontCostPaid: blueprint.upfrontFee,
   };
 

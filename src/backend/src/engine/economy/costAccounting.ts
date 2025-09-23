@@ -5,6 +5,7 @@ import type {
   GameState,
   LedgerCategory,
   LedgerEntry,
+  StructureState,
 } from '@/state/models.js';
 import type { PriceCatalog } from './pricing.js';
 import { DevicePriceRegistry } from './devicePriceRegistry.js';
@@ -38,8 +39,9 @@ export interface MaintenanceComputation {
   blueprintId: string;
   ageTicks: number;
   increments: number;
-  baseCostPerTick: number;
-  ageAdjustedCostPerTick: number;
+  baseCostPerHour: number;
+  ageAdjustedCostPerHour: number;
+  hoursBilled: number;
   degradationMultiplier: number;
   preMultiplierCost: number;
 }
@@ -163,10 +165,11 @@ export class CostAccountingService {
     device: DeviceInstanceState,
     tick: number,
     timestamp: string,
+    tickLengthHours: number,
     accumulator: TickAccumulator,
     events: EventCollector,
   ): MaintenanceExpenseRecord | undefined {
-    const computation = this.calculateMaintenanceCost(device, tick);
+    const computation = this.calculateMaintenanceCost(device, tick, tickLengthHours);
     if (!computation || computation.preMultiplierCost <= MULTIPLIER_TOLERANCE) {
       return undefined;
     }
@@ -203,6 +206,49 @@ export class CostAccountingService {
     );
 
     return record;
+  }
+
+  applyStructureRent(
+    state: GameState,
+    structure: StructureState,
+    tick: number,
+    timestamp: string,
+    tickLengthHours: number,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+  ): number | undefined {
+    const hoursBilled = Number.isFinite(tickLengthHours) ? Math.max(tickLengthHours, 0) : 0;
+    if (!(hoursBilled > 0)) {
+      return undefined;
+    }
+
+    const baseRatePerHour = Math.max(
+      Number.isFinite(structure.rentPerTick) ? structure.rentPerTick : 0,
+      0,
+    );
+    const rentCost = baseRatePerHour * hoursBilled;
+    if (rentCost <= MULTIPLIER_TOLERANCE) {
+      return undefined;
+    }
+
+    this.recordExpense(
+      state,
+      rentCost,
+      'rent',
+      `Structure rent: ${structure.name ?? structure.id}`,
+      tick,
+      timestamp,
+      accumulator,
+      events,
+      'opex',
+      {
+        structureId: structure.id,
+        rentPerHour: baseRatePerHour,
+        hoursBilled,
+      },
+    );
+
+    return rentCost;
   }
 
   applyPayroll(
@@ -459,29 +505,46 @@ export class CostAccountingService {
   private calculateMaintenanceCost(
     device: DeviceInstanceState,
     tick: number,
+    tickLengthHours: number,
   ): MaintenanceComputation | undefined {
     const price = this.devicePrices.get(device.blueprintId);
     if (!price) {
       return undefined;
     }
 
-    const baseCost = Math.max(price.baseMaintenanceCostPerTick, 0);
-    const incrementPerBlock = Math.max(price.costIncreasePer1000Ticks, 0);
+    const hoursBilled = Number.isFinite(tickLengthHours) ? Math.max(tickLengthHours, 0) : 0;
+    if (!(hoursBilled > 0)) {
+      return {
+        deviceId: device.id,
+        blueprintId: device.blueprintId,
+        ageTicks: Math.max(tick - device.maintenance.lastServiceTick, 0),
+        increments: 0,
+        baseCostPerHour: 0,
+        ageAdjustedCostPerHour: 0,
+        hoursBilled: 0,
+        degradationMultiplier: 1,
+        preMultiplierCost: 0,
+      } satisfies MaintenanceComputation;
+    }
+
+    const baseCostPerHour = Math.max(price.baseMaintenanceCostPerTick, 0);
+    const incrementPerBlockPerHour = Math.max(price.costIncreasePer1000Ticks, 0);
     const ageTicks = Math.max(tick - device.maintenance.lastServiceTick, 0);
     const increments = Math.floor(ageTicks / 1000);
-    const ageAdjustedCost = baseCost + increments * incrementPerBlock;
+    const ageAdjustedCostPerHour = baseCostPerHour + increments * incrementPerBlockPerHour;
 
     const degradation = clamp(device.maintenance.degradation ?? 0, 0, 5);
     const degradationMultiplier = 1 + degradation;
-    const preMultiplierCost = ageAdjustedCost * degradationMultiplier;
+    const preMultiplierCost = ageAdjustedCostPerHour * hoursBilled * degradationMultiplier;
 
     return {
       deviceId: device.id,
       blueprintId: device.blueprintId,
       ageTicks,
       increments,
-      baseCostPerTick: baseCost,
-      ageAdjustedCostPerTick: ageAdjustedCost,
+      baseCostPerHour,
+      ageAdjustedCostPerHour,
+      hoursBilled,
       degradationMultiplier,
       preMultiplierCost,
     };

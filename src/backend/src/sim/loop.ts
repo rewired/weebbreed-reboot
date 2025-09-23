@@ -415,6 +415,9 @@ export class SimulationLoop {
 
     const timestamp = new Date().toISOString();
     const runtime = this.accountingRuntime;
+    const tickLengthHours = Number.isFinite(context.tickLengthMinutes)
+      ? Math.max(context.tickLengthMinutes / 60, 0)
+      : 0;
 
     const utilities = runtime.utilities;
     if (utilities.energyKwh > 0 || utilities.waterLiters > 0 || utilities.nutrientsGrams > 0) {
@@ -429,6 +432,16 @@ export class SimulationLoop {
     }
 
     for (const structure of context.state.structures) {
+      this.costAccountingService.applyStructureRent(
+        context.state,
+        structure,
+        context.tick,
+        timestamp,
+        tickLengthHours,
+        runtime.accumulator,
+        context.events,
+      );
+
       for (const room of structure.rooms) {
         for (const zone of room.zones) {
           for (const device of zone.devices) {
@@ -437,6 +450,7 @@ export class SimulationLoop {
               device,
               context.tick,
               timestamp,
+              tickLengthHours,
               runtime.accumulator,
               context.events,
             );

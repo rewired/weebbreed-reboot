@@ -175,6 +175,16 @@ All randomness (pests/events/market) comes from here.
 - Successful updates emit `env.setpointUpdated` with `{ zoneId, metric, value,
 control }` and, when humidity is derived (RH/VPD), `effectiveHumidity`.
 
+### 4.7a Recurring Cost Normalization
+
+- Treat `structure.rentPerTick` and `devicePrices[].baseMaintenanceCostPerTick`
+  as **hourly** base rates. Multiply by the current tick length in hours when
+  charging rent or maintenance so recurring costs track simulated hours, not raw
+  tick counts.
+- Tick-length updates via `facade.setTickLength` (which refresh
+  `state.metadata.tickLengthMinutes`) must be observed before the accounting
+  phase runs, ensuring immediate normalization.
+
 ---
 
 ### 4.8 UI Snapshot & Time Status Contract

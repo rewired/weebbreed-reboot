@@ -372,4 +372,69 @@ describe('SimulationLoop accounting integration', () => {
     expect(tickEvent).toBeDefined();
     expect(tickEvent?.payload).toMatchObject({ payroll: payrollTotal, expenses: payrollTotal });
   });
+
+  it('keeps rent and maintenance costs consistent when tick length changes mid-run', async () => {
+    const createScenarioState = (tickLengthMinutes: number, rentPerHour: number): GameState => {
+      const base = createAccountingTestState();
+      base.metadata.tickLengthMinutes = tickLengthMinutes;
+      base.finances.cashOnHand = 1_000_000;
+      const structure = base.structures[0];
+      const zone = structure.rooms[0].zones[0];
+      zone.devices = [zone.devices[0]];
+      structure.rentPerTick = rentPerHour;
+      return base;
+    };
+
+    const rentPerHour = 175;
+    const maintenancePerHour = 42;
+
+    const priceCatalog: PriceCatalog = {
+      devicePrices: new Map([
+        [
+          'Lamp-blueprint',
+          {
+            capitalExpenditure: 0,
+            baseMaintenanceCostPerTick: maintenancePerHour,
+            costIncreasePer1000Ticks: 0,
+          },
+        ],
+      ]),
+      strainPrices: new Map(),
+      utilityPrices: { pricePerKwh: 0, pricePerLiterWater: 0, pricePerGramNutrients: 0 },
+    };
+
+    const createLoopWithState = (
+      tickLengthMinutes: number,
+    ): { state: GameState; loop: SimulationLoop } => {
+      const state = createScenarioState(tickLengthMinutes, rentPerHour);
+      const costService = new CostAccountingService(priceCatalog);
+      const loop = new SimulationLoop({ state, accounting: { service: costService } });
+      return { state, loop };
+    };
+
+    const runTicks = async (loop: SimulationLoop, count: number) => {
+      for (let index = 0; index < count; index += 1) {
+        await loop.processTick();
+      }
+    };
+
+    const baseline = createLoopWithState(60);
+    await runTicks(baseline.loop, 2);
+
+    const variable = createLoopWithState(60);
+    await runTicks(variable.loop, 1);
+    variable.state.metadata.tickLengthMinutes = 15;
+    await runTicks(variable.loop, 4);
+
+    const sumRent = (state: GameState): number =>
+      state.finances.ledger
+        .filter((entry) => entry.category === 'rent')
+        .reduce((sum, entry) => sum - entry.amount, 0);
+
+    expect(sumRent(variable.state)).toBeCloseTo(sumRent(baseline.state), 3);
+    expect(variable.state.finances.summary.totalMaintenance).toBeCloseTo(
+      baseline.state.finances.summary.totalMaintenance,
+      3,
+    );
+  });
 });

@@ -53,7 +53,11 @@ Each blueprint is validated against the following Zod schema:
       "type": "object",
       "properties": {
         "areaCost": { "type": "number", "minimum": 0 },
-        "baseRentPerTick": { "type": "number", "minimum": 0 }
+        "baseRentPerTick": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Hourly rent baseline; multiply by tick length in hours for per-tick cost"
+        }
       },
       "additionalProperties": false
     }
