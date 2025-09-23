@@ -8,6 +8,7 @@ Revise AGENTS.MD and other .md files to reflect current architecture. Document t
 
 Create tasks to fix the issues:
 Unsupported intents: frontend sends world.updateStructure, world.duplicateRoom, world.duplicateZone, world.deleteStructure, devices.toggleDeviceGroup, plants.togglePlantingPlan, etc., but backend facade only supports rent/create/update/delete (room/zone) and lacks these; calls will be rejected. Overhaul the messaging system used and create an open and modular one, which handles later needs.
+Status: ✅ Completed 2025-09-23 — façade registry now exposes duplication, rename, and toggle intents; socket docs updated alongside ADR 0003 and AGENTS.md.
 Revise AGENTS.MD and other .md files to reflect current architecture. Document the changes and ADR-style decisions. Document every issue when it's considered as done.
 
 Create tasks to fix the issues:
