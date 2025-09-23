@@ -21,7 +21,9 @@ while a React front end streams telemetry for real-time visualization.
 - **Telemetry contract** – Socket and SSE gateways stream
   `SimulationSnapshot` payloads plus scheduler `TimeStatus` metadata. The shape
   is documented in [`docs/system/socket_protocol.md`](docs/system/socket_protocol.md)
-  and anchored by ADR 0005.
+  and anchored by ADR 0005. Keep the Socket.IO server (`socket.io`) and client
+  (`socket.io-client`) dependencies on the **same minor version** across
+  packages to avoid protocol drift in the wire format and handshake helpers.
 
 Detailed architecture, module boundaries, and naming rules live in the
 workspace documentation. Start with the product vision and system references in
@@ -37,6 +39,8 @@ workspace documentation. Start with the product vision and system references in
   [`docs/system/adr/0001-typescript-toolchain.md`](docs/system/adr/0001-typescript-toolchain.md)
   and the snapshot/time-status contract is captured in
   [`docs/system/adr/0005-snapshot-time-sync.md`](docs/system/adr/0005-snapshot-time-sync.md).
+  Real-time transport version parity is tracked in
+  [`docs/system/adr/0006-socket-transport-parity.md`](docs/system/adr/0006-socket-transport-parity.md).
 
 ## Continuous Verification
 
