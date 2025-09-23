@@ -12,6 +12,13 @@ import { SimulationLoop, type SimulationLoopAccountingOptions } from '@/sim/loop
 import { SimulationScheduler } from '@/sim/simScheduler.js';
 import type { SimulationSchedulerOptions } from '@/sim/simScheduler.js';
 import type { ZoneEnvironmentOptions } from '@/engine/environment/zoneEnvironment.js';
+import type {
+  DuplicateStructureResult,
+  DuplicateRoomResult,
+  DuplicateZoneResult,
+} from '@/engine/world/worldService.js';
+import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
+import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
 
 const cloneState = <T>(value: T): T => {
   if (typeof structuredClone === 'function') {
@@ -72,6 +79,10 @@ export type ServiceCommandHandler<Payload, Result = unknown> = (
 ) => Promise<CommandResult<Result>> | CommandResult<Result>;
 
 const uuid = z.string().uuid();
+const prefixedIdentifier = z.string().regex(/^[a-z]+_[a-z0-9]{6,}$/i, {
+  message: 'Value must be a UUID or prefixed identifier.',
+});
+const entityIdentifier = z.union([uuid, prefixedIdentifier]);
 const nonEmptyString = z.string().trim().min(1, { message: 'Value must not be empty.' });
 const finiteNumber = z
   .number({ invalid_type_error: 'Value must be a number.' })
@@ -110,12 +121,12 @@ const setSpeedSchema = z
 
 const rentStructureSchema = z
   .object({
-    structureId: uuid,
+    structureId: entityIdentifier,
   })
   .strict();
 const createRoomSchema = z
   .object({
-    structureId: uuid,
+    structureId: entityIdentifier,
     room: z
       .object({
         name: nonEmptyString,
@@ -128,7 +139,7 @@ const createRoomSchema = z
   .strict();
 const updateRoomSchema = z
   .object({
-    roomId: uuid,
+    roomId: entityIdentifier,
     patch: z
       .object({
         name: nonEmptyString.optional(),
@@ -144,12 +155,12 @@ const updateRoomSchema = z
   .strict();
 const deleteRoomSchema = z
   .object({
-    roomId: uuid,
+    roomId: entityIdentifier,
   })
   .strict();
 const createZoneSchema = z
   .object({
-    roomId: uuid,
+    roomId: entityIdentifier,
     zone: z
       .object({
         name: nonEmptyString,
@@ -162,7 +173,7 @@ const createZoneSchema = z
   .strict();
 const updateZoneSchema = z
   .object({
-    zoneId: uuid,
+    zoneId: entityIdentifier,
     patch: z
       .object({
         name: nonEmptyString.optional(),
@@ -178,7 +189,56 @@ const updateZoneSchema = z
   .strict();
 const deleteZoneSchema = z
   .object({
-    zoneId: uuid,
+    zoneId: entityIdentifier,
+  })
+  .strict();
+
+const renameStructureSchema = z
+  .object({
+    structureId: entityIdentifier,
+    name: nonEmptyString,
+  })
+  .strict();
+
+const deleteStructureSchema = z
+  .object({
+    structureId: entityIdentifier,
+  })
+  .strict();
+
+const duplicateStructureSchema = z
+  .object({
+    structureId: entityIdentifier,
+    name: nonEmptyString.optional(),
+  })
+  .strict();
+
+const duplicateRoomSchema = z
+  .object({
+    roomId: entityIdentifier,
+    name: nonEmptyString.optional(),
+  })
+  .strict();
+
+const duplicateZoneSchema = z
+  .object({
+    zoneId: entityIdentifier,
+    name: nonEmptyString.optional(),
+  })
+  .strict();
+
+const toggleDeviceGroupSchema = z
+  .object({
+    zoneId: entityIdentifier,
+    kind: nonEmptyString,
+    enabled: z.boolean(),
+  })
+  .strict();
+
+const togglePlantingPlanSchema = z
+  .object({
+    zoneId: entityIdentifier,
+    enabled: z.boolean(),
   })
   .strict();
 
@@ -346,17 +406,24 @@ export type DeleteRoomIntent = z.infer<typeof deleteRoomSchema>;
 export type CreateZoneIntent = z.infer<typeof createZoneSchema>;
 export type UpdateZoneIntent = z.infer<typeof updateZoneSchema>;
 export type DeleteZoneIntent = z.infer<typeof deleteZoneSchema>;
+export type RenameStructureIntent = z.infer<typeof renameStructureSchema>;
+export type DeleteStructureIntent = z.infer<typeof deleteStructureSchema>;
+export type DuplicateStructureIntent = z.infer<typeof duplicateStructureSchema>;
+export type DuplicateRoomIntent = z.infer<typeof duplicateRoomSchema>;
+export type DuplicateZoneIntent = z.infer<typeof duplicateZoneSchema>;
 
 export type InstallDeviceIntent = z.infer<typeof installDeviceSchema>;
 export type UpdateDeviceIntent = z.infer<typeof updateDeviceSchema>;
 export type MoveDeviceIntent = z.infer<typeof moveDeviceSchema>;
 export type RemoveDeviceIntent = z.infer<typeof removeDeviceSchema>;
+export type ToggleDeviceGroupIntent = z.infer<typeof toggleDeviceGroupSchema>;
 
 export type AddPlantingIntent = z.infer<typeof addPlantingSchema>;
 export type CullPlantingIntent = z.infer<typeof cullPlantingSchema>;
 export type HarvestPlantingIntent = z.infer<typeof harvestPlantingSchema>;
 export type ApplyIrrigationIntent = z.infer<typeof applyIrrigationSchema>;
 export type ApplyFertilizerIntent = z.infer<typeof applyFertilizerSchema>;
+export type TogglePlantingPlanIntent = z.infer<typeof togglePlantingPlanSchema>;
 
 export type ScheduleScoutingIntent = z.infer<typeof scheduleScoutingSchema>;
 export type ApplyTreatmentIntent = z.infer<typeof applyTreatmentSchema>;
@@ -381,6 +448,11 @@ export interface WorldIntentHandlers {
   createZone: ServiceCommandHandler<CreateZoneIntent>;
   updateZone: ServiceCommandHandler<UpdateZoneIntent>;
   deleteZone: ServiceCommandHandler<DeleteZoneIntent>;
+  renameStructure: ServiceCommandHandler<RenameStructureIntent>;
+  deleteStructure: ServiceCommandHandler<DeleteStructureIntent>;
+  duplicateStructure: ServiceCommandHandler<DuplicateStructureIntent, DuplicateStructureResult>;
+  duplicateRoom: ServiceCommandHandler<DuplicateRoomIntent, DuplicateRoomResult>;
+  duplicateZone: ServiceCommandHandler<DuplicateZoneIntent, DuplicateZoneResult>;
 }
 
 export interface DeviceIntentHandlers {
@@ -388,6 +460,7 @@ export interface DeviceIntentHandlers {
   updateDevice: ServiceCommandHandler<UpdateDeviceIntent>;
   moveDevice: ServiceCommandHandler<MoveDeviceIntent>;
   removeDevice: ServiceCommandHandler<RemoveDeviceIntent>;
+  toggleDeviceGroup: ServiceCommandHandler<ToggleDeviceGroupIntent, DeviceGroupToggleResult>;
 }
 
 export interface PlantIntentHandlers {
@@ -396,6 +469,7 @@ export interface PlantIntentHandlers {
   harvestPlanting: ServiceCommandHandler<HarvestPlantingIntent>;
   applyIrrigation: ServiceCommandHandler<ApplyIrrigationIntent>;
   applyFertilizer: ServiceCommandHandler<ApplyFertilizerIntent>;
+  togglePlantingPlan: ServiceCommandHandler<TogglePlantingPlanIntent, PlantingPlanToggleResult>;
 }
 
 export interface HealthIntentHandlers {
@@ -436,6 +510,18 @@ interface CommandRegistration<Payload, Result = unknown> {
   handler: InternalCommandHandler<Payload, Result>;
   preprocess?: (payload: unknown) => unknown;
 }
+
+type GenericCommandRegistration = CommandRegistration<unknown, unknown>;
+
+type DomainCommandRegistryMap = Record<string, GenericCommandRegistration>;
+
+type DomainApi<Commands extends DomainCommandRegistryMap> = {
+  [Key in keyof Commands]: Commands[Key] extends CommandRegistration<infer Payload, infer Result>
+    ? (payload?: Payload) => Promise<CommandResult<Result>>
+    : never;
+};
+
+type DomainCommandInvoker = (payload?: unknown) => Promise<CommandResult<unknown>>;
 
 export interface SimulationFacadeSchedulerOptions
   extends Partial<
@@ -482,6 +568,13 @@ export interface WorldIntentAPI {
   createZone(intent: CreateZoneIntent): Promise<CommandResult>;
   updateZone(intent: UpdateZoneIntent): Promise<CommandResult>;
   deleteZone(intent: DeleteZoneIntent): Promise<CommandResult>;
+  renameStructure(intent: RenameStructureIntent): Promise<CommandResult>;
+  deleteStructure(intent: DeleteStructureIntent): Promise<CommandResult>;
+  duplicateStructure(
+    intent: DuplicateStructureIntent,
+  ): Promise<CommandResult<DuplicateStructureResult>>;
+  duplicateRoom(intent: DuplicateRoomIntent): Promise<CommandResult<DuplicateRoomResult>>;
+  duplicateZone(intent: DuplicateZoneIntent): Promise<CommandResult<DuplicateZoneResult>>;
 }
 
 export interface DeviceIntentAPI {
@@ -489,6 +582,9 @@ export interface DeviceIntentAPI {
   updateDevice(intent: UpdateDeviceIntent): Promise<CommandResult>;
   moveDevice(intent: MoveDeviceIntent): Promise<CommandResult>;
   removeDevice(intent: RemoveDeviceIntent): Promise<CommandResult>;
+  toggleDeviceGroup(
+    intent: ToggleDeviceGroupIntent,
+  ): Promise<CommandResult<DeviceGroupToggleResult>>;
 }
 
 export interface PlantIntentAPI {
@@ -497,6 +593,9 @@ export interface PlantIntentAPI {
   harvestPlanting(intent: HarvestPlantingIntent): Promise<CommandResult>;
   applyIrrigation(intent: ApplyIrrigationIntent): Promise<CommandResult>;
   applyFertilizer(intent: ApplyFertilizerIntent): Promise<CommandResult>;
+  togglePlantingPlan(
+    intent: TogglePlantingPlanIntent,
+  ): Promise<CommandResult<PlantingPlanToggleResult>>;
 }
 
 export interface HealthIntentAPI {
@@ -536,6 +635,11 @@ interface WorldCommandRegistry {
   createZone: CommandRegistration<CreateZoneIntent>;
   updateZone: CommandRegistration<UpdateZoneIntent>;
   deleteZone: CommandRegistration<DeleteZoneIntent>;
+  renameStructure: CommandRegistration<RenameStructureIntent>;
+  deleteStructure: CommandRegistration<DeleteStructureIntent>;
+  duplicateStructure: CommandRegistration<DuplicateStructureIntent, DuplicateStructureResult>;
+  duplicateRoom: CommandRegistration<DuplicateRoomIntent, DuplicateRoomResult>;
+  duplicateZone: CommandRegistration<DuplicateZoneIntent, DuplicateZoneResult>;
 }
 
 interface DeviceCommandRegistry {
@@ -543,6 +647,7 @@ interface DeviceCommandRegistry {
   updateDevice: CommandRegistration<UpdateDeviceIntent>;
   moveDevice: CommandRegistration<MoveDeviceIntent>;
   removeDevice: CommandRegistration<RemoveDeviceIntent>;
+  toggleDeviceGroup: CommandRegistration<ToggleDeviceGroupIntent, DeviceGroupToggleResult>;
 }
 
 interface PlantCommandRegistry {
@@ -551,6 +656,7 @@ interface PlantCommandRegistry {
   harvestPlanting: CommandRegistration<HarvestPlantingIntent>;
   applyIrrigation: CommandRegistration<ApplyIrrigationIntent>;
   applyFertilizer: CommandRegistration<ApplyFertilizerIntent>;
+  togglePlantingPlan: CommandRegistration<TogglePlantingPlanIntent, PlantingPlanToggleResult>;
 }
 
 interface HealthCommandRegistry {
@@ -601,17 +707,17 @@ export class SimulationFacade {
 
   private readonly timeCommands: TimeCommandRegistry;
 
-  private readonly worldCommands: WorldCommandRegistry;
+  private readonly domainRegistrations = new Map<
+    string,
+    Record<string, CommandRegistration<unknown, unknown>>
+  >();
 
-  private readonly deviceCommands: DeviceCommandRegistry;
+  private readonly domainHandlers = new Map<
+    string,
+    Record<string, (payload?: unknown) => Promise<CommandResult<unknown>>>
+  >();
 
-  private readonly plantCommands: PlantCommandRegistry;
-
-  private readonly healthCommands: HealthCommandRegistry;
-
-  private readonly workforceCommands: WorkforceCommandRegistry;
-
-  private readonly financeCommands: FinanceCommandRegistry;
+  private readonly intentCatalog = new Map<string, string[]>();
 
   public readonly time: TimeIntentAPI;
 
@@ -663,92 +769,27 @@ export class SimulationFacade {
     });
 
     this.timeCommands = this.buildTimeCommands();
-    this.worldCommands = this.buildWorldCommands();
-    this.deviceCommands = this.buildDeviceCommands();
-    this.plantCommands = this.buildPlantCommands();
-    this.healthCommands = this.buildHealthCommands();
-    this.workforceCommands = this.buildWorkforceCommands();
-    this.financeCommands = this.buildFinanceCommands();
+    const worldCommands = this.buildWorldCommands();
+    const deviceCommands = this.buildDeviceCommands();
+    const plantCommands = this.buildPlantCommands();
+    const healthCommands = this.buildHealthCommands();
+    const workforceCommands = this.buildWorkforceCommands();
+    const financeCommands = this.buildFinanceCommands();
 
     this.time = {
       start: (intent?: TimeStartIntent) => this.executeCommand(this.timeCommands.start, intent),
-      pause: () => this.executeCommand(this.timeCommands.pause, {}),
-      resume: () => this.executeCommand(this.timeCommands.resume, {}),
+      pause: () => this.executeCommand(this.timeCommands.pause, undefined),
+      resume: () => this.executeCommand(this.timeCommands.resume, undefined),
       step: (intent?: TimeStepIntent) => this.executeCommand(this.timeCommands.step, intent),
       setSpeed: (intent: SetSpeedIntent) => this.executeCommand(this.timeCommands.setSpeed, intent),
     } satisfies TimeIntentAPI;
 
-    this.world = {
-      rentStructure: (intent: RentStructureIntent) =>
-        this.executeCommand(this.worldCommands.rentStructure, intent),
-      createRoom: (intent: CreateRoomIntent) =>
-        this.executeCommand(this.worldCommands.createRoom, intent),
-      updateRoom: (intent: UpdateRoomIntent) =>
-        this.executeCommand(this.worldCommands.updateRoom, intent),
-      deleteRoom: (intent: DeleteRoomIntent) =>
-        this.executeCommand(this.worldCommands.deleteRoom, intent),
-      createZone: (intent: CreateZoneIntent) =>
-        this.executeCommand(this.worldCommands.createZone, intent),
-      updateZone: (intent: UpdateZoneIntent) =>
-        this.executeCommand(this.worldCommands.updateZone, intent),
-      deleteZone: (intent: DeleteZoneIntent) =>
-        this.executeCommand(this.worldCommands.deleteZone, intent),
-    } satisfies WorldIntentAPI;
-
-    this.devices = {
-      installDevice: (intent: InstallDeviceIntent) =>
-        this.executeCommand(this.deviceCommands.installDevice, intent),
-      updateDevice: (intent: UpdateDeviceIntent) =>
-        this.executeCommand(this.deviceCommands.updateDevice, intent),
-      moveDevice: (intent: MoveDeviceIntent) =>
-        this.executeCommand(this.deviceCommands.moveDevice, intent),
-      removeDevice: (intent: RemoveDeviceIntent) =>
-        this.executeCommand(this.deviceCommands.removeDevice, intent),
-    } satisfies DeviceIntentAPI;
-
-    this.plants = {
-      addPlanting: (intent: AddPlantingIntent) =>
-        this.executeCommand(this.plantCommands.addPlanting, intent),
-      cullPlanting: (intent: CullPlantingIntent) =>
-        this.executeCommand(this.plantCommands.cullPlanting, intent),
-      harvestPlanting: (intent: HarvestPlantingIntent) =>
-        this.executeCommand(this.plantCommands.harvestPlanting, intent),
-      applyIrrigation: (intent: ApplyIrrigationIntent) =>
-        this.executeCommand(this.plantCommands.applyIrrigation, intent),
-      applyFertilizer: (intent: ApplyFertilizerIntent) =>
-        this.executeCommand(this.plantCommands.applyFertilizer, intent),
-    } satisfies PlantIntentAPI;
-
-    this.health = {
-      scheduleScouting: (intent: ScheduleScoutingIntent) =>
-        this.executeCommand(this.healthCommands.scheduleScouting, intent),
-      applyTreatment: (intent: ApplyTreatmentIntent) =>
-        this.executeCommand(this.healthCommands.applyTreatment, intent),
-      quarantineZone: (intent: QuarantineZoneIntent) =>
-        this.executeCommand(this.healthCommands.quarantineZone, intent),
-    } satisfies HealthIntentAPI;
-
-    this.workforce = {
-      refreshCandidates: (intent?: RefreshCandidatesIntent) =>
-        this.executeCommand(this.workforceCommands.refreshCandidates, intent),
-      hire: (intent: HireIntent) => this.executeCommand(this.workforceCommands.hire, intent),
-      fire: (intent: FireIntent) => this.executeCommand(this.workforceCommands.fire, intent),
-      setOvertimePolicy: (intent: SetOvertimePolicyIntent) =>
-        this.executeCommand(this.workforceCommands.setOvertimePolicy, intent),
-      assignStructure: (intent: AssignStructureIntent) =>
-        this.executeCommand(this.workforceCommands.assignStructure, intent),
-      enqueueTask: (intent: EnqueueTaskIntent) =>
-        this.executeCommand(this.workforceCommands.enqueueTask, intent),
-    } satisfies WorkforceIntentAPI;
-
-    this.finance = {
-      sellInventory: (intent: SellInventoryIntent) =>
-        this.executeCommand(this.financeCommands.sellInventory, intent),
-      setUtilityPrices: (intent: SetUtilityPricesIntent) =>
-        this.executeCommand(this.financeCommands.setUtilityPrices, intent),
-      setMaintenancePolicy: (intent: SetMaintenancePolicyIntent) =>
-        this.executeCommand(this.financeCommands.setMaintenancePolicy, intent),
-    } satisfies FinanceIntentAPI;
+    this.world = this.registerDomain('world', worldCommands);
+    this.devices = this.registerDomain('devices', deviceCommands);
+    this.plants = this.registerDomain('plants', plantCommands);
+    this.health = this.registerDomain('health', healthCommands);
+    this.workforce = this.registerDomain('workforce', workforceCommands);
+    this.finance = this.registerDomain('finance', financeCommands);
   }
 
   getState(): Readonly<GameState> {
@@ -867,6 +908,45 @@ export class SimulationFacade {
     }
   }
 
+  listIntentDomains(): readonly string[] {
+    return Array.from(this.intentCatalog.keys());
+  }
+
+  hasIntentDomain(domain: string): boolean {
+    return this.intentCatalog.has(domain);
+  }
+
+  getIntentHandler(domain: string, action: string): DomainCommandInvoker | undefined {
+    return this.domainHandlers.get(domain)?.[action];
+  }
+
+  private registerDomain<Commands extends DomainCommandRegistryMap>(
+    domain: string,
+    commands: Commands,
+  ): DomainApi<Commands> {
+    this.domainRegistrations.set(domain, commands);
+    const actions: string[] = [];
+    const invokers: Record<string, DomainCommandInvoker> = {};
+    const api = {} as DomainApi<Commands>;
+
+    for (const [actionKey, registration] of Object.entries(commands) as [
+      keyof Commands,
+      Commands[keyof Commands],
+    ][]) {
+      const actionName = String(actionKey);
+      actions.push(actionName);
+      invokers[actionName] = (payload?: unknown) =>
+        this.executeCommand(registration, payload) as Promise<CommandResult<unknown>>;
+      (api as Record<string, unknown>)[actionName] = ((payload?: unknown) =>
+        this.executeCommand(registration, payload)) as DomainApi<Commands>[typeof actionKey];
+    }
+
+    this.domainHandlers.set(domain, invokers);
+    this.intentCatalog.set(domain, actions);
+
+    return api;
+  }
+
   private buildTimeCommands(): TimeCommandRegistry {
     return {
       start: {
@@ -938,6 +1018,34 @@ export class SimulationFacade {
         deleteZoneSchema,
         () => this.services.world?.deleteZone,
       ),
+      renameStructure: this.createServiceCommand(
+        'world.renameStructure',
+        renameStructureSchema,
+        () => this.services.world?.renameStructure,
+      ),
+      deleteStructure: this.createServiceCommand(
+        'world.deleteStructure',
+        deleteStructureSchema,
+        () => this.services.world?.deleteStructure,
+      ),
+      duplicateStructure: this.createServiceCommand<
+        DuplicateStructureIntent,
+        DuplicateStructureResult
+      >(
+        'world.duplicateStructure',
+        duplicateStructureSchema,
+        () => this.services.world?.duplicateStructure,
+      ),
+      duplicateRoom: this.createServiceCommand<DuplicateRoomIntent, DuplicateRoomResult>(
+        'world.duplicateRoom',
+        duplicateRoomSchema,
+        () => this.services.world?.duplicateRoom,
+      ),
+      duplicateZone: this.createServiceCommand<DuplicateZoneIntent, DuplicateZoneResult>(
+        'world.duplicateZone',
+        duplicateZoneSchema,
+        () => this.services.world?.duplicateZone,
+      ),
     } satisfies WorldCommandRegistry;
   }
 
@@ -962,6 +1070,14 @@ export class SimulationFacade {
         'devices.removeDevice',
         removeDeviceSchema,
         () => this.services.devices?.removeDevice,
+      ),
+      toggleDeviceGroup: this.createServiceCommand<
+        ToggleDeviceGroupIntent,
+        DeviceGroupToggleResult
+      >(
+        'devices.toggleDeviceGroup',
+        toggleDeviceGroupSchema,
+        () => this.services.devices?.toggleDeviceGroup,
       ),
     } satisfies DeviceCommandRegistry;
   }
@@ -992,6 +1108,14 @@ export class SimulationFacade {
         'plants.applyFertilizer',
         applyFertilizerSchema,
         () => this.services.plants?.applyFertilizer,
+      ),
+      togglePlantingPlan: this.createServiceCommand<
+        TogglePlantingPlanIntent,
+        PlantingPlanToggleResult
+      >(
+        'plants.togglePlantingPlan',
+        togglePlantingPlanSchema,
+        () => this.services.plants?.togglePlantingPlan,
       ),
     } satisfies PlantCommandRegistry;
   }

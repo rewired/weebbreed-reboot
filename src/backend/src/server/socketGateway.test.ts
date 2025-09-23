@@ -439,6 +439,38 @@ class StubFacade {
     this.state = state;
   }
 
+  listIntentDomains(): string[] {
+    return ['world', 'devices', 'plants', 'health', 'workforce', 'finance'];
+  }
+
+  hasIntentDomain(domain: string): boolean {
+    return this.listIntentDomains().includes(domain);
+  }
+
+  getIntentHandler(
+    domain: string,
+    action: string,
+  ): ((payload?: unknown) => Promise<CommandResult<unknown>>) | undefined {
+    const services: Record<string, unknown> = {
+      world: this.world,
+      devices: this.devices,
+      plants: this.plants,
+      health: this.health,
+      workforce: this.workforce,
+      finance: this.finance,
+    };
+    const service = services[domain];
+    if (!service) {
+      return undefined;
+    }
+    const handler = (service as Record<string, unknown>)[action];
+    if (typeof handler !== 'function') {
+      return undefined;
+    }
+    return (payload?: unknown) =>
+      (handler as (input?: unknown) => Promise<CommandResult<unknown>>)(payload);
+  }
+
   select<T>(selector: (state: GameState) => T): T {
     return selector(this.state);
   }

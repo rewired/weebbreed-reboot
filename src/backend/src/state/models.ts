@@ -123,6 +123,15 @@ export interface ZoneMetricState {
   lastUpdatedTick: number;
 }
 
+export interface ZonePlantingPlanState {
+  id: string;
+  strainId: string;
+  count: number;
+  autoReplant: boolean;
+  enabled: boolean;
+  name?: string;
+}
+
 export type HealthTarget = 'disease' | 'pest';
 
 export type TreatmentCategory = 'cultural' | 'biological' | 'mechanical' | 'chemical' | 'physical';
@@ -226,6 +235,7 @@ export interface ZoneState {
   metrics: ZoneMetricState;
   health: ZoneHealthState;
   activeTaskIds: string[];
+  plantingPlan?: ZonePlantingPlanState | null;
 }
 
 export type PlantStage =
