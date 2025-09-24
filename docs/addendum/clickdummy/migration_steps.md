@@ -100,7 +100,10 @@
    - Breadcrumb-Leiste und „Up one level“-Aktion lesen den Zustand (`selectedStructureId`, `selectedRoomId`, `selectedZoneId`) aus `useAppStore` und rufen `navigateUp`/`resetSelection` auf.
    - Der Kopfzeilen-Ticker zeigt die jüngsten Events (`selectRecentEvents`) kompakt an, während die rechte Spalte weiterhin das detaillierte Log liefert.
 
-8. Navigation-Slice erweitern: Ergänze den bestehenden Slice um Struktur-/Raum-Hierarchie und wende ihn sowohl für Sidebar als auch Kopfzeilen-Navigation an, um Doppelstaat zu vermeiden.
+8. ✅ Navigation-Slice erweitern: Ergänze den bestehenden Slice um Struktur-/Raum-Hierarchie und wende ihn sowohl für Sidebar als auch Kopfzeilen-Navigation an, um Doppelstaat zu vermeiden.
+   - Die Navigation verwaltet jetzt `structureHierarchy`, `facilityCounts` und gemeinsame View-Definitionen.
+   - Store-Subscriber gleichen Zone- und Personnel-Store-Änderungen automatisch ab und bereinigen ungültige Selektions-IDs.
+   - Sidebar-Baum und Kopfzeilen-Tabs konsumieren dieselben Items, wodurch lokale Ableitungen in `App.tsx` entfallen.
 
 ### View-spezifische Portierungen
 

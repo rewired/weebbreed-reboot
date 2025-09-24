@@ -40,6 +40,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   and health restrictions in SI units before the frontend stores hydrate.
 - Rebuilt the frontend layout shell so `App.tsx` composes `DashboardHeader`, `TimeDisplay`, and `Navigation`
   with the game/navigation slices, including a facility sidebar and header ticker wired to live telemetry.
+- Extended the frontend navigation slice with a facility hierarchy and shared view metadata so the header
+  tabs and sidebar tree consume the same state without recomputing local copies.
 
 ### Fixed
 
