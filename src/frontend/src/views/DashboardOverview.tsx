@@ -113,6 +113,18 @@ const DashboardOverview = () => {
 
   const plantCount = Object.keys(plants).length;
 
+  const plannedPlantCapacity = useMemo(
+    () =>
+      zoneList.reduce((total, zone) => {
+        const plan = zone.plantingPlan;
+        if (!plan || !plan.enabled) {
+          return total;
+        }
+        return total + Math.max(plan.count, 0);
+      }, 0),
+    [zoneList],
+  );
+
   const headerStatus =
     timeStatus === undefined
       ? undefined
@@ -124,28 +136,40 @@ const DashboardOverview = () => {
             : `Tick rate: ${timeStatus.targetTickRate.toFixed(0)}x (speed ${timeStatus.speed.toFixed(2)})`,
         };
 
-  const overviewMetrics = [
-    {
-      id: 'tick',
-      label: 'Current tick',
-      value: currentTick,
-    },
-    {
-      id: 'capital',
-      label: 'Cash on hand',
-      value: currencyFormatter.format(cashOnHand),
-    },
-    {
-      id: 'yield',
-      label: 'Cumulative dry yield',
-      value: `${decimalFormatter.format(cumulativeYield)} g`,
-    },
-    {
-      id: 'alerts',
-      label: 'Active alerts',
-      value: alertCount,
-    },
-  ];
+  const overviewMetrics = useMemo(() => {
+    const metrics = [
+      {
+        id: 'tick',
+        label: 'Current tick',
+        value: currentTick,
+      },
+      {
+        id: 'capital',
+        label: 'Cash on hand',
+        value: currencyFormatter.format(cashOnHand),
+      },
+      {
+        id: 'yield',
+        label: 'Cumulative dry yield',
+        value: `${decimalFormatter.format(cumulativeYield)} g`,
+      },
+      {
+        id: 'alerts',
+        label: 'Active alerts',
+        value: alertCount,
+      },
+    ];
+
+    if (plannedPlantCapacity > 0) {
+      metrics.push({
+        id: 'planting-plan-capacity',
+        label: 'Active planting plan capacity',
+        value: plannedPlantCapacity.toLocaleString(),
+      });
+    }
+
+    return metrics;
+  }, [currentTick, cashOnHand, cumulativeYield, alertCount, plannedPlantCapacity]);
 
   return (
     <div className="space-y-8">
