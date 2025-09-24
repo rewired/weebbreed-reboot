@@ -4,11 +4,18 @@
     "baseUrl": "./src",
     "jsx": "react-jsx",
     "types": ["vite/client"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "paths": {
       "@/*": ["*"],
-      "@/ui/*": ["ui/*"]
+      "@/components/*": ["components/*"],
+      "@/store/*": ["store/*"],
+      "@/hooks/*": ["hooks/*"],
+      "@/styles/*": ["styles/*"],
+      "@/data/*": ["data/*"],
+      "@/facade/*": ["facade/*"]
     }
   },
-  "include": ["src", "vite.config.ts"],
+  "include": ["src", "vite.config.ts", "tailwind.config.ts"],
   "exclude": ["dist", "node_modules"]
 }

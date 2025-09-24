@@ -1,3 +1,4 @@
 packages:
   - "src/backend"
   - "src/frontend"
+  - "src/frontend-legacy"
