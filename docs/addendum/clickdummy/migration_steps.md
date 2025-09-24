@@ -83,7 +83,11 @@
 
 4. ✅ Deterministische Hilfsfunktionen zentralisieren: `store/utils/deterministic.ts` stellt jetzt einen seeded Helper bereit (`createDeterministicManager`, `createDeterministicSequence`, `nextDeterministicId`), der von Fixtures (`data/mockData.ts`) und App-Workflows genutzt wird. Globale `SeededRandom`-Instanzen und `deterministicUuid` wurden entfernt, sodass IDs und Zufallsdaten aus der gemeinsamen Utility stammen.
 
-5. State-Management auf Stores umstellen: Refaktoriere App.tsx, sodass sämtliche Simulationzustände über useGameStore, useZoneStore etc. laufen und lokale JSON-Mutationen entfallen.
+5. ✅ State-Management auf Stores umstellen: Refaktoriere App.tsx, sodass sämtliche Simulationzustände über useGameStore, useZoneStore etc. laufen und lokale JSON-Mutationen entfallen.
+   - Die neue App-Shell (`src/frontend/src/App.tsx`) hydratisiert die Stores über `OFFLINE_BOOTSTRAP`
+     (`src/frontend/src/fixtures/offlineBootstrap.ts`), zeigt die Telemetrie ausschließlich über
+     Store-Selektoren an und verdrahtet Simulationsteuerung, Event-Log sowie Navigationsstatus mit
+     `useGameStore`, `useZoneStore` und `useAppStore`.
 
 ### Layout- und Navigationsmigration
 
