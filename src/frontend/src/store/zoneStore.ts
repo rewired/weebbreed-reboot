@@ -260,21 +260,33 @@ export const useZoneStore = create<ZoneStoreState>()((set) => ({
       });
       return {};
     }),
-  duplicateRoom: (roomId) =>
+  duplicateRoom: (roomId, options) =>
     set((state) => {
+      const name = options?.name?.trim();
+      const payload: Record<string, unknown> = { roomId };
+      if (name) {
+        payload.name = name;
+      }
+
       state.sendFacadeIntent?.({
         domain: 'world',
         action: 'duplicateRoom',
-        payload: { roomId },
+        payload,
       });
       return {};
     }),
-  duplicateZone: (zoneId) =>
+  duplicateZone: (zoneId, options) =>
     set((state) => {
+      const name = options?.name?.trim();
+      const payload: Record<string, unknown> = { zoneId };
+      if (name) {
+        payload.name = name;
+      }
+
       state.sendFacadeIntent?.({
         domain: 'world',
         action: 'duplicateZone',
-        payload: { zoneId },
+        payload,
       });
       return {};
     }),

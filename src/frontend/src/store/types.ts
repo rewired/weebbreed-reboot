@@ -148,8 +148,11 @@ export interface ZoneStoreState {
   updateStructureName: (structureId: string, name: string) => void;
   updateRoomName: (roomId: string, name: string) => void;
   updateZoneName: (zoneId: string, name: string) => void;
-  duplicateRoom: (roomId: string) => void;
-  duplicateZone: (zoneId: string) => void;
+  duplicateRoom: (roomId: string, options?: { name?: string }) => void;
+  duplicateZone: (
+    zoneId: string,
+    options?: { name?: string; includeDevices?: boolean; includeMethod?: boolean },
+  ) => void;
   removeStructure: (structureId: string) => void;
   removeRoom: (roomId: string) => void;
   removeZone: (zoneId: string) => void;
