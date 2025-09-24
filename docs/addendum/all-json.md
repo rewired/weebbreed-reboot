@@ -3,7 +3,7 @@
 _Important rule for the consistency_ if in other documents attributes are listed but not in this document, the other document is right and attributes and data has to be added to the following files!
 These files are crucial! The blueprinted Objects will be rehidrated from these configuration files, so there is no need, for hardcoded representation!
 
-## \data\blueprints\cultivationMethods\basic_soil_pot.json
+## /data/blueprints/cultivationMethods/basic_soil_pot.json
 
 ```json
 {
@@ -41,7 +41,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\cultivationMethods\scrog.json
+## /data/blueprints/cultivationMethods/scrog.json
 
 ```json
 {
@@ -98,7 +98,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\cultivationMethods\sog.json
+## /data/blueprints/cultivationMethods/sog.json
 
 ```json
 {
@@ -157,7 +157,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\devices\climate_unit_01.json
+## /data/blueprints/devices/climate_unit_01.json
 
 ```json
 {
@@ -194,7 +194,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\devices\co2injector-01.json
+## /data/blueprints/devices/co2injector-01.json
 
 ```json
 {
@@ -220,7 +220,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\devices\dehumidifier-01.json
+## /data/blueprints/devices/dehumidifier-01.json
 
 ```json
 {
@@ -243,7 +243,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\devices\exhaust_fan_01.json
+## /data/blueprints/devices/exhaust_fan_01.json
 
 ```json
 {
@@ -274,7 +274,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\devices\humidity_control_unit_01.json
+## /data/blueprints/devices/humidity_control_unit_01.json
 
 ```json
 {
@@ -300,7 +300,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\devices\veg_light_01.json
+## /data/blueprints/devices/veg_light_01.json
 
 ```json
 {
@@ -327,7 +327,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\anthracnose.json
+## /data/blueprints/diseases/anthracnose.json
 
 ```json
 {
@@ -361,7 +361,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\bacterial_leaf_spot.json
+## /data/blueprints/diseases/bacterial_leaf_spot.json
 
 ```json
 {
@@ -398,7 +398,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\bacterial_wilt.json
+## /data/blueprints/diseases/bacterial_wilt.json
 
 ```json
 {
@@ -432,7 +432,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\botrytis_gray_mold.json
+## /data/blueprints/diseases/botrytis_gray_mold.json
 
 ```json
 {
@@ -471,7 +471,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\downy_mildew.json
+## /data/blueprints/diseases/downy_mildew.json
 
 ```json
 {
@@ -506,7 +506,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\hop_latent_viroid.json
+## /data/blueprints/diseases/hop_latent_viroid.json
 
 ```json
 {
@@ -541,7 +541,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\mosaic_virus.json
+## /data/blueprints/diseases/mosaic_virus.json
 
 ```json
 {
@@ -576,7 +576,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\powdery_mildew.json
+## /data/blueprints/diseases/powdery_mildew.json
 
 ```json
 {
@@ -617,7 +617,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\diseases\root_rot.json
+## /data/blueprints/diseases/root_rot.json
 
 ```json
 {
@@ -653,7 +653,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\roles\Gardener.json
+## /data/blueprints/personnel/roles/Gardener.json
 
 ```json
 {
@@ -691,7 +691,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\roles\Janitor.json
+## /data/blueprints/personnel/roles/Janitor.json
 
 ```json
 {
@@ -730,7 +730,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\roles\Manager.json
+## /data/blueprints/personnel/roles/Manager.json
 
 ```json
 {
@@ -765,7 +765,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\roles\Operator.json
+## /data/blueprints/personnel/roles/Operator.json
 
 ```json
 {
@@ -804,7 +804,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\roles\Technician.json
+## /data/blueprints/personnel/roles/Technician.json
 
 ```json
 {
@@ -842,7 +842,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\skills\Administration.json
+## /data/blueprints/personnel/skills/Administration.json
 
 ```json
 {
@@ -853,7 +853,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\skills\Cleanliness.json
+## /data/blueprints/personnel/skills/Cleanliness.json
 
 ```json
 {
@@ -864,7 +864,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\skills\Gardening.json
+## /data/blueprints/personnel/skills/Gardening.json
 
 ```json
 {
@@ -875,7 +875,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\skills\Logistics.json
+## /data/blueprints/personnel/skills/Logistics.json
 
 ```json
 {
@@ -886,7 +886,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\personnel\skills\Maintenance.json
+## /data/blueprints/personnel/skills/Maintenance.json
 
 ```json
 {
@@ -897,7 +897,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\aphids.json
+## /data/blueprints/pests/aphids.json
 
 ```json
 {
@@ -939,7 +939,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\broad_mites.json
+## /data/blueprints/pests/broad_mites.json
 
 ```json
 {
@@ -981,7 +981,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\caterpillars.json
+## /data/blueprints/pests/caterpillars.json
 
 ```json
 {
@@ -1023,7 +1023,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\fungus_gnats.json
+## /data/blueprints/pests/fungus_gnats.json
 
 ```json
 {
@@ -1066,7 +1066,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\root_aphids.json
+## /data/blueprints/pests/root_aphids.json
 
 ```json
 {
@@ -1109,7 +1109,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\spider_mites.json
+## /data/blueprints/pests/spider_mites.json
 
 ```json
 {
@@ -1153,7 +1153,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\thrips.json
+## /data/blueprints/pests/thrips.json
 
 ```json
 {
@@ -1195,7 +1195,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\pests\whiteflies.json
+## /data/blueprints/pests/whiteflies.json
 
 ```json
 {
@@ -1237,7 +1237,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\roomPurposes\breakroom.json
+## /data/blueprints/roomPurposes/breakroom.json
 
 ```json
 {
@@ -1256,7 +1256,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\roomPurposes\growroom.json
+## /data/blueprints/roomPurposes/growroom.json
 
 ```json
 {
@@ -1275,7 +1275,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\roomPurposes\lab.json
+## /data/blueprints/roomPurposes/lab.json
 
 ```json
 {
@@ -1294,7 +1294,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\roomPurposes\salesroom.json
+## /data/blueprints/roomPurposes/salesroom.json
 
 ```json
 {
@@ -1313,7 +1313,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\strains\ak-47.json
+## /data/blueprints/strains/ak-47.json
 
 ```json
 {
@@ -1456,7 +1456,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\strains\northern-lights.json
+## /data/blueprints/strains/northern-lights.json
 
 ```json
 {
@@ -1612,7 +1612,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\strains\skunk-1.json
+## /data/blueprints/strains/skunk-1.json
 
 ```json
 {
@@ -1768,7 +1768,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\strains\sour-diesel.json
+## /data/blueprints/strains/sour-diesel.json
 
 ```json
 {
@@ -1924,7 +1924,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\strains\white-widow.json
+## /data/blueprints/strains/white-widow.json
 
 ```json
 {
@@ -2064,7 +2064,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\structures\medium_warehouse.json
+## /data/blueprints/structures/medium_warehouse.json
 
 ```json
 {
@@ -2080,7 +2080,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\structures\shed.json
+## /data/blueprints/structures/shed.json
 
 ```json
 {
@@ -2096,7 +2096,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## \data\blueprints\structures\small_warehouse.json
+## /data/blueprints/structures/small_warehouse.json
 
 ```json
 {
@@ -2112,7 +2112,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs\difficulty.json
+## configs/difficulty.json
 
 ```json
 {
@@ -2179,7 +2179,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs\disease_balancing.json
+## configs/disease_balancing.json
 
 ```json
 {
@@ -2296,7 +2296,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs\pest_balancing.json
+## configs/pest_balancing.json
 
 ```json
 {
@@ -2417,7 +2417,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs\task_definitions.json
+## configs/task_definitions.json
 
 ```json
 {
@@ -2512,7 +2512,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs\treatment_options.json
+## configs/treatment_options.json
 
 ```json
 {
@@ -2921,7 +2921,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## personnel\names\firstNamesFemale.json
+## personnel/names/firstNamesFemale.json
 
 ```json
 [
@@ -3022,7 +3022,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel\names\firstNamesMale.json
+## personnel/names/firstNamesMale.json
 
 ```json
 [
@@ -3163,7 +3163,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel\names\lastNames.json
+## personnel/names/lastNames.json
 
 ```json
 [
@@ -3520,7 +3520,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel\randomSeeds.json
+## personnel/randomSeeds.json
 
 ```json
 [
@@ -3727,7 +3727,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel\traits.json
+## personnel/traits.json
 
 ```json
 [
@@ -3812,7 +3812,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## prices\devicePrices.json
+## prices/devicePrices.json
 
 ```json
 {
@@ -3851,7 +3851,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## prices\strainPrices.json
+## prices/strainPrices.json
 
 ```json
 {
@@ -3880,7 +3880,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## prices\utilityPrices.json
+## prices/utilityPrices.json
 
 ```json
 {
