@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import Modal from '@/components/Modal';
 import FormField from '@/components/forms/FormField';
+import { TextInput } from '@/components/inputs';
 import type { RoomSnapshot, ZoneSnapshot } from '@/types/simulation';
 
 type DuplicateZoneModalProps = {
@@ -67,11 +68,9 @@ const DuplicateZoneModal = ({
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField label="New zone name" secondaryLabel={name.trim() || undefined}>
-          <input
-            type="text"
+          <TextInput
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
             placeholder={`${zone.name} copy`}
             autoFocus
           />

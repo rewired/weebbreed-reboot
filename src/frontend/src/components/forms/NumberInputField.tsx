@@ -1,4 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react';
+import { TextInput } from '@/components/inputs';
 import FormField from './FormField';
 
 export type NumberInputFieldProps = {
@@ -57,17 +58,16 @@ const NumberInputField = ({
   return (
     <FormField label={label} secondaryLabel={secondaryLabel} description={description}>
       <div className="flex items-center gap-2">
-        <input
+        <TextInput
           id={id}
           type="number"
           min={min}
           max={max}
           step={step}
-          value={Number.isFinite(value) ? value : 0}
+          value={Number.isFinite(value) ? value : ''}
           onChange={handleChange}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60 disabled:cursor-not-allowed disabled:opacity-60"
         />
         {suffix ? <span className="text-sm font-medium text-text-secondary">{suffix}</span> : null}
       </div>

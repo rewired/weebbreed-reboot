@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import Modal from '@/components/Modal';
 import FormField from '@/components/forms/FormField';
 import NumberInputField from '@/components/forms/NumberInputField';
+import { Select, TextInput } from '@/components/inputs';
 import type { RoomSnapshot, StructureSnapshot } from '@/types/simulation';
 
 type CreateRoomModalProps = {
@@ -115,28 +116,22 @@ const CreateRoomModal = ({
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField label="Room name" secondaryLabel={name.trim() || undefined}>
-          <input
-            type="text"
+          <TextInput
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
             placeholder="e.g. Flowering wing"
             autoFocus
           />
         </FormField>
 
         <FormField label="Room purpose">
-          <select
-            value={purposeId}
-            onChange={(event) => setPurposeId(event.target.value)}
-            className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
-          >
+          <Select value={purposeId} onChange={(event) => setPurposeId(event.target.value)}>
             {purposeOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
 
         <NumberInputField

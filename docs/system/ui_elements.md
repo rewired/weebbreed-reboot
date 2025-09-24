@@ -2,6 +2,13 @@
 
 If Icons are used the Google Material Icon name is shown in brackets like `... icon (search) ...`
 
+## Design-System-Primitiven
+
+- **Buttons & IconButtons** leben unter `src/frontend/src/components/inputs` und ersetzen alle ad-hoc CSS-Buttons aus dem Klickdummy. Varianten (`variant`, `tone`, `size`, `isActive`) decken primäre/sekundäre, Gefahr- und Link-Stile ab.
+- **Formularfelder** (`TextInput`, `Select`, `RangeInput`) kapseln Tailwind-Styling für Text-, Auswahl- und Slider-Steuerelemente und werden von `FormField`, `NumberInputField` sowie den Modalen verwendet.
+- **InlineEdit** kombiniert Anzeige- und Bearbeitungsmodus inklusive Bestätigen/Abbrechen-Tasten.
+- Konsumenten verwenden ausschließlich diese Komponenten; individuelle Klassen aus der Klickdummy-Migration wurden entfernt, sodass Theme- und Fokus-Styles zentral gepflegt werden.
+
 ## 1. Start Screen
 
 This is the first screen a new user sees. It is a simple, centered layout.

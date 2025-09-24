@@ -1,4 +1,5 @@
 import type { ChangeEvent, ReactNode } from 'react';
+import { RangeInput } from '@/components/inputs';
 import FormField from './FormField';
 
 export type RangeFieldProps = {
@@ -43,16 +44,14 @@ const RangeField = ({
 
   return (
     <FormField label={label} secondaryLabel={secondaryLabel} description={description}>
-      <input
+      <RangeInput
         id={id}
-        type="range"
         min={min}
         max={max}
         step={step}
         value={value}
         onChange={handleChange}
         disabled={disabled}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border/60 accent-accent/70 disabled:cursor-not-allowed disabled:opacity-60"
       />
       {footer}
     </FormField>

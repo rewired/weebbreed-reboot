@@ -1,4 +1,5 @@
 import { ChangeEvent, ReactNode } from 'react';
+import { Button, RangeInput } from '@/components/inputs';
 
 type SimulationRunState = 'running' | 'paused' | 'fastForward';
 
@@ -54,43 +55,6 @@ const DashboardControls = ({
     onTickLengthChange(Number(event.target.value));
   };
 
-  const renderButton = (
-    label: string,
-    onClick: () => void,
-    options?: {
-      icon?: ReactNode;
-      intent?: 'primary' | 'secondary';
-      isActive?: boolean;
-      isDisabled?: boolean;
-    },
-  ) => {
-    const icon = options?.icon;
-    const intent = options?.intent ?? 'secondary';
-    const isActive = options?.isActive;
-    const isDisabled = disabled || options?.isDisabled;
-
-    const baseClass =
-      'inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2';
-    const intentClass =
-      intent === 'primary'
-        ? 'border border-accent/70 bg-accent/90 text-surface shadow-strong hover:bg-accent focus-visible:outline-accent'
-        : 'border border-border/70 bg-surfaceAlt text-text-secondary hover:border-accent/60 hover:text-text-primary focus-visible:outline-accent';
-
-    const activeClass = isActive ? 'border-accent text-accent shadow-soft' : '';
-
-    return (
-      <button
-        type="button"
-        className={[baseClass, intentClass, activeClass].filter(Boolean).join(' ')}
-        onClick={onClick}
-        disabled={isDisabled}
-      >
-        {icon}
-        <span>{label}</span>
-      </button>
-    );
-  };
-
   return (
     <section className={containerClass} aria-label="Simulation controls">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -99,39 +63,63 @@ const DashboardControls = ({
             {stateLabel[state]}
           </p>
           <div className="flex flex-wrap gap-3">
-            {renderButton('Play', onPlay, {
-              icon: <span aria-hidden="true">▶</span>,
-              intent: 'primary',
-              isDisabled: state === 'running',
-            })}
-            {renderButton('Pause', onPause, {
-              icon: <span aria-hidden="true">⏸</span>,
-              isActive: state === 'paused',
-            })}
-            {renderButton('Step', onStep, {
-              icon: <span aria-hidden="true">⏭</span>,
-            })}
-            {onFastForward
-              ? renderButton('Fast forward', onFastForward, {
-                  icon: <span aria-hidden="true">⏩</span>,
-                  isActive: state === 'fastForward',
-                })
-              : null}
+            <Button
+              variant="solid"
+              tone="accent"
+              size="sm"
+              leadingIcon="▶"
+              onClick={onPlay}
+              disabled={disabled || state === 'running'}
+            >
+              Play
+            </Button>
+            <Button
+              variant="outline"
+              tone="default"
+              size="sm"
+              leadingIcon="⏸"
+              onClick={onPause}
+              disabled={disabled}
+              isActive={state === 'paused'}
+            >
+              Pause
+            </Button>
+            <Button
+              variant="outline"
+              tone="default"
+              size="sm"
+              leadingIcon="⏭"
+              onClick={onStep}
+              disabled={disabled}
+            >
+              Step
+            </Button>
+            {onFastForward ? (
+              <Button
+                variant="outline"
+                tone="default"
+                size="sm"
+                leadingIcon="⏩"
+                onClick={onFastForward}
+                disabled={disabled}
+                isActive={state === 'fastForward'}
+              >
+                Fast forward
+              </Button>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-1 flex-col gap-3">
           <label className="flex flex-col gap-2 text-sm text-text-secondary">
             <span className="font-medium text-text-primary">Tick length</span>
             <div className="flex items-center gap-3">
-              <input
-                type="range"
+              <RangeInput
                 min={minTickLength}
                 max={maxTickLength}
                 step={1}
                 value={tickLengthMinutes}
                 onChange={handleTickLengthChange}
                 disabled={disabled || !onTickLengthChange}
-                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border/60 accent-accent/70"
               />
               <span className="w-20 text-right font-mono text-sm text-text-muted">
                 {tickLengthMinutes.toFixed(0)}m

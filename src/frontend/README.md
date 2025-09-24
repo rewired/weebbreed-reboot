@@ -23,6 +23,15 @@ Run these from the repository root unless noted otherwise:
 The workspace-level scripts (e.g. `pnpm dev`) still work; they simply execute
 the same commands for both backend and frontend packages in parallel.
 
+## Design system components
+
+Reusable UI primitives live in `src/frontend/src/components/inputs` and provide
+consistent styling for buttons, icon buttons, inline editing and form
+controls. Components such as `Button`, `IconButton`, `TextInput`, `Select`,
+`RangeInput`, and `InlineEdit` replace the former clickdummy-specific markup.
+Feature code should import these primitives instead of hand-rolling Tailwind
+classes so states (hover, focus, disabled) stay aligned with the global theme.
+
 The Socket.IO bridge imports `SOCKET_URL` from
 `src/frontend/src/config/socket.ts`. The helper inspects
 `import.meta.env.VITE_SOCKET_URL` (set via a `.env` file alongside this

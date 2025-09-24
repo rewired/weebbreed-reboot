@@ -3,6 +3,7 @@ import Card from '@/components/Card';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
+import { Button } from '@/components/inputs';
 import { useAppStore, usePersonnelStore, useZoneStore } from '@/store';
 
 const percentageFormatter = new Intl.NumberFormat('en-US', {
@@ -268,13 +269,14 @@ const PersonnelView = () => {
                     ]}
                     footer={
                       <div className="flex items-center justify-end">
-                        <button
-                          type="button"
+                        <Button
+                          variant="solid"
+                          tone="danger"
+                          size="sm"
                           onClick={() => handleFire(employee.id, employee.name)}
-                          className="inline-flex items-center rounded-md border border-danger/40 bg-danger/10 px-3 py-1.5 text-sm font-medium text-danger transition hover:bg-danger/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
                         >
                           Fire employee
-                        </button>
+                        </Button>
                       </div>
                     }
                   >
@@ -296,13 +298,9 @@ const PersonnelView = () => {
             padding="lg"
             variant="elevated"
             action={
-              <button
-                type="button"
-                onClick={refreshCandidates}
-                className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
+              <Button variant="solid" tone="accent" size="sm" onClick={refreshCandidates}>
                 Refresh candidates
-              </button>
+              </Button>
             }
           >
             {applicants.length === 0 ? (
@@ -330,13 +328,14 @@ const PersonnelView = () => {
                       ]}
                       footer={
                         <div className="flex items-center justify-end">
-                          <button
-                            type="button"
+                          <Button
+                            variant="solid"
+                            tone="accent"
+                            size="sm"
                             onClick={() => handleHire(applicant.id, applicant.name)}
-                            className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                           >
                             Hire candidate
-                          </button>
+                          </Button>
                         </div>
                       }
                     >

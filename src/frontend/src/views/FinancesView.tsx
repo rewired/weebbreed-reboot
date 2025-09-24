@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
+import { Button } from '@/components/inputs';
 import { BreakdownList } from '@/components/panels';
 import { selectFinanceSummary, useZoneStore } from '@/store';
 import {
@@ -258,19 +259,17 @@ const FinancesView = () => {
             {TIME_RANGE_OPTIONS.map((option) => {
               const isActive = option.id === selectedRange.id;
               return (
-                <button
+                <Button
                   key={option.id}
-                  type="button"
+                  variant="outline"
+                  tone="default"
+                  size="sm"
                   onClick={() => setSelectedRangeId(option.id)}
-                  aria-pressed={isActive}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-surfaceElevated text-text-primary shadow-soft'
-                      : 'bg-surfaceAlt/70 text-text-muted hover:text-text-primary'
-                  }`}
+                  isActive={isActive}
+                  className={isActive ? undefined : 'text-text-muted'}
                 >
                   {option.label}
-                </button>
+                </Button>
               );
             })}
           </div>
