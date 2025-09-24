@@ -10,8 +10,11 @@ import {
   type ZoneControlState,
   type ZoneEnvironmentState,
   type ZoneMetricState,
+  type ZonePlantingPlanState,
   type ZoneResourceState,
 } from '@/state/models.js';
+
+const LIGHT_DEVICE_KINDS = new Set<string>(['GrowLight', 'Lamp', 'Light']);
 
 export interface StructureSnapshot {
   id: string;
@@ -73,6 +76,22 @@ export interface ZoneHealthSnapshot {
   preHarvestRestrictedUntilTick?: number;
 }
 
+export interface ZoneLightingSnapshot {
+  photoperiodHours?: { on: number; off: number };
+  coverageRatio?: number;
+  averagePpfd?: number;
+  dli?: number;
+}
+
+export interface ZonePlantingPlanSnapshot {
+  id: string;
+  strainId: string;
+  count: number;
+  autoReplant: boolean;
+  enabled: boolean;
+  name?: string;
+}
+
 export interface ZoneSnapshot {
   id: string;
   name: string;
@@ -90,6 +109,8 @@ export interface ZoneSnapshot {
   plants: PlantSnapshot[];
   control: ZoneControlState;
   health: ZoneHealthSnapshot;
+  lighting?: ZoneLightingSnapshot;
+  plantingPlan?: ZonePlantingPlanSnapshot | null;
 }
 
 export interface EmployeeSnapshot {
@@ -172,6 +193,80 @@ const summarizeHealth = (
   };
 };
 
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+    return undefined;
+  }
+  return value;
+};
+
+const summarizeLighting = (
+  zone: StructureState['rooms'][number]['zones'][number],
+): ZoneLightingSnapshot | undefined => {
+  const area = toFiniteNumber(zone.area);
+  const zoneArea = area !== undefined && area > 0 ? area : undefined;
+  let coverage = 0;
+
+  if (zoneArea !== undefined) {
+    for (const device of zone.devices) {
+      if (device.status !== 'operational' || !LIGHT_DEVICE_KINDS.has(device.kind)) {
+        continue;
+      }
+      const coverageArea = toFiniteNumber(device.settings.coverageArea);
+      if (coverageArea === undefined || coverageArea <= 0) {
+        continue;
+      }
+      const sanitizedCoverage = Math.min(Math.max(coverageArea, 0), zoneArea);
+      const efficiency = toFiniteNumber(device.efficiency);
+      const efficiencyFactor = efficiency !== undefined ? Math.max(0, Math.min(efficiency, 1)) : 1;
+      coverage += sanitizedCoverage * efficiencyFactor;
+    }
+  }
+
+  const coverageRatio =
+    zoneArea !== undefined && coverage > 0
+      ? Math.max(0, Math.min(coverage / zoneArea, 1))
+      : undefined;
+
+  const averagePpfd =
+    toFiniteNumber(zone.metrics?.averagePpfd) ?? toFiniteNumber(zone.environment?.ppfd);
+
+  if (coverageRatio === undefined && averagePpfd === undefined) {
+    return undefined;
+  }
+
+  const snapshot: ZoneLightingSnapshot = {};
+  if (coverageRatio !== undefined) {
+    snapshot.coverageRatio = coverageRatio;
+  }
+  if (averagePpfd !== undefined) {
+    snapshot.averagePpfd = averagePpfd;
+  }
+
+  return snapshot;
+};
+
+const clonePlantingPlan = (
+  plan: ZonePlantingPlanState | null | undefined,
+): ZonePlantingPlanSnapshot | null | undefined => {
+  if (plan === undefined) {
+    return undefined;
+  }
+
+  if (plan === null) {
+    return null;
+  }
+
+  return {
+    id: plan.id,
+    strainId: plan.strainId,
+    count: plan.count,
+    autoReplant: plan.autoReplant,
+    enabled: plan.enabled,
+    name: plan.name,
+  } satisfies ZonePlantingPlanSnapshot;
+};
+
 const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
   waterLiters: resources.waterLiters,
   nutrientSolutionLiters: resources.nutrientSolutionLiters,
@@ -216,6 +311,8 @@ export const buildSimulationSnapshot = (
 
       for (const zone of room.zones) {
         zoneIds.push(zone.id);
+        const lighting = summarizeLighting(zone);
+        const plantingPlan = clonePlantingPlan(zone.plantingPlan);
         zones.push({
           id: zone.id,
           name: zone.name,
@@ -252,6 +349,8 @@ export const buildSimulationSnapshot = (
             yieldDryGrams: plant.yieldDryGrams,
           })),
           health: summarizeHealth(zone),
+          lighting,
+          plantingPlan,
         });
       }
 

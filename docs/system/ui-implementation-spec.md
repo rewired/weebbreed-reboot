@@ -55,6 +55,7 @@ _Implementation status:_ `src/frontend/src/App.tsx` now implements this shell us
 
 - **Capital**: displays current capital (formatted as currency by the UI layer; currency‑neutral value).
 - **Cumulative Yield**: total harvested product in grams.
+- **Planned plant capacity**: sum of `zones[].plantingPlan.count` for enabled plans; hide when the aggregate is zero to avoid UI clutter during early runs.
 - **Time Display**:
   - **In‑game date/time** (e.g., `Y1, D30, 14:00`).
   - **Tick progress ring**: an SVG circle animating to the next tick (hour). Animate stroke via `stroke-dashoffset`.
@@ -198,6 +199,8 @@ Users navigate through containers forming the core gameplay loop.
   - `.lighting-ok` (green) for sufficient coverage
   - `.lighting-insufficient` (yellow) for insufficient coverage
 
+  _Data contract_: read `snapshot.zones[].lighting`. The backend now derives `coverageRatio` by summing the coverage area of operational lighting devices (scaled by device efficiency) and exposes any `averagePpfd`/`dli` readings if available.
+
 ```css
 .lighting-ok {
   color: #18a957;
@@ -225,6 +228,7 @@ Users navigate through containers forming the core gameplay loop.
 
 - Configure an **auto‑replant** plan for the zone.
 - UI shows planned **strain** and **quantity**; a `.toggle-switch` enables/disables automatic replanting. Buttons with `edit` and `delete` icons allow editing/removing the plan. If no plan exists, show a **+ Create Plan** button.
+- Consume `snapshot.zones[].plantingPlan` when present; hide the summary UI when the field is missing or `null`.
 
 **Devices List**
 
