@@ -1,6 +1,6 @@
 # Component Documentation
 
-This document provides a detailed overview of every React component in the Weedbreed.AI frontend application. The components are organized by their directory structure.
+This document provides a detailed overview of every React component in the Weedbreed.AI frontend application. The components are organized by their directory structure, with explanations of their purpose, props, and key functionalities.
 
 ---
 
@@ -9,11 +9,11 @@ This document provides a detailed overview of every React component in the Weedb
 ### `src/App.tsx`
 
 - **Purpose:** The main entry point and root component of the application. It acts as the central state manager and orchestrator for the entire UI.
-- **Functionality:**
-  - **State Management:** Holds the primary application states: `gameState` (controls the overall flow like loading, start screen, playing), `gameData` (the entire simulation state object), `selection` (determines what is shown in the main view), and `modal` (controls which modal is currently open).
-  - **Application Flow:** Manages the lifecycle of the user session. It starts by loading all necessary blueprint data, then displays the `StartScreen`. Once the user starts or loads a game, it switches to the 'playing' state, rendering the main game dashboard.
-  - **Event Handling:** Contains all the top-level `handle...` functions (e.g., `handleCreateRoom`, `handleHireEmployee`, `handleControlsChange`). These functions are responsible for updating the `gameData` state and are passed down through props to child components.
-  - **Modal Orchestration:** A central `modalContent` function acts as a switch, rendering the correct modal component based on the `modal.type` state. This keeps modal logic centralized and easy to manage.
+- **Detailed Functionality:**
+  - **Game State Machine:** Manages the overall application flow through the `gameState` state (`'loading'`, `'startScreen'`, `'playing'`, `'error'`). It begins by fetching all necessary blueprint data (showing a loading screen), then transitions to the `StartScreen`. Once the user initiates a game, it moves to the `'playing'` state, rendering the main simulation interface.
+  - **Central State Hub:** `App.tsx` is the single source of truth for the application's dynamic data. It holds the `gameData` object (the entire simulation state), the `selection` object (which dictates what the user is currently viewing), and the `modal` state (which controls pop-up dialogs).
+  - **Action Dispatcher:** All user actions that modify the game state are handled by `handle...` functions within this component (e.g., `handleCreateRoom`, `handleHireEmployee`). These functions receive events from child components, compute the new state immutably (by creating deep copies and modifying them), and then update the `gameData` using `setGameData`. This ensures a predictable, top-down data flow.
+  - **Modal Orchestration:** A central `modalContent` function acts as a router or switch. It reads the `modal.type` from the state and renders the corresponding modal component (e.g., `NewGameModal`, `AddRoomModal`), passing in all the necessary props and callbacks. This keeps all modal-related logic centralized and prevents individual components from needing to manage their own visibility.
 - **Props:** None.
 - **Dependencies:** `ToastProvider`, `DashboardHeader`, `Sidebar`, `MainContent`, `EventLog`, `Modal`, `StartScreen`, and all modal components.
 - **Usage Context:** Rendered once by `index.tsx` to mount the entire application to the DOM. It wraps the core application logic in a `ToastProvider` for global notifications.
@@ -161,7 +161,7 @@ These components define the main structure and layout of the application interfa
 ### `MainContent.tsx`
 
 - **Purpose:** Acts as a content router for the main area of the UI. It determines which view to display based on the global `selection` state and renders the appropriate `Breadcrumbs`.
-- **Functionality:** It inspects the `selection` object (`view`, `structureId`, `roomId`, `zoneId`). Based on these values, it conditionally renders the correct detailed view (e.g., `DashboardView` if no IDs are selected, `ZoneDetailView` if a `zoneId` is present). It passes all necessary data and callbacks down to the currently active view.
+- **Functionality:** It inspects the `selection` object (`view`, `structureId`, `roomId`, `zoneId`). Based on these values, it conditionally renders the correct detailed view (e.g., `DashboardView` if no IDs are selected, `ZoneDetailView` if a `zoneId` is present). It passes all necessary data and callbacks down to the currently active view. This component is the critical link between the navigation state (`selection`) and the actual content presented to the user.
 - **Props:** A large number of props for game state, selection state, and event handlers to pass down to the active view.
 - **Dependencies:** `Breadcrumbs`, all `View` components.
 - **Usage Context:** Rendered in `App.tsx` to control the central panel of the UI.
@@ -169,7 +169,7 @@ These components define the main structure and layout of the application interfa
 ### `Sidebar.tsx`
 
 - **Purpose:** The left-hand sidebar that displays the rooms and zones of the currently selected structure, allowing for hierarchical navigation.
-- **Functionality:** Its content is conditional. If no structure is selected in the global state, it displays a prompt. If a structure is selected, it maps over that structure's rooms and zones to create a nested list of navigation links. Clicking on any of these links triggers the `onNavigate` callback, which updates the global `selection` state and causes the `MainContent` to show the corresponding detail view.
+- **Functionality:** Its content is conditional. If no structure is selected in the global state (`selection.structureId` is null), it displays a prompt. If a structure is selected, it maps over that structure's rooms and zones to create a nested list of navigation links. Clicking on any of these links triggers the `onNavigate` callback, which updates the global `selection` state in `App.tsx`. This, in turn, causes the `MainContent` to show the corresponding detail view.
 - **Props:**
   | Prop | Type | Required | Description |
   |---|---|---|---|
@@ -306,12 +306,12 @@ These are complex components directly related to displaying and interacting with
 ### `EnvironmentPanel.tsx`
 
 - **Purpose:** A detailed panel for viewing and adjusting the environmental controls of a zone. It has two states to balance information density with control availability.
-- **Functionality:**
+- **Detailed Functionality:**
   - **Collapsed State:** By default, the panel is collapsed and acts as a high-level KPI summary. It displays the most critical environmental metrics (Temperature, Humidity, PPFD, Light Cycle) with color-coded status indicators (e.g., green for optimal, yellow for warning) for a quick at-a-glance assessment of the zone's health. Clicking anywhere on this summary bar expands the panel.
   - **Expanded State:** When expanded, the panel reveals a detailed control interface.
     - **Sliders:** Users can adjust `Temperature`, `Humidity`, and `CO₂` levels using interactive range sliders. The current value is displayed in real-time.
     - **Lighting Controls:** A dedicated section allows toggling the entire light system on/off (`PowerIcon`). If on, the `Light Power` can be adjusted via a percentage slider, and the `Light Cycle` (e.g., 18h on / 6h off) can be set using a special range slider.
-    - **Device Dependency:** Controls are automatically disabled (grayed out) if the required device (e.g., an HVAC unit for temperature control) is not installed in the zone, providing clear feedback to the user about equipment limitations.
+    - **Device Dependency:** Controls are automatically disabled (grayed out) if the required device (e.g., an HVAC unit for temperature control) is not installed in the zone, providing clear feedback to the user about equipment limitations. This is a key feature that connects the simulation's inventory (`zone.devices`) directly to the UI's capabilities.
     - **Additional KPIs:** Displays secondary metrics like Vapor Pressure Deficit (VPD) that are derived from the primary environmental values.
 - **Props:** `zone`, `onUpdate`.
 - **Dependencies:** Various `Icon` components.
@@ -335,10 +335,15 @@ These are complex components directly related to displaying and interacting with
 
 ### `ZonePlantPanel.tsx`
 
-- **Purpose:** A large, interactive panel that displays all the plants in a zone as a grid. It has two primary interaction modes.
-- **Functionality:**
-  - **Normal Mode:** In this default mode, hovering over a plant shows a tooltip with its basic stats. Clicking a plant opens the detailed `PlantDetailModal`. Clicking on a status icon (pest, disease, harvest) triggers a direct action: opening an `InfoModal` for afflictions or harvesting the plant immediately.
-  - **Selection Mode:** Activated by the "Select Plants" button. In this mode, clicking a plant toggles its selection state, highlighting it visually. A `BatchActionBar` appears at the top, showing the number of selected plants and offering batch actions (Harvest, Trash, Treat). Performing a batch action applies it to all selected plants and exits selection mode.
+- **Purpose:** A large, interactive panel that displays all the plants in a zone as a grid. It has two primary interaction modes to handle both individual and batch operations efficiently.
+- **Detailed Functionality:**
+  - **Normal Mode (Default):**
+    - **Inspection:** Hovering over a plant card shows a tooltip with its basic stats. Clicking the card opens the detailed `PlantDetailModal` for a full overview and specific actions.
+    - **Direct Actions:** Clicking on a status icon on the plant card triggers a direct action, bypassing the detail modal. Clicking a pest or disease icon opens the `InfoModal` with blueprint data. Clicking the harvest icon immediately harvests the plant. This provides a fast workflow for common tasks.
+  - **Selection Mode:**
+    - **Activation:** The user clicks the "Select Plants" button to enter this mode. The button then changes to "Cancel Selection".
+    - **Interaction:** In this mode, clicking a plant toggles its selection state, indicated by a visual highlight (a green border and overlay).
+    - **Batch Actions:** A `BatchActionBar` appears at the top, showing the number of selected plants. This bar has buttons for "Harvest", "Trash", and "Treat". Clicking one of these buttons applies the action to _all_ selected plants, sends the batch action to the `App` component's state handler, and then automatically exits selection mode. This is designed for efficient management of large numbers of plants.
 - **Props:** `zone`, `onOpenModal`, `onBatchAction`, `onPlantAction`.
 - **Dependencies:** `FormSelect`, various `Icon` components.
 - **Usage Context:** A key part of the `ZoneDetailView`.
@@ -403,5 +408,5 @@ These components represent the main content for each primary section of the appl
 - **Components:**
   - `ToastProvider`: The provider component that should wrap the entire application to make the toast context available.
 - **Hooks:**
-  - `useToast`: A custom hook that allows any component to access the `addToast` function. Calling `addToast("Message", "success")` will automatically add a new toast to the state, which is then rendered by the `ToastContainer`.
+  - `useToast`: A custom hook that allows any component to access the `addToast` function. Calling `addToast("Message", "success")` will automatically add a new toast to the state, which is then rendered by the `ToastContainer`. This follows the producer/consumer pattern, where many components can produce toasts, but only one component is responsible for consuming and displaying them.
 - **Usage Context:** `ToastProvider` is wrapped around `AppContent` in `App.tsx`. The `useToast` hook is used in `App.tsx` and other components to show feedback to the user.
