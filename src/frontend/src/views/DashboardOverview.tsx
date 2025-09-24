@@ -1,16 +1,20 @@
-import Card from '@/components/Card';
+import { useMemo } from 'react';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
+import { StructureSummaryCard, RoomSummaryCard, ZoneSummaryCard } from '@/components/cards';
 import {
   selectAlertCount,
   selectCapital,
   selectCurrentTick,
   selectCumulativeYield,
   selectTimeStatus,
+  useAppStore,
   useGameStore,
   useZoneStore,
 } from '@/store';
+import type { RoomSnapshot, StructureSnapshot, ZoneSnapshot } from '@/types/simulation';
+import { computeZoneAggregateMetrics } from '@/views/utils/zoneAggregates';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -22,10 +26,8 @@ const decimalFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 });
 
-const percentageFormatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  maximumFractionDigits: 0,
-});
+const sortByName = <T extends { name: string }>(items: T[]): T[] =>
+  items.slice().sort((a, b) => a.name.localeCompare(b.name));
 
 const DashboardOverview = () => {
   const timeStatus = useGameStore(selectTimeStatus);
@@ -33,10 +35,83 @@ const DashboardOverview = () => {
   const alertCount = useGameStore(selectAlertCount);
   const cashOnHand = useZoneStore(selectCapital);
   const cumulativeYield = useZoneStore(selectCumulativeYield);
-  const structures = useZoneStore((state) => Object.values(state.structures));
-  const rooms = useZoneStore((state) => Object.values(state.rooms));
-  const zones = useZoneStore((state) => Object.values(state.zones));
-  const plants = useZoneStore((state) => Object.values(state.plants));
+  const { structures, rooms, zones, plants } = useZoneStore((state) => ({
+    structures: state.structures,
+    rooms: state.rooms,
+    zones: state.zones,
+    plants: state.plants,
+  }));
+  const selectedStructureId = useAppStore((state) => state.selectedStructureId);
+  const selectedRoomId = useAppStore((state) => state.selectedRoomId);
+  const selectedZoneId = useAppStore((state) => state.selectedZoneId);
+  const selectStructure = useAppStore((state) => state.selectStructure);
+  const selectRoom = useAppStore((state) => state.selectRoom);
+  const selectZone = useAppStore((state) => state.selectZone);
+
+  const structureList = useMemo(
+    () => sortByName(Object.values(structures) as StructureSnapshot[]),
+    [structures],
+  );
+  const roomList = useMemo(() => sortByName(Object.values(rooms) as RoomSnapshot[]), [rooms]);
+  const zoneList = useMemo(() => sortByName(Object.values(zones) as ZoneSnapshot[]), [zones]);
+
+  const { zonesByRoom, zonesByStructure } = useMemo(() => {
+    const zonesGroupedByRoom: Record<string, ZoneSnapshot[]> = {};
+    const zonesGroupedByStructure: Record<string, ZoneSnapshot[]> = {};
+
+    for (const zone of zoneList) {
+      const roomZones = zonesGroupedByRoom[zone.roomId] ?? [];
+      roomZones.push(zone);
+      zonesGroupedByRoom[zone.roomId] = roomZones;
+
+      const structureZones = zonesGroupedByStructure[zone.structureId] ?? [];
+      structureZones.push(zone);
+      zonesGroupedByStructure[zone.structureId] = structureZones;
+    }
+
+    return { zonesByRoom: zonesGroupedByRoom, zonesByStructure: zonesGroupedByStructure };
+  }, [zoneList]);
+
+  const roomsByStructure = useMemo(() => {
+    const grouped: Record<string, RoomSnapshot[]> = {};
+    for (const room of roomList) {
+      const list = grouped[room.structureId] ?? [];
+      list.push(room);
+      grouped[room.structureId] = list;
+    }
+    for (const structureId of Object.keys(grouped)) {
+      grouped[structureId] = sortByName(grouped[structureId]);
+    }
+    return grouped;
+  }, [roomList]);
+
+  const roomSummaries = useMemo(
+    () =>
+      roomList.map((room) => {
+        const roomZones = zonesByRoom[room.id] ?? [];
+        const metrics = computeZoneAggregateMetrics(roomZones);
+        return { room, zones: roomZones, metrics };
+      }),
+    [roomList, zonesByRoom],
+  );
+
+  const structureSummaries = useMemo(
+    () =>
+      structureList.map((structure) => {
+        const structureRooms = roomsByStructure[structure.id] ?? [];
+        const structureZones = zonesByStructure[structure.id] ?? [];
+        const metrics = computeZoneAggregateMetrics(structureZones);
+        return {
+          structure,
+          rooms: structureRooms,
+          zones: structureZones,
+          metrics,
+        };
+      }),
+    [structureList, roomsByStructure, zonesByStructure],
+  );
+
+  const plantCount = Object.keys(plants).length;
 
   const headerStatus =
     timeStatus === undefined
@@ -79,14 +154,80 @@ const DashboardOverview = () => {
         subtitle="High-level snapshot of structures, rooms, and grow zones across the simulation."
         status={headerStatus}
         meta={[
-          { label: 'Structures', value: structures.length.toLocaleString() },
-          { label: 'Rooms', value: rooms.length.toLocaleString() },
-          { label: 'Zones', value: zones.length.toLocaleString() },
-          { label: 'Plants', value: plants.length.toLocaleString() },
+          { label: 'Structures', value: structureList.length.toLocaleString() },
+          { label: 'Rooms', value: roomList.length.toLocaleString() },
+          { label: 'Zones', value: zoneList.length.toLocaleString() },
+          { label: 'Plants', value: plantCount.toLocaleString() },
         ]}
       />
 
       <MetricsBar metrics={overviewMetrics} layout="compact" />
+
+      <Panel
+        title="Structures"
+        description="Overview of each structure with footprint metrics and aggregated zone telemetry. Click a structure to drill down into rooms and zones."
+        padding="lg"
+        variant="elevated"
+      >
+        {structureSummaries.length === 0 ? (
+          <p className="text-sm text-text-muted">
+            No structures detected. Load a snapshot to explore the facility hierarchy.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {structureSummaries.map(
+              ({ structure, rooms: structureRooms, zones: structureZones, metrics }) => (
+                <StructureSummaryCard
+                  key={structure.id}
+                  structure={structure}
+                  roomCount={structureRooms.length}
+                  zoneCount={structureZones.length}
+                  plantCount={metrics.plantCount}
+                  averageTemperature={metrics.averageTemperature}
+                  averageHumidity={metrics.averageHumidity}
+                  averageCo2={metrics.averageCo2}
+                  averagePpfd={metrics.averagePpfd}
+                  averageStress={metrics.averageStress}
+                  averageLightingCoverage={metrics.averageLightingCoverage}
+                  isSelected={selectedStructureId === structure.id}
+                  onSelect={selectStructure}
+                />
+              ),
+            )}
+          </div>
+        )}
+      </Panel>
+
+      <Panel
+        title="Rooms"
+        description="Room-level readiness with cleanliness, maintenance, and averaged zone telemetry. Use these cards to jump into a room detail view."
+        padding="lg"
+        variant="elevated"
+      >
+        {roomSummaries.length === 0 ? (
+          <p className="text-sm text-text-muted">
+            No rooms available yet. Create a room to populate this view.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {roomSummaries.map(({ room, zones: roomZones, metrics }) => (
+              <RoomSummaryCard
+                key={room.id}
+                room={room}
+                zoneCount={roomZones.length}
+                plantCount={metrics.plantCount}
+                averageTemperature={metrics.averageTemperature}
+                averageHumidity={metrics.averageHumidity}
+                averageCo2={metrics.averageCo2}
+                averagePpfd={metrics.averagePpfd}
+                averageStress={metrics.averageStress}
+                isSelected={selectedRoomId === room.id}
+                onSelect={selectRoom}
+              />
+            ))}
+          </div>
+        )}
+      </Panel>
 
       <Panel
         title="Zones"
@@ -94,91 +235,20 @@ const DashboardOverview = () => {
         padding="lg"
         variant="elevated"
       >
-        {zones.length === 0 ? (
+        {zoneList.length === 0 ? (
           <p className="text-sm text-text-muted">
             No zones available yet. Create a zone to start monitoring.
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {zones.map((zone) => {
-              const stressLevel = Math.max(0, Math.min(zone.metrics.stressLevel ?? 0, 1));
-              const lightingCoverage = zone.lighting?.coverageRatio;
-              const plantingPlan = zone.plantingPlan;
-
-              return (
-                <Card
-                  key={zone.id}
-                  title={zone.name}
-                  subtitle={`${zone.structureName} • ${zone.roomName}`}
-                  metadata={[
-                    { label: 'Area', value: `${decimalFormatter.format(zone.area)} m²` },
-                    { label: 'Volume', value: `${decimalFormatter.format(zone.volume)} m³` },
-                    { label: 'Plants', value: zone.plants.length.toLocaleString() },
-                    {
-                      label: 'Lighting coverage',
-                      value:
-                        lightingCoverage !== undefined
-                          ? percentageFormatter.format(Math.max(0, Math.min(lightingCoverage, 1)))
-                          : '—',
-                    },
-                  ]}
-                  footer={`Last update: tick ${zone.metrics.lastUpdatedTick.toLocaleString()}`}
-                >
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-text-muted">Temperature</p>
-                      <p className="text-base font-medium text-text-primary">
-                        {zone.environment.temperature.toFixed(1)} °C
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-text-muted">Humidity</p>
-                      <p className="text-base font-medium text-text-primary">
-                        {(zone.environment.relativeHumidity * 100).toFixed(0)}%
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-text-muted">CO₂</p>
-                      <p className="text-base font-medium text-text-primary">
-                        {zone.environment.co2.toLocaleString()} ppm
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-text-muted">PPFD</p>
-                      <p className="text-base font-medium text-text-primary">
-                        {zone.environment.ppfd.toFixed(0)} μmol·m⁻²·s⁻¹
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-text-muted">VPD proxy</p>
-                      <p className="text-base font-medium text-text-primary">
-                        {zone.environment.vpd.toFixed(2)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-xs uppercase tracking-wide text-text-muted">Plan</p>
-                      <p className="text-base font-medium text-text-primary">
-                        {plantingPlan
-                          ? `${plantingPlan.count} × ${plantingPlan.strainId}`
-                          : 'Manual'}
-                      </p>
-                    </div>
-                    <div className="col-span-2 space-y-2">
-                      <div className="flex items-center justify-between text-xs uppercase tracking-wide text-text-muted">
-                        <span>Stress level</span>
-                        <span>{percentageFormatter.format(stressLevel)}</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-border/30">
-                        <div
-                          className="h-2 rounded-full bg-warning"
-                          style={{ width: `${Math.round(stressLevel * 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
+            {zoneList.map((zone) => (
+              <ZoneSummaryCard
+                key={zone.id}
+                zone={zone}
+                isSelected={selectedZoneId === zone.id}
+                onSelect={selectZone}
+              />
+            ))}
           </div>
         )}
       </Panel>
