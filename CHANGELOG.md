@@ -42,6 +42,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   with the game/navigation slices, including a facility sidebar and header ticker wired to live telemetry.
 - Extended the frontend navigation slice with a facility hierarchy and shared view metadata so the header
   tabs and sidebar tree consume the same state without recomputing local copies.
+- Ported the structure, room, and zone cards into reusable components and wired the overview/detail
+  drilldown so DashboardOverview and ZoneDetail mirror the facility hierarchy with breadcrumbs and
+  aggregated telemetry panels.
 
 ### Fixed
 
