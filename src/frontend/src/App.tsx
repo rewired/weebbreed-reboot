@@ -26,6 +26,7 @@ import {
   useZoneStore,
   type NavigationView,
 } from '@/store';
+import { getSimulationEventKey } from '@/store/utils/events';
 import { formatInGameTime } from '@/store/utils/time';
 
 const EVENT_LEVEL_CLASS: Record<string, string> = {
@@ -620,11 +621,9 @@ const App = () => {
                       {tickerEvents.map((event, index) => {
                         const toneClass =
                           EVENT_LEVEL_CLASS[event.level ?? 'info'] ?? EVENT_LEVEL_CLASS.info;
+                        const eventKey = getSimulationEventKey(event) || `${index}`;
                         return (
-                          <li
-                            key={`${event.ts ?? index}-ticker`}
-                            className="flex items-center gap-2"
-                          >
+                          <li key={`${eventKey}-ticker`} className="flex items-center gap-2">
                             <span
                               className={`text-xs font-semibold uppercase tracking-wide ${toneClass}`}
                             >
