@@ -11,6 +11,7 @@
 | Shared UI primitives          | Buttons, form controls, stat cards, icon wrappers used across views.\:codex-file-citation:codex-file-citation:codex-file-citation:codex-file-citation                                                                                                                                                                                | Map to the design tokens/components already in `components/` (Card, Panel, ToggleSwitch, Tabs) to avoid duplicating primitives; any missing pieces (e.g., inline edit) should live in `components/inputs`. Align icon usage with the project’s icon strategy instead of ad-hoc Material glyphs.\:codex-file-citation:codex-file-citation                                                                                                                                                          |
 | Data fixtures & RNG helpers   | Deterministic mock data factory (`initialMockData`, `generateCandidates`, `createPlant`), constants for job roles and device costs, seeded RNG and incremental IDs.\:codex-file-citation:codex-file-citation:codex-file-citation                                                                                                     | Relocate into a dedicated `fixtures/` (or `mocks/`) module under the frontend package to power offline previews/tests, replacing `deterministicUuid` with the project’s seeded ID utilities (or a new deterministic helper shared via `store/utils`). Fixtures should emit objects that satisfy `SimulationSnapshot`/store hydration types.                                                                                                                                                       |
 | Utility helpers               | Structure/room/zone lookup helpers, aggregate yield/progress calculators.\:codex-file-citation                                                                                                                                                                                                                                       | Recast as selector helpers within the Zustand stores (`store/selectors.ts`) or colocated utility modules so they operate on normalized snapshot data and can be unit tested with real types.                                                                                                                                                                                                                                                                                                      |
+
 ## Data shape gaps vs PRD
 
 1. GameData.globalStats exposes stringly-typed time and water metrics, whereas the dashboard contracts expect SimulationSnapshot.clock with numeric ticks and SI units (time status already modeled in stores).
@@ -23,7 +24,7 @@
 
 ## Non-determinism & global state to replace
 
- 1. SeededRandom is instantiated once at module scope; repeated calls mutate internal state and the global idCounter for deterministicUuid, meaning fixture generation order changes outputs. Swap for explicit seed management tied to store hydration or shared deterministic helpers.
+1. SeededRandom is instantiated once at module scope; repeated calls mutate internal state and the global idCounter for deterministicUuid, meaning fixture generation order changes outputs. Swap for explicit seed management tied to store hydration or shared deterministic helpers.
 
 2. App.tsx keeps the entire simulation in React component state and mutates copies with JSON.parse(JSON.stringify(...)), which breaks determinism and bypasses the established Zustand slices (useGameStore, useZoneStore, etc.). Migration should funnel all state changes through the existing stores and intents to stay in sync with PRD expectations.
 
@@ -71,6 +72,7 @@
 ### Daten- und Zustandsnormalisierung
 
 1. Fixture-Übersetzer aufsetzen: Implementiere ein Modul, das initialMockData und verwandte Datenquellen in SimulationSnapshot-kompatible Strukturen überführt, dabei fehlende PRD-Felder ergänzt (z. B. Volumen, Status) und Einheiten normalisiert.
+   - ✅ `translateClickDummyGameData` mappt die Klickdummy-Fixtures jetzt in `src/frontend/src/fixtures/translator.ts` auf vollständige `SimulationSnapshot`-Slices inklusive volumetrischer Geometrie, Ressourcen, Gerätegruppen sowie normalisierten Temperatur-/RH-/VPD-Werten. Tests (`src/frontend/src/fixtures/translator.test.ts`) sichern die SI-Konvertierungen und Gehalts-/Kosten-Normalisierung ab.
 
 2. Zone-Daten konvertieren: Rechne alle zonalen Kennzahlen (RH, KPIs, Ressourcen) in die erwarteten numerischen SI-Einheiten um und fülle fehlende Telemetrie-/Gesundheitsfelder auf, bevor sie die Stores hydratisieren.
 
