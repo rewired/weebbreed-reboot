@@ -206,6 +206,8 @@ control }` and, when humidity is derived (RH/VPD), `effectiveHumidity`.
   with any snapshot/time-shape evolution so downstream clients and automation
   stay in lock-step.
 
+**Read the document `/docs/ui-building_guide.md` for full frontend description.**
+
 ---
 
 ## 5) Developer Ergonomics
