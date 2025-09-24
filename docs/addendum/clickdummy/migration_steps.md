@@ -153,4 +153,6 @@
     - Neue fixturespezifische Tests (`src/frontend/src/fixtures/deterministic.test.ts`) prüfen Sequenz- und Manager-Funktionalität, Clones, Scope-Reset sowie die globalen Helper (`getSharedSequence`, `nextSharedId`).
     - UI-Komponenten besitzen Snapshot- und Verhaltenstests: `StructureSummaryCard.test.tsx` verifiziert Metrik-Rendering und Selection-Callbacks, `Navigation.test.tsx` prüft aktive Zustände, Badge-Anzeige, Disabled-Verhalten und erzeugt ein vertikales Layout-Snapshot.
 
-20. Determinismus verifizieren: Führe wiederholte Hydrationen mit gleichem Seed aus, um identische Snapshot-Ergebnisse zu bestätigen und Regressionen beim RNG-Austausch auszuschließen.
+20. ✅ Determinismus verifizieren: Wiederholte Hydrationen mit identischem Seed liefern jetzt bytegleiche Ergebnisse.
+    - `createOfflineBootstrapPayload` kapselt die Fixture-Hydration und erzeugt `OFFLINE_BOOTSTRAP`-kompatible Updates.
+    - `offlineBootstrap.test.ts` hydratisiert den Snapshot zweimal mit demselben Seed und vergleicht Snapshot, Events und Finance-Historie, um RNG-Regressionsrisiken früh zu erkennen.
