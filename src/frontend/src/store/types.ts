@@ -171,6 +171,14 @@ export interface ZoneStoreState {
   applyWater: (zoneId: string, liters: number) => void;
   applyNutrients: (zoneId: string, nutrients: { N: number; P: number; K: number }) => void;
   toggleDeviceGroup: (zoneId: string, deviceKind: string, enabled: boolean) => void;
+  installDevice: (
+    zoneId: string,
+    deviceId: string,
+    options?: { settings?: Record<string, unknown> },
+  ) => void;
+  updateDevice: (deviceId: string, settings: Record<string, unknown>) => void;
+  moveDevice: (deviceId: string, targetZoneId: string) => void;
+  removeDevice: (deviceId: string) => void;
   harvestPlanting: (plantingId: string) => void;
   harvestPlantings: (plantingIds: string[]) => void;
   togglePlantingPlan: (zoneId: string, enabled: boolean) => void;
@@ -264,6 +272,14 @@ export type DeleteZoneModalDescriptor = ModalDescriptorBase<'deleteZone', { zone
 
 export type PlantDetailModalDescriptor = ModalDescriptorBase<'plantDetails', { plantId: string }>;
 
+export type InstallDeviceModalDescriptor = ModalDescriptorBase<'installDevice', { zoneId: string }>;
+
+export type UpdateDeviceModalDescriptor = ModalDescriptorBase<'updateDevice', { deviceId: string }>;
+
+export type MoveDeviceModalDescriptor = ModalDescriptorBase<'moveDevice', { deviceId: string }>;
+
+export type RemoveDeviceModalDescriptor = ModalDescriptorBase<'removeDevice', { deviceId: string }>;
+
 export type ModalDescriptor =
   | HireEmployeeModalDescriptor
   | FireEmployeeModalDescriptor
@@ -279,7 +295,11 @@ export type ModalDescriptor =
   | DeleteStructureModalDescriptor
   | DeleteRoomModalDescriptor
   | DeleteZoneModalDescriptor
-  | PlantDetailModalDescriptor;
+  | PlantDetailModalDescriptor
+  | InstallDeviceModalDescriptor
+  | UpdateDeviceModalDescriptor
+  | MoveDeviceModalDescriptor
+  | RemoveDeviceModalDescriptor;
 
 export type ModalKind = ModalDescriptor['kind'];
 

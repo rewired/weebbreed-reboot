@@ -46,8 +46,8 @@ The backend façade groups all write operations behind intent domains (`time`, `
 
 ### Device Domain
 
-- Active flow: the “Device automation” panel toggles device groups via `world.devices.toggleDeviceGroup`, using the zone store dispatcher that sends façade intents for each switch interaction.【F:src/backend/src/facade/index.ts†L1236-L1266】【F:src/frontend/src/views/ZoneDetail.tsx†L964-L1014】【F:src/frontend/src/store/zoneStore.ts†L385-L393】
-- Not yet wired: install/update/move/remove device commands exist on the façade but no component dispatches them—the zone store only references `toggleDeviceGroup`, so new UI would be required to expose the other device lifecycle flows.【F:src/backend/src/facade/index.ts†L1236-L1266】【F:src/frontend/src/store/zoneStore.ts†L240-L420】
+- Active flow: the “Device automation” panel toggles device groups via `devices.toggleDeviceGroup`, using the zone store dispatcher that sends façade intents for each switch interaction.【F:src/backend/src/facade/index.ts†L1236-L1266】【F:src/frontend/src/views/ZoneDetail.tsx†L964-L1014】【F:src/frontend/src/store/zoneStore.ts†L385-L393】
+- New UI: the “Device inventory” panel now surfaces install/update/move/remove lifecycle commands. The Install/Update/Move actions open dedicated modals that collect blueprint IDs, JSON settings patches, or destination zones before dispatching `devices.installDevice`, `devices.updateDevice`, and `devices.moveDevice`. Remove uses the shared confirmation modal to emit `devices.removeDevice`. All flows reuse `ModalHost` wiring and new zone-store helpers so façade intents fire deterministically from a single place.【F:src/frontend/src/views/ZoneDetail.tsx†L1019-L1086】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】【F:src/frontend/src/store/zoneStore.ts†L385-L456】【F:src/backend/src/facade/index.ts†L1236-L1266】
 
 ### Plant Domain
 
@@ -368,13 +368,28 @@ These components define the content for various modals used for user input and i
 - **Dependencies:** `FormSelect`, `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the "Plant New" button is clicked in the `ZonePlantPanel`.
 
-### `RemoveDeviceModal.tsx`
+### `InstallDeviceModal.tsx`
 
-- **Purpose:** A form for removing one or more devices of the same type from a zone, with options to remove a specific quantity or all of them.
-- **Props:** `onSubmit`, `zoneId`, `device`, `onClose`.
-- **Icons Used:** None.
-- **Dependencies:** `FormInput`, `PrimaryButton`.
-- **Usage Context:** Displayed when the delete icon is clicked on a device in the `ZoneDeviceList`.
+- **Purpose:** Captures the target blueprint (and optional JSON settings) for installing a device into a zone, then emits `devices.installDevice` through the zone store helper.【F:src/frontend/src/views/zone/modals/InstallDeviceModal.tsx†L1-L154】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】
+- **Props:** `zone`, `blueprintOptions?`, `onSubmit`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Triggered from the “Install device” button in the zone device inventory panel; the modal enforces JSON validation before dispatching the façade intent.【F:src/frontend/src/views/ZoneDetail.tsx†L1019-L1050】
+
+### `UpdateDeviceModal.tsx`
+
+- **Purpose:** Allows operators to submit a JSON patch for an existing device instance; on submit the component calls `devices.updateDevice` via the zone store.【F:src/frontend/src/views/zone/modals/UpdateDeviceModal.tsx†L1-L114】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】
+- **Props:** `device`, `onSubmit`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Reached through the “Adjust settings” action in the device inventory; it pre-fills the current settings and requires at least one key before enabling the send.【F:src/frontend/src/views/ZoneDetail.tsx†L1038-L1072】
+
+### `MoveDeviceModal.tsx`
+
+- **Purpose:** Presents a dropdown of eligible zones and forwards the selection to `devices.moveDevice`, ensuring the facade validates room-purpose constraints.【F:src/frontend/src/views/zone/modals/MoveDeviceModal.tsx†L1-L129】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】
+- **Props:** `device`, `currentZone`, `availableZones`, `onSubmit`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Launched from the “Move” action in the device inventory list when relocating hardware between zones.【F:src/frontend/src/views/ZoneDetail.tsx†L1046-L1072】
+
+### Device removal confirmation
+
+- **Purpose:** Device removal reuses `ConfirmDeletionModal`, injecting device-specific copy before emitting `devices.removeDevice` through `useZoneStore.removeDevice` so the facade handles bookkeeping.【F:src/frontend/src/components/ModalHost.tsx†L1-L260】【F:src/frontend/src/store/zoneStore.ts†L435-L456】
+- **Usage Context:** Available from the “Remove” button in the device inventory panel; once confirmed the zone snapshot updates after the façade acknowledges the command.【F:src/frontend/src/views/ZoneDetail.tsx†L1072-L1086】
 
 ### `RentStructureModal.tsx`
 
@@ -441,8 +456,8 @@ These are complex components directly related to displaying and interacting with
 
 ### `ZoneDeviceList.tsx`
 
-- **Purpose:** Displays a list of all devices installed in a specific zone, grouped by type. Allows for adding and removing devices.
-- **Functionality:** It aggregates devices by name (e.g., "Sunstream Pro LED x3") for a clean display. Each device has a delete button that opens the `RemoveDeviceModal`. A main "Install Device" button opens the `AddDeviceModal`.
+- **Purpose:** Displays a list of all devices installed in a specific zone, grouped by type, and surfaces lifecycle actions.
+- **Functionality:** It aggregates devices by name (e.g., "Sunstream Pro LED x3") for a clean display. From here operators can launch the install, update, move, and removal modals described above via the inline action buttons rendered by `ZoneDetailView`’s device inventory panel.【F:src/frontend/src/views/ZoneDetail.tsx†L1019-L1086】
 - **Props:** `devices`, `onOpenModal`, `zoneId`.
 - **Icons Used:** `DeleteIcon`.
 - **Dependencies:** `DeleteIcon`.
@@ -531,6 +546,7 @@ These components represent the main content for each primary section of the appl
 - **Icons Used:** Relies on its child components (`ActionIcons`, `EnvironmentPanel`, `ZonePlantPanel`, `ZoneDeviceList`) for all icons.
 - **Dependencies:** `InlineEdit`, `ActionIcons`, `EnvironmentPanel`, `ZonePlantPanel`, `ZoneDeviceList`.
 - **Usage Context:** Shown when a user navigates to a specific zone.
+- **Device lifecycle controls:** The device inventory panel now features an “Install device” CTA plus inline buttons for adjusting settings, relocating hardware to another zone, or removing a unit. Each action opens a modal (`InstallDeviceModal`, `UpdateDeviceModal`, `MoveDeviceModal`, or the shared confirmation dialog) and delegates to the new zone-store helpers so façade intents fire in order.【F:src/frontend/src/views/ZoneDetail.tsx†L1019-L1086】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】【F:src/frontend/src/store/zoneStore.ts†L385-L456】
 
 ---
 

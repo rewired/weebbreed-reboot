@@ -499,6 +499,69 @@ export const useZoneStore = create<ZoneStoreState>()((set) => ({
       });
       return {};
     }),
+  installDevice: (zoneId, deviceId, options) =>
+    set((state) => {
+      const trimmedDeviceId = deviceId.trim();
+      if (!zoneId || !trimmedDeviceId) {
+        return {};
+      }
+
+      const payload: Record<string, unknown> = {
+        targetId: zoneId,
+        deviceId: trimmedDeviceId,
+      };
+
+      const settings = options?.settings;
+      if (settings && Object.keys(settings).length > 0) {
+        payload.settings = settings;
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'devices',
+        action: 'installDevice',
+        payload,
+      });
+      return {};
+    }),
+  updateDevice: (deviceId, settings) =>
+    set((state) => {
+      if (!deviceId || !settings || Object.keys(settings).length === 0) {
+        return {};
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'devices',
+        action: 'updateDevice',
+        payload: { instanceId: deviceId, settings },
+      });
+      return {};
+    }),
+  moveDevice: (deviceId, targetZoneId) =>
+    set((state) => {
+      if (!deviceId || !targetZoneId) {
+        return {};
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'devices',
+        action: 'moveDevice',
+        payload: { instanceId: deviceId, targetZoneId },
+      });
+      return {};
+    }),
+  removeDevice: (deviceId) =>
+    set((state) => {
+      if (!deviceId) {
+        return {};
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'devices',
+        action: 'removeDevice',
+        payload: { instanceId: deviceId },
+      });
+      return {};
+    }),
   harvestPlanting: (plantingId) =>
     set((state) => {
       state.sendFacadeIntent?.({

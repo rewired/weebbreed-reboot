@@ -134,6 +134,7 @@ const ZoneDetail = () => {
   const selectedZoneId = useAppStore((state) => state.selectedZoneId);
   const selectRoom = useAppStore((state) => state.selectRoom);
   const selectZone = useAppStore((state) => state.selectZone);
+  const openModal = useAppStore((state) => state.openModal);
   const currentTick = useGameStore(selectCurrentTick);
 
   const timeline = useZoneStore((state) => state.timeline);
@@ -1016,7 +1017,27 @@ const ZoneDetail = () => {
               )}
             </Panel>
 
-            <Panel title="Device inventory" padding="lg" variant="elevated">
+            <Panel
+              title="Device inventory"
+              padding="lg"
+              variant="elevated"
+              action={
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    openModal({
+                      kind: 'installDevice',
+                      title: `Install device in ${zone.name}`,
+                      description:
+                        'Select a device blueprint and optional settings to dispatch through the simulation facade.',
+                      payload: { zoneId: zone.id },
+                    })
+                  }
+                >
+                  Install device
+                </Button>
+              }
+            >
               {zone.devices.length === 0 ? (
                 <p className="text-sm text-text-muted">No devices assigned to this zone.</p>
               ) : (
@@ -1102,6 +1123,54 @@ const ZoneDetail = () => {
                             ))}
                           </div>
                         ) : null}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              openModal({
+                                kind: 'updateDevice',
+                                title: `Adjust ${device.name}`,
+                                description:
+                                  'Provide a JSON patch to tweak runtime settings. The facade validates ranges before applying.',
+                                payload: { deviceId: device.id },
+                              })
+                            }
+                          >
+                            Adjust settings
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              openModal({
+                                kind: 'moveDevice',
+                                title: `Move ${device.name}`,
+                                description:
+                                  'Select a destination zone. Placement rules and room purposes are validated by the facade.',
+                                payload: { deviceId: device.id },
+                              })
+                            }
+                          >
+                            Move
+                          </Button>
+                          <Button
+                            variant="outline"
+                            tone="danger"
+                            size="sm"
+                            onClick={() =>
+                              openModal({
+                                kind: 'removeDevice',
+                                title: `Remove ${device.name}?`,
+                                description:
+                                  'Detach the device from this zone. Automation groups and inventory are reconciled by the facade.',
+                                payload: { deviceId: device.id },
+                              })
+                            }
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </li>
                     );
                   })}
