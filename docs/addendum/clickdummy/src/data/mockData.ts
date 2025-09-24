@@ -2,46 +2,84 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { SeededRandom, deterministicUuid } from '../lib/deterministic';
+import {
+  CLICKDUMMY_SEED,
+  createDeterministicManager,
+  createDeterministicSequence,
+  type DeterministicSequence,
+} from '../store/utils/deterministic';
 import { ROLES, SKILLS_BY_ROLE, TRAITS, NAMES, BASE_SALARIES } from './constants';
 import { GameData, Plant, Candidate } from '../types/domain';
 
-// Use a fixed seed for deterministic results
-const random = new SeededRandom(12345);
+interface SequenceSourceOptions {
+  sequence?: DeterministicSequence;
+  seed?: number | string;
+  idPrefix?: string;
+}
+
+const fixtureDeterministic = createDeterministicManager(CLICKDUMMY_SEED);
+
+const idSequence = fixtureDeterministic.sequence('ids', { idPrefix: 'id' });
+const candidateSequence = fixtureDeterministic.sequence('candidates', { idPrefix: 'candidate' });
+const plantSequence = fixtureDeterministic.sequence('plants', { idPrefix: 'plant' });
+
+const resolveSequence = (
+  base: DeterministicSequence,
+  options: SequenceSourceOptions | undefined,
+  cloneByDefault: boolean,
+): DeterministicSequence => {
+  if (options?.sequence) {
+    return options.sequence;
+  }
+  if (options?.seed !== undefined) {
+    return createDeterministicSequence(options.seed, {
+      idPrefix: options.idPrefix ?? base.getState().idPrefix,
+    });
+  }
+  return cloneByDefault ? base.clone() : base;
+};
+
+export const nextDeterministicId = (prefix?: string) => idSequence.nextId(prefix);
 
 // --- DATA GENERATORS ---
-export const generateCandidates = (count = 8): Candidate[] => {
-  const candidates = [];
-  const usedNames = new Set();
-  for (let i = 0; i < count; i++) {
-    let candidateName;
+interface CandidateGenerationOptions extends SequenceSourceOptions {}
+
+export const generateCandidates = (
+  count = 8,
+  options: CandidateGenerationOptions = {},
+): Candidate[] => {
+  const rng = resolveSequence(candidateSequence, options, false);
+  const candidates: Candidate[] = [];
+  const usedNames = new Set<string>();
+
+  for (let i = 0; i < count; i += 1) {
+    let candidateName: string;
     do {
-      candidateName = random.choice(NAMES).name;
-    } while (usedNames.has(candidateName));
+      candidateName = rng.pick(NAMES).name;
+    } while (usedNames.has(candidateName) && usedNames.size < NAMES.length);
     usedNames.add(candidateName);
 
-    const role = random.choice(ROLES);
+    const role = rng.pick(ROLES);
     const baseSalary = BASE_SALARIES[role];
 
     const skills: { [key: string]: number } = {};
     let skillSum = 0;
     SKILLS_BY_ROLE[role].forEach((skill) => {
-      const level = random.nextInt(1, 6); // 1 to 5
+      const level = rng.nextInt(1, 6); // 1 to 5
       skills[skill] = level;
       skillSum += level;
     });
 
-    const traits = [];
-    if (random.next() > 0.4) {
-      // 60% chance of trait
-      traits.push(random.choice(TRAITS));
+    const traits: string[] = [];
+    if (rng.nextFloat() > 0.4) {
+      traits.push(rng.pick(TRAITS));
     }
 
     const salary =
-      Math.round((baseSalary * (1 + (skillSum - 6) * 0.05) + random.next() * 2000) / 100) * 100;
+      Math.round((baseSalary * (1 + (skillSum - 6) * 0.05) + rng.nextFloat() * 2000) / 100) * 100;
 
     candidates.push({
-      id: deterministicUuid(),
+      id: nextDeterministicId(options.idPrefix ?? 'candidate'),
       name: candidateName,
       desiredRole: role,
       expectedSalary: salary,
@@ -49,13 +87,20 @@ export const generateCandidates = (count = 8): Candidate[] => {
       traits,
     });
   }
+
   return candidates;
 };
 
-export const createPlant = (props: Partial<Plant>): Plant => {
+interface PlantFactoryOptions extends SequenceSourceOptions {}
+
+export const createPlant = (
+  props: Partial<Plant>,
+  options: PlantFactoryOptions = {},
+): Plant => {
+  const rng = resolveSequence(plantSequence, options, false);
   const plant: Plant = {
-    id: deterministicUuid(),
-    stress: random.nextInt(0, 31),
+    id: nextDeterministicId(options.idPrefix ?? 'plant'),
+    stress: rng.nextInt(0, 31),
     status: 'healthy',
     name: 'Unnamed Strain',
     health: 100,
@@ -63,7 +108,7 @@ export const createPlant = (props: Partial<Plant>): Plant => {
     harvestable: false,
     ...props,
   };
-  plant.harvestable = (plant.progress || 0) >= 65;
+  plant.harvestable = (plant.progress ?? 0) >= 65;
   return plant;
 };
 
@@ -116,12 +161,12 @@ export const initialMockData: GameData = {
                 createPlant({ name: 'White Widow', health: 90, progress: 80, status: 'healthy' }),
               ],
               devices: [
-                { id: deterministicUuid(), name: 'ClimateKing 5000', type: 'HVAC' },
-                { id: deterministicUuid(), name: 'ClimateKing 5000', type: 'HVAC' },
-                { id: deterministicUuid(), name: 'Sunstream Pro LED', type: 'Lighting' },
-                { id: deterministicUuid(), name: 'Sunstream Pro LED', type: 'Lighting' },
-                { id: deterministicUuid(), name: 'Sunstream Pro LED', type: 'Lighting' },
-                { id: deterministicUuid(), name: 'CO₂ Injector v2', type: 'Climate' },
+                { id: nextDeterministicId('device'), name: 'ClimateKing 5000', type: 'HVAC' },
+                { id: nextDeterministicId('device'), name: 'ClimateKing 5000', type: 'HVAC' },
+                { id: nextDeterministicId('device'), name: 'Sunstream Pro LED', type: 'Lighting' },
+                { id: nextDeterministicId('device'), name: 'Sunstream Pro LED', type: 'Lighting' },
+                { id: nextDeterministicId('device'), name: 'Sunstream Pro LED', type: 'Lighting' },
+                { id: nextDeterministicId('device'), name: 'CO₂ Injector v2', type: 'Climate' },
               ],
               controls: {
                 temperature: { value: 24.5, min: 15, max: 35, target: 25 },
@@ -150,8 +195,8 @@ export const initialMockData: GameData = {
                   createPlant({ name: 'White Widow', health: 92, progress: 55, status: 'healthy' }),
                 ),
               devices: [
-                { id: deterministicUuid(), name: 'ClimateKing 5000', type: 'HVAC' },
-                { id: deterministicUuid(), name: 'CO₂ Injector v2', type: 'Climate' },
+                { id: nextDeterministicId('device'), name: 'ClimateKing 5000', type: 'HVAC' },
+                { id: nextDeterministicId('device'), name: 'CO₂ Injector v2', type: 'Climate' },
               ],
               controls: {
                 temperature: { value: 23.1, min: 15, max: 35, target: 24 },
@@ -281,7 +326,7 @@ export const initialMockData: GameData = {
   ],
   employees: [
     {
-      id: deterministicUuid(),
+      id: nextDeterministicId('employee'),
       name: 'Alice',
       desiredRole: 'Gardener',
       assignment: 'struct-1',
@@ -290,7 +335,7 @@ export const initialMockData: GameData = {
       expectedSalary: 34000,
     },
     {
-      id: deterministicUuid(),
+      id: nextDeterministicId('employee'),
       name: 'Bob',
       desiredRole: 'Technician',
       assignment: 'struct-1',

@@ -81,7 +81,7 @@
      (`src/frontend/src/fixtures/translator.ts`; Tests sichern die Konvertierung).
 3. ✅ Pflanzen-, Geräte-, Personal- und Finanzobjekte anreichern: Fixtures liefern jetzt konsistente strain-IDs/Stadien, Geräte-Blueprint-Metadaten sowie per-Tick-Kosten mitsamt `financeHistory`. Die Umsetzung lebt in `src/frontend/src/fixtures/translator.ts` und den zugehörigen Tests.
 
-4. Deterministische Hilfsfunktionen zentralisieren: Ersetze deterministicUuid und globale SeededRandom-Instanzen durch eine seeded Helper-Utility in store/utils, die wiederholbare IDs und Zufallsdaten liefert.
+4. ✅ Deterministische Hilfsfunktionen zentralisieren: `store/utils/deterministic.ts` stellt jetzt einen seeded Helper bereit (`createDeterministicManager`, `createDeterministicSequence`, `nextDeterministicId`), der von Fixtures (`data/mockData.ts`) und App-Workflows genutzt wird. Globale `SeededRandom`-Instanzen und `deterministicUuid` wurden entfernt, sodass IDs und Zufallsdaten aus der gemeinsamen Utility stammen.
 
 5. State-Management auf Stores umstellen: Refaktoriere App.tsx, sodass sämtliche Simulationzustände über useGameStore, useZoneStore etc. laufen und lokale JSON-Mutationen entfallen.
 

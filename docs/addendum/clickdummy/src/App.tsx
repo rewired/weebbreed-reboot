@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import React, { useState } from 'react';
-import { initialMockData, generateCandidates, createPlant } from './data/mockData';
-import { deterministicUuid } from './lib/deterministic';
+import { initialMockData, generateCandidates, createPlant, nextDeterministicId } from './data/mockData';
 import {
   findStructureForRoom,
   findRoomById,
@@ -123,7 +122,7 @@ export const App = () => {
       const newData = JSON.parse(JSON.stringify(prevData));
       const structure = newData.structures.find((s) => s.id === structureId);
       if (structure && structure.totalArea - structure.usedArea >= area) {
-        const newRoom: Room = { id: deterministicUuid(), name, purpose, area, zones: [] };
+        const newRoom: Room = { id: nextDeterministicId('room'), name, purpose, area, zones: [] };
         if (purpose === 'breakroom') newRoom.occupancy = { current: 0 };
         if (purpose === 'processing') newRoom.curingBatches = [];
         structure.rooms.push(newRoom);
@@ -149,7 +148,7 @@ export const App = () => {
       const structure = findStructureForRoom(roomId, newData);
       if (room && structure && room.purpose === 'growroom') {
         const newZone: Zone = {
-          id: deterministicUuid(),
+          id: nextDeterministicId('zone'),
           name,
           method,
           area: 50,
@@ -216,7 +215,7 @@ export const App = () => {
       const zone = findZoneById(zoneId, newData);
       if (zone) {
         for (let i = 0; i < count; i++) {
-          zone.devices.push({ id: deterministicUuid(), name, type });
+          zone.devices.push({ id: nextDeterministicId('device'), name, type });
         }
       }
       return newData;
@@ -251,7 +250,7 @@ export const App = () => {
       if (newData.globalStats.balance >= structure.cost) {
         newData.globalStats.balance -= structure.cost;
         const newStructure: Structure = {
-          id: deterministicUuid(),
+          id: nextDeterministicId('structure'),
           name: name,
           footprint: structure.footprint,
           totalArea: structure.totalArea,
@@ -331,11 +330,11 @@ export const App = () => {
       const structure = findStructureForRoom(room.id, newData);
       if (structure && structure.totalArea - structure.usedArea >= room.area) {
         const newRoom = JSON.parse(JSON.stringify(room)); // Deep copy
-        newRoom.id = deterministicUuid();
+        newRoom.id = nextDeterministicId('room');
         newRoom.name = newName;
         newRoom.zones = newRoom.zones.map((zone: Zone) => {
-          zone.id = deterministicUuid();
-          zone.devices = zone.devices.map((device) => ({ ...device, id: deterministicUuid() }));
+          zone.id = nextDeterministicId('zone');
+          zone.devices = zone.devices.map((device) => ({ ...device, id: nextDeterministicId('device') }));
           return zone;
         });
 
@@ -366,7 +365,7 @@ export const App = () => {
       const targetRoom = findRoomById(room.id, newData);
       if (targetRoom) {
         const newZone = JSON.parse(JSON.stringify(zone));
-        newZone.id = deterministicUuid();
+        newZone.id = nextDeterministicId('zone');
         newZone.name = newName;
 
         if (!includeMethod) {
@@ -375,13 +374,13 @@ export const App = () => {
           newZone.strain = '-';
           newZone.phase = 'Empty';
         } else {
-          newZone.plants = newZone.plants.map((p) => ({ ...p, id: deterministicUuid() }));
+          newZone.plants = newZone.plants.map((p) => ({ ...p, id: nextDeterministicId('plant') }));
         }
 
         if (!includeDevices) {
           newZone.devices = [];
         } else {
-          newZone.devices = newZone.devices.map((d) => ({ ...d, id: deterministicUuid() }));
+          newZone.devices = newZone.devices.map((d) => ({ ...d, id: nextDeterministicId('device') }));
           const deviceCost = newZone.devices.reduce(
             (total: number, device: any) =>
               total + (DEVICE_COSTS[device.name as keyof typeof DEVICE_COSTS] || 0),
