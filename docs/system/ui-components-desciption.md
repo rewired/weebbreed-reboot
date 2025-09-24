@@ -4,6 +4,50 @@ This document provides a detailed overview of every React component in the Weedb
 
 ---
 
+## Simulation Facade Intent Coverage
+
+The backend façade groups all write operations behind intent domains (`time`, `world`, `devices`, `plants`, `health`, `workforce`, `finance`) plus configuration helpers such as zone setpoints.【F:src/backend/src/facade/index.ts†L1134-L1385】【F:src/backend/src/facade/index.ts†L856-L901】 The tables below list which UI elements currently dispatch those intents and highlight the commands that have not been wired up yet.
+
+### Time & Loop Control
+
+- `time.start`, `time.pause`, `time.step`, `time.setSpeed`: dispatched through the dashboard control bar (`DashboardControls`) which wires Play/Pause/Step/Fast Forward buttons in `App.tsx` to `useGameStore.issueControlCommand`, ultimately emitting `simulationControl` commands handled by the façade’s time registry.【F:src/backend/src/facade/index.ts†L1134-L1165】【F:src/frontend/src/App.tsx†L208-L217】【F:src/frontend/src/App.tsx†L526-L548】【F:src/frontend/src/store/gameStore.ts†L148-L163】
+- `time.setTickLength`: triggered when the tick-length slider changes; `useGameStore.requestTickLength` forwards the update via the socket to `SimulationFacade.setTickLength`, which rebuilds the scheduler with the new interval.【F:src/backend/src/facade/index.ts†L856-L899】【F:src/frontend/src/App.tsx†L535-L545】【F:src/frontend/src/store/gameStore.ts†L157-L163】
+- `time.resume`: emitted automatically when modal flows request a resume (e.g., after closing auto-paused dialogs) via the same control channel; there is no dedicated UI button, but the façade command exists for completeness.【F:src/backend/src/facade/index.ts†L1134-L1146】
+
+### Environment Configuration
+
+- `config.setSetpoint` (`SimulationFacade.setZoneSetpoint`): the zone detail view exposes temperature, humidity, CO₂, PPFD, and VPD sliders. Interactions call `useZoneStore.sendSetpoint`, which routes to the façade and emits `env.setpointUpdated` events for the UI timeline.【F:src/backend/src/facade/index.ts†L904-L1068】【F:src/frontend/src/views/ZoneDetail.tsx†L321-L370】【F:src/frontend/src/store/zoneStore.ts†L240-L247】
+
+### World Domain (Structures, Rooms, Zones)
+
+- Active flows: rename structure/room/zone (`world.renameStructure`, `world.updateRoom`, `world.updateZone`), duplication (`world.duplicateRoom`, `world.duplicateZone`), and deletion (`world.deleteStructure`, `world.deleteRoom`, `world.deleteZone`) are surfaced through `ModalHost` dialogs. Each modal invokes the matching `useZoneStore` intent helper which emits the façade command.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L233-L392】【F:src/frontend/src/store/zoneStore.ts†L254-L355】
+- Not yet wired: `world.rentStructure`, `world.createRoom`, `world.createZone`, and `world.duplicateStructure` are available in the façade, but the front-end currently lacks forms that submit those intents—the `CreateRoom`/`CreateZone` modals only close themselves without dispatching actions.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L157-L197】
+
+### Device Domain
+
+- Active flow: the “Device automation” panel toggles device groups via `world.devices.toggleDeviceGroup`, using the zone store dispatcher that sends façade intents for each switch interaction.【F:src/backend/src/facade/index.ts†L1236-L1266】【F:src/frontend/src/views/ZoneDetail.tsx†L964-L1014】【F:src/frontend/src/store/zoneStore.ts†L385-L393】
+- Not yet wired: install/update/move/remove device commands exist on the façade but no component dispatches them—the zone store only references `toggleDeviceGroup`, so new UI would be required to expose the other device lifecycle flows.【F:src/backend/src/facade/index.ts†L1236-L1266】【F:src/frontend/src/store/zoneStore.ts†L240-L420】
+
+### Plant Domain
+
+- Active flows: irrigation, fertilizer dosing, harvest (single and batch), and planting-plan toggles map to `plants.applyIrrigation`, `plants.applyFertilizer`, `plants.harvestPlanting`, and `plants.togglePlantingPlan`, all triggered from the zone detail actions drawer.【F:src/backend/src/facade/index.ts†L1269-L1304】【F:src/frontend/src/views/ZoneDetail.tsx†L321-L352】【F:src/frontend/src/store/zoneStore.ts†L356-L419】
+- Not yet wired: `plants.addPlanting` and `plants.cullPlanting` have façade handlers but are not surfaced in the UI yet.【F:src/backend/src/facade/index.ts†L1269-L1304】【F:src/frontend/src/store/zoneStore.ts†L356-L419】
+
+### Health Domain
+
+- The façade exposes scouting, treatment, and quarantine commands, but no current component or store dispatches `domain: 'health'` intents, so these flows remain backend-only placeholders.【F:src/backend/src/facade/index.ts†L1307-L1325】【F:src/frontend/src/store/zoneStore.ts†L240-L420】
+
+### Workforce Domain
+
+- Active flows: hire/fire/refresh candidate operations map to `workforce.hire`, `workforce.fire`, and `workforce.refreshCandidates`. The personnel store sends these intents, and the personnel view exposes the corresponding UI (Hire/Fire modals and refresh button).【F:src/backend/src/facade/index.ts†L1327-L1365】【F:src/frontend/src/store/personnelStore.ts†L40-L90】【F:src/frontend/src/views/PersonnelView.tsx†L123-L304】【F:src/frontend/src/components/ModalHost.tsx†L120-L156】
+- Not yet wired: overtime policy, structure assignment, and task queueing (`workforce.setOvertimePolicy`, `workforce.assignStructure`, `workforce.enqueueTask`) have façade hooks but no front-end dispatchers yet.【F:src/backend/src/facade/index.ts†L1327-L1365】【F:src/frontend/src/store/personnelStore.ts†L40-L97】
+
+### Finance Domain
+
+- The façade supports selling inventory and adjusting utility or maintenance pricing, but the finance view is read-only today—no store issues `domain: 'finance'` intents, so these commands remain unused by the UI.【F:src/backend/src/facade/index.ts†L1367-L1385】【F:src/frontend/src/views/FinancesView.tsx†L1-L186】【F:src/frontend/src/store/zoneStore.ts†L240-L420】
+
+---
+
 ## 1. Top-Level Components
 
 ### `src/App.tsx`
