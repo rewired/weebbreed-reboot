@@ -20,7 +20,7 @@ The backend façade groups all write operations behind intent domains (`time`, `
 
 ### World Domain (Structures, Rooms, Zones)
 
-- Active flows: rent/create/duplicate/delete/rename actions (`world.rentStructure`, `world.createRoom`, `world.createZone`, `world.duplicateStructure`, `world.duplicateRoom`, `world.duplicateZone`, `world.renameStructure`, `world.updateRoom`, `world.updateZone`, `world.deleteStructure`, `world.deleteRoom`, `world.deleteZone`) are surfaced through `ModalHost` dialogs. Each modal now invokes the matching `useZoneStore` intent helper which emits the façade command so the backend processes geometry, costing, and duplication rules deterministically.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L157-L318】【F:src/frontend/src/store/zoneStore.ts†L240-L338】
+- Active flows: rent/create/duplicate/delete/rename actions (`world.rentStructure`, `world.createRoom`, `world.createZone`, `world.duplicateStructure`, `world.duplicateRoom`, `world.duplicateZone`, `world.renameStructure`, `world.updateRoom`, `world.updateZone`, `world.deleteStructure`, `world.deleteRoom`, `world.deleteZone`) are surfaced through `ModalHost` dialogs. Each modal now invokes the matching `useZoneStore` intent helper which emits the façade command so the backend processes geometry, costing, and duplication rules deterministically, and the regression suite drives these flows through `ModalHost.test.tsx` to assert both the dispatched intent and modal teardown.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L157-L318】【F:src/frontend/src/store/zoneStore.ts†L240-L338】【F:src/frontend/src/components/ModalHost.test.tsx†L80-L262】
 
 - `CreateRoomModal`, `CreateZoneModal`, `RentStructureModal`, and `DuplicateStructureModal` dispatch `useZoneStore.createRoom`, `useZoneStore.createZone`, `useZoneStore.rentStructure`, and `useZoneStore.duplicateStructure` respectively, wiring the previously inert forms to façade intents.【F:src/frontend/src/views/world/modals/CreateRoomModal.tsx†L9-L114】【F:src/frontend/src/views/world/modals/CreateZoneModal.tsx†L9-L132】【F:src/frontend/src/views/world/modals/RentStructureModal.tsx†L1-L71】【F:src/frontend/src/views/world/modals/DuplicateStructureModal.tsx†L1-L108】
 
@@ -268,25 +268,25 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** Collects a room name, purpose, footprint area, and height before dispatching `world.createRoom`. Geometry limits are enforced in the UI and the sanitized payload is sent via `useZoneStore.createRoom` on submit.【F:src/frontend/src/views/world/modals/CreateRoomModal.tsx†L9-L114】【F:src/frontend/src/components/ModalHost.tsx†L175-L197】
 - **Props:** `structure`, `existingRooms`, `onSubmit`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Shown when the user adds a room from structure-level actions; the modal pauses the sim (via `ModalHost`) and resumes after the command is dispatched.
+- **Usage Context:** Shown when the user adds a room from structure-level actions; the modal pauses the sim (via `ModalHost`) and resumes after the command is dispatched. Regression coverage exercises the default confirm path via `ModalHost.test.tsx` to ensure the zone store receives the create-room intent and the dialog closes.【F:src/frontend/src/components/ModalHost.test.tsx†L103-L142】
 
 ### `CreateZoneModal.tsx`
 
 - **Purpose:** Allocates footprint within a room, selects a cultivation method, and relays the intent to `world.createZone` with the trimmed name, method UUID, and optional plant count.【F:src/frontend/src/views/world/modals/CreateZoneModal.tsx†L9-L145】【F:src/frontend/src/components/ModalHost.tsx†L198-L222】
 - **Props:** `room`, `existingZones`, `availableMethods?`, `onSubmit`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Launched from room-level actions when expanding a grow area.
+- **Usage Context:** Launched from room-level actions when expanding a grow area. The ModalHost regression test submits the default form state to verify the `createZone` intent wiring and modal dismissal.【F:src/frontend/src/components/ModalHost.test.tsx†L144-L184】
 
 ### `RentStructureModal.tsx`
 
 - **Purpose:** Confirms structure rental and provides a summary of footprint, rooms/zones, and rent per tick before emitting `world.rentStructure` through `useZoneStore`.
 - **Props:** `structure`, `rooms?`, `zones?`, `onConfirm`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Triggered from structure catalog cards; the confirm button sends the rent intent and closes the modal once acknowledged.【F:src/frontend/src/views/world/modals/RentStructureModal.tsx†L1-L71】【F:src/frontend/src/components/ModalHost.tsx†L223-L246】
+- **Usage Context:** Triggered from structure catalog cards; the confirm button sends the rent intent and closes the modal once acknowledged. Automated coverage in `ModalHost.test.tsx` clicks the confirm action to assert the rent intent and modal teardown paths.【F:src/frontend/src/views/world/modals/RentStructureModal.tsx†L1-L71】【F:src/frontend/src/components/ModalHost.tsx†L223-L246】【F:src/frontend/src/components/ModalHost.test.tsx†L186-L218】
 
 ### `DuplicateStructureModal.tsx`
 
 - **Purpose:** Allows renaming and reviewing totals (rooms, zones, area, device count) before cloning a structure via `world.duplicateStructure`.
 - **Props:** `structure`, `rooms`, `zones`, `onConfirm`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Available from structure actions; after submission the façade handles geometry/cost validation while the UI awaits confirmation.【F:src/frontend/src/views/world/modals/DuplicateStructureModal.tsx†L1-L108】【F:src/frontend/src/components/ModalHost.tsx†L247-L270】
+- **Usage Context:** Available from structure actions; after submission the façade handles geometry/cost validation while the UI awaits confirmation. The ModalHost regression suite submits the dialog with its default copy name to prove the duplicate-structure intent is dispatched and the modal closes.【F:src/frontend/src/views/world/modals/DuplicateStructureModal.tsx†L1-L108】【F:src/frontend/src/components/ModalHost.tsx†L247-L270】【F:src/frontend/src/components/ModalHost.test.tsx†L220-L262】
 
 ### `DuplicateRoomModal.tsx`
 
