@@ -237,3 +237,63 @@ while engine.running:
 - `economy.kief`: Monthly OPEX alert, budget guard
 
 ## 12) Integration Plan
+
+1. **Rulekit scaffolding**
+   - Create `src/backend/src/rulekit` with `dsl/`, `ir/`, `compiler/`, and `runtime/` subfolders plus barrel exports.
+   - Add placeholder TypeScript modules that mirror the pseudocode filenames and expose typed interfaces.
+   - Wire path aliases (if needed) so backend code can import the rulekit without relative path noise.
+
+2. **Lexer & parser foundation**
+   - Implement a deterministic lexer that recognizes rule headers, scopes, triggers, expressions, effect verbs, and unit-bearing literals.
+   - Encode the grammar from `dsl/grammar.kief-spec.md` as parser combinators or a hand-written recursive-descent parser with clear AST types.
+   - Include unit tests that cover happy paths, malformed rules, and unit literal handling (kPa, ppm, EUR, etc.).
+
+3. **IR schema & validation**
+   - Translate the AST nodes into the IR shape described in section 4 with strong TypeScript types.
+   - Implement validators for scope, trigger configuration, writable paths (`self.*`), and unit normalization.
+   - Persist schema docs in `dsl/` and export JSON Schema artifacts for future tooling.
+
+4. **Expression compiler**
+   - Build expression evaluators for boolean and numeric expressions with support for math functions (`clamp`, aggregates).
+   - Guarantee deterministic evaluation order and side-effect free execution.
+   - Cover edge cases (division by zero, undefined paths) with defensive checks and targeted tests.
+
+5. **Effect operator implementation**
+   - Implement effect handlers (`set`, `inc`, `dec`, `cap`, `emit`, `schedule`, `transition`) that act on an `EntityAdapter` instance.
+   - Ensure atomic application per rule by batching reads and writes before committing.
+   - Add runtime safeguards against scope violations or non-finite values.
+
+6. **Runtime scheduler & trigger engine**
+   - Implement tick-based evaluation ordering (company → … → device) with stable rule sorting.
+   - Support `onTick`, `onEvent`, `onThreshold`, and `onChange` triggers with hysteresis tracking.
+   - Emit per-tick metrics (`rulesEvaluated`, `rulesFired`, etc.) for telemetry consumers.
+
+7. **Engine accessors & integration hooks**
+   - Expose adapters that bridge simulation entities (company/structure/room/zone/plant/device) to the runtime’s `EntityAdapter` interface.
+   - Bind the rule runtime in the backend composition root, share the seeded RNG, and register event listeners.
+   - Insert `runtime.onTick` before `engine.step` within the tick loop, respecting existing phase ordering.
+
+8. **Rule loading pipeline**
+   - Implement a loader that reads `data/kief/**/*.kief`, parses, compiles, and caches rulesets on startup.
+   - Provide hot-reload hooks (dev mode) that rebuild the runtime when files change.
+   - Surface parse/compile diagnostics with file, line, and column context.
+
+9. **Tooling & scripts**
+   - Add root `rules:compile`, `rules:lint`, and `rules:test` scripts invoking backend entry points.
+   - Produce CLI output suitable for CI (non-zero exit codes on failure, structured logs where feasible).
+   - Document the commands in `README.md` or a dedicated authoring guide.
+
+10. **Authoring starter packages**
+    - Populate `data/kief/core.kief`, `devices.kief`, and `economy.kief` with the sample rules described in section 11.
+    - Validate that rules compile and bind against fixture simulation data.
+    - Provide comments or separate docs outlining expected data paths for authors.
+
+11. **Testing & QA suite**
+    - Create golden master tests that run mini-world simulations and assert expected state deltas.
+    - Add property-based or fuzz tests for hysteresis stability and determinism under repeated runs.
+    - Integrate rule metrics assertions into existing integration tests.
+
+12. **Telemetry & observability**
+    - Publish runtime metrics alongside existing telemetry streams (`simulationUpdate`, logs).
+    - Ensure rule fire events or diagnostics can be inspected via the event bus without bloating payloads.
+    - Add documentation for interpreting metrics and troubleshooting rule behaviour.
