@@ -15,6 +15,7 @@ This document provides a detailed overview of every React component in the Weedb
   - **Action Dispatcher:** All user actions that modify the game state are handled by `handle...` functions within this component (e.g., `handleCreateRoom`, `handleHireEmployee`). These functions receive events from child components, compute the new state immutably (by creating deep copies and modifying them), and then update the `gameData` using `setGameData`. This ensures a predictable, top-down data flow.
   - **Modal Orchestration:** A central `modalContent` function acts as a router or switch. It reads the `modal.type` from the state and renders the corresponding modal component (e.g., `NewGameModal`, `AddRoomModal`), passing in all the necessary props and callbacks. This keeps all modal-related logic centralized and prevents individual components from needing to manage their own visibility.
 - **Props:** None.
+- **Icons Used:** None directly.
 - **Dependencies:** `ToastProvider`, `DashboardHeader`, `Sidebar`, `MainContent`, `EventLog`, `Modal`, `StartScreen`, and all modal components.
 - **Usage Context:** Rendered once by `index.tsx` to mount the entire application to the DOM. It wraps the core application logic in a `ToastProvider` for global notifications.
 
@@ -33,6 +34,7 @@ These are generic, reusable components used throughout the application.
   | `onDuplicate` | `(event: React.MouseEvent) => void` | Yes | Callback function for the duplicate button click. |
   | `onDelete` | `(event: React.MouseEvent) => void` | Yes | Callback function for the delete button click. |
   | `className` | `string` | No | Optional classes for custom styling. |
+- **Icons Used:** `DuplicateIcon`, `DeleteIcon`.
 - **Dependencies:** `DuplicateIcon`, `DeleteIcon`.
 - **Usage Context:** Used in detail views (`StructureDetailView`, `RoomDetailView`, `ZoneDetailView`) and cards (`ZoneCard`) to provide consistent action buttons.
 
@@ -45,6 +47,7 @@ These are generic, reusable components used throughout the application.
   |---|---|---|---|
   | `path` | `BreadcrumbItem[]` | Yes | An array of objects representing the navigation hierarchy. |
   | `onNavigate` | `(...) => void` | Yes | Callback function to handle navigation when a breadcrumb link is clicked. |
+- **Icons Used:** `ChevronRightIcon`.
 - **Dependencies:** `ChevronRightIcon`.
 - **Usage Context:** Used in `MainContent.tsx` to show the user's current location within the game's structural hierarchy.
 
@@ -55,6 +58,7 @@ These are generic, reusable components used throughout the application.
   - `PrimaryButton`: A lime-green button for primary, positive actions (e.g., "Create", "Submit", "Confirm"). Includes a disabled state.
   - `DangerButton`: A red button for destructive actions (e.g., "Delete", "Fire").
 - **Props:** Standard HTML button attributes.
+- **Icons Used:** None.
 - **Dependencies:** None.
 - **Usage Context:** Used in forms and modals across the application.
 
@@ -66,6 +70,7 @@ These are generic, reusable components used throughout the application.
   - `FormSelect`: A labeled dropdown/select field.
   - `FormCheckbox`: A labeled checkbox.
 - **Props:** Standard HTML input/select attributes, plus a `label` prop.
+- **Icons Used:** None.
 - **Dependencies:** None.
 - **Usage Context:** Used extensively in all modals that require user input.
 
@@ -73,6 +78,7 @@ These are generic, reusable components used throughout the application.
 
 - **Purpose:** A central repository for all Google Material Icons used in the app, wrapped as React components. This ensures consistency, simplifies usage, and allows for easy swapping of icons in the future.
 - **Props:** Some icons accept an optional `className` for custom styling (e.g., changing size or color).
+- **Icons Used:** This is the definition file; it does not use other icons.
 - **Dependencies:** None.
 - **Usage Context:** Icons are imported from this file and used in virtually every other component.
 
@@ -89,6 +95,7 @@ These are generic, reusable components used throughout the application.
   | `value` | `string` | Yes | The initial text value to display and edit. |
   | `onSave` | `(newValue: string) => void` | Yes | Callback function triggered when editing is complete. |
   | `className` | `string` | No | Optional classes to style the text/input. |
+- **Icons Used:** None.
 - **Dependencies:** None.
 - **Usage Context:** Used for renaming structures, rooms, and zones in their respective detail views without needing a separate modal.
 
@@ -101,6 +108,7 @@ These are generic, reusable components used throughout the application.
   | `title` | `string` | Yes | The title displayed in the modal's header. |
   | `children` | `React.ReactNode` | Yes | The content to be rendered inside the modal. |
   | `onClose` | `() => void` | Yes | Callback function for the close button. |
+- **Icons Used:** `XIcon`.
 - **Dependencies:** `XIcon`.
 - **Usage Context:** The main `App.tsx` component uses this to wrap the content of whatever modal is currently active.
 
@@ -115,6 +123,7 @@ These are generic, reusable components used throughout the application.
   | `value` | `string` | Yes | The value of the statistic. |
   | `unit` | `string` | No | The unit for the value (e.g., "€", "m²"). |
   | `color` | `string` | Yes | The Tailwind color class for the icon (e.g., 'green', 'cyan'). |
+- **Icons Used:** Receives an icon via props; does not use any specific icons itself.
 - **Dependencies:** None.
 - **Usage Context:** Used in the `DashboardHeader` and `FinanceView` to display key performance indicators.
 
@@ -131,6 +140,10 @@ These are generic, reusable components used throughout the application.
   | `message` | `string` | Yes | The notification message. |
   | `type` | `'success' \| 'error' \| ...` | Yes | The type of toast, which determines its style. |
   | `onClose` | `() => void` | Yes | Callback to close the toast. |
+- **Icons Used:**
+  - `XIcon`
+  - `CheckIcon`
+  - Direct Material Icons: `error`, `warning`, `info`.
 - **Dependencies:** `useToast` (context hook), `XIcon`, `CheckIcon`.
 - **Usage Context:** `ToastContainer` is rendered once in `App.tsx`. Toasts are added via the `useToast` hook from anywhere in the app.
 
@@ -145,6 +158,15 @@ These components define the main structure and layout of the application interfa
 - **Purpose:** The main header bar at the top of the application. It contains game controls (play/pause, speed), primary navigation links (Structures, Personnel, Finance), key global stats, and a button to open the game menu.
 - **Functionality:** The play/pause and speed controls directly manipulate the game loop state in `App.tsx`. The navigation buttons call `onNavigate` to change the `selection` state, which updates the `MainContent` view. The stats are passed in and displayed in `StatCard` components.
 - **Props:** A large number of props for stats, game state, and event handlers.
+- **Icons Used:**
+  - `ClockIcon`
+  - `DollarIcon`
+  - `PauseIcon`
+  - `PlayIcon`
+  - `HomeIcon`
+  - `BadgeIcon`
+  - `CogIcon`
+  - Direct Material Icons: `paid`.
 - **Dependencies:** `StatCard`, various `Icon` components.
 - **Usage Context:** Rendered in `App.tsx` as the persistent header for the 'playing' state.
 
@@ -155,6 +177,7 @@ These components define the main structure and layout of the application interfa
   | Prop | Type | Required | Description |
   |---|---|---|---|
   | `events` | `EventLogItem[]` | Yes | An array of event objects to display. |
+- **Icons Used:** None.
 - **Dependencies:** None.
 - **Usage Context:** Rendered in `App.tsx` as the persistent footer for the 'playing' state.
 
@@ -163,6 +186,7 @@ These components define the main structure and layout of the application interfa
 - **Purpose:** Acts as a content router for the main area of the UI. It determines which view to display based on the global `selection` state and renders the appropriate `Breadcrumbs`.
 - **Functionality:** It inspects the `selection` object (`view`, `structureId`, `roomId`, `zoneId`). Based on these values, it conditionally renders the correct detailed view (e.g., `DashboardView` if no IDs are selected, `ZoneDetailView` if a `zoneId` is present). It passes all necessary data and callbacks down to the currently active view. This component is the critical link between the navigation state (`selection`) and the actual content presented to the user.
 - **Props:** A large number of props for game state, selection state, and event handlers to pass down to the active view.
+- **Icons Used:** None directly.
 - **Dependencies:** `Breadcrumbs`, all `View` components.
 - **Usage Context:** Rendered in `App.tsx` to control the central panel of the UI.
 
@@ -177,6 +201,7 @@ These components define the main structure and layout of the application interfa
   | `selection` | `Selection` | Yes | The current UI selection state. |
   | `onNavigate` | `(...) => void` | Yes | Callback for navigation clicks. |
   | `onOpenModal` | `(...) => void` | Yes | Callback to open modals (e.g., "Add Room"). |
+- **Icons Used:** `ChevronDownIcon`, `PlusIcon`.
 - **Dependencies:** `ChevronDownIcon`, `PlusIcon`.
 - **Usage Context:** Rendered in `App.tsx` as the persistent sidebar for the 'playing' state.
 
@@ -190,6 +215,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for installing a new device in a zone.
 - **Props:** `onSubmit`, `zoneId`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormSelect`, `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks "Install Device" in the `ZoneDeviceList`.
 
@@ -197,6 +223,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for creating a new room within a structure. It validates that the requested area does not exceed the available area in the parent structure.
 - **Props:** `onSubmit`, `structure`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `FormSelect`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks the "Add Room" (+) icon in the `Sidebar`.
 
@@ -204,6 +231,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for creating a new zone within a grow room.
 - **Props:** `onSubmit`, `roomId`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `FormSelect`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks the "Add Zone" (+) icon in the `Sidebar`.
 
@@ -211,6 +239,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A simple confirmation dialog to prevent accidental deletion of entities like rooms or zones.
 - **Props:** `entityType`, `entityName`, `onConfirm`.
+- **Icons Used:** None.
 - **Dependencies:** `DangerButton`.
 - **Usage Context:** Displayed when a user clicks any delete action icon.
 
@@ -218,6 +247,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for duplicating an existing room. It calculates and displays the required area and the cost of duplicating all devices within, disabling the action if resources are insufficient.
 - **Props:** `onSubmit`, `room`, `structure`, `balance`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks the "Duplicate" icon on a room.
 
@@ -225,6 +255,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for duplicating a zone, with checkboxes to selectively include its devices and cultivation method (plants). It calculates and displays the cost if devices are included.
 - **Props:** `onSubmit`, `zone`, `room`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `FormCheckbox`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks the "Duplicate" icon on a zone.
 
@@ -232,6 +263,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** Displays a list of game-level actions like Save, Load, and Reset. (Currently placeholder functionality).
 - **Props:** None.
+- **Icons Used:** None.
 - **Dependencies:** None.
 - **Usage Context:** Displayed when the user clicks the settings (cog) icon in the `DashboardHeader`.
 
@@ -239,6 +271,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for hiring a candidate and assigning them to a structure via a dropdown menu.
 - **Props:** `onSubmit`, `candidate`, `structures`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormSelect`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks "Hire" on a `CandidateCard` in the `PersonnelView`.
 
@@ -246,6 +279,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** Displays detailed information about a specific pest or disease, sourced from its blueprint file. It shows symptoms and categorized control options to help the player make informed decisions.
 - **Props:** `blueprint`.
+- **Icons Used:** None.
 - **Dependencies:** None.
 - **Usage Context:** Displayed when a user clicks on a pest or disease icon on a `Plant` card.
 
@@ -253,6 +287,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form that appears when starting a new game, allowing the player to set their company name, CEO name, and a deterministic game seed.
 - **Props:** `onSubmit`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the "New Game" button is clicked on the `StartScreen`.
 
@@ -260,6 +295,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** Displays detailed stats for a single plant (health, progress, status) and provides actions to harvest or trash it. The harvest button is disabled if the plant is not yet harvestable.
 - **Props:** `plant`, `onHarvest`, `onTrash`.
+- **Icons Used:** `CutIcon`, `TrashIcon`.
 - **Dependencies:** `CutIcon`, `TrashIcon`.
 - **Usage Context:** Displayed when a user clicks on a plant card in the `ZonePlantPanel` (when not in selection mode).
 
@@ -267,6 +303,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for planting a new strain of plants in a zone. The dropdown is dynamically populated with strains available in the game state.
 - **Props:** `onSubmit`, `zoneId`, `availableStrains`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormSelect`, `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the "Plant New" button is clicked in the `ZonePlantPanel`.
 
@@ -274,6 +311,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for removing one or more devices of the same type from a zone, with options to remove a specific quantity or all of them.
 - **Props:** `onSubmit`, `zoneId`, `device`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the delete icon is clicked on a device in the `ZoneDeviceList`.
 
@@ -281,6 +319,7 @@ These components define the content for various modals used for user input and i
 
 - **Purpose:** A form for renting a new structure (e.g., warehouse). The dropdown of available structures disables options the player cannot afford.
 - **Props:** `onSubmit`, `availableStructures`, `balance`, `onClose`.
+- **Icons Used:** None.
 - **Dependencies:** `FormInput`, `FormSelect`, `PrimaryButton`.
 - **Usage Context:** Displayed when the "Rent New Structure" button is clicked on the `DashboardView`.
 
@@ -294,6 +333,7 @@ These components represent full-screen states of the application, like the initi
 
 - **Purpose:** The initial screen the user sees after the app loads. It provides the main entry points into the game: "New Game", "Quick Start", and "Import Game".
 - **Props:** `onNewGame`, `onQuickStart`, `onImportGame`.
+- **Icons Used:** `AddCircleOutlineIcon`, `ForwardIcon`, `UploadIcon`.
 - **Dependencies:** `AddCircleOutlineIcon`, `ForwardIcon`, `UploadIcon`.
 - **Usage Context:** Rendered by `App.tsx` when the `gameState` is 'startScreen'.
 
@@ -314,6 +354,18 @@ These are complex components directly related to displaying and interacting with
     - **Device Dependency:** Controls are automatically disabled (grayed out) if the required device (e.g., an HVAC unit for temperature control) is not installed in the zone, providing clear feedback to the user about equipment limitations. This is a key feature that connects the simulation's inventory (`zone.devices`) directly to the UI's capabilities.
     - **Additional KPIs:** Displays secondary metrics like Vapor Pressure Deficit (VPD) that are derived from the primary environmental values.
 - **Props:** `zone`, `onUpdate`.
+- **Icons Used:**
+  - `ThermometerIcon`
+  - `DropletIcon`
+  - `SunIcon`
+  - `WindIcon`
+  - `PowerIcon`
+  - `LightCycleIcon`
+  - `NightlightIcon`
+  - `WbSunnyIcon`
+  - `ChevronRightIcon`
+  - `ChevronDownIcon`
+  - Direct Material Icons: `science`.
 - **Dependencies:** Various `Icon` components.
 - **Usage Context:** A key part of the `ZoneDetailView`.
 
@@ -322,6 +374,7 @@ These are complex components directly related to displaying and interacting with
 - **Purpose:** A compact card representing a single zone. Used in list views to provide a summary and quick access to details or actions.
 - **Functionality:** Displays the zone's name, strain, phase, and a progress bar for plant growth. The main body is clickable to navigate to the `ZoneDetailView`. It also includes `ActionIcons` for quick duplication or deletion.
 - **Props:** `zone`, `onClick`, `onOpenModal`.
+- **Icons Used:** Relies on `ActionIcons` for its icons.
 - **Dependencies:** `ActionIcons`.
 - **Usage Context:** Used in `RoomDetailView` and `StructureDetailView` to list zones.
 
@@ -330,6 +383,7 @@ These are complex components directly related to displaying and interacting with
 - **Purpose:** Displays a list of all devices installed in a specific zone, grouped by type. Allows for adding and removing devices.
 - **Functionality:** It aggregates devices by name (e.g., "Sunstream Pro LED x3") for a clean display. Each device has a delete button that opens the `RemoveDeviceModal`. A main "Install Device" button opens the `AddDeviceModal`.
 - **Props:** `devices`, `onOpenModal`, `zoneId`.
+- **Icons Used:** `DeleteIcon`.
 - **Dependencies:** `DeleteIcon`.
 - **Usage Context:** A key part of the `ZoneDetailView`.
 
@@ -345,6 +399,15 @@ These are complex components directly related to displaying and interacting with
     - **Interaction:** In this mode, clicking a plant toggles its selection state, indicated by a visual highlight (a green border and overlay).
     - **Batch Actions:** A `BatchActionBar` appears at the top, showing the number of selected plants. This bar has buttons for "Harvest", "Trash", and "Treat". Clicking one of these buttons applies the action to _all_ selected plants, sends the batch action to the `App` component's state handler, and then automatically exits selection mode. This is designed for efficient management of large numbers of plants.
 - **Props:** `zone`, `onOpenModal`, `onBatchAction`, `onPlantAction`.
+- **Icons Used:**
+  - `ChevronDownIcon`
+  - `ChevronRightIcon`
+  - `BugIcon`
+  - `SickIcon`
+  - `HealingIcon`
+  - `CheckIcon`
+  - `CutIcon`
+  - Direct Material Icons: `grass`.
 - **Dependencies:** `FormSelect`, various `Icon` components.
 - **Usage Context:** A key part of the `ZoneDetailView`.
 
@@ -358,6 +421,7 @@ These components represent the main content for each primary section of the appl
 
 - **Purpose:** The main dashboard screen, showing an overview of all player-owned structures as a series of cards.
 - **Props:** `structures`, `onNavigate`, `onOpenModal`, `onRename`.
+- **Icons Used:** `StoreIcon`.
 - **Dependencies:** `InlineEdit`, `StoreIcon`.
 - **Usage Context:** The default view when the game starts.
 
@@ -366,7 +430,12 @@ These components represent the main content for each primary section of the appl
 - **Purpose:** Displays a detailed financial overview.
 - **Functionality:** Features several `StatCard` components for high-level numbers. The main content consists of collapsible cards for Revenue, OpEx, and CapEx. The user can select a time range (1D, 1W, 1M, 1Y) which dynamically recalculates and displays the financial data for that period.
 - **Props:** `gameData`.
-- **Dependencies:** `StatCard`, `DollarIcon`, `ChevronDownIcon`, `ChevronRightIcon`.
+- **Icons Used:**
+  - `DollarIcon`
+  - `ChevronDownIcon`
+  - `ChevronRightIcon`
+  - Direct Material Icons: `trending_up`, `receipt_long`, `account_balance`.
+- **Dependencies:** `StatCard`, various `Icon` components.
 - **Usage Context:** Shown when the user navigates to the "Finance" section.
 
 ### `PersonnelView.tsx`
@@ -374,6 +443,7 @@ These components represent the main content for each primary section of the appl
 - **Purpose:** The personnel management screen.
 - **Functionality:** Uses a tabbed interface to switch between the "Job Market" (a grid of `CandidateCard`s for hiring) and "Your Staff" (a grid of `EmployeeCard`s for managing current staff). Provides buttons to refresh candidates and fire employees.
 - **Props:** `gameData`, `onOpenModal`, `onRefreshCandidates`, `onFireEmployee`.
+- **Icons Used:** `DeleteIcon`.
 - **Dependencies:** `DeleteIcon`.
 - **Usage Context:** Shown when the user navigates to the "Personnel" section.
 
@@ -381,6 +451,7 @@ These components represent the main content for each primary section of the appl
 
 - **Purpose:** Displays the details of a single room, primarily by listing all the zones within it as a grid of `ZoneCard`s.
 - **Props:** `room`, `structure`, `onNavigate`, `onRename`, `onOpenModal`.
+- **Icons Used:** Relies on `ActionIcons` for its icons.
 - **Dependencies:** `InlineEdit`, `ActionIcons`, `ZoneCard`.
 - **Usage Context:** Shown when a user navigates to a specific room.
 
@@ -388,6 +459,7 @@ These components represent the main content for each primary section of the appl
 
 - **Purpose:** Provides a detailed overview of a single structure, listing all of its rooms. For grow rooms, it also shows a nested list of `ZoneCard`s.
 - **Props:** `structure`, `onNavigate`, `onOpenModal`, `onRename`.
+- **Icons Used:** `GroupIcon`. Relies on `ZoneCard` and `ActionIcons` for other icons.
 - **Dependencies:** `InlineEdit`, `ZoneCard`, `ActionIcons`, `GroupIcon`.
 - **Usage Context:** Shown when a user selects a structure from the main dashboard.
 
@@ -395,6 +467,7 @@ These components represent the main content for each primary section of the appl
 
 - **Purpose:** The most detailed view in the simulation. It composes the `EnvironmentPanel`, `ZonePlantPanel`, and `ZoneDeviceList` to provide a complete interface for managing a single grow zone.
 - **Props:** `zone`, `onControlsChange`, `onOpenModal`, `onRename`, `onBatchAction`, `onPlantAction`.
+- **Icons Used:** Relies on its child components (`ActionIcons`, `EnvironmentPanel`, `ZonePlantPanel`, `ZoneDeviceList`) for all icons.
 - **Dependencies:** `InlineEdit`, `ActionIcons`, `EnvironmentPanel`, `ZonePlantPanel`, `ZoneDeviceList`.
 - **Usage Context:** Shown when a user navigates to a specific zone.
 
@@ -409,4 +482,5 @@ These components represent the main content for each primary section of the appl
   - `ToastProvider`: The provider component that should wrap the entire application to make the toast context available.
 - **Hooks:**
   - `useToast`: A custom hook that allows any component to access the `addToast` function. Calling `addToast("Message", "success")` will automatically add a new toast to the state, which is then rendered by the `ToastContainer`. This follows the producer/consumer pattern, where many components can produce toasts, but only one component is responsible for consuming and displaying them.
+- **Icons Used:** None.
 - **Usage Context:** `ToastProvider` is wrapped around `AppContent` in `App.tsx`. The `useToast` hook is used in `App.tsx` and other components to show feedback to the user.
