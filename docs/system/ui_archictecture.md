@@ -75,8 +75,9 @@ This cycle enforces **one‑way dataflow**, making behavior predictable and debu
 
 ### 3.4 Modal Manager (Input Workflows)
 
-**Purpose.** Unified control of dialogs/wizards (rent structure, add room/zone, install device, hire, treatments).  
+**Purpose.** Unified control of dialogs/wizards (rent structure, add room/zone, install device, hire, treatments).
 **Behavior.** Maintains `{ visibleModal, formState }`. When opening a modal, it **may pause** the sim for clarity; on close, it optionally **resumes** if it was running.
+**Implementation.** `ModalHost` subscribes to the modal slice, renders typed modal bodies (e.g., hire/fire personnel) and drives the pause/resume handshake via the game store.
 
 ### 3.5 Views vs. Components
 
