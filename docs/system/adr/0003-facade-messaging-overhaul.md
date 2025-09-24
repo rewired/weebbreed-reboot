@@ -24,6 +24,10 @@ layer, and documentation could share.
   `facade.intent` envelope (`{ domain, action, payload?, requestId? }`).
   Responses are emitted on `<domain>.intent.result` and follow
   `CommandResult<T>`.
+- Codify the telemetry contract (event levels, queue helpers) in the runtime
+  shared module `@runtime/eventBusCore` so gateway transports and headless
+  consumers reuse the same implementation without depending on backend source
+  paths.
 - Expand the façade to cover the missing workflows:
   - World: `renameStructure`, `deleteStructure`, `duplicateStructure`,
     `duplicateRoom`, `duplicateZone` (optional name overrides, new IDs returned).
@@ -45,6 +49,9 @@ layer, and documentation could share.
   return structured data, enabling optimistic UI updates and easier testing.
 - Documentation drift is reduced because ADRs and protocol references are tied
   directly to the registry.
+- Shared runtime contracts remove the brittle runtime→backend import, making it
+  easier to package the gateway separately or embed the facade into tooling
+  without bundling backend internals.
 
 ## Alternatives Considered
 
