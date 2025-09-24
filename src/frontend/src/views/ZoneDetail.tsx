@@ -134,6 +134,7 @@ const ZoneDetail = () => {
   const selectedZoneId = useAppStore((state) => state.selectedZoneId);
   const selectRoom = useAppStore((state) => state.selectRoom);
   const selectZone = useAppStore((state) => state.selectZone);
+  const openModal = useAppStore((state) => state.openModal);
   const currentTick = useGameStore(selectCurrentTick);
 
   const timeline = useZoneStore((state) => state.timeline);
@@ -1016,7 +1017,29 @@ const ZoneDetail = () => {
               )}
             </Panel>
 
-            <Panel title="Device inventory" padding="lg" variant="elevated">
+            <Panel
+              title="Device inventory"
+              padding="lg"
+              variant="elevated"
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  tone="accent"
+                  onClick={() =>
+                    openModal({
+                      kind: 'installDevice',
+                      title: `Install device in ${zone.name}`,
+                      description:
+                        'Select a device blueprint and optional settings to schedule an installation in this zone.',
+                      payload: { zoneId: zone.id },
+                    })
+                  }
+                >
+                  Install device
+                </Button>
+              }
+            >
               {zone.devices.length === 0 ? (
                 <p className="text-sm text-text-muted">No devices assigned to this zone.</p>
               ) : (
@@ -1102,6 +1125,56 @@ const ZoneDetail = () => {
                             ))}
                           </div>
                         ) : null}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            tone="default"
+                            onClick={() =>
+                              openModal({
+                                kind: 'updateDevice',
+                                title: `Update ${device.name}`,
+                                description:
+                                  'Send a settings patch for this device. Only supplied keys will be adjusted.',
+                                payload: { deviceId: device.id },
+                              })
+                            }
+                          >
+                            Update settings
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            tone="default"
+                            onClick={() =>
+                              openModal({
+                                kind: 'moveDevice',
+                                title: `Move ${device.name}`,
+                                description:
+                                  'Reassign the device to another zone within the facility.',
+                                payload: { deviceId: device.id },
+                              })
+                            }
+                          >
+                            Move device
+                          </Button>
+                          <Button
+                            size="xs"
+                            variant="outline"
+                            tone="danger"
+                            onClick={() =>
+                              openModal({
+                                kind: 'removeDevice',
+                                title: `Remove ${device.name}`,
+                                description:
+                                  'Schedule this device for removal. The simulation façade will clean up dependencies.',
+                                payload: { deviceId: device.id },
+                              })
+                            }
+                          >
+                            Remove
+                          </Button>
+                        </div>
                       </li>
                     );
                   })}

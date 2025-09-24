@@ -10,6 +10,10 @@ import RentStructureModal from '@/views/world/modals/RentStructureModal';
 import RenameEntityModal from '@/views/world/modals/RenameEntityModal';
 import ConfirmDeletionModal from '@/views/world/modals/ConfirmDeletionModal';
 import PlantDetailModal from '@/views/zone/modals/PlantDetailModal';
+import InstallDeviceModal from '@/views/zone/modals/InstallDeviceModal';
+import UpdateDeviceModal from '@/views/zone/modals/UpdateDeviceModal';
+import MoveDeviceModal from '@/views/zone/modals/MoveDeviceModal';
+import RemoveDeviceModal from '@/views/zone/modals/RemoveDeviceModal';
 import {
   selectRoomsGroupedByStructure,
   selectZonesGroupedByStructure,
@@ -31,6 +35,7 @@ const ModalHost = () => {
     structures,
     rooms,
     zones,
+    devices,
     plants,
     rentStructure,
     createRoom,
@@ -44,10 +49,15 @@ const ModalHost = () => {
     removeStructure,
     removeRoom,
     removeZone,
+    installDevice,
+    updateDevice,
+    moveDevice,
+    removeDevice,
   } = useZoneStore((state) => ({
     structures: state.structures,
     rooms: state.rooms,
     zones: state.zones,
+    devices: state.devices,
     plants: state.plants,
     rentStructure: state.rentStructure,
     createRoom: state.createRoom,
@@ -61,6 +71,10 @@ const ModalHost = () => {
     removeStructure: state.removeStructure,
     removeRoom: state.removeRoom,
     removeZone: state.removeZone,
+    installDevice: state.installDevice,
+    updateDevice: state.updateDevice,
+    moveDevice: state.moveDevice,
+    removeDevice: state.removeDevice,
   }));
 
   const roomsByStructure = useZoneStore(selectRoomsGroupedByStructure);
@@ -465,6 +479,93 @@ const ModalHost = () => {
           onClose={closeModal}
         />
       );
+    case 'installDevice': {
+      const { zoneId } = activeModal.payload;
+      const zone = zones[zoneId];
+      if (!zone) {
+        closeModal();
+        return null;
+      }
+      return (
+        <InstallDeviceModal
+          zone={zone}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onSubmit={({ deviceId, settings }) => {
+            installDevice(zone.id, deviceId, settings);
+            closeModal();
+          }}
+        />
+      );
+    }
+    case 'updateDevice': {
+      const { deviceId } = activeModal.payload;
+      const device = devices[deviceId];
+      if (!device) {
+        closeModal();
+        return null;
+      }
+      const zone = zones[device.zoneId];
+      return (
+        <UpdateDeviceModal
+          device={device}
+          zone={zone}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onSubmit={({ settings }) => {
+            updateDevice(device.id, settings);
+            closeModal();
+          }}
+        />
+      );
+    }
+    case 'moveDevice': {
+      const { deviceId } = activeModal.payload;
+      const device = devices[deviceId];
+      if (!device) {
+        closeModal();
+        return null;
+      }
+      const zone = zones[device.zoneId];
+      return (
+        <MoveDeviceModal
+          device={device}
+          currentZone={zone}
+          zones={Object.values(zones)}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onSubmit={({ targetZoneId }) => {
+            moveDevice(device.id, targetZoneId);
+            closeModal();
+          }}
+        />
+      );
+    }
+    case 'removeDevice': {
+      const { deviceId } = activeModal.payload;
+      const device = devices[deviceId];
+      if (!device) {
+        closeModal();
+        return null;
+      }
+      const zone = zones[device.zoneId];
+      return (
+        <RemoveDeviceModal
+          device={device}
+          zone={zone}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onConfirm={() => {
+            removeDevice(device.id);
+            closeModal();
+          }}
+        />
+      );
+    }
     default:
       return null;
   }

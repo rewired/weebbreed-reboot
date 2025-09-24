@@ -126,7 +126,7 @@ The interface is hierarchical and supports a strategic (macro) and operational (
 - **RentModal** → `facade.world.rentStructure({ structureId })`.
 - **AddRoomModal** → `facade.world.createRoom({ structureId, room: { name, purpose, area, height? } })`.
 - **AddZoneModal** → `facade.world.createZone({ roomId, zone: { name, area, methodId, targetPlantCount? } })`.
-- **AddDeviceModal** → `facade.devices.installDevice({ targetId, deviceId, settings })` (enforces `allowedRoomPurposes`).
+- **InstallDeviceModal** → `facade.devices.installDevice({ targetId, deviceId, settings })` (enforces `allowedRoomPurposes`).
 - **AddSupplyModal** → `facade.plants.applyIrrigation({ zoneId, liters })` / `facade.plants.applyFertilizer({ zoneId, nutrients })`.
 - **PlantStrainModal** → `facade.plants.addPlanting({ zoneId, strainId, count })`.
 - **BreedStrainModal** → select two parent strains by **UUID `id`** to create a new strain (lineage stores parent UUIDs; empty parents ⇒ ur‑plant).
@@ -135,7 +135,9 @@ The interface is hierarchical and supports a strategic (macro) and operational (
 
 - **RenameModal** → `facade.world.renameStructure({ structureId, name })` or equivalent room/zone updates.
 - **DeleteModal** → generic delete (contextual warnings, e.g., severance on firing employees).
-- **EditDeviceModal** → batch adjust device settings via `facade.devices.updateDevice({ instanceId, settings })`.
+- **UpdateDeviceModal** → batch adjust device settings via `facade.devices.updateDevice({ instanceId, settings })`.
+- **MoveDeviceModal** → reassign a device across zones via `facade.devices.moveDevice({ instanceId, targetZoneId })`.
+- **RemoveDeviceModal** → schedule teardown with `facade.devices.removeDevice({ instanceId })`.
 - **EditLightCycleModal** → zone light hours; UI does not compute growth—engine does.
 - **PlantingPlanModal** → define automation plan (strain/quantity, **Auto‑Replant** toggle) with `facade.plants.togglePlantingPlan({ zoneId, enabled })`.
 
