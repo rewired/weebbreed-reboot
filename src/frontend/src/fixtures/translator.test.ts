@@ -176,7 +176,7 @@ const SAMPLE_DATA: ClickDummyGameData = {
 
 describe('translateClickDummyGameData', () => {
   it('normalizes zone data into SimulationSnapshot structures', () => {
-    const snapshot = translateClickDummyGameData(SAMPLE_DATA);
+    const { snapshot } = translateClickDummyGameData(SAMPLE_DATA);
 
     expect(snapshot.tick).toBe(158);
     expect(snapshot.structures).toHaveLength(1);
@@ -223,16 +223,39 @@ describe('translateClickDummyGameData', () => {
     const [plant] = zone.plants;
     expect(plant.health).toBeCloseTo(0.95, 5);
     expect(plant.strainId).toBe('strain:og-kush');
+    expect(plant.stage).toBe('flowering');
+
+    expect(zone.devices).toHaveLength(1);
+    expect(zone.devices[0].blueprintId).toBe('device:lighting:sunstream-pro-led');
   });
 
   it('converts personnel and finance fields to per-tick units', () => {
-    const snapshot = translateClickDummyGameData(SAMPLE_DATA);
+    const { snapshot, financeHistory } = translateClickDummyGameData(SAMPLE_DATA);
 
     expect(snapshot.personnel.employees[0].salaryPerTick).toBeCloseTo(34000 / 2080, 5);
     expect(snapshot.personnel.applicants[0].expectedSalary).toBeCloseTo(42000 / 2080, 5);
 
-    const ticksPerWeek = 7 * 24; // tick length defaults to 60 minutes
-    expect(snapshot.finance.lastTickRevenue).toBeCloseTo(282570 / ticksPerWeek, 5);
-    expect(snapshot.finance.totalExpenses).toBe(90650 + 325000);
+    expect(financeHistory).toHaveLength(snapshot.tick + 1);
+    const aggregated = financeHistory.reduce(
+      (totals, entry) => {
+        totals.revenue += entry.revenue;
+        totals.opex += entry.opex;
+        totals.capex += entry.capex;
+        return totals;
+      },
+      { revenue: 0, opex: 0, capex: 0 },
+    );
+
+    expect(aggregated.revenue).toBeCloseTo(snapshot.finance.totalRevenue, 5);
+    expect(aggregated.opex + aggregated.capex).toBeCloseTo(snapshot.finance.totalExpenses, 5);
+    expect(snapshot.finance.netIncome).toBeCloseTo(
+      snapshot.finance.totalRevenue - snapshot.finance.totalExpenses,
+      5,
+    );
+
+    const lastMaintenance = financeHistory[financeHistory.length - 1]?.maintenanceDetails ?? [];
+    if (lastMaintenance.length) {
+      expect(lastMaintenance[0].blueprintId).toBeDefined();
+    }
   });
 });
