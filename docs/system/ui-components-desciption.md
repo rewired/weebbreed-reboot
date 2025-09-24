@@ -484,3 +484,131 @@ These components represent the main content for each primary section of the appl
   - `useToast`: A custom hook that allows any component to access the `addToast` function. Calling `addToast("Message", "success")` will automatically add a new toast to the state, which is then rendered by the `ToastContainer`. This follows the producer/consumer pattern, where many components can produce toasts, but only one component is responsible for consuming and displaying them.
 - **Icons Used:** None.
 - **Usage Context:** `ToastProvider` is wrapped around `AppContent` in `App.tsx`. The `useToast` hook is used in `App.tsx` and other components to show feedback to the user.
+
+---
+
+## Styling and Design System
+
+This section outlines the visual design principles, color palette, and common styling patterns used throughout the Weedbreed.AI application.
+
+### Core Philosophy: Tailwind CSS Utility-First
+
+The application is styled exclusively with **Tailwind CSS**. There is no separate CSS file for component-specific styles (with one minor exception for the scrollbar). This utility-first approach ensures consistency, reduces CSS bloat, and makes styling rapid and maintainable. All styling is co-located with the component markup.
+
+### Color Palette (Dark Theme)
+
+The UI uses a consistent dark theme based on the Tailwind `stone` color family, with `lime` as the primary accent color for interactive elements.
+
+- **Background:** `bg-stone-900`
+- **Text (Primary):** `text-stone-200` / `text-stone-100`
+- **Text (Secondary/Muted):** `text-stone-400` / `text-stone-500`
+- **Panels & Cards:** `bg-stone-800/30` (a semi-transparent dark gray for a layered effect)
+- **Borders & Dividers:** `border-stone-700`
+- **Primary Accent (Buttons, Highlights):** `bg-lime-600`, `text-lime-400`
+- **Status Colors:**
+  - **Success/Optimal:** `text-green-400`, `bg-green-600`
+  - **Warning/Attention:** `text-yellow-400`, `bg-yellow-500`
+  - **Danger/Error:** `text-red-400`, `bg-red-600`
+  - **Informational:** `text-blue-400`, `text-cyan-400`
+
+### Typography
+
+- **Font Family:** The entire application uses the **Inter** font, loaded via Google Fonts in `index.html`.
+- **Headings:** Headings are styled using Tailwind's font-size and font-weight utilities (e.g., `text-3xl font-bold`) on `<p>` or `<div>` tags, rather than relying on default `<h1>`, `<h2>` styles. This ensures visual consistency is controlled by the utility classes.
+
+### Common UI Pattern Snippets
+
+Here are examples of the Tailwind classes used for common, repeated UI elements:
+
+**1. Standard Card/Panel:**
+Most content containers share this base style.
+
+```html
+<div class="bg-stone-800/30 rounded-lg p-6">
+  <!-- Card content -->
+</div>
+```
+
+**2. Primary Button:**
+Used for the main positive action in a form or modal.
+
+```html
+<button
+  class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-2 px-4 rounded-md transition-colors disabled:bg-stone-600 disabled:cursor-not-allowed"
+>
+  Action
+</button>
+```
+
+**3. Form Input:**
+A standard input field with consistent styling.
+
+```html
+<div>
+  <label class="block text-sm font-medium text-stone-300 mb-1">Label</label>
+  <input
+    class="w-full bg-stone-900 border border-stone-700 rounded-md px-3 py-2 text-stone-100 focus:ring-2 focus:ring-lime-500 focus:border-lime-500 outline-none"
+  />
+</div>
+```
+
+**4. Modal Structure:**
+The base classes for the modal overlay and container.
+
+```html
+<div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+  <div class="bg-stone-800 border border-stone-700 rounded-lg shadow-xl w-full max-w-md m-4">
+    <header class="flex items-center justify-between p-4 border-b border-stone-700">
+      <!-- Header content -->
+    </header>
+    <div class="p-6">
+      <!-- Modal content -->
+    </div>
+  </div>
+</div>
+```
+
+### Custom CSS: Scrollbar
+
+The only piece of custom CSS in the entire application is for styling the browser scrollbar to match the dark theme. This is defined in a `<style>` block in `index.html`.
+
+```css
+/* Custom scrollbar for a better dark-mode aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #1c1917; /* stone-900 */
+}
+::-webkit-scrollbar-thumb {
+  background: #57534e; /* stone-600 */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #78716c; /* stone-500 */
+}
+```
+
+---
+
+## Fehlende Schlüsselinformationen für einen UI-Neubau
+
+Die vorliegende Komponentendokumentation beschreibt die _Struktur_ und _Verantwortlichkeit_ der UI-Elemente, lässt jedoch kritische Informationen für eine technische Neuimplementierung aus.
+
+- **Domain- & Datenmodelle fehlen:** Die Beschreibungen verweisen auf Objekte wie `gameData`, `selection`, `Structure`, `Zone` oder `EventLogItem`, ohne deren Felder oder Typen zu definieren. Damit ist unklar, welche Datenstrukturen ein neues Frontend erwarten oder erzeugen muss.
+
+- **State-Management & Backend-Anbindung unklar:** Es wird nur erwähnt, dass `App.tsx` den kompletten Zustand verwaltet, doch Angaben zu einem globalen Store (z. B. Zustand/Zustandshooks), zu Socket.IO-Subscriptions oder zu API-Aufrufen fehlen. Ohne diese Informationen lässt sich die Datenversorgung des UI nicht rekonstruieren.
+
+- **Interaktionskontrakte nicht spezifiziert:** Viele Props wie `onUpdate`, `onBatchAction`, `onPlantAction` oder `onNavigate` werden genannt, aber weder ihre erwarteten Parameter noch die resultierenden Seiteneffekte werden definiert. Für eine Neuimplementierung ist daher unklar, welche Payloads Aktionen verarbeiten sollen.
+
+- **Fehlende UI-/Design-Details:** Zwar wird von „standardisierten“ Buttons, Formularen oder Karten gesprochen, konkrete Stilvorgaben (Tailwind-Klassen, Farb-/Spacing-Tokens, Breakpoints) oder Layout-Spezifikationen fehlen jedoch komplett. Somit lassen sich Look & Feel oder Responsiveness nicht reproduzieren.
+
+- **Zustands- und Fehlerszenarien offen:** Das Dokument beschreibt Idealabläufe (z. B. zwei Zustände des `EnvironmentPanel` oder den Auswahlmodus im `ZonePlantPanel`), liefert aber keine Hinweise auf Edge Cases wie Validierungsfehler, leere Listen, Netzwerkprobleme oder konkurrierende Updates.
+
+### Empfohlene Ergänzungen
+
+- Typdefinitionen bzw. Links zu Schema-/Blueprint-Dokumenten für alle erwähnten Datenobjekte.
+- Beschreibung des globalen Datenflusses (Socket-Events, REST-Endpunkte, Zustand-Store, Event-Handler-Signaturen).
+- Design-Spezifikation mit Tailwind-Tokens, Komponenten-Layouts, Responsive-Verhalten und Accessibility-Anforderungen.
+- Ablauf- oder Sequenzdiagramme für wichtige Interaktionen (z. B. wie `onUpdate` aus `EnvironmentPanel` in die Simulation greift).
+- Fehler-, Lade- und Edge-Case-Szenarien einschließlich erwarteter Nutzerführung und Fallbacks.
