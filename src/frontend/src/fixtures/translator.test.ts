@@ -37,6 +37,85 @@ const SAMPLE_DATA: ClickDummyGameData = {
               kpis: [
                 { title: 'PPFD', value: '882', unit: 'µmol/m²/s', target: 900, status: 'optimal' },
                 { title: 'VPD', value: '1.2', unit: 'kPa', target: 1.1, status: 'warning' },
+                {
+                  title: 'Temperature',
+                  value: '25.2 °C',
+                  unit: '°C',
+                  target: 25,
+                  status: 'optimal',
+                },
+                { title: 'Humidity', value: '52 %', unit: '%', target: 50, status: 'optimal' },
+                {
+                  title: 'CO₂ level',
+                  value: '1,180',
+                  unit: 'ppm',
+                  target: 1200,
+                  status: 'warning',
+                },
+                {
+                  title: 'Water reserve',
+                  value: '1,200 L',
+                  unit: 'L',
+                  target: 1000,
+                  status: 'warning',
+                },
+                {
+                  title: 'Nutrient solution',
+                  value: '480 L',
+                  unit: 'L',
+                  target: 450,
+                  status: 'warning',
+                },
+                {
+                  title: 'Nutrient strength',
+                  value: '90 %',
+                  unit: '%',
+                  target: 100,
+                  status: 'warning',
+                },
+                {
+                  title: 'Reservoir level',
+                  value: '68%',
+                  unit: '%',
+                  target: 70,
+                  status: 'warning',
+                },
+                {
+                  title: 'Substrate health',
+                  value: '82 %',
+                  unit: '%',
+                  target: 90,
+                  status: 'warning',
+                },
+                { title: 'Transpiration', value: '14 L', unit: 'L', target: 12, status: 'warning' },
+                { title: 'Stress level', value: '45 %', unit: '%', target: 30, status: 'warning' },
+                { title: 'Pending treatments', value: '3', unit: '', target: 0, status: 'danger' },
+                { title: 'Applied treatments', value: '1', unit: '', target: 0, status: 'warning' },
+                { title: 'Disease incidents', value: '2', unit: '', target: 0, status: 'danger' },
+                { title: 'Pest sightings', value: '1', unit: '', target: 0, status: 'warning' },
+                { title: 'Re-entry wait', value: '12', unit: 'h', target: 0, status: 'warning' },
+                {
+                  title: 'Pre-harvest interval',
+                  value: '2',
+                  unit: 'days',
+                  target: 0,
+                  status: 'warning',
+                },
+                {
+                  title: 'Daily water consumption',
+                  value: '180',
+                  unit: 'L/day',
+                  target: 150,
+                  status: 'warning',
+                },
+                {
+                  title: 'Daily nutrient consumption',
+                  value: '90',
+                  unit: 'L/day',
+                  target: 80,
+                  status: 'warning',
+                },
+                { title: 'DLI', value: '32', unit: 'mol/m²/d', target: 30, status: 'optimal' },
               ],
               plants: [
                 {
@@ -109,10 +188,36 @@ describe('translateClickDummyGameData', () => {
 
     expect(snapshot.zones).toHaveLength(1);
     const [zone] = snapshot.zones;
+    expect(zone.environment.temperature).toBeCloseTo(25.2, 5);
     expect(zone.environment.relativeHumidity).toBeCloseTo(0.52, 5);
+    expect(zone.environment.co2).toBeCloseTo(1180, 5);
     expect(zone.environment.vpd).toBeCloseTo(1.2, 5);
     expect(zone.lighting?.photoperiodHours?.on).toBe(12);
-    expect(zone.lighting?.dli).toBeGreaterThan(0);
+    expect(zone.lighting?.dli).toBeCloseTo(32, 5);
+    expect(zone.lighting?.averagePpfd).toBeCloseTo(882, 5);
+
+    expect(zone.resources.waterLiters).toBeCloseTo(1200, 5);
+    expect(zone.resources.nutrientSolutionLiters).toBeCloseTo(480, 5);
+    expect(zone.resources.nutrientStrength).toBeCloseTo(0.9, 5);
+    expect(zone.resources.reservoirLevel).toBeCloseTo(0.68, 5);
+    expect(zone.resources.substrateHealth).toBeCloseTo(0.82, 5);
+    expect(zone.resources.lastTranspirationLiters).toBeCloseTo(14, 5);
+
+    expect(zone.metrics.averageTemperature).toBeCloseTo(25.2, 5);
+    expect(zone.metrics.averageHumidity).toBeCloseTo(0.52, 5);
+    expect(zone.metrics.averageCo2).toBeCloseTo(1180, 5);
+    expect(zone.metrics.averagePpfd).toBeCloseTo(882, 5);
+    expect(zone.metrics.stressLevel).toBeCloseTo(0.45, 5);
+
+    expect(zone.supplyStatus?.dailyWaterConsumptionLiters).toBeCloseTo(180, 5);
+    expect(zone.supplyStatus?.dailyNutrientConsumptionLiters).toBeCloseTo(90, 5);
+
+    expect(zone.health.diseases).toBe(2);
+    expect(zone.health.pests).toBe(1);
+    expect(zone.health.pendingTreatments).toBe(3);
+    expect(zone.health.appliedTreatments).toBe(1);
+    expect(zone.health.reentryRestrictedUntilTick).toBe(170);
+    expect(zone.health.preHarvestRestrictedUntilTick).toBe(206);
 
     expect(zone.plants).toHaveLength(1);
     const [plant] = zone.plants;

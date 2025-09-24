@@ -17,6 +17,7 @@ import type {
 import type {
   ClickDummyCandidate,
   ClickDummyGameData,
+  ClickDummyKpi,
   ClickDummyRoom,
   ClickDummyStructure,
   ClickDummyZone,
@@ -43,6 +44,30 @@ interface TickInfo {
   minutesIntoDay?: number;
 }
 
+interface NormalizedZoneKpis {
+  temperature?: number;
+  relativeHumidity?: number;
+  co2?: number;
+  ppfd?: number;
+  vpd?: number;
+  dli?: number;
+  stressLevel?: number;
+  reservoirLevel?: number;
+  substrateHealth?: number;
+  nutrientStrength?: number;
+  waterLiters?: number;
+  nutrientSolutionLiters?: number;
+  transpirationLiters?: number;
+  dailyWaterLiters?: number;
+  dailyNutrientLiters?: number;
+  reentryHours?: number;
+  preHarvestHours?: number;
+  diseaseCount?: number;
+  pestCount?: number;
+  pendingTreatmentCount?: number;
+  appliedTreatmentCount?: number;
+}
+
 const HOURS_PER_DAY = 24;
 const MINUTES_PER_HOUR = 60;
 const DAYS_PER_WEEK = 7;
@@ -55,6 +80,55 @@ const DEFAULT_RESOURCE_NUTRIENT_LITERS = 400;
 const HUMIDITY_PERCENT_SCALE = 100;
 const HEALTH_PERCENT_SCALE = 100;
 const STRESS_PERCENT_SCALE = 100;
+
+const sanitizeNonNegative = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, value);
+};
+
+const normalizeUnitInterval = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  if (value > 1) {
+    return clamp(value / HUMIDITY_PERCENT_SCALE, 0, 1);
+  }
+  return clamp(value, 0, 1);
+};
+
+const normalizeDurationToHours = (value: number, unit: string, titleSlug: string): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  const normalizedUnit = unit.replace(/\s+/g, '').toLowerCase();
+  if (normalizedUnit.includes('week') || titleSlug.includes('week')) {
+    return value * HOURS_PER_DAY * DAYS_PER_WEEK;
+  }
+  if (normalizedUnit.includes('day') || titleSlug.includes('day')) {
+    return value * HOURS_PER_DAY;
+  }
+  if (
+    normalizedUnit.includes('hour') ||
+    normalizedUnit.includes('hr') ||
+    normalizedUnit === 'h' ||
+    titleSlug.includes('hour')
+  ) {
+    return value;
+  }
+  if (normalizedUnit.includes('min')) {
+    return value / MINUTES_PER_HOUR;
+  }
+  return value;
+};
+
+const sanitizeCount = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.round(value));
+};
 
 const DEFAULT_ROOM_PURPOSES: Record<string, RoomPurposeDescriptor> = {
   growroom: { id: 'purpose:growroom', kind: 'growroom', name: 'Grow Room' },
@@ -86,8 +160,25 @@ const parseNumber = (value: string | number | undefined): number => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const SUBSCRIPT_DIGIT_MAP: Record<string, string> = {
+  '₀': '0',
+  '₁': '1',
+  '₂': '2',
+  '₃': '3',
+  '₄': '4',
+  '₅': '5',
+  '₆': '6',
+  '₇': '7',
+  '₈': '8',
+  '₉': '9',
+};
+
 const slugify = (value: string): string => {
-  return value
+  const withNormalizedDigits = value.replace(
+    /[₀₁₂₃₄₅₆₇₈₉]/g,
+    (char) => SUBSCRIPT_DIGIT_MAP[char] ?? '',
+  );
+  return withNormalizedDigits
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -132,6 +223,128 @@ const parsePhotoperiod = (cycle: string | undefined): { on: number; off: number 
     return undefined;
   }
   return { on, off };
+};
+
+const mapKpiToNormalizedEntry = (
+  kpi: ClickDummyKpi,
+): [keyof NormalizedZoneKpis, number] | undefined => {
+  const rawValue = parseNumber(kpi.value);
+  if (!Number.isFinite(rawValue)) {
+    return undefined;
+  }
+
+  const slug = slugify(kpi.title);
+  const normalizedUnit = (kpi.unit ?? '').toLowerCase().replace(/\s+/g, '');
+  const titleCompact = slug.replace(/-/g, '');
+
+  if (slug.includes('pending-treatment')) {
+    return ['pendingTreatmentCount', sanitizeCount(rawValue)];
+  }
+  if (slug.includes('applied-treatment')) {
+    return ['appliedTreatmentCount', sanitizeCount(rawValue)];
+  }
+  if (slug.includes('disease')) {
+    return ['diseaseCount', sanitizeCount(rawValue)];
+  }
+  if (slug.includes('pest')) {
+    return ['pestCount', sanitizeCount(rawValue)];
+  }
+  if (slug.includes('stress')) {
+    return ['stressLevel', normalizeUnitInterval(rawValue)];
+  }
+  if (slug.includes('humidity') || slug === 'rh' || slug.includes('relative-humidity')) {
+    return ['relativeHumidity', normalizeUnitInterval(rawValue)];
+  }
+  if (slug.includes('temperature')) {
+    return ['temperature', rawValue];
+  }
+  if (slug.includes('co2') || titleCompact.includes('co2')) {
+    return ['co2', sanitizeNonNegative(rawValue)];
+  }
+  if (slug.includes('ppfd')) {
+    return ['ppfd', sanitizeNonNegative(rawValue)];
+  }
+  if (slug.includes('vpd')) {
+    return ['vpd', sanitizeNonNegative(rawValue)];
+  }
+  if (slug === 'dli') {
+    return ['dli', sanitizeNonNegative(rawValue)];
+  }
+
+  if (normalizedUnit.includes('/day') && (slug.includes('water') || slug.includes('irrigation'))) {
+    return ['dailyWaterLiters', sanitizeNonNegative(rawValue)];
+  }
+  if (
+    normalizedUnit.includes('/day') &&
+    (slug.includes('nutrient') || slug.includes('fertigation'))
+  ) {
+    return ['dailyNutrientLiters', sanitizeNonNegative(rawValue)];
+  }
+
+  if (
+    slug.includes('water-consumption') ||
+    slug.includes('daily-water') ||
+    slug.includes('water-use')
+  ) {
+    return ['dailyWaterLiters', sanitizeNonNegative(rawValue)];
+  }
+  if (slug.includes('nutrient-consumption') || slug.includes('daily-nutrient')) {
+    return ['dailyNutrientLiters', sanitizeNonNegative(rawValue)];
+  }
+
+  if (slug.includes('water-reserve') || slug.includes('water-available') || slug === 'water') {
+    return ['waterLiters', sanitizeNonNegative(rawValue)];
+  }
+  if (
+    slug.includes('nutrient-solution') ||
+    slug.includes('nutrient-level') ||
+    slug.includes('fertigation-reserve')
+  ) {
+    return ['nutrientSolutionLiters', sanitizeNonNegative(rawValue)];
+  }
+  if (slug.includes('transpiration')) {
+    return ['transpirationLiters', sanitizeNonNegative(rawValue)];
+  }
+
+  if (slug.includes('reservoir')) {
+    return ['reservoirLevel', normalizeUnitInterval(rawValue)];
+  }
+  if (slug.includes('substrate')) {
+    return ['substrateHealth', normalizeUnitInterval(rawValue)];
+  }
+  if (slug.includes('nutrient-strength') || slug.includes('ec')) {
+    return ['nutrientStrength', normalizeUnitInterval(rawValue)];
+  }
+
+  if (slug.includes('reentry') || slug.includes('re-entry')) {
+    return [
+      'reentryHours',
+      sanitizeNonNegative(normalizeDurationToHours(rawValue, normalizedUnit, slug)),
+    ];
+  }
+  if (slug.includes('preharvest') || slug.includes('pre-harvest')) {
+    return [
+      'preHarvestHours',
+      sanitizeNonNegative(normalizeDurationToHours(rawValue, normalizedUnit, slug)),
+    ];
+  }
+
+  return undefined;
+};
+
+const extractNormalizedKpis = (zone: ClickDummyZone): NormalizedZoneKpis => {
+  const normalized: NormalizedZoneKpis = {};
+  for (const kpi of zone.kpis ?? []) {
+    const entry = mapKpiToNormalizedEntry(kpi);
+    if (!entry) {
+      continue;
+    }
+    const [key, value] = entry;
+    if (Number.isFinite(value)) {
+      normalized[key] = value;
+    }
+  }
+  return normalized;
 };
 
 const computeDli = (ppfd: number, photoperiodOnHours: number | undefined): number | undefined => {
@@ -187,21 +400,28 @@ const toStage = (phase: string | undefined): string => {
 const toZoneLighting = (
   zone: ClickDummyZone,
   environmentPpfd: number,
+  normalizedKpis: NormalizedZoneKpis,
 ): ZoneLightingSnapshot | undefined => {
   const photoperiod = parsePhotoperiod(zone.controls?.light?.cycle);
-  if (!photoperiod && environmentPpfd <= 0) {
+  const ppfd = normalizedKpis.ppfd ?? environmentPpfd;
+  const hasDli = normalizedKpis.dli !== undefined;
+  if (!photoperiod && ppfd <= 0 && !hasDli) {
     return undefined;
   }
   const lighting: ZoneLightingSnapshot = {};
   if (photoperiod) {
     lighting.photoperiodHours = photoperiod;
-    const dli = computeDli(environmentPpfd, photoperiod.on);
+  }
+  if (normalizedKpis.dli !== undefined) {
+    lighting.dli = normalizedKpis.dli;
+  } else if (photoperiod?.on !== undefined) {
+    const dli = computeDli(ppfd, photoperiod.on);
     if (Number.isFinite(dli)) {
       lighting.dli = dli;
     }
   }
-  if (environmentPpfd > 0) {
-    lighting.averagePpfd = environmentPpfd;
+  if (ppfd > 0) {
+    lighting.averagePpfd = ppfd;
   }
   const power = zone.controls?.light?.power;
   if (Number.isFinite(power)) {
@@ -213,27 +433,72 @@ const toZoneLighting = (
 const deriveZoneResources = (
   zone: ClickDummyZone,
   facilityWaterLiters: number | undefined,
+  normalizedKpis: NormalizedZoneKpis,
+  relativeHumidity: number,
 ): ZoneResourceSnapshot => {
   const areaFactor = zone.area > 0 ? zone.area / 50 : 1;
-  const waterLiters = Number.isFinite(facilityWaterLiters)
-    ? clamp(facilityWaterLiters / Math.max(areaFactor, 1), 50, facilityWaterLiters)
-    : DEFAULT_RESOURCE_WATER_LITERS * areaFactor;
-  const nutrientLiters = DEFAULT_RESOURCE_NUTRIENT_LITERS * areaFactor;
-  const humidity = zone.controls?.humidity?.value ?? 0;
-  const reservoirLevel = clamp(0.5 + humidity / (2 * HUMIDITY_PERCENT_SCALE), 0.25, 1);
-  const transpiration = Math.max(0, (zone.estYield ?? zone.plants.length) * 0.1);
+
+  const waterFromKpi = normalizedKpis.waterLiters;
+  let waterLiters: number;
+  if (waterFromKpi !== undefined) {
+    const sanitized = sanitizeNonNegative(waterFromKpi);
+    const facilityCap = Number.isFinite(facilityWaterLiters) ? facilityWaterLiters : undefined;
+    waterLiters = facilityCap !== undefined ? clamp(sanitized, 0, facilityCap) : sanitized;
+  } else if (Number.isFinite(facilityWaterLiters)) {
+    waterLiters = clamp(
+      (facilityWaterLiters ?? 0) / Math.max(areaFactor, 1),
+      50,
+      facilityWaterLiters ?? DEFAULT_RESOURCE_WATER_LITERS,
+    );
+  } else {
+    waterLiters = DEFAULT_RESOURCE_WATER_LITERS * areaFactor;
+  }
+
+  const nutrientSolutionLiters =
+    normalizedKpis.nutrientSolutionLiters !== undefined
+      ? sanitizeNonNegative(normalizedKpis.nutrientSolutionLiters)
+      : DEFAULT_RESOURCE_NUTRIENT_LITERS * areaFactor;
+
+  const nutrientStrength =
+    normalizedKpis.nutrientStrength !== undefined
+      ? clamp(normalizedKpis.nutrientStrength, 0, 1)
+      : 1;
+
+  const reservoirLevel =
+    normalizedKpis.reservoirLevel !== undefined
+      ? clamp(normalizedKpis.reservoirLevel, 0, 1)
+      : clamp(0.5 + relativeHumidity / 2, 0.25, 1);
+
+  const stressReference = normalizedKpis.stressLevel ?? zone.stress;
+  const substrateHealth =
+    normalizedKpis.substrateHealth !== undefined
+      ? clamp(normalizedKpis.substrateHealth, 0, 1)
+      : clamp(1 - stressReference * 0.4, 0.2, 1);
+
+  const transpiration =
+    normalizedKpis.transpirationLiters !== undefined
+      ? sanitizeNonNegative(normalizedKpis.transpirationLiters)
+      : Math.max(0, (zone.estYield ?? zone.plants.length) * 0.1);
+
   return {
     waterLiters,
-    nutrientSolutionLiters: nutrientLiters,
-    nutrientStrength: 1,
-    substrateHealth: clamp(1 - zone.stress * 0.4, 0.2, 1),
+    nutrientSolutionLiters,
+    nutrientStrength,
+    substrateHealth,
     reservoirLevel,
     lastTranspirationLiters: transpiration,
   } satisfies ZoneResourceSnapshot;
 };
 
 const pickKpiValue = (zone: ClickDummyZone, title: string): number | undefined => {
-  const kpi = zone.kpis?.find((entry) => entry.title.toLowerCase() === title.toLowerCase());
+  const lower = title.toLowerCase();
+  const expectedSlug = slugify(title);
+  const kpi = zone.kpis?.find((entry) => {
+    if (entry.title.toLowerCase() === lower) {
+      return true;
+    }
+    return slugify(entry.title) === expectedSlug;
+  });
   if (!kpi) {
     return undefined;
   }
@@ -242,6 +507,7 @@ const pickKpiValue = (zone: ClickDummyZone, title: string): number | undefined =
 
 const toEnvironment = (
   zone: ClickDummyZone,
+  normalizedKpis: NormalizedZoneKpis,
 ): {
   temperature: number;
   relativeHumidity: number;
@@ -249,19 +515,30 @@ const toEnvironment = (
   ppfd: number;
   vpd: number;
 } => {
-  const temperature = zone.controls?.temperature?.value ?? 24;
-  const humidityPercent = zone.controls?.humidity?.value ?? 55;
-  const co2 = zone.controls?.co2?.value ?? 800;
-  const normalizedHumidity = clamp(humidityPercent / HUMIDITY_PERCENT_SCALE, 0, 1);
-  const ppfd = pickKpiValue(zone, 'PPFD') ?? (zone.controls?.light?.on ? 800 : 0);
-  const vpd = pickKpiValue(zone, 'VPD');
-  const fallbackVpd = clamp((1 - normalizedHumidity) * Math.max(temperature - 10, 0) * 0.1, 0, 3);
+  const controlTemperature = zone.controls?.temperature?.value ?? 24;
+  const temperature = normalizedKpis.temperature ?? controlTemperature;
+
+  const humidityControl = zone.controls?.humidity?.value ?? 55;
+  const humidityFromControl = normalizeUnitInterval(humidityControl);
+  const relativeHumidity = normalizedKpis.relativeHumidity ?? humidityFromControl;
+
+  const co2Control = zone.controls?.co2?.value ?? 800;
+  const co2Kpi = normalizedKpis.co2 ?? pickKpiValue(zone, 'CO2');
+  const co2 = Number.isFinite(co2Kpi) ? (co2Kpi ?? co2Control) : co2Control;
+
+  const kpiPpfd = normalizedKpis.ppfd ?? pickKpiValue(zone, 'PPFD');
+  const ppfd = Number.isFinite(kpiPpfd) ? (kpiPpfd as number) : zone.controls?.light?.on ? 800 : 0;
+
+  const kpiVpd = normalizedKpis.vpd ?? pickKpiValue(zone, 'VPD');
+  const fallbackVpd = clamp((1 - relativeHumidity) * Math.max(temperature - 10, 0) * 0.1, 0, 3);
+  const vpd = Number.isFinite(kpiVpd) ? (kpiVpd as number) : fallbackVpd;
+
   return {
     temperature,
-    relativeHumidity: normalizedHumidity,
+    relativeHumidity: clamp(relativeHumidity, 0, 1),
     co2,
     ppfd,
-    vpd: vpd ?? fallbackVpd,
+    vpd,
   };
 };
 
@@ -269,27 +546,49 @@ const toZoneMetrics = (
   environment: ReturnType<typeof toEnvironment>,
   zone: ClickDummyZone,
   currentTick: number,
+  normalizedKpis: NormalizedZoneKpis,
 ) => {
   return {
-    averageTemperature: environment.temperature,
-    averageHumidity: environment.relativeHumidity,
-    averageCo2: environment.co2,
-    averagePpfd: environment.ppfd,
-    stressLevel: clamp(zone.stress, 0, 1),
+    averageTemperature: normalizedKpis.temperature ?? environment.temperature,
+    averageHumidity: normalizedKpis.relativeHumidity ?? environment.relativeHumidity,
+    averageCo2: normalizedKpis.co2 ?? environment.co2,
+    averagePpfd: normalizedKpis.ppfd ?? environment.ppfd,
+    stressLevel: clamp(normalizedKpis.stressLevel ?? zone.stress, 0, 1),
     lastUpdatedTick: currentTick,
   };
 };
 
-const toZoneSupplyStatus = (zone: ClickDummyZone): ZoneSupplyStatusSnapshot | undefined => {
+const toZoneSupplyStatus = (
+  zone: ClickDummyZone,
+  normalizedKpis: NormalizedZoneKpis,
+): ZoneSupplyStatusSnapshot | undefined => {
   const estimatedYield = zone.estYield ?? 0;
-  if (!Number.isFinite(estimatedYield) || estimatedYield <= 0) {
+  const areaFactor = Math.max(zone.area / 50, 1);
+
+  const fallbackWater =
+    Number.isFinite(estimatedYield) && estimatedYield > 0
+      ? estimatedYield * 0.4 * areaFactor
+      : undefined;
+  const fallbackNutrient =
+    Number.isFinite(estimatedYield) && estimatedYield > 0
+      ? estimatedYield * 0.2 * areaFactor
+      : undefined;
+
+  const water = normalizedKpis.dailyWaterLiters ?? fallbackWater;
+  const nutrient = normalizedKpis.dailyNutrientLiters ?? fallbackNutrient;
+
+  if (water === undefined && nutrient === undefined) {
     return undefined;
   }
-  const areaFactor = Math.max(zone.area / 50, 1);
-  return {
-    dailyWaterConsumptionLiters: estimatedYield * 0.4 * areaFactor,
-    dailyNutrientConsumptionLiters: estimatedYield * 0.2 * areaFactor,
-  } satisfies ZoneSupplyStatusSnapshot;
+
+  const snapshot: ZoneSupplyStatusSnapshot = {};
+  if (water !== undefined) {
+    snapshot.dailyWaterConsumptionLiters = sanitizeNonNegative(water);
+  }
+  if (nutrient !== undefined) {
+    snapshot.dailyNutrientConsumptionLiters = sanitizeNonNegative(nutrient);
+  }
+  return snapshot;
 };
 
 const toDeviceSettings = (
@@ -417,16 +716,67 @@ const translatePlants = (
   });
 };
 
-const summarizeZoneHealth = (zone: ClickDummyZone): ZoneHealthSnapshot => {
+const summarizeZoneHealth = (
+  zone: ClickDummyZone,
+  currentTick: number,
+  tickLengthMinutes: number,
+  normalizedKpis: NormalizedZoneKpis,
+): ZoneHealthSnapshot => {
   const statuses = zone.plants?.map((plant) => plant.status.toLowerCase()) ?? [];
-  const pests = statuses.filter((status) => status.includes('pest')).length;
-  const diseases = statuses.filter((status) => status.includes('disease')).length;
-  const pendingTreatments = statuses.filter((status) => status.includes('treatment')).length;
+  const pestsFromPlants = statuses.filter((status) => status.includes('pest')).length;
+  const diseasesFromPlants = statuses.filter((status) => status.includes('disease')).length;
+  const treatmentsFromPlants = statuses.filter((status) => status.includes('treatment')).length;
+
+  const diseases = sanitizeCount(normalizedKpis.diseaseCount ?? diseasesFromPlants);
+  const pests = sanitizeCount(normalizedKpis.pestCount ?? pestsFromPlants);
+  const pendingTreatments = sanitizeCount(
+    normalizedKpis.pendingTreatmentCount ?? treatmentsFromPlants,
+  );
+  const appliedTreatments = sanitizeCount(normalizedKpis.appliedTreatmentCount ?? 0);
+
+  const computeRestrictionTick = (hours: number | undefined): number | undefined => {
+    if (!Number.isFinite(hours) || hours === undefined || hours <= 0) {
+      return undefined;
+    }
+    const ticksOffset = Math.round((hours * MINUTES_PER_HOUR) / Math.max(tickLengthMinutes, 1));
+    if (ticksOffset <= 0) {
+      return currentTick;
+    }
+    return currentTick + ticksOffset;
+  };
+
+  const fallbackReentryHours =
+    normalizedKpis.reentryHours !== undefined
+      ? undefined
+      : pendingTreatments > 0
+        ? 12
+        : pests > 0 || diseases > 0
+          ? 6
+          : undefined;
+
+  const fallbackPreHarvestHours =
+    normalizedKpis.preHarvestHours !== undefined
+      ? undefined
+      : diseases > 0
+        ? HOURS_PER_DAY * 2
+        : pendingTreatments > 0
+          ? HOURS_PER_DAY
+          : undefined;
+
+  const reentryRestrictedUntilTick = computeRestrictionTick(
+    normalizedKpis.reentryHours ?? fallbackReentryHours,
+  );
+  const preHarvestRestrictedUntilTick = computeRestrictionTick(
+    normalizedKpis.preHarvestHours ?? fallbackPreHarvestHours,
+  );
+
   return {
     diseases,
     pests,
     pendingTreatments,
-    appliedTreatments: 0,
+    appliedTreatments,
+    reentryRestrictedUntilTick,
+    preHarvestRestrictedUntilTick,
   } satisfies ZoneHealthSnapshot;
 };
 
@@ -494,13 +844,19 @@ const translateZone = (
   tickLengthMinutes: number,
   facilityWaterLiters: number | undefined,
 ): ZoneSnapshot => {
-  const environment = toEnvironment(zone);
-  const resources = deriveZoneResources(zone, facilityWaterLiters);
-  const lighting = toZoneLighting(zone, environment.ppfd);
-  const supplyStatus = toZoneSupplyStatus(zone);
+  const normalizedKpis = extractNormalizedKpis(zone);
+  const environment = toEnvironment(zone, normalizedKpis);
+  const resources = deriveZoneResources(
+    zone,
+    facilityWaterLiters,
+    normalizedKpis,
+    environment.relativeHumidity,
+  );
+  const lighting = toZoneLighting(zone, environment.ppfd, normalizedKpis);
+  const supplyStatus = toZoneSupplyStatus(zone, normalizedKpis);
   const devices = translateDevices(zone, structure.id, room.id, currentTick, tickLengthMinutes);
   const plants = translatePlants(zone, structure.id, room.id);
-  const health = summarizeZoneHealth(zone);
+  const health = summarizeZoneHealth(zone, currentTick, tickLengthMinutes, normalizedKpis);
   const plantingGroups = toPlantingGroups(zone);
   const plantingPlan = toPlantingPlan(zone);
   const deviceGroups = toDeviceGroups(devices);
@@ -519,7 +875,7 @@ const translateZone = (
     cultivationMethodId: slugify(zone.method) ? `method:${slugify(zone.method)}` : undefined,
     environment,
     resources,
-    metrics: toZoneMetrics(environment, zone, currentTick),
+    metrics: toZoneMetrics(environment, zone, currentTick, normalizedKpis),
     devices,
     plants,
     health,
