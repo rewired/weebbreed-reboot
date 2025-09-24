@@ -179,7 +179,7 @@ At completion: convert negative energy to **overtime hours** (ticks).
   - **Maintenance**: `baseMaintenanceCostPerTick` (hourly base rate) × tickHours, with aging via `costIncreasePer1000Ticks`.
   - **Energy**: sum `(device.power_kW × tickHours × electricityCostPerKWh)` for active devices.
   - **Water/Nutrients**: from zone demand using **g/m²/day** curves → per-tick spend via `waterCostPerM3`, `nutrientsCostPerKg`.
-- **Rent**: structure fixed costs or `area_m2 × rentalRate`, stored as hourly rates and multiplied by tickHours.
+- **Rent**: structure fixed costs or `area_m2 × rentalRate`; the value lives in `StructureState.rentPerTick`, but that field is a legacy name for the hourly base rate and must be multiplied by tickHours when charging rent.
 
 Recurring OpEx entries should always derive their per-tick charge from the current tick length
 (`tickHours = tickLengthMinutes / 60`) so that changing the tick length at runtime does not drift

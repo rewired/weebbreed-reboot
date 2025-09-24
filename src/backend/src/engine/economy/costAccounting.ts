@@ -222,11 +222,8 @@ export class CostAccountingService {
       return undefined;
     }
 
-    const baseRatePerHour = Math.max(
-      Number.isFinite(structure.rentPerTick) ? structure.rentPerTick : 0,
-      0,
-    );
-    const rentCost = baseRatePerHour * hoursBilled;
+    const rentRatePerHour = this.getStructureRentRatePerHour(structure);
+    const rentCost = rentRatePerHour * hoursBilled;
     if (rentCost <= MULTIPLIER_TOLERANCE) {
       return undefined;
     }
@@ -243,12 +240,23 @@ export class CostAccountingService {
       'opex',
       {
         structureId: structure.id,
-        rentPerHour: baseRatePerHour,
+        rentPerHour: rentRatePerHour,
         hoursBilled,
       },
     );
 
     return rentCost;
+  }
+
+  /**
+   * `StructureState.rentPerTick` is a legacy field name; the stored value already
+   * represents an hourly base rate so recurring costs stay consistent when tick
+   * length changes. Centralizing the sanitization keeps this convention obvious
+   * and prevents other callers from reintroducing per-tick assumptions.
+   */
+  private getStructureRentRatePerHour(structure: StructureState): number {
+    const rawRate = Number.isFinite(structure.rentPerTick) ? structure.rentPerTick : 0;
+    return Math.max(rawRate, 0);
   }
 
   applyPayroll(

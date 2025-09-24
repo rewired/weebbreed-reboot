@@ -86,6 +86,10 @@ export interface StructureState {
   status: StructureStatus;
   footprint: FootprintDimensions;
   rooms: RoomState[];
+  /**
+   * Hourly rent base rate (legacy name kept for save compatibility). Multiply by
+   * the current tick length in hours to derive the per-tick charge.
+   */
   rentPerTick: number;
   upfrontCostPaid: number;
   notes?: string;

@@ -254,6 +254,11 @@ Batched snapshot diff and event bundles. Payload:
 }
 ```
 
+> **Normalization note:** The `structures[].rentPerTick` value in snapshots is an hourly
+> base rent despite the legacy field name. Multiply by `tickLengthMinutes / 60` when
+> presenting or applying per-tick rent so UI and automation stay aligned with the
+> accounting normalization.
+
 - Batching window defaults to **120 ms** (configurable) or a maximum of five
   ticks before the buffer flushes.
 - `snapshot` is generated via `buildSimulationSnapshot` and mirrors the
