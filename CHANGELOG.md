@@ -50,6 +50,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drilldown so DashboardOverview and ZoneDetail mirror the facility hierarchy with breadcrumbs and
   aggregated telemetry panels.
 - Offline-Bootstrap erzeugt den Store-Hydrationssnapshot jetzt über `createClickDummyFixture()` aus dem modularen Fixturepaket.
+- Portierte Struktur-/Raum-/Zonen-Helfer in wiederverwendbare Store-Selektoren und ersetzte duplizierte Filterlogik in ZoneDetail
+  sowie ModalHost durch die neuen Utilities.
 
 ### Fixed
 
