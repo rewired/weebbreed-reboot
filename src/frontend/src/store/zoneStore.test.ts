@@ -202,3 +202,91 @@ describe('zoneStore timeline handling', () => {
     });
   });
 });
+
+describe('zoneStore world intents', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('dispatches rentStructure intent', async () => {
+    const { useZoneStore } = await import('./zoneStore');
+    const sendFacadeIntent = vi.fn();
+    useZoneStore.setState({ sendFacadeIntent });
+
+    useZoneStore.getState().rentStructure('structure-1');
+
+    expect(sendFacadeIntent).toHaveBeenCalledWith({
+      domain: 'world',
+      action: 'rentStructure',
+      payload: { structureId: 'structure-1' },
+    });
+  });
+
+  it('dispatches createRoom intent with sanitized payload', async () => {
+    const { useZoneStore } = await import('./zoneStore');
+    const sendFacadeIntent = vi.fn();
+    useZoneStore.setState({ sendFacadeIntent });
+
+    useZoneStore.getState().createRoom('structure-9', {
+      name: '  Flower Room  ',
+      purposeId: 'purpose:growroom',
+      area: 120,
+      height: 6,
+    });
+
+    expect(sendFacadeIntent).toHaveBeenCalledWith({
+      domain: 'world',
+      action: 'createRoom',
+      payload: {
+        structureId: 'structure-9',
+        room: {
+          name: 'Flower Room',
+          purpose: 'purpose:growroom',
+          area: 120,
+          height: 6,
+        },
+      },
+    });
+  });
+
+  it('dispatches createZone intent with integer plant count', async () => {
+    const { useZoneStore } = await import('./zoneStore');
+    const sendFacadeIntent = vi.fn();
+    useZoneStore.setState({ sendFacadeIntent });
+
+    useZoneStore.getState().createZone('room-4', {
+      name: '  Bench 1  ',
+      area: 48,
+      methodId: '5f2d9d32-9c6b-4a38-8a34-9e1d2f021234',
+      targetPlantCount: 42.9,
+    });
+
+    expect(sendFacadeIntent).toHaveBeenCalledWith({
+      domain: 'world',
+      action: 'createZone',
+      payload: {
+        roomId: 'room-4',
+        zone: {
+          name: 'Bench 1',
+          area: 48,
+          methodId: '5f2d9d32-9c6b-4a38-8a34-9e1d2f021234',
+          targetPlantCount: 42,
+        },
+      },
+    });
+  });
+
+  it('dispatches duplicateStructure intent with optional name', async () => {
+    const { useZoneStore } = await import('./zoneStore');
+    const sendFacadeIntent = vi.fn();
+    useZoneStore.setState({ sendFacadeIntent });
+
+    useZoneStore.getState().duplicateStructure('structure-7', { name: ' West Wing Copy ' });
+
+    expect(sendFacadeIntent).toHaveBeenCalledWith({
+      domain: 'world',
+      action: 'duplicateStructure',
+      payload: { structureId: 'structure-7', name: 'West Wing Copy' },
+    });
+  });
+});

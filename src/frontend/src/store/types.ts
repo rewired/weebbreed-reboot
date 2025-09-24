@@ -155,6 +155,16 @@ export interface ZoneStoreState {
     zoneId: string,
     options?: { name?: string; includeDevices?: boolean; includeMethod?: boolean },
   ) => void;
+  duplicateStructure: (structureId: string, options?: { name?: string }) => void;
+  rentStructure: (structureId: string) => void;
+  createRoom: (
+    structureId: string,
+    options: { name: string; purposeId: string; area: number; height?: number },
+  ) => void;
+  createZone: (
+    roomId: string,
+    options: { name: string; area: number; methodId?: string; targetPlantCount?: number },
+  ) => void;
   removeStructure: (structureId: string) => void;
   removeRoom: (roomId: string) => void;
   removeZone: (zoneId: string) => void;
@@ -224,6 +234,16 @@ export type DuplicateRoomModalDescriptor = ModalDescriptorBase<'duplicateRoom', 
 
 export type DuplicateZoneModalDescriptor = ModalDescriptorBase<'duplicateZone', { zoneId: string }>;
 
+export type DuplicateStructureModalDescriptor = ModalDescriptorBase<
+  'duplicateStructure',
+  { structureId: string }
+>;
+
+export type RentStructureModalDescriptor = ModalDescriptorBase<
+  'rentStructure',
+  { structureId: string }
+>;
+
 export type RenameStructureModalDescriptor = ModalDescriptorBase<
   'renameStructure',
   { structureId: string }
@@ -251,6 +271,8 @@ export type ModalDescriptor =
   | CreateZoneModalDescriptor
   | DuplicateRoomModalDescriptor
   | DuplicateZoneModalDescriptor
+  | DuplicateStructureModalDescriptor
+  | RentStructureModalDescriptor
   | RenameStructureModalDescriptor
   | RenameRoomModalDescriptor
   | RenameZoneModalDescriptor
