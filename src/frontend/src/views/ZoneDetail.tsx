@@ -6,6 +6,7 @@ import Panel from '@/components/Panel';
 import { RoomSummaryCard, ZoneSummaryCard } from '@/components/cards';
 import ToggleSwitch from '@/components/ToggleSwitch';
 import { FormField, NumberInputField, RangeField } from '@/components/forms';
+import { Button, TextInput } from '@/components/inputs';
 import { selectCurrentTick, useAppStore, useGameStore, useZoneStore } from '@/store';
 import { computeZoneAggregateMetrics } from '@/views/utils/zoneAggregates';
 
@@ -520,13 +521,15 @@ const ZoneDetail = () => {
                             {lastValue ? <span>Last command: {lastValue}</span> : null}
                           </div>
                           <div className="flex justify-end">
-                            <button
-                              type="button"
+                            <Button
+                              variant="solid"
+                              tone="accent"
+                              size="xs"
+                              className="font-semibold"
                               onClick={() => handleSetpointDispatch(config.metric)}
-                              className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-xs font-semibold text-surface transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                             >
                               Dispatch
-                            </button>
+                            </Button>
                           </div>
                         </div>
                       }
@@ -628,14 +631,16 @@ const ZoneDetail = () => {
                   formatValue={(value) => value.toFixed(1)}
                   footer={
                     <div className="mt-3 flex justify-end">
-                      <button
-                        type="button"
+                      <Button
+                        variant="solid"
+                        tone="accent"
+                        size="xs"
+                        className="font-semibold"
                         onClick={handleApplyWater}
                         disabled={waterCommandLiters <= 0}
-                        className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-xs font-semibold text-surface transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Apply water
-                      </button>
+                      </Button>
                     </div>
                   }
                 />
@@ -651,10 +656,11 @@ const ZoneDetail = () => {
                         <span className="font-semibold uppercase tracking-wide text-text-secondary">
                           {key}
                         </span>
-                        <input
+                        <TextInput
                           type="number"
                           min={0}
                           step={0.5}
+                          size="sm"
                           value={nutrientDraft[key]}
                           onChange={(event) => {
                             const parsed = Number(event.target.value);
@@ -666,22 +672,23 @@ const ZoneDetail = () => {
                               [key]: Math.max(0, parsed),
                             }));
                           }}
-                          className="w-full rounded-md border border-border/60 bg-surface px-2 py-1 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
                         />
                       </label>
                     ))}
                   </div>
                   <div className="mt-3 flex justify-end">
-                    <button
-                      type="button"
+                    <Button
+                      variant="solid"
+                      tone="default"
+                      size="xs"
+                      className="font-semibold"
                       onClick={handleApplyNutrients}
                       disabled={
                         nutrientDraft.N <= 0 && nutrientDraft.P <= 0 && nutrientDraft.K <= 0
                       }
-                      className="inline-flex items-center rounded-md border border-border/60 bg-surfaceAlt px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-accent/60 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Apply nutrients
-                    </button>
+                    </Button>
                   </div>
                 </FormField>
               </div>
@@ -721,14 +728,16 @@ const ZoneDetail = () => {
                       : 'No harvest-ready planting groups detected.'}
                   </p>
                   <div className="mt-3 flex justify-end">
-                    <button
-                      type="button"
+                    <Button
+                      variant="solid"
+                      tone="default"
+                      size="xs"
+                      className="font-semibold"
                       onClick={handleHarvestReady}
                       disabled={harvestablePlantingIds.length === 0}
-                      className="inline-flex items-center rounded-md border border-border/60 bg-surfaceAlt px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-accent/60 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Harvest ready groups
-                    </button>
+                    </Button>
                   </div>
                 </FormField>
               </div>

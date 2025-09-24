@@ -1,4 +1,5 @@
 import { ReactNode, useEffect } from 'react';
+import { Button, IconButton } from '@/components/inputs';
 
 type ModalAction = {
   label: string;
@@ -19,19 +20,21 @@ type ModalProps = {
   className?: string;
 };
 
-const actionClassName: Record<NonNullable<ModalAction['variant']>, string> = {
-  primary:
-    'inline-flex items-center justify-center rounded-md border border-accent/80 bg-accent/90 px-4 py-2 text-sm font-medium text-surface shadow-strong transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-  secondary:
-    'inline-flex items-center justify-center rounded-md border border-border/60 bg-surfaceAlt px-4 py-2 text-sm font-medium text-text-secondary transition hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
-  danger:
-    'inline-flex items-center justify-center rounded-md border border-danger/60 bg-danger/20 px-4 py-2 text-sm font-medium text-danger transition hover:bg-danger/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger',
-};
-
 const sizeClassName = {
   sm: 'max-w-md',
   md: 'max-w-2xl',
   lg: 'max-w-4xl',
+};
+
+const mapActionToButton = (variant: NonNullable<ModalAction['variant']>) => {
+  switch (variant) {
+    case 'primary':
+      return { variant: 'solid' as const, tone: 'accent' as const };
+    case 'danger':
+      return { variant: 'solid' as const, tone: 'danger' as const };
+    default:
+      return { variant: 'outline' as const, tone: 'default' as const };
+  }
 };
 
 const Modal = ({
@@ -93,30 +96,33 @@ const Modal = ({
             </h2>
             {description ? <p className="text-sm text-text-secondary">{description}</p> : null}
           </div>
-          <button
-            type="button"
+          <IconButton
             onClick={onClose}
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/40 text-lg text-text-muted transition hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
             aria-label="Close dialog"
+            variant="ghost"
+            tone="default"
+            size="md"
           >
             ×
-          </button>
+          </IconButton>
         </header>
         <div className="space-y-4 text-sm text-text-secondary">{children}</div>
         {actions && actions.length > 0 ? (
           <div className="mt-6 flex flex-wrap justify-end gap-3">
             {actions.map((action) => {
               const variant = action.variant ?? 'secondary';
+              const buttonConfig = mapActionToButton(variant);
               return (
-                <button
+                <Button
                   key={action.label}
-                  type="button"
                   onClick={action.onClick}
-                  className={actionClassName[variant]}
+                  variant={buttonConfig.variant}
+                  tone={buttonConfig.tone}
+                  size="md"
                   disabled={action.disabled}
                 >
                   {action.label}
-                </button>
+                </Button>
               );
             })}
           </div>

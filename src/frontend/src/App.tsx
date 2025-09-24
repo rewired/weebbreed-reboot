@@ -5,6 +5,7 @@ import ModalHost from '@/components/ModalHost';
 import Navigation from '@/components/Navigation';
 import Panel from '@/components/Panel';
 import TimeDisplay from '@/components/TimeDisplay';
+import { Button } from '@/components/inputs';
 import { useSimulationBridge } from '@/hooks/useSimulationBridge';
 import { OFFLINE_BOOTSTRAP } from '@/fixtures/offlineBootstrap';
 import DashboardOverview from '@/views/DashboardOverview';
@@ -375,22 +376,27 @@ const App = () => {
 
       return (
         <div key={structure.id} className="space-y-2">
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            tone="default"
+            size="sm"
             onClick={() => selectStructure(structure.id)}
             className={[
-              'flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium transition',
+              'w-full justify-between',
               isStructureSelected
-                ? 'border-accent bg-accent/20 text-text-primary shadow-soft'
-                : 'border-transparent text-text-muted hover:border-border/50 hover:bg-surfaceAlt/80 hover:text-text-primary',
-            ].join(' ')}
+                ? undefined
+                : 'border-transparent bg-transparent text-text-muted hover:border-border/50 hover:bg-surfaceAlt/80 hover:text-text-primary',
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            isActive={isStructureSelected}
             aria-pressed={isStructureSelected}
           >
             <span className="truncate">{structure.name}</span>
             <span className="ml-3 inline-flex items-center justify-center rounded-full border border-border/50 px-2 py-0.5 text-xs text-text-secondary">
               {structure.zoneCount} zones
             </span>
-          </button>
+          </Button>
           {isExpanded ? (
             <div className="ml-3 space-y-1 border-l border-border/40 pl-3">
               {structure.rooms.length ? (
@@ -404,42 +410,52 @@ const App = () => {
 
                   return (
                     <div key={room.id} className="space-y-1">
-                      <button
-                        type="button"
+                      <Button
+                        variant="outline"
+                        tone="default"
+                        size="sm"
                         onClick={() => selectRoom(room.id)}
                         className={[
-                          'flex w-full items-center justify-between rounded-md border px-3 py-1.5 text-sm transition',
+                          'w-full justify-between',
                           isRoomSelected
-                            ? 'border-accent bg-accent/10 text-text-primary shadow-soft'
-                            : 'border-transparent text-text-secondary hover-border-border/40 hover:bg-surfaceAlt/70 hover:text-text-primary',
-                        ].join(' ')}
+                            ? undefined
+                            : 'border-transparent bg-transparent text-text-secondary hover:border-border/40 hover:bg-surfaceAlt/70 hover:text-text-primary',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        isActive={isRoomSelected}
                         aria-pressed={isRoomSelected}
                       >
                         <span className="truncate">{room.name}</span>
                         <span className="ml-2 text-xs text-text-muted">{room.zoneCount} zones</span>
-                      </button>
+                      </Button>
                       {roomZones.length && roomExpanded ? (
                         <ul className="ml-3 space-y-1 border-l border-border/30 pl-3">
                           {roomZones.map((zone) => {
                             const isZoneSelected = selectedZoneId === zone.id;
                             return (
                               <li key={zone.id}>
-                                <button
-                                  type="button"
+                                <Button
+                                  variant="outline"
+                                  tone="default"
+                                  size="xs"
                                   onClick={() => selectZone(zone.id)}
                                   className={[
-                                    'flex w-full items-center justify-between rounded-md border px-3 py-1 text-xs transition',
+                                    'w-full justify-between',
                                     isZoneSelected
-                                      ? 'border-accent bg-accent/10 text-text-primary shadow-soft'
-                                      : 'border-transparent text-text-muted hover:border-border/30 hover:bg-surfaceAlt/60 hover:text-text-primary',
-                                  ].join(' ')}
+                                      ? undefined
+                                      : 'border-transparent bg-transparent text-text-muted hover:border-border/30 hover:bg-surfaceAlt/60 hover:text-text-primary',
+                                  ]
+                                    .filter(Boolean)
+                                    .join(' ')}
+                                  isActive={isZoneSelected}
                                   aria-pressed={isZoneSelected}
                                 >
                                   <span className="truncate">{zone.name}</span>
                                   <span className="ml-2 text-[0.65rem] uppercase tracking-wide text-text-muted">
                                     {zone.temperature.toFixed(0)}°C
                                   </span>
-                                </button>
+                                </Button>
                               </li>
                             );
                           })}
@@ -477,16 +493,17 @@ const App = () => {
                   <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
                     Facility
                   </h2>
-                  <button
-                    type="button"
+                  <Button
+                    variant="link"
+                    tone="accent"
                     onClick={() => {
                       setCurrentView('world');
                       resetSelection();
                     }}
-                    className="text-xs font-medium text-accent transition hover:text-accent/80"
+                    className="text-xs"
                   >
                     All structures
-                  </button>
+                  </Button>
                 </div>
                 <div className="space-y-4 overflow-y-auto pr-1 text-sm text-text-secondary">
                   {structureTree}
@@ -537,15 +554,17 @@ const App = () => {
 
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
+                    <Button
+                      variant="outline"
+                      tone="default"
+                      size="xs"
+                      leadingIcon="←"
                       onClick={navigateUp}
                       disabled={!canNavigateUp}
-                      className="inline-flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-xs font-medium text-text-secondary transition disabled:opacity-40 hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      className="text-text-secondary"
                     >
-                      <span aria-hidden="true">←</span>
                       Up one level
-                    </button>
+                    </Button>
                     <nav
                       className="flex flex-wrap items-center gap-2 text-sm text-text-secondary"
                       aria-label="Breadcrumb"
@@ -553,13 +572,14 @@ const App = () => {
                       {breadcrumbItems.map((item, index) => (
                         <div key={item.id} className="flex items-center gap-2">
                           {item.onClick ? (
-                            <button
-                              type="button"
+                            <Button
+                              variant="link"
+                              tone="accent"
                               onClick={item.onClick}
-                              className="text-sm font-medium text-accent transition hover:text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                              className="text-sm"
                             >
                               {item.label}
-                            </button>
+                            </Button>
                           ) : (
                             <span
                               className={`text-sm font-medium ${item.current ? 'text-text-primary' : 'text-text-secondary'}`}
@@ -660,20 +680,24 @@ const App = () => {
                       </div>
                     </dl>
                     <div className="flex flex-wrap gap-3">
-                      <button
-                        type="button"
+                      <Button
+                        variant="solid"
+                        tone="accent"
+                        size="sm"
                         onClick={connect}
-                        className="inline-flex flex-1 items-center justify-center rounded-md border border-accent/70 bg-accent/90 px-3 py-2 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        className="flex-1"
                       >
                         Connect
-                      </button>
-                      <button
-                        type="button"
+                      </Button>
+                      <Button
+                        variant="solid"
+                        tone="default"
+                        size="sm"
                         onClick={disconnect}
-                        className="inline-flex flex-1 items-center justify-center rounded-md border border-border/70 bg-surfaceAlt px-3 py-2 text-sm font-medium text-text-secondary transition hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                        className="flex-1"
                       >
                         Disconnect
-                      </button>
+                      </Button>
                     </div>
                   </Panel>
 

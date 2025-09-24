@@ -2,6 +2,7 @@ import { FormEvent, useMemo, useState } from 'react';
 import Modal from '@/components/Modal';
 import FormField from '@/components/forms/FormField';
 import NumberInputField from '@/components/forms/NumberInputField';
+import { Select, TextInput } from '@/components/inputs';
 import type { RoomSnapshot, ZoneSnapshot } from '@/types/simulation';
 
 type CultivationMethodOption = {
@@ -138,11 +139,9 @@ const CreateZoneModal = ({
     >
       <form className="space-y-4" onSubmit={handleSubmit}>
         <FormField label="Zone name" secondaryLabel={name.trim() || undefined}>
-          <input
-            type="text"
+          <TextInput
             value={name}
             onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
             placeholder="e.g. Flower bench"
             autoFocus
           />
@@ -166,17 +165,16 @@ const CreateZoneModal = ({
         />
 
         <FormField label="Cultivation method">
-          <select
+          <Select
             value={methodId ?? ''}
             onChange={(event) => setMethodId(event.target.value || undefined)}
-            className="w-full rounded-md border border-border/60 bg-surface px-3 py-2 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
           >
             {methodOptions.map((option) => (
               <option key={option.id} value={option.id}>
                 {option.name}
               </option>
             ))}
-          </select>
+          </Select>
         </FormField>
 
         <NumberInputField

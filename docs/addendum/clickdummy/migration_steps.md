@@ -135,7 +135,7 @@
 
 ### Gemeinsame Komponenten & Utilities
 
-15. UI-Primitiven angleichen: Ersetze Klickdummy-Schaltflächen, Formulare und Icon-Hüllen durch existierende Design-System-Komponenten, ergänze fehlende Inline-Edit-/Icon-Wrapper unter components/inputs.
+15. ✅ UI-Primitiven angleichen: Schaltflächen, Formularfelder und Icon-Hüllen nutzen jetzt die neuen Design-System-Komponenten unter `components/inputs` (`Button`, `IconButton`, `TextInput`, `Select`, `RangeInput`, `InlineEdit`). Bestehende Klickdummy-Markup-Styles wurden entfernt.
 
 16. Fixtures/Mocks modularisieren: Verschiebe deterministische Mock-Fabriken und Rollen-/Kostenkonstanten in src/frontend/fixtures und stelle sicher, dass sie die Store-Hydration bedienen.
 

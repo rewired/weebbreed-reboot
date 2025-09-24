@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { Button } from '@/components/inputs';
 
 type SimulationStatus = 'live' | 'paused' | 'fastForward';
 
@@ -90,14 +91,9 @@ const TimeDisplay = ({
           </dl>
         ) : null}
         {onSync ? (
-          <button
-            type="button"
-            onClick={onSync}
-            className="inline-flex items-center gap-2 rounded-md border border-accent/60 px-3 py-1.5 text-xs font-medium text-accent transition hover:border-accent hover:bg-accent/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          >
-            <span aria-hidden="true">⟳</span>
+          <Button onClick={onSync} variant="outline" tone="accent" size="xs" leadingIcon="⟳">
             {syncLabel}
-          </button>
+          </Button>
         ) : null}
       </div>
     </section>
