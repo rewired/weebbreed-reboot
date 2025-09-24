@@ -49,12 +49,17 @@
 
 ## Open questions / risks
 
-1. Do we continue using Material Icons from the clickdummy or switch to the project’s preferred icon set to stay consistent with the design system?
+1. ✅ Do we continue using Material Icons from the clickdummy or switch to the project’s preferred icon set to stay consistent with the design system?
+   - **Resolution:** Adopt the app’s component-driven icon approach (React icon components behind a shared wrapper) so we can replace the Material glyph spans during migration without carrying the Google font dependency.
 
-2. How should setpoint controls interact with the simulation facade—are sendConfigUpdate/sendFacadeIntent handlers already available for temperature, humidity, PPFD, etc., or do we need to extend store slices?
+2. ✅ How should setpoint controls interact with the simulation facade—are sendConfigUpdate/sendFacadeIntent handlers already available for temperature, humidity, PPFD, etc., or do we need to extend store slices?
+   - **Resolution:** Use the existing `useZoneStore().sendSetpoint` helper, which is wired through the simulation bridge to emit `config.update` messages; extend the slice only when the backend adds new metrics.
 
-3. What navigation model should drive structure/room/zone selection—expand the existing navigation slice or introduce a dedicated world-browser slice? Clarifying avoids duplicating state between sidebar and top-level navigation.
+3. ✅ What navigation model should drive structure/room/zone selection—expand the existing navigation slice or introduce a dedicated world-browser slice? Clarifying avoids duplicating state between sidebar and top-level navigation.
+   - **Resolution:** Reuse and extend the current navigation slice, which already tracks structure/room/zone IDs, so both sidebar and top-level navigation stay in sync without a second store.
 
-4. Should personnel and finance fixtures represent per-tick values (per PRD) or retain aggregated “7d” placeholders until backend feeds real snapshots? Aligning units is critical for determinism and SI compliance.
+4. ✅ Should personnel and finance fixtures represent per-tick values (per PRD) or retain aggregated “7d” placeholders until backend feeds real snapshots? Aligning units is critical for determinism and SI compliance.
+   - **Resolution:** Normalize fixtures to the per-tick units defined in the simulation snapshots to preserve determinism and satisfy the SI-based contracts used throughout the UI and backend.
 
-5. Are duplicate/clone flows (rooms/zones) still required in the MVP, and if so, which backend intents will back them? Current clickdummy logic assumes immediate balance adjustments and device cost tables that may not exist yet.
+5. ✅ Are duplicate/clone flows (rooms/zones) still required in the MVP, and if so, which backend intents will back them? Current clickdummy logic assumes immediate balance adjustments and device cost tables that may not exist yet.
+   - **Resolution:** Keep the duplicate flows and route them through the existing `world.duplicateRoom`/`world.duplicateZone` facade intents, which already recreate devices and post finance events for cost accounting.
