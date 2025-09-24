@@ -427,6 +427,10 @@ Discriminated union on `action`:
 | `step`        | `ticks?`                          | `step()`                           |
 | `fastForward` | `multiplier`                      | `setSpeed()`                       |
 
+Clients emit the raw discriminant payload without an additional `type`
+wrapper, e.g. `socket.emit('simulationControl', { action: 'pause' })`. The
+gateway performs the discriminant check based on the `action` field alone.
+
 All payloads are validated with Zod before the façade command is executed. If
 validation fails the façade is not touched and the client receives an
 `ERR_VALIDATION` response immediately.
