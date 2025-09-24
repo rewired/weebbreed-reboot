@@ -117,7 +117,10 @@
    - Ein neues Pflanzenaktions-Panel bündelt Bewässerungs- und Nährstoffbefehle, Harvest-Batch-Kommandos sowie das Umschalten aktiver Pflanzpläne über die bestehenden `applyWater`/`applyNutrients`/`harvestPlantings`/`togglePlantingPlan`-Intents.
    - Gerätegruppen werden als Automation-Panel mit Toggles dargestellt, während die Geräteinventur detaillierte Wartungs-, Laufzeit- und Settings-Metadaten pro Gerät ausgibt.
 
-11. Personalbereich neu aufbauen: Spiegle Bewerber- und Mitarbeiterdarstellungen im PersonnelView, verdrahte Hire/Fire-Intents und verlagere Modale in den globalen Modal-Slice.
+11. ✅ Personalbereich neu aufbauen: Spiegle Bewerber- und Mitarbeiterdarstellungen im PersonnelView, verdrahte Hire/Fire-Intents und verlagere Modale in den globalen Modal-Slice.
+    - Das Frontend rendert nun symmetrische Karten für Mitarbeitende und Bewerber:innen, inklusive Skill-/Trait-Details sowie Morale-/Energy-Balken.
+    - Hire-/Fire-Aktionen öffnen globale Modale aus dem Modal-Slice; Bestätigungen senden die Facade-Intents `workforce.hire` und `workforce.fire`.
+    - Der neue `ModalHost` pausiert die Simulation bei modalem Fokus und nutzt den globalen Slice für alle HR-Workflows.
 
 12. Finanzdashboard abstimmen: Übertrage Zeitbereichs-Umschalter und Aufschlüsselungslisten in FinancesView und stelle sicher, dass sie tickbasierte financeHistory-Daten konsumieren.
 

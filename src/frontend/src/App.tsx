@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import DashboardControls from '@/components/DashboardControls';
 import DashboardHeader from '@/components/DashboardHeader';
+import ModalHost from '@/components/ModalHost';
 import Navigation from '@/components/Navigation';
 import Panel from '@/components/Panel';
 import TimeDisplay from '@/components/TimeDisplay';
@@ -466,219 +467,227 @@ const App = () => {
   ]);
 
   return (
-    <main className="min-h-screen bg-background font-sans text-text-primary">
-      <div className="grid min-h-screen grid-cols-[minmax(260px,320px)_1fr] grid-rows-[auto_1fr]">
-        <aside className="col-start-1 row-span-full border-r border-border/40 bg-surfaceAlt/60">
-          <div className="flex h-full flex-col">
-            <div className="space-y-4 px-5 py-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                  Facility
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentView('world');
-                    resetSelection();
-                  }}
-                  className="text-xs font-medium text-accent transition hover:text-accent/80"
-                >
-                  All structures
-                </button>
-              </div>
-              <div className="space-y-4 overflow-y-auto pr-1 text-sm text-text-secondary">
-                {structureTree}
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <header className="col-start-2 row-start-1 border-b border-border/40 bg-surface/80 px-8 py-6 backdrop-blur">
-          <DashboardHeader
-            title="Simulation control"
-            subtitle="Monitor facility telemetry, drive the simulation loop, and jump between operational views."
-            status={{
-              label: connectionLabel,
-              tone: resolveConnectionTone(connectionStatus),
-            }}
-            actions={
-              <DashboardControls
-                state={runState}
-                onPlay={handlePlay}
-                onPause={handlePause}
-                onStep={handleStep}
-                onFastForward={handleFastForward}
-                tickLengthMinutes={Math.round(tickLengthMinutes)}
-                minTickLength={1}
-                maxTickLength={120}
-                onTickLengthChange={handleTickLengthChange}
-                footer={`Target tick rate: ${targetTickRate.toFixed(1)}x • Last tick duration: ${lastTickDuration}`}
-                className="border-none bg-transparent p-0 shadow-none"
-              />
-            }
-            meta={facilitySummary}
-            className="border border-border/50"
-          >
-            <div className="space-y-6">
-              <TimeDisplay
-                tick={currentTick}
-                simulationTimeLabel={simulationTimeLabel}
-                realTimeLabel={realTimeLabel}
-                status={timeDisplayStatus}
-                tickLengthMinutes={Math.round(tickLengthMinutes)}
-                meta={timeMeta}
-                prefix={
-                  <span className="text-sm text-text-muted">Connection: {connectionLabel}</span>
-                }
-                className="border-none bg-transparent p-0 shadow-none"
-              />
-
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-3">
+    <>
+      <main className="min-h-screen bg-background font-sans text-text-primary">
+        <div className="grid min-h-screen grid-cols-[minmax(260px,320px)_1fr] grid-rows-[auto_1fr]">
+          <aside className="col-start-1 row-span-full border-r border-border/40 bg-surfaceAlt/60">
+            <div className="flex h-full flex-col">
+              <div className="space-y-4 px-5 py-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    Facility
+                  </h2>
                   <button
                     type="button"
-                    onClick={navigateUp}
-                    disabled={!canNavigateUp}
-                    className="inline-flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-xs font-medium text-text-secondary transition disabled:opacity-40 hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    onClick={() => {
+                      setCurrentView('world');
+                      resetSelection();
+                    }}
+                    className="text-xs font-medium text-accent transition hover:text-accent/80"
                   >
-                    <span aria-hidden="true">←</span>
-                    Up one level
+                    All structures
                   </button>
-                  <nav
-                    className="flex flex-wrap items-center gap-2 text-sm text-text-secondary"
-                    aria-label="Breadcrumb"
-                  >
-                    {breadcrumbItems.map((item, index) => (
-                      <div key={item.id} className="flex items-center gap-2">
-                        {item.onClick ? (
-                          <button
-                            type="button"
-                            onClick={item.onClick}
-                            className="text-sm font-medium text-accent transition hover:text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                          >
-                            {item.label}
-                          </button>
-                        ) : (
-                          <span
-                            className={`text-sm font-medium ${item.current ? 'text-text-primary' : 'text-text-secondary'}`}
-                          >
-                            {item.label}
-                          </span>
-                        )}
-                        {index < breadcrumbItems.length - 1 ? (
-                          <span className="text-xs text-text-muted">/</span>
-                        ) : null}
-                      </div>
-                    ))}
-                  </nav>
                 </div>
-
-                <Navigation
-                  items={navigationItems}
-                  activeItemId={currentView}
-                  onSelect={handleSelectView}
-                  className="border-border/50 bg-surfaceAlt/60"
-                />
+                <div className="space-y-4 overflow-y-auto pr-1 text-sm text-text-secondary">
+                  {structureTree}
+                </div>
               </div>
+            </div>
+          </aside>
 
-              <section
-                className="flex flex-col gap-3 rounded-lg border border-border/60 bg-surfaceAlt/60 p-4 text-sm text-text-secondary shadow-soft"
-                aria-label="Recent events"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-                    Event ticker
-                  </span>
-                  <span className="text-xs text-text-muted">
-                    Latest updates from the simulation loop.
-                  </span>
-                </div>
-                {tickerEvents.length ? (
-                  <ul className="flex flex-wrap items-center gap-4">
-                    {tickerEvents.map((event, index) => {
-                      const toneClass =
-                        EVENT_LEVEL_CLASS[event.level ?? 'info'] ?? EVENT_LEVEL_CLASS.info;
-                      return (
-                        <li key={`${event.ts ?? index}-ticker`} className="flex items-center gap-2">
-                          <span
-                            className={`text-xs font-semibold uppercase tracking-wide ${toneClass}`}
-                          >
-                            {event.type}
-                          </span>
-                          <span className="text-xs text-text-muted">
-                            {formatTimestamp(event.ts)}
-                          </span>
-                          {event.message ? (
-                            <span className="text-xs text-text-secondary">{event.message}</span>
+          <header className="col-start-2 row-start-1 border-b border-border/40 bg-surface/80 px-8 py-6 backdrop-blur">
+            <DashboardHeader
+              title="Simulation control"
+              subtitle="Monitor facility telemetry, drive the simulation loop, and jump between operational views."
+              status={{
+                label: connectionLabel,
+                tone: resolveConnectionTone(connectionStatus),
+              }}
+              actions={
+                <DashboardControls
+                  state={runState}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onStep={handleStep}
+                  onFastForward={handleFastForward}
+                  tickLengthMinutes={Math.round(tickLengthMinutes)}
+                  minTickLength={1}
+                  maxTickLength={120}
+                  onTickLengthChange={handleTickLengthChange}
+                  footer={`Target tick rate: ${targetTickRate.toFixed(1)}x • Last tick duration: ${lastTickDuration}`}
+                  className="border-none bg-transparent p-0 shadow-none"
+                />
+              }
+              meta={facilitySummary}
+              className="border border-border/50"
+            >
+              <div className="space-y-6">
+                <TimeDisplay
+                  tick={currentTick}
+                  simulationTimeLabel={simulationTimeLabel}
+                  realTimeLabel={realTimeLabel}
+                  status={timeDisplayStatus}
+                  tickLengthMinutes={Math.round(tickLengthMinutes)}
+                  meta={timeMeta}
+                  prefix={
+                    <span className="text-sm text-text-muted">Connection: {connectionLabel}</span>
+                  }
+                  className="border-none bg-transparent p-0 shadow-none"
+                />
+
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={navigateUp}
+                      disabled={!canNavigateUp}
+                      className="inline-flex items-center gap-2 rounded-md border border-border/60 px-3 py-1.5 text-xs font-medium text-text-secondary transition disabled:opacity-40 hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                    >
+                      <span aria-hidden="true">←</span>
+                      Up one level
+                    </button>
+                    <nav
+                      className="flex flex-wrap items-center gap-2 text-sm text-text-secondary"
+                      aria-label="Breadcrumb"
+                    >
+                      {breadcrumbItems.map((item, index) => (
+                        <div key={item.id} className="flex items-center gap-2">
+                          {item.onClick ? (
+                            <button
+                              type="button"
+                              onClick={item.onClick}
+                              className="text-sm font-medium text-accent transition hover:text-accent/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                            >
+                              {item.label}
+                            </button>
+                          ) : (
+                            <span
+                              className={`text-sm font-medium ${item.current ? 'text-text-primary' : 'text-text-secondary'}`}
+                            >
+                              {item.label}
+                            </span>
+                          )}
+                          {index < breadcrumbItems.length - 1 ? (
+                            <span className="text-xs text-text-muted">/</span>
                           ) : null}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-text-muted">
-                    No telemetry events recorded in the last ticks.
-                  </p>
-                )}
-              </section>
-            </div>
-          </DashboardHeader>
-        </header>
-
-        <section className="col-start-2 row-start-2 overflow-y-auto">
-          <div className="mx-auto flex h-full max-w-layout flex-col gap-8 px-8 py-10">
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-              <div className="space-y-6">{activeView}</div>
-              <aside className="space-y-6">
-                <Panel
-                  title="Simulation link"
-                  description="Socket bridge controls for the live simulation backend."
-                  padding="lg"
-                  variant="elevated"
-                >
-                  <dl className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <dt className="text-text-muted">Status</dt>
-                      <dd className="font-medium text-text-primary">{connectionLabel}</dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <dt className="text-text-muted">Target rate</dt>
-                      <dd className="font-medium text-text-primary">
-                        {targetTickRate.toFixed(1)}x
-                      </dd>
-                    </div>
-                    <div className="flex items-center justify-between gap-2">
-                      <dt className="text-text-muted">Speed</dt>
-                      <dd className="font-medium text-text-primary">{currentSpeed.toFixed(2)}x</dd>
-                    </div>
-                  </dl>
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={connect}
-                      className="inline-flex flex-1 items-center justify-center rounded-md border border-accent/70 bg-accent/90 px-3 py-2 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    >
-                      Connect
-                    </button>
-                    <button
-                      type="button"
-                      onClick={disconnect}
-                      className="inline-flex flex-1 items-center justify-center rounded-md border border-border/70 bg-surfaceAlt px-3 py-2 text-sm font-medium text-text-secondary transition hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                    >
-                      Disconnect
-                    </button>
+                        </div>
+                      ))}
+                    </nav>
                   </div>
-                </Panel>
 
-                <Panel title="Event log" padding="lg" variant="elevated">
-                  {eventList}
-                </Panel>
-              </aside>
+                  <Navigation
+                    items={navigationItems}
+                    activeItemId={currentView}
+                    onSelect={handleSelectView}
+                    className="border-border/50 bg-surfaceAlt/60"
+                  />
+                </div>
+
+                <section
+                  className="flex flex-col gap-3 rounded-lg border border-border/60 bg-surfaceAlt/60 p-4 text-sm text-text-secondary shadow-soft"
+                  aria-label="Recent events"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                      Event ticker
+                    </span>
+                    <span className="text-xs text-text-muted">
+                      Latest updates from the simulation loop.
+                    </span>
+                  </div>
+                  {tickerEvents.length ? (
+                    <ul className="flex flex-wrap items-center gap-4">
+                      {tickerEvents.map((event, index) => {
+                        const toneClass =
+                          EVENT_LEVEL_CLASS[event.level ?? 'info'] ?? EVENT_LEVEL_CLASS.info;
+                        return (
+                          <li
+                            key={`${event.ts ?? index}-ticker`}
+                            className="flex items-center gap-2"
+                          >
+                            <span
+                              className={`text-xs font-semibold uppercase tracking-wide ${toneClass}`}
+                            >
+                              {event.type}
+                            </span>
+                            <span className="text-xs text-text-muted">
+                              {formatTimestamp(event.ts)}
+                            </span>
+                            {event.message ? (
+                              <span className="text-xs text-text-secondary">{event.message}</span>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-text-muted">
+                      No telemetry events recorded in the last ticks.
+                    </p>
+                  )}
+                </section>
+              </div>
+            </DashboardHeader>
+          </header>
+
+          <section className="col-start-2 row-start-2 overflow-y-auto">
+            <div className="mx-auto flex h-full max-w-layout flex-col gap-8 px-8 py-10">
+              <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
+                <div className="space-y-6">{activeView}</div>
+                <aside className="space-y-6">
+                  <Panel
+                    title="Simulation link"
+                    description="Socket bridge controls for the live simulation backend."
+                    padding="lg"
+                    variant="elevated"
+                  >
+                    <dl className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <dt className="text-text-muted">Status</dt>
+                        <dd className="font-medium text-text-primary">{connectionLabel}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt className="text-text-muted">Target rate</dt>
+                        <dd className="font-medium text-text-primary">
+                          {targetTickRate.toFixed(1)}x
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        <dt className="text-text-muted">Speed</dt>
+                        <dd className="font-medium text-text-primary">
+                          {currentSpeed.toFixed(2)}x
+                        </dd>
+                      </div>
+                    </dl>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={connect}
+                        className="inline-flex flex-1 items-center justify-center rounded-md border border-accent/70 bg-accent/90 px-3 py-2 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        Connect
+                      </button>
+                      <button
+                        type="button"
+                        onClick={disconnect}
+                        className="inline-flex flex-1 items-center justify-center rounded-md border border-border/70 bg-surfaceAlt px-3 py-2 text-sm font-medium text-text-secondary transition hover:border-accent hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                      >
+                        Disconnect
+                      </button>
+                    </div>
+                  </Panel>
+
+                  <Panel title="Event log" padding="lg" variant="elevated">
+                    {eventList}
+                  </Panel>
+                </aside>
+              </div>
             </div>
-          </div>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+      <ModalHost />
+    </>
   );
 };
 

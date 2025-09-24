@@ -192,6 +192,7 @@ export const useSimulationBridge = (
 
   const ingestPersonnelUpdate = usePersonnelStore((state) => state.ingestUpdate);
   const recordHREvent = usePersonnelStore((state) => state.recordHREvent);
+  const setPersonnelIntentHandler = usePersonnelStore((state) => state.setIntentHandler);
 
   const socketRef = useRef<Socket | null>(null);
   const pendingSubscriptionsRef = useRef<PendingSubscription[]>([]);
@@ -231,12 +232,14 @@ export const useSimulationBridge = (
     setGameCommandHandlers(sendControlCommand, sendConfigUpdate);
     setZoneConfigHandler(sendConfigUpdate);
     setIntentHandler(sendFacadeIntent);
+    setPersonnelIntentHandler(sendFacadeIntent);
   }, [
     sendConfigUpdate,
     sendControlCommand,
     sendFacadeIntent,
     setGameCommandHandlers,
     setIntentHandler,
+    setPersonnelIntentHandler,
     setZoneConfigHandler,
   ]);
 

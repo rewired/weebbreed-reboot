@@ -165,8 +165,13 @@ export interface ZoneStoreState {
 export interface PersonnelStoreState {
   personnel?: PersonnelSnapshot;
   hrEvents: SimulationEvent[];
+  sendFacadeIntent?: (intent: FacadeIntentCommand) => void;
   ingestUpdate: (update: SimulationUpdateEntry) => void;
   recordHREvent: (event: SimulationEvent) => void;
+  setIntentHandler: (handler: (intent: FacadeIntentCommand) => void) => void;
+  hireCandidate: (candidateId: string, options?: { role?: string; wage?: number }) => void;
+  fireEmployee: (employeeId: string) => void;
+  refreshCandidates: () => void;
   reset: () => void;
 }
 
@@ -195,6 +200,8 @@ export type ModalKind =
   | 'createEntity'
   | 'updateEntity'
   | 'deleteEntity'
+  | 'hireEmployee'
+  | 'fireEmployee'
   | 'custom';
 
 export interface ModalDescriptor {
@@ -203,6 +210,7 @@ export interface ModalDescriptor {
   description?: string;
   payload?: Record<string, unknown>;
   autoPause?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export interface ModalSlice {

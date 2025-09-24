@@ -1,8 +1,9 @@
+import { useMemo } from 'react';
 import Card from '@/components/Card';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
-import { usePersonnelStore } from '@/store';
+import { useAppStore, usePersonnelStore, useZoneStore } from '@/store';
 
 const percentageFormatter = new Intl.NumberFormat('en-US', {
   style: 'percent',
@@ -22,6 +23,13 @@ const clampRatio = (value: number | undefined) => {
   return Math.max(0, Math.min(value, 1));
 };
 
+const clampSkillLevel = (value: unknown) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return 0;
+  }
+  return Math.max(0, Math.min(value, 5));
+};
+
 const resolveBarTone = (value: number) => {
   if (value >= 0.8) {
     return 'bg-positive';
@@ -35,9 +43,98 @@ const resolveBarTone = (value: number) => {
   return 'bg-danger';
 };
 
+const formatSalaryPerTick = (value: number) =>
+  `${currencyFormatter.format(Math.max(0, value))} / tick`;
+
+const PersonnelMetricBar = ({ label, value }: { label: string; value: number }) => {
+  const ratio = clampRatio(value);
+  const barClass = resolveBarTone(ratio);
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs uppercase tracking-wide text-text-muted">
+        <span>{label}</span>
+        <span>{percentageFormatter.format(ratio)}</span>
+      </div>
+      <div className="mt-1 h-2 w-full rounded-full bg-border/30" aria-hidden="true">
+        <div
+          className={`h-2 rounded-full ${barClass}`}
+          style={{ width: `${Math.round(ratio * 100)}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+const ApplicantSkills = ({
+  skills,
+}: {
+  skills: Record<string, number | undefined> | undefined;
+}) => {
+  const entries = useMemo(() => Object.entries(skills ?? {}), [skills]);
+  if (!entries.length) {
+    return null;
+  }
+  return (
+    <section className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Key skills</h4>
+      <ul className="space-y-2">
+        {entries.map(([skill, level]) => {
+          const normalized = clampSkillLevel(level);
+          const percentage = Math.round((normalized / 5) * 100);
+          return (
+            <li key={skill} className="space-y-1">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-medium text-text-primary">{skill}</span>
+                <span className="text-xs text-text-muted">{percentage}%</span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-border/30" aria-hidden="true">
+                <div className="h-1.5 rounded-full bg-accent" style={{ width: `${percentage}%` }} />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+};
+
+const ApplicantTraits = ({ traits }: { traits: string[] | undefined }) => {
+  if (!traits || traits.length === 0) {
+    return null;
+  }
+  return (
+    <section className="space-y-2">
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-text-muted">Traits</h4>
+      <div className="flex flex-wrap gap-2">
+        {traits.map((trait) => (
+          <span
+            key={trait}
+            className="inline-flex items-center rounded-full border border-accent/40 bg-accent/10 px-2 py-1 text-xs font-medium text-accent"
+          >
+            {trait}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+};
+
 const PersonnelView = () => {
   const personnel = usePersonnelStore((state) => state.personnel);
   const hrEvents = usePersonnelStore((state) => state.hrEvents.slice(-12).reverse());
+  const refreshCandidates = usePersonnelStore((state) => state.refreshCandidates);
+  const openModal = useAppStore((state) => state.openModal);
+  const structures = useZoneStore((state) => state.structures);
+
+  const structureNameById = useMemo(() => {
+    const mapping: Record<string, string> = {};
+    for (const structure of Object.values(structures)) {
+      if (structure) {
+        mapping[structure.id] = structure.name;
+      }
+    }
+    return mapping;
+  }, [structures]);
 
   if (!personnel) {
     return (
@@ -54,6 +151,7 @@ const PersonnelView = () => {
 
   const employees = personnel.employees ?? [];
   const applicants = personnel.applicants ?? [];
+
   const overallMorale = clampRatio(personnel.overallMorale);
   const averageEnergy = employees.length
     ? clampRatio(
@@ -77,26 +175,45 @@ const PersonnelView = () => {
     {
       id: 'employee-count',
       label: 'Employees',
-      value: employees.length,
+      value: employees.length.toLocaleString(),
     },
     {
-      id: 'applicants',
+      id: 'applicant-count',
       label: 'Applicants',
-      value: applicants.length,
+      value: applicants.length.toLocaleString(),
     },
     {
-      id: 'avg-energy',
+      id: 'average-energy',
       label: 'Average energy',
       value: percentageFormatter.format(averageEnergy),
-      change: percentageFormatter.format(averageMorale),
     },
   ];
+
+  const handleHire = (candidateId: string, candidateName: string) => {
+    openModal({
+      kind: 'hireEmployee',
+      title: `Hire ${candidateName}`,
+      description: 'Review compensation before confirming the hire.',
+      payload: { candidateId },
+      autoPause: true,
+    });
+  };
+
+  const handleFire = (employeeId: string, employeeName: string) => {
+    openModal({
+      kind: 'fireEmployee',
+      title: `Fire ${employeeName}?`,
+      description: 'Firing will immediately remove the employee from all assignments.',
+      payload: { employeeId },
+      autoPause: true,
+    });
+  };
 
   return (
     <div className="space-y-8">
       <DashboardHeader
         title="Personnel"
-        subtitle="Monitor team morale, workload, and hiring pipeline to keep the facility operating smoothly."
+        subtitle="Monitor team morale, workload, and the hiring pipeline to keep the facility operating smoothly."
         status={{
           label: overallMorale >= 0.6 ? 'Stable team' : 'Needs attention',
           tone: overallMorale >= 0.6 ? 'positive' : 'warning',
@@ -114,22 +231,23 @@ const PersonnelView = () => {
 
       <MetricsBar metrics={summaryMetrics} layout="compact" />
 
-      <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <Panel
           title="Team roster"
-          description="Morale and energy trends per employee."
+          description="Current employees with morale and energy indicators."
           padding="lg"
           variant="elevated"
         >
           {employees.length === 0 ? (
             <p className="text-sm text-text-muted">No employees hired yet.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
               {employees.map((employee) => {
                 const morale = clampRatio(employee.morale);
                 const energy = clampRatio(employee.energy);
-                const moraleTone = resolveBarTone(morale);
-                const energyTone = resolveBarTone(energy);
+                const assignment = employee.assignedStructureId
+                  ? (structureNameById[employee.assignedStructureId] ?? 'Unassigned')
+                  : 'Unassigned';
 
                 return (
                   <Card
@@ -139,47 +257,30 @@ const PersonnelView = () => {
                     metadata={[
                       {
                         label: 'Salary / tick',
-                        value: `${currencyFormatter.format(employee.salaryPerTick)} / tick`,
+                        value: formatSalaryPerTick(employee.salaryPerTick),
                       },
                       {
                         label: 'Max minutes / tick',
                         value: employee.maxMinutesPerTick.toLocaleString(),
                       },
-                      {
-                        label: 'Status',
-                        value: employee.status,
-                      },
-                      {
-                        label: 'Assignment',
-                        value: employee.assignedStructureId ?? 'Unassigned',
-                      },
+                      { label: 'Status', value: employee.status },
+                      { label: 'Assignment', value: assignment },
                     ]}
+                    footer={
+                      <div className="flex items-center justify-end">
+                        <button
+                          type="button"
+                          onClick={() => handleFire(employee.id, employee.name)}
+                          className="inline-flex items-center rounded-md border border-danger/40 bg-danger/10 px-3 py-1.5 text-sm font-medium text-danger transition hover:bg-danger/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger"
+                        >
+                          Fire employee
+                        </button>
+                      </div>
+                    }
                   >
                     <div className="space-y-3">
-                      <div>
-                        <div className="flex items-center justify-between text-xs uppercase tracking-wide text-text-muted">
-                          <span>Morale</span>
-                          <span>{percentageFormatter.format(morale)}</span>
-                        </div>
-                        <div className="mt-1 h-2 w-full rounded-full bg-border/30">
-                          <div
-                            className={`h-2 rounded-full ${moraleTone}`}
-                            style={{ width: `${Math.round(morale * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="flex items-center justify-between text-xs uppercase tracking-wide text-text-muted">
-                          <span>Energy</span>
-                          <span>{percentageFormatter.format(energy)}</span>
-                        </div>
-                        <div className="mt-1 h-2 w-full rounded-full bg-border/30">
-                          <div
-                            className={`h-2 rounded-full ${energyTone}`}
-                            style={{ width: `${Math.round(energy * 100)}%` }}
-                          />
-                        </div>
-                      </div>
+                      <PersonnelMetricBar label="Morale" value={morale} />
+                      <PersonnelMetricBar label="Energy" value={energy} />
                     </div>
                   </Card>
                 );
@@ -190,34 +291,63 @@ const PersonnelView = () => {
 
         <div className="space-y-6">
           <Panel
-            title="Applicants"
-            description="Candidates waiting in the hiring pipeline."
+            title="Job market"
+            description="Candidates available for immediate hire."
             padding="lg"
             variant="elevated"
+            action={
+              <button
+                type="button"
+                onClick={refreshCandidates}
+                className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+              >
+                Refresh candidates
+              </button>
+            }
           >
             {applicants.length === 0 ? (
               <p className="text-sm text-text-muted">No open applications at the moment.</p>
             ) : (
-              <ul className="space-y-4 text-sm text-text-secondary">
-                {applicants.map((applicant) => (
-                  <li
-                    key={applicant.id}
-                    className="rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-text-primary">{applicant.name}</p>
-                        <p className="text-xs uppercase tracking-wide text-text-muted">
-                          {applicant.desiredRole}
-                        </p>
+              <div className="space-y-4">
+                {applicants.map((applicant) => {
+                  const skills = applicant.skills ?? {};
+                  const traitList = applicant.traits ?? [];
+
+                  return (
+                    <Card
+                      key={applicant.id}
+                      title={applicant.name}
+                      subtitle={applicant.desiredRole}
+                      metadata={[
+                        {
+                          label: 'Expected wage',
+                          value: formatSalaryPerTick(applicant.expectedSalary),
+                        },
+                        {
+                          label: 'Skill count',
+                          value: Object.keys(skills).length.toLocaleString(),
+                        },
+                      ]}
+                      footer={
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={() => handleHire(applicant.id, applicant.name)}
+                            className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-sm font-medium text-surface shadow-soft transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                          >
+                            Hire candidate
+                          </button>
+                        </div>
+                      }
+                    >
+                      <div className="space-y-4">
+                        <ApplicantSkills skills={skills} />
+                        <ApplicantTraits traits={traitList} />
                       </div>
-                      <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
-                        {currencyFormatter.format(applicant.expectedSalary)} / tick
-                      </span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </Card>
+                  );
+                })}
+              </div>
             )}
           </Panel>
 
