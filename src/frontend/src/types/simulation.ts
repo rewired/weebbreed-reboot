@@ -20,6 +20,7 @@ export interface DeviceMaintenanceSnapshot {
   nextDueTick: number;
   condition: number;
   degradation: number;
+  runtimeHoursAtLastService?: number;
 }
 
 export interface DeviceSnapshot {

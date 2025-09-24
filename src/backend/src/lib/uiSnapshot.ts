@@ -39,6 +39,8 @@ export interface RoomSnapshot {
   zoneIds: string[];
 }
 
+export type DeviceMaintenanceSnapshot = DeviceInstanceState['maintenance'];
+
 export interface DeviceSnapshot {
   id: string;
   blueprintId: string;
@@ -48,7 +50,7 @@ export interface DeviceSnapshot {
   status: DeviceInstanceState['status'];
   efficiency: number;
   runtimeHours: number;
-  maintenance: DeviceInstanceState['maintenance'];
+  maintenance: DeviceMaintenanceSnapshot;
   settings: Record<string, unknown>;
 }
 
