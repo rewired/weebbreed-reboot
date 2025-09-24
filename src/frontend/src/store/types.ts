@@ -266,7 +266,6 @@ export interface ModalSlice {
   wasRunningBeforeModal: boolean;
   openModal: (modal: ModalDescriptor) => void;
   closeModal: () => void;
-  setWasRunningBeforeModal: (wasRunning: boolean) => void;
 }
 
 export type AppStoreState = NavigationSlice & ModalSlice;
