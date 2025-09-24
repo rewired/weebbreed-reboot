@@ -63,3 +63,57 @@
 
 5. ✅ Are duplicate/clone flows (rooms/zones) still required in the MVP, and if so, which backend intents will back them? Current clickdummy logic assumes immediate balance adjustments and device cost tables that may not exist yet.
    - **Resolution:** Keep the duplicate flows and route them through the existing `world.duplicateRoom`/`world.duplicateZone` facade intents, which already recreate devices and post finance events for cost accounting.
+
+---
+
+## Lösungsweg
+
+### Daten- und Zustandsnormalisierung
+
+1. Fixture-Übersetzer aufsetzen: Implementiere ein Modul, das initialMockData und verwandte Datenquellen in SimulationSnapshot-kompatible Strukturen überführt, dabei fehlende PRD-Felder ergänzt (z. B. Volumen, Status) und Einheiten normalisiert.
+
+2. Zone-Daten konvertieren: Rechne alle zonalen Kennzahlen (RH, KPIs, Ressourcen) in die erwarteten numerischen SI-Einheiten um und fülle fehlende Telemetrie-/Gesundheitsfelder auf, bevor sie die Stores hydratisieren.
+
+3. Pflanzen-, Geräte-, Personal- und Finanzobjekte anreichern: Erweitere Fixtures um strain-IDs, Stadien, Geräte-Blueprint-Informationen, per-Tick-Kosten sowie tickbasierte Finanzhistorien, damit sie die Snapshot-Typen erfüllen.
+
+4. Deterministische Hilfsfunktionen zentralisieren: Ersetze deterministicUuid und globale SeededRandom-Instanzen durch eine seeded Helper-Utility in store/utils, die wiederholbare IDs und Zufallsdaten liefert.
+
+5. State-Management auf Stores umstellen: Refaktoriere App.tsx, sodass sämtliche Simulationzustände über useGameStore, useZoneStore etc. laufen und lokale JSON-Mutationen entfallen.
+
+### Layout- und Navigationsmigration
+
+6. Layout-Shell refaktorieren: Kombiniere die Klickdummy-Header-/Sidebar-Elemente mit den vorhandenen Komponenten (DashboardHeader, Navigation, TimeDisplay) und verdrahte sie mit den Spiel- und Navigationsslices.
+
+7. Breadcrumbs und Event-Ticker anbinden: Implementiere Breadcrumbs und Event-Log auf Basis der bestehenden Navigations- und Game-Store-Selektoren, um Auswahlzustand und Telemetrie zu spiegeln.
+
+8. Navigation-Slice erweitern: Ergänze den bestehenden Slice um Struktur-/Raum-Hierarchie und wende ihn sowohl für Sidebar als auch Kopfzeilen-Navigation an, um Doppelstaat zu vermeiden.
+
+### View-spezifische Portierungen
+
+9. Struktur- und Raumansichten integrieren: Portiere Karten und Detailpanels in DashboardOverview/ZoneDetail, erstelle gemeinsame Kartenkomponenten unter components/cards und implementiere Drilldown-Logik plus Breadcrumbs.
+
+10. Zonenansicht erweitern: Ergänze ZoneDetail um Steuer-Widgets, Pflanzenaktionen und Gerätelisten; nutze useZoneStore().sendSetpoint für Setpoint-Dispatch und extrahiere Form-Controls in components/forms.
+
+11. Personalbereich neu aufbauen: Spiegle Bewerber- und Mitarbeiterdarstellungen im PersonnelView, verdrahte Hire/Fire-Intents und verlagere Modale in den globalen Modal-Slice.
+
+12. Finanzdashboard abstimmen: Übertrage Zeitbereichs-Umschalter und Aufschlüsselungslisten in FinancesView und stelle sicher, dass sie tickbasierte financeHistory-Daten konsumieren.
+
+### Modale und Workflows
+
+13. Modal-Descriptoren registrieren: Definiere typsichere Descriptoren für CRUD-, Duplizier-, Detail- und Bestätigungsmodale im Modal-Slice und implementiere zugehörige Inhaltskomponenten in den jeweiligen View-Ordnern.
+
+14. Fassade-Intents anbinden: Route Modale-Aktionen (z. B. duplicateRoom/duplicateZone) durch vorhandene Fassade-Intents, inklusive deterministischer Kosten-/Bestandsupdates.
+
+### Gemeinsame Komponenten & Utilities
+
+15. UI-Primitiven angleichen: Ersetze Klickdummy-Schaltflächen, Formulare und Icon-Hüllen durch existierende Design-System-Komponenten, ergänze fehlende Inline-Edit-/Icon-Wrapper unter components/inputs.
+
+16. Fixtures/Mocks modularisieren: Verschiebe deterministische Mock-Fabriken und Rollen-/Kostenkonstanten in src/frontend/fixtures und stelle sicher, dass sie die Store-Hydration bedienen.
+
+17. Selektor-Helper neu platzieren: Portiere Struktur-/Raum-/Zonen-Helper als testbare Selektoren in store/selectors.ts oder modulnahe Utilities.
+
+### Qualitätssicherung
+
+19. Unit- und Snapshot-Tests ergänzen: Schreibe Tests für neue Selektoren, deterministische Fixtures und UI-Komponenten, um die Stabilität der migrierten Oberflächen sicherzustellen.
+
+20. Determinismus verifizieren: Führe wiederholte Hydrationen mit gleichem Seed aus, um identische Snapshot-Ergebnisse zu bestätigen und Regressionen beim RNG-Austausch auszuschließen.
