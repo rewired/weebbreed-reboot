@@ -286,6 +286,11 @@ Catalog of actionable treatments; global stacking/safety/cost rules; tick-based 
 - `fixedCostsPerTick: number` — Default `0`.
 - `meta?: object`
 
+> **Normalization note:** The runtime/state field `StructureState.rentPerTick` retains its legacy
+> name for save compatibility, but the value is an hourly rent base rate. Multiply by the
+> current tick length in hours when booking per-tick rent so recurring costs stay consistent if the
+> tick length changes.
+
 ---
 
 ## 10) Personnel Pools — `/data/personnel`
