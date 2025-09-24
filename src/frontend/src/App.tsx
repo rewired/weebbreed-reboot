@@ -33,14 +33,6 @@ const EVENT_LEVEL_CLASS: Record<string, string> = {
   error: 'text-danger',
 };
 
-const VIEW_LABELS: Record<NavigationView, string> = {
-  overview: 'Overview',
-  world: 'Structures',
-  personnel: 'Personnel',
-  finance: 'Finances',
-  settings: 'Settings',
-};
-
 const toRunState = (isPaused: boolean, speed: number): 'running' | 'paused' | 'fastForward' => {
   if (isPaused) {
     return 'paused';
@@ -122,10 +114,6 @@ const App = () => {
   const zonesMap = useZoneStore((state) => state.zones);
   const plantCount = useZoneStore((state) => Object.keys(state.plants).length);
 
-  const personnel = usePersonnelStore((state) => state.personnel);
-  const employeeCount = personnel?.employees?.length ?? 0;
-  const applicantCount = personnel?.applicants?.length ?? 0;
-
   const currentView = useAppStore((state) => state.currentView);
   const selectedStructureId = useAppStore((state) => state.selectedStructureId);
   const selectedRoomId = useAppStore((state) => state.selectedRoomId);
@@ -136,6 +124,24 @@ const App = () => {
   const selectZone = useAppStore((state) => state.selectZone);
   const resetSelection = useAppStore((state) => state.resetSelection);
   const navigateUp = useAppStore((state) => state.navigateUp);
+  const navigationItems = useAppStore((state) => state.navigationItems);
+  const structureHierarchy = useAppStore((state) => state.structureHierarchy);
+  const facilityCounts = useAppStore((state) => state.facilityCounts);
+  const {
+    structures: structureCount,
+    rooms: roomCount,
+    zones: zoneCount,
+    employees: employeeCountFromCounts,
+    applicants: applicantCountFromCounts,
+  } = facilityCounts;
+
+  const viewLabelById = useMemo(() => {
+    const mapping: Record<string, string> = {};
+    for (const item of navigationItems) {
+      mapping[item.id] = item.label;
+    }
+    return mapping;
+  }, [navigationItems]);
 
   const zonesLoaded = Object.keys(zonesMap).length > 0;
 
@@ -176,63 +182,11 @@ const App = () => {
 
   const timeMeta = useMemo(
     () => [
-      { label: 'Zones', value: Object.keys(zonesMap).length.toLocaleString() },
+      { label: 'Zones', value: zoneCount.toLocaleString() },
       { label: 'Plants', value: plantCount.toLocaleString() },
       { label: 'Alerts', value: alertCount.toLocaleString() },
     ],
-    [alertCount, plantCount, zonesMap],
-  );
-
-  const structures = useMemo(
-    () =>
-      Object.values(structuresMap)
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [structuresMap],
-  );
-
-  const roomsByStructure = useMemo(() => {
-    const grouped: Record<string, string[]> = {};
-    for (const room of Object.values(roomsMap)) {
-      grouped[room.structureId] ??= [];
-      grouped[room.structureId].push(room.id);
-    }
-    for (const structureId of Object.keys(grouped)) {
-      grouped[structureId].sort((a, b) => roomsMap[a].name.localeCompare(roomsMap[b].name));
-    }
-    return grouped;
-  }, [roomsMap]);
-
-  const zonesByRoom = useMemo(() => {
-    const grouped: Record<string, string[]> = {};
-    for (const zone of Object.values(zonesMap)) {
-      grouped[zone.roomId] ??= [];
-      grouped[zone.roomId].push(zone.id);
-    }
-    for (const roomId of Object.keys(grouped)) {
-      grouped[roomId].sort((a, b) => zonesMap[a].name.localeCompare(zonesMap[b].name));
-    }
-    return grouped;
-  }, [zonesMap]);
-
-  const navigationItems = useMemo(
-    () => [
-      { id: 'overview' as NavigationView, label: VIEW_LABELS.overview },
-      {
-        id: 'world' as NavigationView,
-        label: VIEW_LABELS.world,
-        badge: Object.keys(zonesMap).length
-          ? Object.keys(zonesMap).length.toLocaleString()
-          : undefined,
-      },
-      {
-        id: 'personnel' as NavigationView,
-        label: VIEW_LABELS.personnel,
-        badge: employeeCount ? employeeCount.toLocaleString() : undefined,
-      },
-      { id: 'finance' as NavigationView, label: VIEW_LABELS.finance },
-    ],
-    [employeeCount, zonesMap],
+    [alertCount, plantCount, zoneCount],
   );
 
   const handleSelectView = (viewId: string) => {
@@ -301,14 +255,21 @@ const App = () => {
 
   const facilitySummary = useMemo(
     () => [
-      { label: 'Structures', value: structures.length.toLocaleString() },
-      { label: 'Rooms', value: Object.keys(roomsMap).length.toLocaleString() },
-      { label: 'Zones', value: Object.keys(zonesMap).length.toLocaleString() },
+      { label: 'Structures', value: structureCount.toLocaleString() },
+      { label: 'Rooms', value: roomCount.toLocaleString() },
+      { label: 'Zones', value: zoneCount.toLocaleString() },
       { label: 'Plants', value: plantCount.toLocaleString() },
-      { label: 'Employees', value: employeeCount.toLocaleString() },
-      { label: 'Applicants', value: applicantCount.toLocaleString() },
+      { label: 'Employees', value: employeeCountFromCounts.toLocaleString() },
+      { label: 'Applicants', value: applicantCountFromCounts.toLocaleString() },
     ],
-    [applicantCount, employeeCount, plantCount, roomsMap, structures.length, zonesMap],
+    [
+      structureCount,
+      roomCount,
+      zoneCount,
+      plantCount,
+      employeeCountFromCounts,
+      applicantCountFromCounts,
+    ],
   );
 
   const lastTickDuration = lastTickEvent?.durationMs
@@ -318,9 +279,10 @@ const App = () => {
   const breadcrumbItems = useMemo(() => {
     if (currentView === 'world') {
       const items: { id: string; label: string; onClick?: () => void; current?: boolean }[] = [];
+      const worldLabel = viewLabelById['world'] ?? 'Structures';
       items.push({
         id: 'world-root',
-        label: VIEW_LABELS.world,
+        label: worldLabel,
         onClick:
           selectedStructureId || selectedRoomId || selectedZoneId
             ? () => {
@@ -366,7 +328,7 @@ const App = () => {
       return items;
     }
 
-    const viewLabel = VIEW_LABELS[currentView] ?? VIEW_LABELS.overview;
+    const viewLabel = viewLabelById[currentView] ?? viewLabelById['overview'] ?? 'Overview';
     return [
       {
         id: `view-${currentView}`,
@@ -386,13 +348,14 @@ const App = () => {
     resetSelection,
     selectStructure,
     selectRoom,
+    viewLabelById,
   ]);
 
   const canNavigateUp =
     currentView === 'world' && Boolean(selectedStructureId || selectedRoomId || selectedZoneId);
 
   const structureTree = useMemo(() => {
-    if (!structures.length) {
+    if (!structureHierarchy.length) {
       return (
         <p className="text-sm text-text-muted">
           No structures available. Load a snapshot to begin.
@@ -400,18 +363,14 @@ const App = () => {
       );
     }
 
-    return structures.map((structure) => {
-      const structureRooms = roomsByStructure[structure.id] ?? [];
-      const structureZoneCount = structureRooms.reduce(
-        (total, roomId) => total + (zonesByRoom[roomId]?.length ?? 0),
-        0,
-      );
+    return structureHierarchy.map((structure) => {
       const isStructureSelected = selectedStructureId === structure.id;
-      const containsSelection =
-        (selectedRoomId && structureRooms.includes(selectedRoomId)) ||
-        (selectedZoneId &&
-          structureRooms.some((roomId) => zonesByRoom[roomId]?.includes(selectedZoneId)));
-      const isExpanded = !selectedStructureId || isStructureSelected || containsSelection;
+      const containsSelectedRoom = structure.rooms.some((room) => room.id === selectedRoomId);
+      const containsSelectedZone = structure.rooms.some((room) =>
+        room.zones.some((zone) => zone.id === selectedZoneId),
+      );
+      const isExpanded =
+        !selectedStructureId || isStructureSelected || containsSelectedRoom || containsSelectedZone;
 
       return (
         <div key={structure.id} className="space-y-2">
@@ -428,22 +387,18 @@ const App = () => {
           >
             <span className="truncate">{structure.name}</span>
             <span className="ml-3 inline-flex items-center justify-center rounded-full border border-border/50 px-2 py-0.5 text-xs text-text-secondary">
-              {structureZoneCount} zones
+              {structure.zoneCount} zones
             </span>
           </button>
           {isExpanded ? (
             <div className="ml-3 space-y-1 border-l border-border/40 pl-3">
-              {structureRooms.length ? (
-                structureRooms.map((roomId) => {
-                  const room = roomsMap[roomId];
-                  if (!room) {
-                    return null;
-                  }
-                  const roomZones = zonesByRoom[roomId] ?? [];
-                  const isRoomSelected = selectedRoomId === roomId;
-                  const roomContainsSelection = selectedZoneId
-                    ? roomZones.includes(selectedZoneId)
-                    : false;
+              {structure.rooms.length ? (
+                structure.rooms.map((room) => {
+                  const roomZones = room.zones;
+                  const isRoomSelected = selectedRoomId === room.id;
+                  const roomContainsSelection = roomZones.some(
+                    (zone) => zone.id === selectedZoneId,
+                  );
                   const roomExpanded = isRoomSelected || roomContainsSelection;
 
                   return (
@@ -455,22 +410,16 @@ const App = () => {
                           'flex w-full items-center justify-between rounded-md border px-3 py-1.5 text-sm transition',
                           isRoomSelected
                             ? 'border-accent bg-accent/10 text-text-primary shadow-soft'
-                            : 'border-transparent text-text-secondary hover:border-border/40 hover:bg-surfaceAlt/70 hover:text-text-primary',
+                            : 'border-transparent text-text-secondary hover-border-border/40 hover:bg-surfaceAlt/70 hover:text-text-primary',
                         ].join(' ')}
                         aria-pressed={isRoomSelected}
                       >
                         <span className="truncate">{room.name}</span>
-                        <span className="ml-2 text-xs text-text-muted">
-                          {roomZones.length} zones
-                        </span>
+                        <span className="ml-2 text-xs text-text-muted">{room.zoneCount} zones</span>
                       </button>
                       {roomZones.length && roomExpanded ? (
                         <ul className="ml-3 space-y-1 border-l border-border/30 pl-3">
-                          {roomZones.map((zoneId) => {
-                            const zone = zonesMap[zoneId];
-                            if (!zone) {
-                              return null;
-                            }
+                          {roomZones.map((zone) => {
                             const isZoneSelected = selectedZoneId === zone.id;
                             return (
                               <li key={zone.id}>
@@ -487,7 +436,7 @@ const App = () => {
                                 >
                                   <span className="truncate">{zone.name}</span>
                                   <span className="ml-2 text-[0.65rem] uppercase tracking-wide text-text-muted">
-                                    {zone.environment.temperature.toFixed(0)}°C
+                                    {zone.temperature.toFixed(0)}°C
                                   </span>
                                 </button>
                               </li>
@@ -507,11 +456,7 @@ const App = () => {
       );
     });
   }, [
-    structures,
-    roomsByStructure,
-    zonesByRoom,
-    roomsMap,
-    zonesMap,
+    structureHierarchy,
     selectedStructureId,
     selectedRoomId,
     selectedZoneId,

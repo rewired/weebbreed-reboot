@@ -20,6 +20,46 @@ export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnect
 
 export type NavigationView = 'overview' | 'world' | 'personnel' | 'finance' | 'settings';
 
+export interface NavigationZoneNode {
+  id: string;
+  name: string;
+  roomId: string;
+  structureId: string;
+  temperature: number;
+}
+
+export interface NavigationRoomNode {
+  id: string;
+  name: string;
+  structureId: string;
+  zoneCount: number;
+  zones: NavigationZoneNode[];
+}
+
+export interface NavigationStructureNode {
+  id: string;
+  name: string;
+  roomCount: number;
+  zoneCount: number;
+  rooms: NavigationRoomNode[];
+}
+
+export interface NavigationCounts {
+  structures: number;
+  rooms: number;
+  zones: number;
+  employees: number;
+  applicants: number;
+}
+
+export interface NavigationViewItem {
+  id: NavigationView;
+  label: string;
+  badge?: string | number;
+  disabled?: boolean;
+  tooltip?: string;
+}
+
 export interface SimulationTimelineEntry {
   tick: number;
   ts: number;
@@ -135,6 +175,9 @@ export interface NavigationSlice {
   selectedStructureId?: string;
   selectedRoomId?: string;
   selectedZoneId?: string;
+  navigationItems: NavigationViewItem[];
+  structureHierarchy: NavigationStructureNode[];
+  facilityCounts: NavigationCounts;
   setCurrentView: (view: NavigationView) => void;
   navigateUp: () => void;
   selectStructure: (structureId?: string) => void;
