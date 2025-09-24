@@ -10,6 +10,9 @@ import RentStructureModal from '@/views/world/modals/RentStructureModal';
 import RenameEntityModal from '@/views/world/modals/RenameEntityModal';
 import ConfirmDeletionModal from '@/views/world/modals/ConfirmDeletionModal';
 import PlantDetailModal from '@/views/zone/modals/PlantDetailModal';
+import InstallDeviceModal from '@/views/zone/modals/InstallDeviceModal';
+import UpdateDeviceModal from '@/views/zone/modals/UpdateDeviceModal';
+import MoveDeviceModal from '@/views/zone/modals/MoveDeviceModal';
 import {
   selectRoomsGroupedByStructure,
   selectZonesGroupedByStructure,
@@ -32,6 +35,7 @@ const ModalHost = () => {
     rooms,
     zones,
     plants,
+    devices,
     rentStructure,
     createRoom,
     createZone,
@@ -44,11 +48,16 @@ const ModalHost = () => {
     removeStructure,
     removeRoom,
     removeZone,
+    installDevice,
+    updateDevice,
+    moveDevice,
+    removeDevice,
   } = useZoneStore((state) => ({
     structures: state.structures,
     rooms: state.rooms,
     zones: state.zones,
     plants: state.plants,
+    devices: state.devices,
     rentStructure: state.rentStructure,
     createRoom: state.createRoom,
     createZone: state.createZone,
@@ -61,6 +70,10 @@ const ModalHost = () => {
     removeStructure: state.removeStructure,
     removeRoom: state.removeRoom,
     removeZone: state.removeZone,
+    installDevice: state.installDevice,
+    updateDevice: state.updateDevice,
+    moveDevice: state.moveDevice,
+    removeDevice: state.removeDevice,
   }));
 
   const roomsByStructure = useZoneStore(selectRoomsGroupedByStructure);
@@ -109,6 +122,56 @@ const ModalHost = () => {
     return plants[plantId];
   }, [plantId, plants]);
 
+  const targetDeviceId = useMemo(() => {
+    if (!activeModal) {
+      return undefined;
+    }
+    if (
+      activeModal.kind === 'updateDevice' ||
+      activeModal.kind === 'moveDevice' ||
+      activeModal.kind === 'removeDevice'
+    ) {
+      return activeModal.payload.deviceId;
+    }
+    return undefined;
+  }, [activeModal]);
+
+  const installZoneId = useMemo(() => {
+    if (activeModal?.kind !== 'installDevice') {
+      return undefined;
+    }
+    return activeModal.payload.zoneId;
+  }, [activeModal]);
+
+  const targetDevice = targetDeviceId ? devices[targetDeviceId] : undefined;
+  const installZone = installZoneId ? zones[installZoneId] : undefined;
+  const deviceZone = targetDevice ? zones[targetDevice.zoneId] : undefined;
+
+  const deviceBlueprintSuggestions = useMemo(() => {
+    return Object.values(devices).reduce<Array<{ id: string; label?: string; kind?: string }>>(
+      (entries, device) => {
+        if (!device.blueprintId) {
+          return entries;
+        }
+        if (entries.some((item) => item.id === device.blueprintId)) {
+          return entries;
+        }
+        entries.push({ id: device.blueprintId, label: device.name, kind: device.kind });
+        return entries;
+      },
+      [],
+    );
+  }, [devices]);
+
+  const zoneOptions = useMemo(() => {
+    return Object.values(zones).map((zone) => ({
+      id: zone.id,
+      name: zone.name,
+      roomName: rooms[zone.roomId]?.name,
+      structureName: structures[zone.structureId]?.name,
+    }));
+  }, [rooms, structures, zones]);
+
   useEffect(() => {
     if (!activeModal) {
       return;
@@ -122,7 +185,30 @@ const ModalHost = () => {
     if (activeModal.kind === 'plantDetails' && plantId && !plant) {
       closeModal();
     }
-  }, [activeModal, candidate, candidateId, closeModal, employee, employeeId, plant, plantId]);
+    if (activeModal.kind === 'installDevice' && installZoneId && !installZone) {
+      closeModal();
+    }
+    if (targetDeviceId && !targetDevice) {
+      closeModal();
+    }
+    if (activeModal.kind === 'moveDevice' && targetDevice && !deviceZone) {
+      closeModal();
+    }
+  }, [
+    activeModal,
+    candidate,
+    candidateId,
+    closeModal,
+    employee,
+    employeeId,
+    plant,
+    plantId,
+    installZone,
+    installZoneId,
+    targetDevice,
+    targetDeviceId,
+    deviceZone,
+  ]);
 
   if (!activeModal) {
     return null;
@@ -463,6 +549,82 @@ const ModalHost = () => {
           title={activeModal.title}
           description={activeModal.description}
           onClose={closeModal}
+        />
+      );
+    case 'installDevice':
+      if (!installZone) {
+        return null;
+      }
+      return (
+        <InstallDeviceModal
+          zone={installZone}
+          blueprintOptions={deviceBlueprintSuggestions}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onSubmit={({ deviceId, settings }) => {
+            installDevice(installZone.id, deviceId, { settings });
+            closeModal();
+          }}
+        />
+      );
+    case 'updateDevice':
+      if (!targetDevice) {
+        return null;
+      }
+      return (
+        <UpdateDeviceModal
+          device={targetDevice}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onSubmit={(settings) => {
+            updateDevice(targetDevice.id, settings);
+            closeModal();
+          }}
+        />
+      );
+    case 'moveDevice':
+      if (!targetDevice || !deviceZone) {
+        return null;
+      }
+      return (
+        <MoveDeviceModal
+          device={targetDevice}
+          currentZone={deviceZone}
+          availableZones={zoneOptions}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onSubmit={(targetZoneId) => {
+            moveDevice(targetDevice.id, targetZoneId);
+            closeModal();
+          }}
+        />
+      );
+    case 'removeDevice':
+      if (!targetDevice) {
+        return null;
+      }
+      return (
+        <ConfirmDeletionModal
+          entityLabel="Device"
+          entityName={targetDevice.name}
+          title={activeModal.title ?? 'Remove device?'}
+          description={
+            activeModal.description ??
+            'The device will be detached from its assigned zone. Any automation plans referencing it will update after the facade processes the command.'
+          }
+          impactDescription={
+            deviceZone
+              ? `Current zone: ${deviceZone.name}. The facade handles inventory bookkeeping after removal.`
+              : 'The facade handles inventory bookkeeping after removal.'
+          }
+          onCancel={closeModal}
+          onConfirm={() => {
+            removeDevice(targetDevice.id);
+            closeModal();
+          }}
         />
       );
     default:
