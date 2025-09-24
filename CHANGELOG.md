@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ergänzte ZoneDetail um interaktive Setpoint-Steuerungen, Pflanzenaktionen und Gerätegruppenlisten, nutzt dafür neue Form-Komponenten unter `components/forms` sowie die bestehenden Setpoint- und Intent-Dispatches des Zone-Stores.
 - Ergänzte das Finanzdashboard um einen tick-basierten Zeitbereichs-Umschalter samt Aufschlüsselungslisten für OpEx, Utilities und Wartungsgeräte. Die Listen basieren auf dem neuen `components/panels/BreakdownList`.
 - Registrierte typisierte Modal-Descriptoren für Infrastruktur- und Detail-Workflows und implementierte dedizierte Modal-Inhalte unter `views/world/modals` bzw. `views/zone/modals`, gerendert über den aktualisierten `ModalHost`.
+- Modularisierte die deterministischen Clickdummy-Fixtures unter `src/frontend/src/fixtures` (inklusive `createClickDummyFixture`, Jobrollen- und Kostenkonstanten) zur Wiederverwendung in Offline-Bootstrap, Tests und künftigen Previews.
 
 ### Changed
 
@@ -48,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ported the structure, room, and zone cards into reusable components and wired the overview/detail
   drilldown so DashboardOverview and ZoneDetail mirror the facility hierarchy with breadcrumbs and
   aggregated telemetry panels.
+- Offline-Bootstrap erzeugt den Store-Hydrationssnapshot jetzt über `createClickDummyFixture()` aus dem modularen Fixturepaket.
 
 ### Fixed
 

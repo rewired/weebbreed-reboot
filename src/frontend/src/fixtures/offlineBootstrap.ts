@@ -1,12 +1,14 @@
 import type { SimulationEvent, SimulationUpdateEntry } from '@/types/simulation';
 import type { FinanceTickEntry } from '@/store/types';
-import { CLICKDUMMY_SAMPLE } from './sampleClickDummyData';
+import { createClickDummyFixture } from './clickDummyFactories';
 import { translateClickDummyGameData } from './translator';
 
 const OFFLINE_TICK_LENGTH_MINUTES = 60;
 const OFFLINE_START_DATE = '2025-01-01T00:00:00.000Z';
 
-const { snapshot, financeHistory } = translateClickDummyGameData(CLICKDUMMY_SAMPLE, {
+const { data: clickDummyData } = createClickDummyFixture();
+
+const { snapshot, financeHistory } = translateClickDummyGameData(clickDummyData, {
   tickLengthMinutes: OFFLINE_TICK_LENGTH_MINUTES,
   startDate: OFFLINE_START_DATE,
   isPaused: true,

@@ -112,6 +112,9 @@ Key directories to explore:
   - `FinancesView.tsx` bindet die tickbasierte `financeHistory` an Zeitbereichs-Umschalter,
     Diagramme und Kostenaufschlüsselungen.
 - `src/providers/` – React context providers (theme, i18n, etc.).
+- `src/fixtures/` – deterministische Clickdummy-Fixtures (`createClickDummyFixture`,
+  `translateClickDummyGameData`), die Offline-Previews und Tests mit
+  `SimulationSnapshot`-kompatiblen Daten hydratisieren.
 - `src/types/` – shared TypeScript contracts for simulation payloads.
 
 Refer to the ADRs in `docs/system/adr/` (see ADR 0002) for the motivation behind

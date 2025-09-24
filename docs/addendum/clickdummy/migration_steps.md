@@ -137,7 +137,10 @@
 
 15. ✅ UI-Primitiven angleichen: Schaltflächen, Formularfelder und Icon-Hüllen nutzen jetzt die neuen Design-System-Komponenten unter `components/inputs` (`Button`, `IconButton`, `TextInput`, `Select`, `RangeInput`, `InlineEdit`). Bestehende Klickdummy-Markup-Styles wurden entfernt.
 
-16. Fixtures/Mocks modularisieren: Verschiebe deterministische Mock-Fabriken und Rollen-/Kostenkonstanten in src/frontend/fixtures und stelle sicher, dass sie die Store-Hydration bedienen.
+16. ✅ Fixtures/Mocks modularisieren: Verschiebe deterministische Mock-Fabriken und Rollen-/Kostenkonstanten in src/frontend/fixtures und stelle sicher, dass sie die Store-Hydration bedienen.
+    - `src/frontend/src/fixtures/deterministic.ts` kapselt jetzt den deterministischen Sequenzgenerator (`createDeterministicManager`, `createDeterministicSequence`) inklusive Shared-Sequenzen für IDs.
+    - `src/frontend/src/fixtures/clickDummyFactories.ts` bündelt Mock-Fabriken (`createClickDummyFixture`, `generateCandidates`, `createPlant`) und zieht Rollen-/Kostenkonstanten (`constants.ts`) ins Frontend, sodass Offline-Bootstrap und Tests identische Daten hydratisieren.
+    - `offlineBootstrap.ts` erzeugt den Fixture-Snapshot über `createClickDummyFixture()` und übergibt ihn an den Translator, womit die Stores deterministisch aus den neuen Fabriken gespeist werden.
 
 17. Selektor-Helper neu platzieren: Portiere Struktur-/Raum-/Zonen-Helper als testbare Selektoren in store/selectors.ts oder modulnahe Utilities.
 
