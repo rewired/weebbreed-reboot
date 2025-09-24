@@ -1,60 +1,48 @@
-# Terpene & Effekte — High‑Level Konzepte für Strain‑Blueprints (High‑Level, nur Pseudocode)
+# Terpene & Effects — High‑Level Concepts for Strain Blueprints (Augmented)
 
-> Ziel: Einheitliches, erweiterbares Konzept, um **Terpene**, **Effektachsen** (z. B. calming/energizing), **positive/negative Effekte** und **Aroma‑Noten** in Strain‑Blueprints abzubilden – ohne konkrete Implementierung. Fokus auf **Skalen**, **Normalisierung**, **Mapping‑Regeln** und **Integration ins Spiel**.
-
----
-
-## 0) Leitplanken
-
-- **Skalen & Einheiten:**
-  - Cannabinoide als Anteile \[0..1].
-  - Terpene als **mg/g** (Total + Komponenten). Alternativquellen (%/ppm) werden **konzeptionell** auf mg/g normalisiert.
-  - Effektwerte (Achsen, positiv/negativ) auf \[0..1]; zusätzlich **confidence** \[0..1].
-
-- **Kanonisierung:** Feste **Kanon‑Keys** für Terpene, Aromen, Effekte. Synonyme werden per Mapping vereinheitlicht (Konzept, keine Liste im Code).
-- **Provenance/Audit:** Jede abgeleitete Zahl kennt **Quelle** + **Zeitpunkt** + **Normalisierungs‑Version** (Konzeptstring).
+> Goal: A consistent, extensible concept to represent **terpenes**, **effect axes** (e.g., calming/energizing), **positive/negative effects**, and **aroma notes** in strain blueprints — implementation‑agnostic. This augmented edition adds **English effect lists** (positive/negative + experience descriptors) and an **English canon of cannabis‑relevant terpenes** (with common synonyms).
 
 ---
 
-## 1) Zielschema (konzeptionell)
+## 0) Guardrails
 
-**Blueprint.Konzepte**
+- **Scales & Units**
+  - Cannabinoids as fractions \[0..1].
+  - Terpenes in **mg/g** (total + components). Alternate sources (%/ppm) are conceptually normalized to mg/g.
+  - Effect axes and effect tags normalized to \[0..1]; include **confidence** \[0..1].
 
-- `chemistry.cannabinoids`: THC/CBD/… als Anteile (mean, optional quantile).
+- **Canonization**: Fixed **canon keys** for terpenes, aromas, and effects. Synonyms are mapped into the canon (concept; no hardcoded list required by the engine).
+- **Provenance/Audit**: Every derived number keeps **source**, **timestamp**, and a **normalization tag** (concept string).
+
+---
+
+## 1) Target Schema (Concept)
+
+**Blueprint Concepts**
+
+- `chemistry.cannabinoids`: THC/CBD/… as fractions (mean, optional quantiles).
 - `chemistry.terpenes`: `total_mg_g` + `components[terpeneKey].mg_g`.
-- `sensory.aromaNotes`: Liste gewichteter Noten (`note`, `weight`).
-- `effects.axes`: Achsen z. B. `energizing`, `calming`, `focus`, `euphoria`, `sedation` → jeweils `value` + `confidence`.
-- `effects.positives` / `effects.negatives`: gewichtete Effektschlüssel (z. B. `relaxed`, `happy` … / `dryMouth`, `anxious` …).
-- `provenance`: Quellen, Normalisierungs‑Tag.
+- `sensory.aromaNotes`: weighted notes (`note`, `weight`).
+- `effects.axes`: axes like `energizing`, `calming`, `focus`, `euphoria`, `sedation` → each with `value` + `confidence`.
+- `effects.positives` / `effects.negatives`: weighted effect keys (e.g., `relaxed`, `happy` … / `dryMouth`, `anxious` …).
+- `provenance`: sources, normalization tag.
 
-**Anforderung:** Schema bleibt **additiv** erweiterbar (neue Terpene/Effekte via Kanon‑Erweiterung möglich).
-
----
-
-## 2) Kanon‑Vokabular (konzeptionell)
-
-- **Terpene (Beispiele):** myrcene, limonene, caryophyllene, pinene, linalool, terpinolene, humulene, ocimene, bisabolol, eucalyptol, geraniol, nerolidol, valencene, borneol.
-- **Aroma‑Noten (Beispiele):** citrus, earthy, pine, spicy, diesel, sweet, floral, herbal, berry, tropical, skunk, woody.
-- **Positive Effekte (Beispiele):** relaxed, happy, euphoric, uplifted, creative, focused, talkative, giggly, tingly, aroused.
-- **Negative Effekte (Beispiele):** dryMouth, dryEyes, anxious, paranoid, dizzy, headache.
-- **Synonyme → Kanon:** Konzept einer Mapping‑Tabelle (z. B. `beta‑caryophyllene` → `caryophyllene`; `lemon/orange` → `citrus`).
+**Requirement:** Schema is **additively** extensible (new terpenes/effects via canon updates).
 
 ---
 
-## 3) Normalisierung (konzeptionell)
+## 2) Normalization (Concept)
 
-**Eingangsdaten → interne Skalen**
+**Input → Internal Scales**
 
-- Cannabinoide: Prozentangaben → Anteil \[0..1].
-- Terpene: %, ppm → mg/g.
-- Effekte/Tags: Skalen vereinheitlichen (z. B. Votes/Stars → \[0..1]).
-
-**Pseudocode (konzeptuell):**
+- Cannabinoids: percent → fraction \[0..1].
+- Terpenes: %, ppm → mg/g.
+- Effects/Tags: unify heterogeneous rating scales (votes/stars → \[0..1]).
 
 ```pseudocode
 FOR each strainInput:
-  cannabinoids := normalizeCannabinoids(strainInput.cannabinoids)  // -> [0..1]
-  terpeneComponents := convertTerpenesToMgPerG(strainInput.terpenes) // keys canonized
+  cannabinoids := normalizeCannabinoids(strainInput.cannabinoids)
+  terpeneComponents := convertTerpenesToMgPerG(strainInput.terpenes) // canonized keys
   total_mg_g := sum(terpeneComponents)
   aromaNotes := mapAromaSynonyms(strainInput.aromaTags)
   posEffects := mapEffectSynonyms(strainInput.positiveTags)
@@ -64,46 +52,29 @@ FOR each strainInput:
 
 ---
 
-## 4) Achsen‑Ableitung aus Terpenprofil (Heuristik, High‑Level)
+## 3) Axis Derivation from Terpene Profile (Heuristic, Concept)
 
-**Idee:** Eine **Gewichtungsmatrix** verknüpft Terpenanteile mit Effektachsen.
-
-- **Eingabe:** Terpenanteile `w_t = mg_g_t / total_mg_g`.
-- **Matrix (Konzept):** Für jedes Terpen existieren Achsen‑Gewichte (z. B. limonene → energizing↑, euphoria↑; myrcene → calming↑, sedation↑).
-- **Berechnung:** Achsenwert = Σ (Anteil_terpen × gewicht_terpen→achse) → anschließend Clamping \[0..1]; **gamma**/Rescaling optional.
-- **Confidence:** steigt mit `total_mg_g` und Datenqualität.
-
-**Pseudocode (konzeptuell):**
+- **Input:** terpene shares `w_t = mg_g_t / total_mg_g`.
+- **Matrix (concept):** For each terpene, weights to axes (e.g., limonene → energizing↑, euphoria↑; myrcene → calming↑, sedation↑).
+- **Computation:** axis = Σ (share_terpene × weight_terpene→axis) → clamp \[0..1]; optional gamma/rescaling.
+- **Confidence:** increases with `total_mg_g` and source quality.
 
 ```pseudocode
-weights := normalize(terpeneComponents)  // divide by total_mg_g
+weights := normalize(terpeneComponents)
 axes := { energizing:0, calming:0, focus:0, euphoria:0, sedation:0 }
 FOR each terpene t IN weights:
   FOR each axis a:
-    axes[a] += weights[t] * MATRIX[t][a]  // MATRIX = heuristische Domain‑Werte
+    axes[a] += weights[t] * MATRIX[t][a]
 axes := clamp01(applyGamma(axes, gamma≈0.9))
 confidence_axes := f(total_mg_g, sourceQuality)
 ```
 
-**Hinweis:** Matrix ist **dokumentiert**, versioniert und kann projektspezifisch feinjustiert werden (kein „harte Wahrheit“, sondern spielmechanischer Kompromiss).
-
 ---
 
-## 5) Ableitung positiver/negativer Effekte (High‑Level)
+## 4) Deriving Positive/Negative Effects (Concept)
 
-**Direktdaten vorhanden?** → auf Kanon‑Keys mappen und auf \[0..1] skalieren.
-
-**Fehlen Direktdaten?** → aus Achsen **abgeleitete Startwerte** erzeugen; später durch reale Daten/Messungen überschreiben.
-
-**Heuristische Beispiele (nur Konzept):**
-
-- uplifted ≈ f(energizing, euphoria)
-- relaxed ≈ f(calming, sedation)
-- creative ≈ f(energizing, focus, terpinoleneShare)
-- anxious ≈ g(energizing, THC) – h(calming)
-- dryMouth/dryEyes: Basiswert + THC‑Skalierung
-
-**Pseudocode (konzeptuell):**
+- If direct crowd/lab/clinical tags exist → map to canon keys, scale to \[0..1].
+- If missing → seed from axis values (and THC level) with documented heuristics; later override with real data.
 
 ```pseudocode
 if hasDirectEffectData:
@@ -116,95 +87,291 @@ else:
 
 ---
 
-## 6) ETL‑Pipeline (High‑Level, Quelle‑agnostisch)
-
-**Extract → Transform → Load → Validate → Audit/Export**
-
-**Pseudocode (konzeptuell):**
+## 5) ETL Pipeline (Concept)
 
 ```pseudocode
 PIPELINE ingestStrains(source):
   FOR each raw in source:
     data := extract(raw)
     data := canonizeSynonyms(data)
-    data := normalizeScales(data)  // mg/g, [0..1], etc.
+    data := normalizeScales(data) // mg/g, [0..1]
     axes, axesConfidence := deriveAxesFromTerpenes(data.terpenes)
     pos, neg := mergeDirectAndDerivedEffects(data.effects, axes, data.cannabinoids)
     blueprint := assembleBlueprint(data, axes, pos, neg, provenanceTag)
-    validate(blueprint)  // schema-level, conceptual
-    writeToRepository(blueprint)
+    validate(blueprint)
+writeToRepository(blueprint)
 AFTER all: exportAsBundleZip()
 ```
 
 ---
 
-## 7) Spiel‑Integration (Konzept)
+# Appendices (New)
 
-- **Nachfrage‑Segmente:** (z. B. Medical‑Calm, Creative‑Focus, Party‑Uplift, Sleep‑Sedation). Segment‑Score = dot( Segment‑Gewichte, Effektachsen ).
-- **Preisdynamik:** Preis‑Multiplikator um Baseline herum anhand Segment‑Fit und Angebotslage.
-- **Produktvariation:** Terpenprofil variiert je Batch (Einfluss: Klima, Stress, Genetik). Batch übernimmt **gemessene** Terpene → Effekte passen sich an.
-- **Nebenwirkungen:** Negativ‑Scores beeinflussen Zufriedenheit/Retouren.
-- **UI‑Darstellung:** Radar (Achsen), Balken (Top‑Terpene mg/g), Bubble‑Cloud (Positiv/Negativ‑Tags), Aroma‑Chips.
+## A) **Effect Vocabulary — English (Canon Keys)**
+
+### A.1 Positive effects (list)
+
+- relaxed
+- happy
+- euphoric
+- uplifted
+- creative
+- focused
+- talkative
+- giggly
+- sociable
+- calm
+- energized
+- motivated
+- mindful
+- tingly
+- bodyLightness
+- appetiteIncrease
+- aroused
+- painRelief (tag; see medical)
+- stressRelief (tag; see medical)
+
+> _Note:_ Some "positive" keys (e.g., painRelief, stressRelief) straddle wellness/medical semantics; keep them as tags if you separate recreational vs. medical schemas.
+
+### A.2 Negative effects (list)
+
+- dryMouth
+- dryEyes
+- anxious
+- paranoia
+- dizziness
+- headache
+- fatigue
+- couchLock
+- overfocused (tunnelVision)
+- increasedHeartRate
+- memoryLapse (shortTerm)
+- coordinationImpairment
+
+### A.3 Experience descriptors ("Wirkung") — English list
+
+Use these as high‑level **experience labels** (non‑medical, UI‑friendly):
+
+- clearHeaded
+- cerebral
+- uplifting
+- energizing
+- invigorating
+- mellow
+- calming
+- soothing
+- grounding
+- dreamy
+- stoney
+- sedating
+- balanced
+- social
+- creativeFlow
+- focusedFlow
+- introspective
+- bodyEuphoric
+- mindEuphoric
+- daytimeFriendly
+- nighttimeFriendly
+
+> _Usage:_ These descriptors can be derived from axes or curated per cultivar; expose them as a simple list for UI chips and shop filters.
 
 ---
 
-## 8) Daten‑Governance & Versionierung
+## B) **Cannabis‑Relevant Terpene Canon — English**
 
-- **Normalisierungs‑Tag:** z. B. `terpene-mg-g.v1; axes-matrix.v2025-09`.
-- **Quellenklassifizierung:** API > Labor > Crowd > Manuell (steuert confidence).
-- **Audit‑Trails:** Jeder Import hinterlässt Diff/Changelog (Konzept‑Eintrag, kein Code).
+> Canon keys (lowerCamelCase). Include common synonyms for ingestion/ETL.
+
+- **myrcene** (β‑myrcene)
+- **limonene** (d‑limonene)
+- **betaCaryophyllene** (β‑caryophyllene, BCP)
+- **alphaPinene** (α‑pinene)
+- **betaPinene** (β‑pinene)
+- **linalool**
+- **terpinolene**
+- **humulene** (α‑humulene; caryophyllene oxide ≠ humulene → list separately if measured)
+- **ocimene** (α‑ocimene, β‑ocimene, allo‑ocimene)
+- **bisabolol** (α‑bisabolol, levomenol)
+- **nerolidol** (trans‑/cis‑nerolidol)
+- **eucalyptol** (1,8‑cineole)
+- **geraniol**
+- **valencene**
+- **borneol**
+- **camphene**
+- **terpineol** (α‑terpineol; include β/γ variants if available)
+- **fenchol**
+- **sabinene**
+- **delta3Carene** (Δ³‑carene)
+- **phellandrene** (α‑/β‑phellandrene)
+- **pulegone** (typically trace)
+- **guaiol**
+- **cedrene** (α‑/β‑cedrene)
+- **camphor**
+- **isopulegol**
+- **phytol** (terpenoid alcohol; often from chlorophyll degradation)
+- **paraCymene** (p‑cymene)
+- **thymol** (phenolic monoterpenoid)
+- **carvacrol** (phenolic monoterpenoid)
+- **menthol** (rare in cannabis chemovars; include if measured)
+- **hexahydrofarnesylAcetone** (terpenoid‑like; optional extended canon)
+
+**Notes**
+
+- Keep the **primary canon** compact for gameplay and analytics. Track **synonyms** and **isomers** in a mapping table used by the importer.
+- If labs report only "top‑3" terpenes, allow partial vectors; compute `total_mg_g` from known components and mark confidence accordingly.
 
 ---
 
-## 9) Qualitätssicherung (High‑Level Tests)
+## C) JSON Blueprint Stubs (Effects & Terpenes)
 
-- **Schema‑Checks:** Pflichtfelder vorhanden? Skalen \[0..1]? Summen plausibel?
-- **Konsistenz:** total_mg_g ≈ Σ components (±Toleranz).
-- **Heuristik‑Sanity:** Extremprofile (myrcene‑lastig) → calming/sedation ↑; limonene‑lastig → energizing ↑.
-- **Stichproben‑Review:** Manuelle Kurationspunkte im Workflow.
-
----
-
-## 10) Roadmap (Iterativ)
-
-1. **Kanon definieren** (Terpene, Effekte, Synonyme) + Normalisierungs‑Notizen.
-2. **Matrix v1** (Terpen → Achsen) dokumentieren und festpinnen.
-3. **Erster Importlauf** (eine Quelle) → Blueprints erstellen.
-4. **Validierung & Feinschliff** (Feedback‑Loop, Matrix‑Tuning).
-5. **Mehrquellen‑Merge** (Konfliktstrategie, Confidence‑Gewichtung).
-6. **Batch‑Level** (realistische Varianz, Spielbalance).
-
----
-
-## 11) Beispiel‑Blueprint (schematisch, nicht implementierungsnah)
-
-```pseudocode
-Blueprint := {
-  id,
-  displayName,
-  chemistry: {
-    cannabinoids: { thc:{mean}, cbd:{mean}, ... },
-    terpenes: { total_mg_g, components: { terpeneKey -> mg_g } }
+```jsonc
+{
+  "chemistry": {
+    "terpenes": {
+      "total_mg_g": 6.2,
+      "components": {
+        "myrcene": 2.4,
+        "limonene": 0.9,
+        "betaCaryophyllene": 0.8,
+        "alphaPinene": 0.5,
+        "linalool": 0.3,
+      },
+    },
   },
-  sensory: { aromaNotes: [{ note, weight }, ...] },
-  effects: {
-    axes: { energizing:{value, confidence}, calming:{...}, focus:{...}, euphoria:{...}, sedation:{...} },
-    positives: { effectKey -> value },
-    negatives: { effectKey -> value }
+  "effects": {
+    "axes": {
+      "energizing": { "value": 0.62, "confidence": 0.7 },
+      "calming": { "value": 0.38, "confidence": 0.7 },
+      "focus": { "value": 0.55, "confidence": 0.6 },
+      "euphoria": { "value": 0.68, "confidence": 0.7 },
+      "sedation": { "value": 0.32, "confidence": 0.6 },
+    },
+    "positives": {
+      "uplifted": 0.7,
+      "happy": 0.65,
+      "creative": 0.6,
+      "relaxed": 0.45,
+      "focused": 0.55,
+    },
+    "negatives": {
+      "dryMouth": 0.5,
+      "dryEyes": 0.35,
+      "anxious": 0.2,
+    },
+    "descriptors": ["cerebral", "daytimeFriendly", "creativeFlow", "balanced"],
   },
-  provenance: { sources:[...], normalization: tag }
 }
 ```
 
 ---
 
-## 12) Schnittstellen zum Rest des Systems
+## D) Validation & Canon Checks (Zod Sketch)
 
-- **Importer** (konzeptuell): nimmt beliebige Quellen, liefert normalisierte Blueprints.
-- **Validator** (konzeptuell): prüft Skalen/Schlüssel/Konsistenz.
-- **Exporter** (konzeptuell): bündelt Blueprints (z. B. ZIP), inklusive Audit‑Metadaten.
-- **UI/Gameplay** liest nur **normierte** Felder – Quelle/Confidence steuern Tooltips und Balance.
+```ts
+const TerpeneKey = z.enum([
+  'myrcene',
+  'limonene',
+  'betaCaryophyllene',
+  'alphaPinene',
+  'betaPinene',
+  'linalool',
+  'terpinolene',
+  'humulene',
+  'ocimene',
+  'bisabolol',
+  'nerolidol',
+  'eucalyptol',
+  'geraniol',
+  'valencene',
+  'borneol',
+  'camphene',
+  'terpineol',
+  'fenchol',
+  'sabinene',
+  'delta3Carene',
+  'phellandrene',
+  'pulegone',
+  'guaiol',
+  'cedrene',
+  'camphor',
+  'isopulegol',
+  'phytol',
+  'paraCymene',
+  'thymol',
+  'carvacrol',
+  'menthol',
+]);
+
+const PositiveEffect = z.enum([
+  'relaxed',
+  'happy',
+  'euphoric',
+  'uplifted',
+  'creative',
+  'focused',
+  'talkative',
+  'giggly',
+  'sociable',
+  'calm',
+  'energized',
+  'motivated',
+  'mindful',
+  'tingly',
+  'bodyLightness',
+  'appetiteIncrease',
+  'aroused',
+  'painRelief',
+  'stressRelief',
+]);
+
+const NegativeEffect = z.enum([
+  'dryMouth',
+  'dryEyes',
+  'anxious',
+  'paranoia',
+  'dizziness',
+  'headache',
+  'fatigue',
+  'couchLock',
+  'overfocused',
+  'increasedHeartRate',
+  'memoryLapse',
+  'coordinationImpairment',
+]);
+
+const Descriptor = z.enum([
+  'clearHeaded',
+  'cerebral',
+  'uplifting',
+  'energizing',
+  'invigorating',
+  'mellow',
+  'calming',
+  'soothing',
+  'grounding',
+  'dreamy',
+  'stoney',
+  'sedating',
+  'balanced',
+  'social',
+  'creativeFlow',
+  'focusedFlow',
+  'introspective',
+  'bodyEuphoric',
+  'mindEuphoric',
+  'daytimeFriendly',
+  'nighttimeFriendly',
+]);
+```
 
 ---
 
-**Ergebnis:** Eine klare, implementierungsneutrale Blaupause, die Terpene & Effekte konsistent in deine Strain‑Blueprints integriert und gleichzeitig genügend Freiheitsgrade für spätere Feinjustierung, Mehrquellen‑Merges und Spielbalancing lässt.
+## E) UI/Gameplay Hooks (Quick Notes)
+
+- **Radar** for axes, **bar** for top terpenes (mg/g), **chips** for descriptors and effects.
+- **Filters**: descriptors, top terpenes, axes thresholds.
+- **Economy tie‑in**: market segments consume by descriptor bundles (e.g., Calm‑Sleep vs. Party‑Uplift).
+
+---
+
+**Normalization Tags (example):** `terpene-mg-g.v1; axes-matrix.v2025-09; effects-canon.v2025-09`
