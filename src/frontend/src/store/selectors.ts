@@ -1,3 +1,4 @@
+import type { RoomSnapshot, StructureSnapshot, ZoneSnapshot } from '@/types/simulation';
 import type { GameStoreState, ZoneStoreState } from './types';
 
 export const selectFinanceSummary = (state: ZoneStoreState) => state.financeSummary;
@@ -68,6 +69,121 @@ export const selectAlertCount = (state: GameStoreState): number => {
   }, 0);
 };
 
+export const selectStructureById =
+  (structureId?: string) =>
+  (state: ZoneStoreState): StructureSnapshot | undefined => {
+    return structureId ? state.structures[structureId] : undefined;
+  };
+
+export const selectRoomById =
+  (roomId?: string) =>
+  (state: ZoneStoreState): RoomSnapshot | undefined => {
+    return roomId ? state.rooms[roomId] : undefined;
+  };
+
 export const selectZoneById = (zoneId?: string) => (state: ZoneStoreState) => {
   return zoneId ? state.zones[zoneId] : undefined;
+};
+
+export const selectStructureByRoomId =
+  (roomId?: string) =>
+  (state: ZoneStoreState): StructureSnapshot | undefined => {
+    if (!roomId) {
+      return undefined;
+    }
+
+    const room = state.rooms[roomId];
+    return room ? state.structures[room.structureId] : undefined;
+  };
+
+export const selectStructureByZoneId =
+  (zoneId?: string) =>
+  (state: ZoneStoreState): StructureSnapshot | undefined => {
+    if (!zoneId) {
+      return undefined;
+    }
+
+    const zone = state.zones[zoneId];
+    return zone ? state.structures[zone.structureId] : undefined;
+  };
+
+export const selectRoomByZoneId =
+  (zoneId?: string) =>
+  (state: ZoneStoreState): RoomSnapshot | undefined => {
+    if (!zoneId) {
+      return undefined;
+    }
+
+    const zone = state.zones[zoneId];
+    return zone ? state.rooms[zone.roomId] : undefined;
+  };
+
+export const selectRoomsByStructureId =
+  (structureId?: string) =>
+  (state: ZoneStoreState): RoomSnapshot[] => {
+    if (!structureId) {
+      return [];
+    }
+
+    return Object.values(state.rooms).filter((room) => room.structureId === structureId);
+  };
+
+export const selectZonesByStructureId =
+  (structureId?: string) =>
+  (state: ZoneStoreState): ZoneSnapshot[] => {
+    if (!structureId) {
+      return [];
+    }
+
+    return Object.values(state.zones).filter((zone) => zone.structureId === structureId);
+  };
+
+export const selectZonesByRoomId =
+  (roomId?: string) =>
+  (state: ZoneStoreState): ZoneSnapshot[] => {
+    if (!roomId) {
+      return [];
+    }
+
+    return Object.values(state.zones).filter((zone) => zone.roomId === roomId);
+  };
+
+export const selectRoomsGroupedByStructure = (
+  state: ZoneStoreState,
+): Record<string, RoomSnapshot[]> => {
+  const grouped: Record<string, RoomSnapshot[]> = {};
+
+  for (const room of Object.values(state.rooms)) {
+    const list = grouped[room.structureId] ?? [];
+    list.push(room);
+    grouped[room.structureId] = list;
+  }
+
+  return grouped;
+};
+
+export const selectZonesGroupedByStructure = (
+  state: ZoneStoreState,
+): Record<string, ZoneSnapshot[]> => {
+  const grouped: Record<string, ZoneSnapshot[]> = {};
+
+  for (const zone of Object.values(state.zones)) {
+    const list = grouped[zone.structureId] ?? [];
+    list.push(zone);
+    grouped[zone.structureId] = list;
+  }
+
+  return grouped;
+};
+
+export const selectZonesGroupedByRoom = (state: ZoneStoreState): Record<string, ZoneSnapshot[]> => {
+  const grouped: Record<string, ZoneSnapshot[]> = {};
+
+  for (const zone of Object.values(state.zones)) {
+    const list = grouped[zone.roomId] ?? [];
+    list.push(zone);
+    grouped[zone.roomId] = list;
+  }
+
+  return grouped;
 };

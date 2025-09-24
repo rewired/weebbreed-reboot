@@ -142,7 +142,9 @@
     - `src/frontend/src/fixtures/clickDummyFactories.ts` bündelt Mock-Fabriken (`createClickDummyFixture`, `generateCandidates`, `createPlant`) und zieht Rollen-/Kostenkonstanten (`constants.ts`) ins Frontend, sodass Offline-Bootstrap und Tests identische Daten hydratisieren.
     - `offlineBootstrap.ts` erzeugt den Fixture-Snapshot über `createClickDummyFixture()` und übergibt ihn an den Translator, womit die Stores deterministisch aus den neuen Fabriken gespeist werden.
 
-17. Selektor-Helper neu platzieren: Portiere Struktur-/Raum-/Zonen-Helper als testbare Selektoren in store/selectors.ts oder modulnahe Utilities.
+17. ✅ Selektor-Helper neu platzieren: Portiere Struktur-/Raum-/Zonen-Helper als testbare Selektoren in store/selectors.ts oder modulnahe Utilities.
+    - Struktur-, Raum- und Zonen-Lookups leben jetzt als wiederverwendbare Selektoren samt Gruppierungshelfern in `src/frontend/src/store/selectors.ts`; `selectors.test.ts` deckt die Abfragen für Eltern-/Kind-Beziehungen ab.
+    - `ZoneDetail` und `ModalHost` nutzen die neuen Selektoren für Facility-Breadcrumbs, Aggregationen und Modale, wodurch duplizierte Filter-Logik entfällt und die Helper direkt testbar bleiben (`src/frontend/src/views/ZoneDetail.tsx`, `src/frontend/src/components/ModalHost.tsx`).
 
 ### Qualitätssicherung
 

@@ -10,6 +10,8 @@ import ConfirmDeletionModal from '@/views/world/modals/ConfirmDeletionModal';
 import PlantDetailModal from '@/views/zone/modals/PlantDetailModal';
 import {
   selectIsPaused,
+  selectRoomsGroupedByStructure,
+  selectZonesGroupedByRoom,
   useAppStore,
   useGameStore,
   usePersonnelStore,
@@ -57,6 +59,9 @@ const ModalHost = () => {
     removeZone: state.removeZone,
   }));
 
+  const roomsByStructure = useZoneStore(selectRoomsGroupedByStructure);
+  const zonesByRoom = useZoneStore(selectZonesGroupedByRoom);
+
   const candidateId = useMemo(() => {
     if (activeModal?.kind !== 'hireEmployee') {
       return undefined;
@@ -98,9 +103,6 @@ const ModalHost = () => {
     }
     return plants[plantId];
   }, [plantId, plants]);
-
-  const roomList = useMemo(() => Object.values(rooms), [rooms]);
-  const zoneList = useMemo(() => Object.values(zones), [zones]);
 
   useEffect(() => {
     if (!activeModal) {
@@ -185,7 +187,7 @@ const ModalHost = () => {
         closeModal();
         return null;
       }
-      const structureRooms = roomList.filter((room) => room.structureId === structureId);
+      const structureRooms = roomsByStructure[structureId] ?? [];
       return (
         <CreateRoomModal
           structure={structure}
@@ -206,7 +208,7 @@ const ModalHost = () => {
         closeModal();
         return null;
       }
-      const roomZones = zoneList.filter((zone) => zone.roomId === roomId);
+      const roomZones = zonesByRoom[roomId] ?? [];
       return (
         <CreateZoneModal
           room={room}
@@ -232,9 +234,8 @@ const ModalHost = () => {
         closeModal();
         return null;
       }
-      const structureRooms = roomList.filter((item) => item.structureId === structure.id);
-      const structureZones = zoneList.filter((zone) => zone.structureId === structure.id);
-      const roomZones = structureZones.filter((zone) => zone.roomId === room.id);
+      const structureRooms = roomsByStructure[structure.id] ?? [];
+      const roomZones = zonesByRoom[room.id] ?? [];
       const usedArea = structureRooms.reduce((sum, item) => sum + Math.max(item.area, 0), 0);
       const availableArea = Math.max(structure.footprint.area - usedArea, 0);
       const deviceCount = roomZones.reduce((sum, zone) => sum + zone.devices.length, 0);
@@ -267,7 +268,7 @@ const ModalHost = () => {
         closeModal();
         return null;
       }
-      const roomZones = zoneList.filter((item) => item.roomId === room.id);
+      const roomZones = zonesByRoom[room.id] ?? [];
       const usedArea = roomZones.reduce((sum, item) => sum + Math.max(item.area, 0), 0);
       const availableArea = Math.max(room.area - usedArea, 0);
       const deviceCount = zone.devices.length;

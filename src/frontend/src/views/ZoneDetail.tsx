@@ -7,7 +7,22 @@ import { RoomSummaryCard, ZoneSummaryCard } from '@/components/cards';
 import ToggleSwitch from '@/components/ToggleSwitch';
 import { FormField, NumberInputField, RangeField } from '@/components/forms';
 import { Button, TextInput } from '@/components/inputs';
-import { selectCurrentTick, useAppStore, useGameStore, useZoneStore } from '@/store';
+import type { RoomSnapshot, ZoneSnapshot } from '@/types/simulation';
+import {
+  selectCurrentTick,
+  selectRoomById,
+  selectRoomByZoneId,
+  selectRoomsGroupedByStructure,
+  selectStructureById,
+  selectStructureByRoomId,
+  selectStructureByZoneId,
+  selectZoneById,
+  selectZonesGroupedByRoom,
+  selectZonesGroupedByStructure,
+  useAppStore,
+  useGameStore,
+  useZoneStore,
+} from '@/store';
 import { computeZoneAggregateMetrics } from '@/views/utils/zoneAggregates';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -121,13 +136,7 @@ const ZoneDetail = () => {
   const selectZone = useAppStore((state) => state.selectZone);
   const currentTick = useGameStore(selectCurrentTick);
 
-  const { structures, rooms, zones, timeline } = useZoneStore((state) => ({
-    structures: state.structures,
-    rooms: state.rooms,
-    zones: state.zones,
-    timeline: state.timeline,
-  }));
-
+  const timeline = useZoneStore((state) => state.timeline);
   const lastSetpoints = useZoneStore((state) => state.lastSetpoints);
   const sendSetpoint = useZoneStore((state) => state.sendSetpoint);
   const applyWater = useZoneStore((state) => state.applyWater);
@@ -147,18 +156,53 @@ const ZoneDetail = () => {
   }));
   const previousZoneIdRef = useRef<string | undefined>();
 
-  const roomList = useMemo(() => Object.values(rooms), [rooms]);
-  const zoneList = useMemo(() => Object.values(zones), [zones]);
+  const zoneSelector = useMemo(() => selectZoneById(selectedZoneId), [selectedZoneId]);
+  const zone = useZoneStore(zoneSelector);
 
-  const zone = selectedZoneId ? zones[selectedZoneId] : undefined;
-  const roomFromSelection = selectedRoomId ? rooms[selectedRoomId] : undefined;
-  const room = zone ? (rooms[zone.roomId] ?? roomFromSelection) : roomFromSelection;
-  const structureFromSelection = selectedStructureId ? structures[selectedStructureId] : undefined;
-  const structure = zone
-    ? (structures[zone.structureId] ?? structureFromSelection)
-    : room
-      ? (structures[room.structureId] ?? structureFromSelection)
-      : structureFromSelection;
+  const roomFromZoneSelector = useMemo(() => selectRoomByZoneId(selectedZoneId), [selectedZoneId]);
+  const roomFromZone = useZoneStore(roomFromZoneSelector);
+  const roomFromSelectionSelector = useMemo(() => selectRoomById(selectedRoomId), [selectedRoomId]);
+  const roomFromSelection = useZoneStore(roomFromSelectionSelector);
+  const room = roomFromZone ?? roomFromSelection;
+
+  const structureFromZoneSelector = useMemo(
+    () => selectStructureByZoneId(selectedZoneId),
+    [selectedZoneId],
+  );
+  const structureFromZone = useZoneStore(structureFromZoneSelector);
+  const structureFromRoomSelector = useMemo(() => selectStructureByRoomId(room?.id), [room?.id]);
+  const structureFromRoom = useZoneStore(structureFromRoomSelector);
+  const structureFromSelectionSelector = useMemo(
+    () => selectStructureById(selectedStructureId),
+    [selectedStructureId],
+  );
+  const structureFromSelection = useZoneStore(structureFromSelectionSelector);
+  const structure = structureFromZone ?? structureFromRoom ?? structureFromSelection;
+
+  const roomsByStructure = useZoneStore(selectRoomsGroupedByStructure);
+  const zonesByStructure = useZoneStore(selectZonesGroupedByStructure);
+  const zonesByRoom = useZoneStore(selectZonesGroupedByRoom);
+
+  const structureRooms = useMemo<RoomSnapshot[]>(() => {
+    if (!structure) {
+      return [];
+    }
+    return roomsByStructure[structure.id] ?? [];
+  }, [roomsByStructure, structure]);
+
+  const structureZones = useMemo<ZoneSnapshot[]>(() => {
+    if (!structure) {
+      return [];
+    }
+    return zonesByStructure[structure.id] ?? [];
+  }, [structure, zonesByStructure]);
+
+  const roomZones = useMemo<ZoneSnapshot[]>(() => {
+    if (!room) {
+      return [];
+    }
+    return zonesByRoom[room.id] ?? [];
+  }, [room, zonesByRoom]);
 
   useEffect(() => {
     if (!zone) {
@@ -182,27 +226,6 @@ const ZoneDetail = () => {
     setWaterCommandLiters(10);
     setNutrientDraft({ N: 10, P: 5, K: 5 });
   }, [zone]);
-
-  const structureRooms = useMemo(() => {
-    if (!structure) {
-      return [] as typeof roomList;
-    }
-    return roomList.filter((item) => item.structureId === structure.id);
-  }, [structure, roomList]);
-
-  const structureZones = useMemo(() => {
-    if (!structure) {
-      return [] as typeof zoneList;
-    }
-    return zoneList.filter((item) => item.structureId === structure.id);
-  }, [structure, zoneList]);
-
-  const roomZones = useMemo(() => {
-    if (!room) {
-      return [] as typeof zoneList;
-    }
-    return zoneList.filter((item) => item.roomId === room.id);
-  }, [room, zoneList]);
 
   const structureMetrics = computeZoneAggregateMetrics(structureZones);
   const roomMetrics = computeZoneAggregateMetrics(roomZones);
@@ -1374,9 +1397,7 @@ const ZoneDetail = () => {
               ) : (
                 <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
                   {structureRooms.map((roomItem) => {
-                    const roomZonesForItem = zoneList.filter(
-                      (zoneItem) => zoneItem.roomId === roomItem.id,
-                    );
+                    const roomZonesForItem = zonesByRoom[roomItem.id] ?? [];
                     const roomMetricsForItem = computeZoneAggregateMetrics(roomZonesForItem);
                     return (
                       <RoomSummaryCard
