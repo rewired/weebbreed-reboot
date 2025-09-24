@@ -52,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Offline-Bootstrap erzeugt den Store-Hydrationssnapshot jetzt über `createClickDummyFixture()` aus dem modularen Fixturepaket.
 - Portierte Struktur-/Raum-/Zonen-Helfer in wiederverwendbare Store-Selektoren und ersetzte duplizierte Filterlogik in ZoneDetail
   sowie ModalHost durch die neuen Utilities.
+- Ergänzte Vitest-Abdeckung für die migrierten Selektoren, deterministischen Fixture-Utilities sowie `StructureSummaryCard` und
+  `Navigation`, inklusive Snapshot-Assertions für die UI-Komponenten.
 
 ### Fixed
 

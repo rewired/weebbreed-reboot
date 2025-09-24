@@ -148,6 +148,9 @@
 
 ### Qualitätssicherung
 
-19. Unit- und Snapshot-Tests ergänzen: Schreibe Tests für neue Selektoren, deterministische Fixtures und UI-Komponenten, um die Stabilität der migrierten Oberflächen sicherzustellen.
+19. ✅ Unit- und Snapshot-Tests ergänzen: Schreibe Tests für neue Selektoren, deterministische Fixtures und UI-Komponenten, um die Stabilität der migrierten Oberflächen sicherzustellen.
+    - `src/frontend/src/store/selectors.test.ts` deckt jetzt die Zeitstatus-, Finanz- und Produktions-Selektoren inklusive Fallback-Logik und Event-Historie ab.
+    - Neue fixturespezifische Tests (`src/frontend/src/fixtures/deterministic.test.ts`) prüfen Sequenz- und Manager-Funktionalität, Clones, Scope-Reset sowie die globalen Helper (`getSharedSequence`, `nextSharedId`).
+    - UI-Komponenten besitzen Snapshot- und Verhaltenstests: `StructureSummaryCard.test.tsx` verifiziert Metrik-Rendering und Selection-Callbacks, `Navigation.test.tsx` prüft aktive Zustände, Badge-Anzeige, Disabled-Verhalten und erzeugt ein vertikales Layout-Snapshot.
 
 20. Determinismus verifizieren: Führe wiederholte Hydrationen mit gleichem Seed aus, um identische Snapshot-Ergebnisse zu bestätigen und Regressionen beim RNG-Austausch auszuschließen.
