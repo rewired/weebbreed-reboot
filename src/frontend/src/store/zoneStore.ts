@@ -296,6 +296,114 @@ export const useZoneStore = create<ZoneStoreState>()((set) => ({
       });
       return {};
     }),
+  rentStructure: (structureId) =>
+    set((state) => {
+      if (!structureId) {
+        return {};
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'rentStructure',
+        payload: { structureId },
+      });
+      return {};
+    }),
+  createRoom: (structureId, options) =>
+    set((state) => {
+      const trimmedName = options.name.trim();
+      const purpose = options.purposeId?.trim();
+      if (!structureId || !trimmedName || !purpose || options.area <= 0) {
+        return {};
+      }
+
+      const payload: {
+        structureId: string;
+        room: {
+          name: string;
+          purpose: string;
+          area: number;
+          height?: number;
+        };
+      } = {
+        structureId,
+        room: {
+          name: trimmedName,
+          purpose,
+          area: options.area,
+        },
+      };
+
+      if (options.height && options.height > 0) {
+        payload.room.height = options.height;
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'createRoom',
+        payload,
+      });
+      return {};
+    }),
+  createZone: (roomId, options) =>
+    set((state) => {
+      const trimmedName = options.name.trim();
+      const methodId = options.methodId?.trim();
+      if (!roomId || !trimmedName || !methodId || options.area <= 0) {
+        return {};
+      }
+
+      const payload: {
+        roomId: string;
+        zone: {
+          name: string;
+          area: number;
+          methodId: string;
+          targetPlantCount?: number;
+        };
+      } = {
+        roomId,
+        zone: {
+          name: trimmedName,
+          area: options.area,
+          methodId,
+        },
+      };
+
+      if (
+        options.targetPlantCount !== undefined &&
+        Number.isFinite(options.targetPlantCount) &&
+        options.targetPlantCount > 0
+      ) {
+        payload.zone.targetPlantCount = Math.trunc(options.targetPlantCount);
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'createZone',
+        payload,
+      });
+      return {};
+    }),
+  duplicateStructure: (structureId, options) =>
+    set((state) => {
+      if (!structureId) {
+        return {};
+      }
+
+      const name = options?.name?.trim();
+      const payload: Record<string, unknown> = { structureId };
+      if (name) {
+        payload.name = name;
+      }
+
+      state.sendFacadeIntent?.({
+        domain: 'world',
+        action: 'duplicateStructure',
+        payload,
+      });
+      return {};
+    }),
   duplicateRoom: (roomId, options) =>
     set((state) => {
       const name = options?.name?.trim();

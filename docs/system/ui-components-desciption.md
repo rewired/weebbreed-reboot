@@ -20,8 +20,9 @@ The backend façade groups all write operations behind intent domains (`time`, `
 
 ### World Domain (Structures, Rooms, Zones)
 
-- Active flows: rename structure/room/zone (`world.renameStructure`, `world.updateRoom`, `world.updateZone`), duplication (`world.duplicateRoom`, `world.duplicateZone`), and deletion (`world.deleteStructure`, `world.deleteRoom`, `world.deleteZone`) are surfaced through `ModalHost` dialogs. Each modal invokes the matching `useZoneStore` intent helper which emits the façade command.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L233-L392】【F:src/frontend/src/store/zoneStore.ts†L254-L355】
-- Not yet wired: `world.rentStructure`, `world.createRoom`, `world.createZone`, and `world.duplicateStructure` are available in the façade, but the front-end currently lacks forms that submit those intents—the `CreateRoom`/`CreateZone` modals only close themselves without dispatching actions.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L157-L197】
+- Active flows: rent/create/duplicate/delete/rename actions (`world.rentStructure`, `world.createRoom`, `world.createZone`, `world.duplicateStructure`, `world.duplicateRoom`, `world.duplicateZone`, `world.renameStructure`, `world.updateRoom`, `world.updateZone`, `world.deleteStructure`, `world.deleteRoom`, `world.deleteZone`) are surfaced through `ModalHost` dialogs. Each modal now invokes the matching `useZoneStore` intent helper which emits the façade command so the backend processes geometry, costing, and duplication rules deterministically.【F:src/backend/src/facade/index.ts†L1168-L1233】【F:src/frontend/src/components/ModalHost.tsx†L157-L318】【F:src/frontend/src/store/zoneStore.ts†L240-L338】
+
+- `CreateRoomModal`, `CreateZoneModal`, `RentStructureModal`, and `DuplicateStructureModal` dispatch `useZoneStore.createRoom`, `useZoneStore.createZone`, `useZoneStore.rentStructure`, and `useZoneStore.duplicateStructure` respectively, wiring the previously inert forms to façade intents.【F:src/frontend/src/views/world/modals/CreateRoomModal.tsx†L9-L114】【F:src/frontend/src/views/world/modals/CreateZoneModal.tsx†L9-L132】【F:src/frontend/src/views/world/modals/RentStructureModal.tsx†L1-L71】【F:src/frontend/src/views/world/modals/DuplicateStructureModal.tsx†L1-L108】
 
 ### Device Domain
 
@@ -263,45 +264,41 @@ These components define the content for various modals used for user input and i
 - **Dependencies:** `FormSelect`, `FormInput`, `PrimaryButton`.
 - **Usage Context:** Displayed when the user clicks "Install Device" in the `ZoneDeviceList`.
 
-### `AddRoomModal.tsx`
+### `CreateRoomModal.tsx`
 
-- **Purpose:** A form for creating a new room within a structure. It validates that the requested area does not exceed the available area in the parent structure.
-- **Props:** `onSubmit`, `structure`, `onClose`.
-- **Icons Used:** None.
-- **Dependencies:** `FormInput`, `FormSelect`, `PrimaryButton`.
-- **Usage Context:** Displayed when the user clicks the "Add Room" (+) icon in the `Sidebar`.
+- **Purpose:** Collects a room name, purpose, footprint area, and height before dispatching `world.createRoom`. Geometry limits are enforced in the UI and the sanitized payload is sent via `useZoneStore.createRoom` on submit.【F:src/frontend/src/views/world/modals/CreateRoomModal.tsx†L9-L114】【F:src/frontend/src/components/ModalHost.tsx†L175-L197】
+- **Props:** `structure`, `existingRooms`, `onSubmit`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Shown when the user adds a room from structure-level actions; the modal pauses the sim (via `ModalHost`) and resumes after the command is dispatched.
 
-### `AddZoneModal.tsx`
+### `CreateZoneModal.tsx`
 
-- **Purpose:** A form for creating a new zone within a grow room.
-- **Props:** `onSubmit`, `roomId`, `onClose`.
-- **Icons Used:** None.
-- **Dependencies:** `FormInput`, `FormSelect`, `PrimaryButton`.
-- **Usage Context:** Displayed when the user clicks the "Add Zone" (+) icon in the `Sidebar`.
+- **Purpose:** Allocates footprint within a room, selects a cultivation method, and relays the intent to `world.createZone` with the trimmed name, method UUID, and optional plant count.【F:src/frontend/src/views/world/modals/CreateZoneModal.tsx†L9-L145】【F:src/frontend/src/components/ModalHost.tsx†L198-L222】
+- **Props:** `room`, `existingZones`, `availableMethods?`, `onSubmit`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Launched from room-level actions when expanding a grow area.
 
-### `DeleteConfirmationModal.tsx`
+### `RentStructureModal.tsx`
 
-- **Purpose:** A simple confirmation dialog to prevent accidental deletion of entities like rooms or zones.
-- **Props:** `entityType`, `entityName`, `onConfirm`.
-- **Icons Used:** None.
-- **Dependencies:** `DangerButton`.
-- **Usage Context:** Displayed when a user clicks any delete action icon.
+- **Purpose:** Confirms structure rental and provides a summary of footprint, rooms/zones, and rent per tick before emitting `world.rentStructure` through `useZoneStore`.
+- **Props:** `structure`, `rooms?`, `zones?`, `onConfirm`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Triggered from structure catalog cards; the confirm button sends the rent intent and closes the modal once acknowledged.【F:src/frontend/src/views/world/modals/RentStructureModal.tsx†L1-L71】【F:src/frontend/src/components/ModalHost.tsx†L223-L246】
+
+### `DuplicateStructureModal.tsx`
+
+- **Purpose:** Allows renaming and reviewing totals (rooms, zones, area, device count) before cloning a structure via `world.duplicateStructure`.
+- **Props:** `structure`, `rooms`, `zones`, `onConfirm`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Available from structure actions; after submission the façade handles geometry/cost validation while the UI awaits confirmation.【F:src/frontend/src/views/world/modals/DuplicateStructureModal.tsx†L1-L108】【F:src/frontend/src/components/ModalHost.tsx†L247-L270】
 
 ### `DuplicateRoomModal.tsx`
 
-- **Purpose:** A form for duplicating an existing room. It calculates and displays the required area and the cost of duplicating all devices within, disabling the action if resources are insufficient.
-- **Props:** `onSubmit`, `room`, `structure`, `balance`.
-- **Icons Used:** None.
-- **Dependencies:** `FormInput`, `PrimaryButton`.
-- **Usage Context:** Displayed when the user clicks the "Duplicate" icon on a room.
+- **Purpose:** Mirrors an existing room, summarising footprint consumption, zones, devices, and estimated CapEx before issuing `world.duplicateRoom`.
+- **Props:** `room`, `structure`, `zones`, `availableArea`, `deviceCount`, `estimatedDeviceCapex?`, `onConfirm`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Appears from room action menus; the confirm action triggers the façade intent through `useZoneStore.duplicateRoom` and closes the dialog.【F:src/frontend/src/views/world/modals/DuplicateRoomModal.tsx†L1-L112】【F:src/frontend/src/components/ModalHost.tsx†L205-L221】
 
 ### `DuplicateZoneModal.tsx`
 
-- **Purpose:** A form for duplicating a zone, with checkboxes to selectively include its devices and cultivation method (plants). It calculates and displays the cost if devices are included.
-- **Props:** `onSubmit`, `zone`, `room`.
-- **Icons Used:** None.
-- **Dependencies:** `FormInput`, `FormCheckbox`, `PrimaryButton`.
-- **Usage Context:** Displayed when the user clicks the "Duplicate" icon on a zone.
+- **Purpose:** Clones a zone with optional device/method copying options before calling `world.duplicateZone`.
+- **Props:** `zone`, `room`, `availableArea`, `deviceCount`, `onConfirm`, `onCancel`, `title?`, `description?`.
+- **Usage Context:** Accessed via zone-level duplicate actions; the modal relays the selected options through `useZoneStore.duplicateZone` on confirm.【F:src/frontend/src/views/world/modals/DuplicateZoneModal.tsx†L1-L113】【F:src/frontend/src/components/ModalHost.tsx†L222-L245】
 
 ### `GameMenuModal.tsx`
 

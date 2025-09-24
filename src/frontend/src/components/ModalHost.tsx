@@ -4,12 +4,15 @@ import FireEmployeeModal from '@/views/personnel/modals/FireEmployeeModal';
 import CreateRoomModal from '@/views/world/modals/CreateRoomModal';
 import CreateZoneModal from '@/views/world/modals/CreateZoneModal';
 import DuplicateRoomModal from '@/views/world/modals/DuplicateRoomModal';
+import DuplicateStructureModal from '@/views/world/modals/DuplicateStructureModal';
 import DuplicateZoneModal from '@/views/world/modals/DuplicateZoneModal';
+import RentStructureModal from '@/views/world/modals/RentStructureModal';
 import RenameEntityModal from '@/views/world/modals/RenameEntityModal';
 import ConfirmDeletionModal from '@/views/world/modals/ConfirmDeletionModal';
 import PlantDetailModal from '@/views/zone/modals/PlantDetailModal';
 import {
   selectRoomsGroupedByStructure,
+  selectZonesGroupedByStructure,
   selectZonesGroupedByRoom,
   useAppStore,
   usePersonnelStore,
@@ -29,6 +32,10 @@ const ModalHost = () => {
     rooms,
     zones,
     plants,
+    rentStructure,
+    createRoom,
+    createZone,
+    duplicateStructure,
     duplicateRoom,
     duplicateZone,
     updateStructureName,
@@ -42,6 +49,10 @@ const ModalHost = () => {
     rooms: state.rooms,
     zones: state.zones,
     plants: state.plants,
+    rentStructure: state.rentStructure,
+    createRoom: state.createRoom,
+    createZone: state.createZone,
+    duplicateStructure: state.duplicateStructure,
     duplicateRoom: state.duplicateRoom,
     duplicateZone: state.duplicateZone,
     updateStructureName: state.updateStructureName,
@@ -54,6 +65,7 @@ const ModalHost = () => {
 
   const roomsByStructure = useZoneStore(selectRoomsGroupedByStructure);
   const zonesByRoom = useZoneStore(selectZonesGroupedByRoom);
+  const zonesByStructure = useZoneStore(selectZonesGroupedByStructure);
 
   const candidateId = useMemo(() => {
     if (activeModal?.kind !== 'hireEmployee') {
@@ -169,7 +181,8 @@ const ModalHost = () => {
           title={activeModal.title}
           description={activeModal.description}
           onCancel={closeModal}
-          onSubmit={() => {
+          onSubmit={({ name, purposeId, area, height }) => {
+            createRoom(structure.id, { name, purposeId, area, height });
             closeModal();
           }}
         />
@@ -190,7 +203,56 @@ const ModalHost = () => {
           title={activeModal.title}
           description={activeModal.description}
           onCancel={closeModal}
-          onSubmit={() => {
+          onSubmit={({ name, area, methodId, targetPlantCount }) => {
+            createZone(room.id, { name, area, methodId, targetPlantCount });
+            closeModal();
+          }}
+        />
+      );
+    }
+    case 'rentStructure': {
+      const { structureId } = activeModal.payload;
+      const structure = structures[structureId];
+      if (!structure) {
+        closeModal();
+        return null;
+      }
+      const structureRooms = roomsByStructure[structureId] ?? [];
+      const structureZones = zonesByStructure[structureId] ?? [];
+      return (
+        <RentStructureModal
+          structure={structure}
+          rooms={structureRooms}
+          zones={structureZones}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onConfirm={() => {
+            rentStructure(structure.id);
+            closeModal();
+          }}
+        />
+      );
+    }
+    case 'duplicateStructure': {
+      const { structureId } = activeModal.payload;
+      const structure = structures[structureId];
+      if (!structure) {
+        closeModal();
+        return null;
+      }
+      const structureRooms = roomsByStructure[structureId] ?? [];
+      const structureZones = zonesByStructure[structureId] ?? [];
+      return (
+        <DuplicateStructureModal
+          structure={structure}
+          rooms={structureRooms}
+          zones={structureZones}
+          title={activeModal.title}
+          description={activeModal.description}
+          onCancel={closeModal}
+          onConfirm={({ name }) => {
+            duplicateStructure(structure.id, { name });
             closeModal();
           }}
         />
