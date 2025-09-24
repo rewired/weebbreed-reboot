@@ -14,8 +14,10 @@ import type {
   ZoneSupplyStatusSnapshot,
   ZoneHealthSnapshot,
 } from '@/types/simulation';
+import type { FinanceTickEntry } from '@/store/types';
 import type {
   ClickDummyCandidate,
+  ClickDummyDevice,
   ClickDummyGameData,
   ClickDummyKpi,
   ClickDummyRoom,
@@ -80,6 +82,8 @@ const DEFAULT_RESOURCE_NUTRIENT_LITERS = 400;
 const HUMIDITY_PERCENT_SCALE = 100;
 const HEALTH_PERCENT_SCALE = 100;
 const STRESS_PERCENT_SCALE = 100;
+const WATER_COST_PER_LITER = 0.0025;
+const NUTRIENT_COST_PER_LITER = 0.018;
 
 const sanitizeNonNegative = (value: number): number => {
   if (!Number.isFinite(value)) {
@@ -136,6 +140,151 @@ const DEFAULT_ROOM_PURPOSES: Record<string, RoomPurposeDescriptor> = {
   processing: { id: 'purpose:processing', kind: 'processing', name: 'Processing Room' },
   drying: { id: 'purpose:drying', kind: 'drying', name: 'Drying Room' },
   curing: { id: 'purpose:curing', kind: 'curing', name: 'Curing Room' },
+};
+
+interface DeviceBlueprintProfile {
+  blueprintId: string;
+  maintenancePerHour: number;
+  energyCostPerHour: number;
+  waterCostPerHour?: number;
+  nutrientsCostPerHour?: number;
+}
+
+interface DeviceCostProfile extends DeviceBlueprintProfile {
+  zoneId: string;
+  kind: string;
+  stressLevel: number;
+}
+
+const DEVICE_NAME_PROFILES: Record<string, DeviceBlueprintProfile> = {
+  'sunstream-pro-led': {
+    blueprintId: 'device:lighting:sunstream-pro-led',
+    maintenancePerHour: 6,
+    energyCostPerHour: 28,
+  },
+  'precision-climate-hub': {
+    blueprintId: 'device:climate:precision-climate-hub',
+    maintenancePerHour: 3.2,
+    energyCostPerHour: 14,
+    waterCostPerHour: 2,
+  },
+  'hvac-master': {
+    blueprintId: 'device:hvac:hvac-master',
+    maintenancePerHour: 4,
+    energyCostPerHour: 22,
+  },
+};
+
+const DEVICE_KIND_DEFAULTS: Record<string, DeviceBlueprintProfile> = {
+  lighting: {
+    blueprintId: 'device:lighting:generic',
+    maintenancePerHour: 5,
+    energyCostPerHour: 24,
+  },
+  hvac: {
+    blueprintId: 'device:hvac:generic',
+    maintenancePerHour: 3.5,
+    energyCostPerHour: 18,
+  },
+  climate: {
+    blueprintId: 'device:climate:generic',
+    maintenancePerHour: 3,
+    energyCostPerHour: 12,
+    waterCostPerHour: 1,
+  },
+  irrigation: {
+    blueprintId: 'device:irrigation:generic',
+    maintenancePerHour: 2.5,
+    energyCostPerHour: 6,
+    waterCostPerHour: 4,
+    nutrientsCostPerHour: 2.5,
+  },
+  device: {
+    blueprintId: 'device:generic',
+    maintenancePerHour: 2,
+    energyCostPerHour: 6,
+  },
+};
+
+const buildDeviceCostProfile = (
+  device: ClickDummyDevice,
+  kind: string,
+  zone: ClickDummyZone,
+  normalizedKpis: NormalizedZoneKpis,
+): DeviceCostProfile => {
+  const nameSlug = slugify(device.name || '');
+  const typeSlug = slugify(device.type || '');
+  const preset = DEVICE_NAME_PROFILES[nameSlug] ?? DEVICE_NAME_PROFILES[typeSlug];
+  const defaults = DEVICE_KIND_DEFAULTS[kind] ?? DEVICE_KIND_DEFAULTS.device;
+  const blueprintBase = preset?.blueprintId ?? defaults.blueprintId ?? `device:${kind}:generic`;
+  const resolvedBlueprintId =
+    preset?.blueprintId ??
+    (nameSlug.length > 0
+      ? `device:${kind}:${nameSlug}`
+      : typeSlug.length > 0
+        ? `device:${kind}:${typeSlug}`
+        : blueprintBase);
+
+  return {
+    blueprintId: resolvedBlueprintId,
+    maintenancePerHour: preset?.maintenancePerHour ?? defaults.maintenancePerHour,
+    energyCostPerHour: preset?.energyCostPerHour ?? defaults.energyCostPerHour,
+    waterCostPerHour: preset?.waterCostPerHour ?? defaults.waterCostPerHour ?? 0,
+    nutrientsCostPerHour: preset?.nutrientsCostPerHour ?? defaults.nutrientsCostPerHour ?? 0,
+    zoneId: zone.id,
+    kind,
+    stressLevel: clamp(normalizedKpis.stressLevel ?? zone.stress ?? 0, 0, 1),
+  } satisfies DeviceCostProfile;
+};
+
+const createDailyCurve = (
+  length: number,
+  ticksPerDay: number,
+  amplitude: number,
+  phaseOffset = 0,
+): number[] => {
+  if (length <= 0) {
+    return [];
+  }
+  const safeAmplitude = clamp(amplitude, 0, 0.95);
+  const weights: number[] = [];
+  for (let index = 0; index < length; index += 1) {
+    const dailyProgress = ticksPerDay > 0 ? (index % ticksPerDay) / ticksPerDay : 0;
+    const weight = 1 + safeAmplitude * Math.sin(2 * Math.PI * dailyProgress + phaseOffset);
+    weights.push(Math.max(weight, 0.05));
+  }
+  return weights;
+};
+
+const createCapexDistribution = (length: number, ticksPerDay: number): number[] => {
+  if (length <= 0) {
+    return [];
+  }
+  const distribution = new Array<number>(length).fill(0);
+  const dayCount = ticksPerDay > 0 ? Math.max(Math.floor(length / ticksPerDay), 1) : 1;
+  for (let day = 0; day < dayCount; day += 1) {
+    const offset = ticksPerDay > 0 ? Math.floor(ticksPerDay * 0.75) : 0;
+    const index = Math.min(day * Math.max(ticksPerDay, 1) + offset, length - 1);
+    distribution[index] = 1 + day * 0.1;
+  }
+  if (distribution.every((value) => value === 0)) {
+    distribution[length - 1] = 1;
+  }
+  return distribution;
+};
+
+const adjustSeriesToTarget = (series: number[], target: number) => {
+  if (!series.length) {
+    return;
+  }
+  const sum = series.reduce((total, value) => total + value, 0);
+  const difference = target - sum;
+  if (Math.abs(difference) < 1e-6) {
+    return;
+  }
+  const lastIndex = series.length - 1;
+  const adjusted = series[lastIndex] + difference;
+  series[lastIndex] = adjusted < 0 ? 0 : adjusted;
 };
 
 const clamp = (value: number, min: number, max: number): number => {
@@ -389,12 +538,24 @@ const toStrainId = (name: string): string => {
   return slug.length > 0 ? `strain:${slug}` : 'strain:unknown';
 };
 
-const toStage = (phase: string | undefined): string => {
-  if (!phase) {
-    return 'unknown';
+const toPlantStage = (phase: string | undefined, fallback?: string): string => {
+  const extractStage = (value: string | undefined): string => {
+    if (!value) {
+      return '';
+    }
+    const base = value.split('(')[0]?.trim();
+    if (!base) {
+      return '';
+    }
+    return slugify(base);
+  };
+
+  const phaseStage = extractStage(phase);
+  if (phaseStage.length > 0) {
+    return phaseStage;
   }
-  const base = phase.split('(')[0]?.trim();
-  return base?.length ? base : 'unknown';
+  const fallbackStage = extractStage(fallback);
+  return fallbackStage.length > 0 ? fallbackStage : 'unknown';
 };
 
 const toZoneLighting = (
@@ -642,11 +803,13 @@ const translateDevices = (
   roomId: string,
   currentTick: number,
   tickLengthMinutes: number,
+  normalizedKpis: NormalizedZoneKpis,
+  costProfiles: Map<string, DeviceCostProfile>,
 ): DeviceSnapshot[] => {
   if (!Array.isArray(zone.devices) || zone.devices.length === 0) {
     return [];
   }
-  const baseRuntimeHours = (currentTick * tickLengthMinutes) / MINUTES_PER_HOUR;
+  const baseRuntimeHours = Math.max(tickLengthMinutes / MINUTES_PER_HOUR, 1);
   const maintenanceWindowTicks = Math.max(
     HOURS_PER_DAY,
     Math.round(
@@ -656,15 +819,16 @@ const translateDevices = (
   );
   return zone.devices.map((device) => {
     const kind = toDeviceKind(device.type);
+    const profile = buildDeviceCostProfile(device, kind, zone, normalizedKpis);
     const lastServiceTick = Math.max(0, currentTick - maintenanceWindowTicks);
     const nextDueTick = currentTick + maintenanceWindowTicks;
     const efficiency = clamp(1 - zone.stress * 0.2, 0.5, 1);
     const degradation = clamp(zone.stress * 0.3, 0, 1);
     const runtimeMultiplier = kind === 'lighting' && zone.controls?.light?.on === false ? 0.25 : 1;
     const runtimeHours = baseRuntimeHours * runtimeMultiplier;
-    return {
+    const snapshot: DeviceSnapshot = {
       id: device.id,
-      blueprintId: `fixture:${kind}`,
+      blueprintId: profile.blueprintId,
       kind,
       name: device.name,
       zoneId: zone.id,
@@ -679,6 +843,8 @@ const translateDevices = (
       },
       settings: toDeviceSettings(zone, kind),
     } satisfies DeviceSnapshot;
+    costProfiles.set(device.id, profile);
+    return snapshot;
   });
 };
 
@@ -704,7 +870,7 @@ const translatePlants = (
     return {
       id: plant.id,
       strainId,
-      stage: toStage(zone.phase),
+      stage: toPlantStage(zone.phase, plant.status),
       health,
       stress,
       biomassDryGrams,
@@ -791,7 +957,7 @@ const toPlantingGroups = (zone: ClickDummyZone): PlantingGroupSnapshot[] | undef
       id: `${zone.id}:group:${strainId}`,
       name: `${zone.strain || 'Unknown Strain'} Batch`,
       strainId,
-      stage: toStage(zone.phase),
+      stage: toPlantStage(zone.phase),
       harvestReadyCount,
       plantIds: zone.plants.map((plant) => plant.id),
     },
@@ -842,6 +1008,7 @@ const translateZone = (
   room: ClickDummyRoom,
   currentTick: number,
   tickLengthMinutes: number,
+  deviceCostProfiles: Map<string, DeviceCostProfile>,
   facilityWaterLiters: number | undefined,
 ): ZoneSnapshot => {
   const normalizedKpis = extractNormalizedKpis(zone);
@@ -854,7 +1021,15 @@ const translateZone = (
   );
   const lighting = toZoneLighting(zone, environment.ppfd, normalizedKpis);
   const supplyStatus = toZoneSupplyStatus(zone, normalizedKpis);
-  const devices = translateDevices(zone, structure.id, room.id, currentTick, tickLengthMinutes);
+  const devices = translateDevices(
+    zone,
+    structure.id,
+    room.id,
+    currentTick,
+    tickLengthMinutes,
+    normalizedKpis,
+    deviceCostProfiles,
+  );
   const plants = translatePlants(zone, structure.id, room.id);
   const health = summarizeZoneHealth(zone, currentTick, tickLengthMinutes, normalizedKpis);
   const plantingGroups = toPlantingGroups(zone);
@@ -892,6 +1067,7 @@ const translateRoom = (
   room: ClickDummyRoom,
   currentTick: number,
   tickLengthMinutes: number,
+  deviceCostProfiles: Map<string, DeviceCostProfile>,
   purposes?: Record<string, RoomPurposeDescriptor>,
   facilityWaterLiters?: number,
 ) => {
@@ -899,7 +1075,15 @@ const translateRoom = (
   const zoneSnapshots: ZoneSnapshot[] = [];
   for (const zone of room.zones ?? []) {
     zoneSnapshots.push(
-      translateZone(zone, structure, room, currentTick, tickLengthMinutes, facilityWaterLiters),
+      translateZone(
+        zone,
+        structure,
+        room,
+        currentTick,
+        tickLengthMinutes,
+        deviceCostProfiles,
+        facilityWaterLiters,
+      ),
     );
   }
   const zoneIds = zoneSnapshots.map((zone) => zone.id);
@@ -934,6 +1118,7 @@ const translateStructure = (
   structure: ClickDummyStructure,
   currentTick: number,
   tickLengthMinutes: number,
+  deviceCostProfiles: Map<string, DeviceCostProfile>,
   purposes?: Record<string, RoomPurposeDescriptor>,
   facilityWaterLiters?: number,
 ) => {
@@ -945,6 +1130,7 @@ const translateStructure = (
       room,
       currentTick,
       tickLengthMinutes,
+      deviceCostProfiles,
       purposes,
       facilityWaterLiters,
     );
@@ -969,6 +1155,223 @@ const translateStructure = (
     roomIds,
   };
   return { structureSnapshot, roomSnapshots, zoneSnapshots };
+};
+
+const deriveDailyWaterCost = (zone: ZoneSnapshot, ticksPerDay: number): number => {
+  const dailyWaterLiters = zone.supplyStatus?.dailyWaterConsumptionLiters;
+  if (dailyWaterLiters !== undefined) {
+    return (dailyWaterLiters * WATER_COST_PER_LITER) / Math.max(ticksPerDay, 1);
+  }
+  const fallbackLiters = zone.resources.lastTranspirationLiters * Math.max(ticksPerDay, 1);
+  return (fallbackLiters * WATER_COST_PER_LITER) / Math.max(ticksPerDay, 1);
+};
+
+const deriveDailyNutrientCost = (zone: ZoneSnapshot, ticksPerDay: number): number => {
+  const dailyNutrientLiters = zone.supplyStatus?.dailyNutrientConsumptionLiters;
+  if (dailyNutrientLiters !== undefined) {
+    return (dailyNutrientLiters * NUTRIENT_COST_PER_LITER) / Math.max(ticksPerDay, 1);
+  }
+  const inferredDailyWater = zone.supplyStatus?.dailyWaterConsumptionLiters;
+  const baseWater =
+    inferredDailyWater !== undefined
+      ? inferredDailyWater
+      : zone.resources.lastTranspirationLiters * Math.max(ticksPerDay, 1);
+  const nutrientStrength = Number.isFinite(zone.resources.nutrientStrength)
+    ? zone.resources.nutrientStrength
+    : 0.5;
+  const inferredNutrientLiters = baseWater * nutrientStrength;
+  return (inferredNutrientLiters * NUTRIENT_COST_PER_LITER) / Math.max(ticksPerDay, 1);
+};
+
+const generateFinanceHistory = (
+  snapshot: SimulationSnapshot,
+  data: ClickDummyGameData,
+  tickLengthMinutes: number,
+  deviceCostProfiles: Map<string, DeviceCostProfile>,
+  startDate: Date,
+): FinanceTickEntry[] => {
+  const millisecondsPerTick = tickLengthMinutes * MINUTES_PER_HOUR * 1000;
+  const tickHours = tickLengthMinutes / MINUTES_PER_HOUR;
+  const ticksPerDay = Math.max(
+    Math.round((HOURS_PER_DAY * MINUTES_PER_HOUR) / Math.max(tickLengthMinutes, 1)),
+    1,
+  );
+  const ticksPerWindow = ticksPerDay * DAYS_PER_WEEK;
+  const availableTicks = snapshot.tick + 1;
+  const tickCount = Math.max(Math.min(ticksPerWindow, availableTicks), 1);
+  const startTick = Math.max(snapshot.tick - (tickCount - 1), 0);
+  const baseTimestamp = Number.isFinite(startDate.getTime()) ? startDate.getTime() : Date.now();
+  const startTimestamp = baseTimestamp + startTick * millisecondsPerTick;
+
+  const targetRevenue = Math.max(data.finance?.revenue?.total ?? 0, 0);
+  const inputOpex = Math.max(
+    data.finance?.opex?.total ?? (data.globalStats?.dailyOpex ?? 0) * DAYS_PER_WEEK,
+    0,
+  );
+  const targetCapex = Math.max(data.finance?.capex?.total ?? 0, 0);
+
+  const revenueWeights = createDailyCurve(tickCount, ticksPerDay, 0.25);
+  const revenueWeightSum = revenueWeights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const revenueSeries = revenueWeights.map((weight) =>
+    targetRevenue > 0 ? (weight / revenueWeightSum) * targetRevenue : 0,
+  );
+  adjustSeriesToTarget(revenueSeries, targetRevenue);
+
+  const deviceProfiles = Array.from(deviceCostProfiles.entries());
+  const maintenanceWeight = deviceProfiles.reduce(
+    (sum, [, profile]) => sum + Math.max(profile.maintenancePerHour, 0),
+    0,
+  );
+  const energyWeight = deviceProfiles.reduce(
+    (sum, [, profile]) => sum + Math.max(profile.energyCostPerHour, 0),
+    0,
+  );
+  const maintenanceBasePerTick = maintenanceWeight * tickHours;
+  const energyBasePerTick = energyWeight * tickHours;
+  const waterBasePerTick = snapshot.zones.reduce(
+    (sum, zone) => sum + deriveDailyWaterCost(zone, ticksPerDay),
+    0,
+  );
+  const nutrientBasePerTick = snapshot.zones.reduce(
+    (sum, zone) => sum + deriveDailyNutrientCost(zone, ticksPerDay),
+    0,
+  );
+  const baseVariablePerTick =
+    maintenanceBasePerTick + energyBasePerTick + waterBasePerTick + nutrientBasePerTick;
+
+  const personnel = snapshot.personnel?.employees ?? [];
+  const laborPerTick = personnel.reduce((sum, employee) => sum + (employee.salaryPerTick ?? 0), 0);
+  const laborTotal = laborPerTick * tickCount;
+  const adjustedOpexTotal = Math.max(inputOpex, laborTotal);
+
+  let maintenanceRatio = 0.45;
+  let energyRatio = 0.35;
+  let waterRatio = 0.1;
+  let nutrientsRatio = 0.1;
+  if (baseVariablePerTick > 0) {
+    maintenanceRatio = maintenanceBasePerTick / baseVariablePerTick;
+    energyRatio = energyBasePerTick / baseVariablePerTick;
+    waterRatio = waterBasePerTick / baseVariablePerTick;
+    nutrientsRatio = nutrientBasePerTick / baseVariablePerTick;
+  }
+  const ratioSum = maintenanceRatio + energyRatio + waterRatio + nutrientsRatio;
+  if (ratioSum > 0) {
+    maintenanceRatio /= ratioSum;
+    energyRatio /= ratioSum;
+    waterRatio /= ratioSum;
+    nutrientsRatio /= ratioSum;
+  }
+
+  const variableTargetTotal = Math.max(adjustedOpexTotal - laborTotal, 0);
+  const variableWeights = createDailyCurve(tickCount, ticksPerDay, 0.15, Math.PI / 2);
+  const variableWeightSum = variableWeights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const variableSeries = variableWeights.map((weight) =>
+    variableTargetTotal > 0 ? (weight / variableWeightSum) * variableTargetTotal : 0,
+  );
+  adjustSeriesToTarget(variableSeries, variableTargetTotal);
+
+  const capexWeights = createCapexDistribution(tickCount, ticksPerDay);
+  const capexWeightSum = capexWeights.reduce((sum, weight) => sum + weight, 0) || 1;
+  const capexSeries = capexWeights.map((weight) =>
+    targetCapex > 0 ? (weight / capexWeightSum) * targetCapex : 0,
+  );
+  adjustSeriesToTarget(capexSeries, targetCapex);
+
+  const entries: FinanceTickEntry[] = [];
+  for (let index = 0; index < tickCount; index += 1) {
+    const revenue = revenueSeries[index] ?? 0;
+    const variableAmount = variableSeries[index] ?? 0;
+    let maintenanceTick = variableAmount * maintenanceRatio;
+    const energyTick = variableAmount * energyRatio;
+    const waterTick = variableAmount * waterRatio;
+    const nutrientTick = variableAmount * nutrientsRatio;
+    const breakdownSum = maintenanceTick + energyTick + waterTick + nutrientTick;
+    const diffToVariable = variableAmount - breakdownSum;
+    if (Math.abs(diffToVariable) > 1e-6) {
+      maintenanceTick += diffToVariable;
+    }
+    const utilitiesTotal = energyTick + waterTick + nutrientTick;
+    const opex = laborPerTick + maintenanceTick + utilitiesTotal;
+    const capex = capexSeries[index] ?? 0;
+    const expenses = opex + capex;
+    const tickNumber = startTick + index;
+    const ts = startTimestamp + index * millisecondsPerTick;
+
+    const maintenanceDetails: FinanceTickEntry['maintenanceDetails'] = [];
+    if (maintenanceTick > 0 && maintenanceWeight > 0 && deviceProfiles.length > 0) {
+      let allocated = 0;
+      deviceProfiles.forEach(([deviceId, profile], deviceIndex) => {
+        const weight =
+          profile.maintenancePerHour <= 0 ? 0 : profile.maintenancePerHour / maintenanceWeight;
+        let cost = maintenanceTick * weight;
+        if (deviceIndex === deviceProfiles.length - 1) {
+          cost += maintenanceTick - (allocated + cost);
+        }
+        if (cost <= 0) {
+          return;
+        }
+        allocated += cost;
+        maintenanceDetails.push({
+          deviceId,
+          blueprintId: profile.blueprintId,
+          totalCost: cost,
+          degradationMultiplier: clamp(1 + profile.stressLevel * 0.5, 0.5, 2),
+        });
+      });
+    } else if (maintenanceTick > 0) {
+      maintenanceDetails.push({
+        deviceId: 'facility:maintenance',
+        blueprintId: 'facility:maintenance',
+        totalCost: maintenanceTick,
+        degradationMultiplier: 1,
+      });
+    }
+    const maintenanceTotal = maintenanceDetails.reduce((sum, item) => sum + item.totalCost, 0);
+    if (maintenanceDetails.length > 0 && Math.abs(maintenanceTick - maintenanceTotal) > 1e-6) {
+      const last = maintenanceDetails[maintenanceDetails.length - 1];
+      last.totalCost += maintenanceTick - maintenanceTotal;
+    }
+
+    entries.push({
+      tick: tickNumber,
+      ts,
+      revenue,
+      expenses,
+      netIncome: revenue - expenses,
+      capex,
+      opex,
+      utilities: {
+        totalCost: utilitiesTotal,
+        energy: energyTick,
+        water: waterTick,
+        nutrients: nutrientTick,
+      },
+      maintenanceTotal: maintenanceDetails.reduce((sum, item) => sum + item.totalCost, 0),
+      maintenanceDetails,
+    });
+  }
+
+  const aggregate = entries.reduce(
+    (accumulator, entry) => {
+      accumulator.revenue += entry.revenue;
+      accumulator.opex += entry.opex;
+      accumulator.capex += entry.capex;
+      return accumulator;
+    },
+    { revenue: 0, opex: 0, capex: 0 },
+  );
+  const totalExpenses = aggregate.opex + aggregate.capex;
+  const netIncome = aggregate.revenue - totalExpenses;
+  snapshot.finance = {
+    ...snapshot.finance,
+    totalRevenue: aggregate.revenue,
+    totalExpenses,
+    netIncome,
+    lastTickRevenue: tickCount > 0 ? aggregate.revenue / tickCount : 0,
+    lastTickExpenses: tickCount > 0 ? aggregate.opex / tickCount : 0,
+  };
+
+  return entries;
 };
 
 const convertAnnualSalaryToPerTick = (annualSalary: number, tickLengthMinutes: number): number => {
@@ -1032,17 +1435,18 @@ const translateFinance = (
   const ticksPerDay = (HOURS_PER_DAY * MINUTES_PER_HOUR) / Math.max(tickLengthMinutes, 1);
   const ticksPerWeek = ticksPerDay * DAYS_PER_WEEK;
   const totalRevenue = data.finance?.revenue?.total ?? 0;
-  const totalOpex = data.finance?.opex?.total ?? 0;
+  const totalOpex = data.finance?.opex?.total ?? (data.globalStats?.dailyOpex ?? 0) * DAYS_PER_WEEK;
   const totalCapex = data.finance?.capex?.total ?? 0;
   const totalExpenses = totalOpex + totalCapex;
   const lastTickRevenue = totalRevenue / Math.max(ticksPerWeek, 1);
   const lastTickExpenses = totalExpenses / Math.max(ticksPerWeek, 1);
+  const netIncome = totalRevenue - totalExpenses;
   return {
     cashOnHand: data.globalStats?.balance ?? 0,
     reservedCash: totalCapex * 0.1,
     totalRevenue,
     totalExpenses,
-    netIncome: data.finance?.netIncome7d ?? totalRevenue - totalExpenses,
+    netIncome,
     lastTickRevenue,
     lastTickExpenses,
   } satisfies FinanceSummarySnapshot;
@@ -1051,7 +1455,7 @@ const translateFinance = (
 export const translateClickDummyGameData = (
   data: ClickDummyGameData,
   options: FixtureTranslationOptions = {},
-): SimulationSnapshot => {
+): { snapshot: SimulationSnapshot; financeHistory: FinanceTickEntry[] } => {
   const tickLengthMinutes = options.tickLengthMinutes ?? DEFAULT_TICK_LENGTH_MINUTES;
   const startDate = new Date(options.startDate ?? DEFAULT_START_DATE);
   const tickInfo = parseTickInfo(data.globalStats?.time, tickLengthMinutes);
@@ -1066,13 +1470,21 @@ export const translateClickDummyGameData = (
   const structureSnapshots: StructureSnapshot[] = [];
   const roomSnapshots: RoomSnapshot[] = [];
   const zoneSnapshots: ZoneSnapshot[] = [];
+  const deviceCostProfiles = new Map<string, DeviceCostProfile>();
 
   for (const structure of data.structures ?? []) {
     const {
       structureSnapshot,
       roomSnapshots: rooms,
       zoneSnapshots: zones,
-    } = translateStructure(structure, currentTick, tickLengthMinutes, purposes, waterLiters);
+    } = translateStructure(
+      structure,
+      currentTick,
+      tickLengthMinutes,
+      deviceCostProfiles,
+      purposes,
+      waterLiters,
+    );
     structureSnapshots.push(structureSnapshot);
     roomSnapshots.push(...rooms);
     zoneSnapshots.push(...zones);
@@ -1097,5 +1509,13 @@ export const translateClickDummyGameData = (
     finance,
   };
 
-  return snapshot;
+  const financeHistory = generateFinanceHistory(
+    snapshot,
+    data,
+    tickLengthMinutes,
+    deviceCostProfiles,
+    startDate,
+  );
+
+  return { snapshot, financeHistory };
 };
