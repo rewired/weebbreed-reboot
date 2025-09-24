@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import type { FacadeIntentCommand, SimulationUpdateEntry } from '@/types/simulation';
 import { indexById, truncate } from './utils/collections';
-import type { FinanceTickEntry, MaintenanceExpenseEntry, ZoneStoreState } from './types';
+import type {
+  FinanceTickEntry,
+  MaintenanceExpenseEntry,
+  SimulationTimelineEntry,
+  ZoneStoreState,
+} from './types';
 
 const MAX_TIMELINE_ENTRIES = 360;
 const MAX_FINANCE_HISTORY = 720;
@@ -17,6 +22,31 @@ const mapTimelineEntries = (update: SimulationUpdateEntry) => {
     co2: zone.environment.co2,
     ppfd: zone.environment.ppfd,
   }));
+};
+
+const appendTimelineEntries = (
+  timeline: SimulationTimelineEntry[],
+  incoming: SimulationTimelineEntry[],
+  limit: number,
+): SimulationTimelineEntry[] => {
+  if (!incoming.length) {
+    return timeline;
+  }
+
+  const keyOf = (entry: SimulationTimelineEntry) => {
+    const zonePart = entry.zoneId ?? 'global';
+    return `${zonePart}:${entry.tick}:${entry.ts}`;
+  };
+
+  const combined = new Map<string, SimulationTimelineEntry>();
+  for (const entry of timeline) {
+    combined.set(keyOf(entry), entry);
+  }
+  for (const entry of incoming) {
+    combined.set(keyOf(entry), entry);
+  }
+
+  return truncate(Array.from(combined.values()), limit);
 };
 
 const extractDevices = (snapshot: SimulationUpdateEntry['snapshot']) => {
@@ -187,7 +217,7 @@ export const useZoneStore = create<ZoneStoreState>()((set) => ({
         zones,
         devices,
         plants,
-        timeline: truncate([...state.timeline, ...timelineEntries], MAX_TIMELINE_ENTRIES),
+        timeline: appendTimelineEntries(state.timeline, timelineEntries, MAX_TIMELINE_ENTRIES),
         financeSummary: snapshot.finance,
         financeHistory: nextFinanceHistory,
         lastSnapshotTimestamp: update.ts,
