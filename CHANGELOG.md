@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   defunct path.
 - Expanded the clickdummy translator to normalize zone telemetry, resources,
   and health restrictions in SI units before the frontend stores hydrate.
+- Rebuilt the frontend layout shell so `App.tsx` composes `DashboardHeader`, `TimeDisplay`, and `Navigation`
+  with the game/navigation slices, including a facility sidebar and header ticker wired to live telemetry.
 
 ### Fixed
 
