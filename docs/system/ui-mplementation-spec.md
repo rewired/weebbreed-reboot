@@ -14,6 +14,8 @@ The frontend is a single‑page application with a persistent header, breadcrumb
 - **Navigation Bar**: breadcrumb bar below the dashboard, reflecting the current hierarchy (e.g., _Structures > Warehouse 1 > Grow Room A_).
 - **Content Area (Main View)**: renders interactive views based on selected entity.
 
+_Implementation status:_ `src/frontend/src/App.tsx` realisiert diese Shell inzwischen mit `DashboardHeader`, `TimeDisplay` und der `Navigation`-Komponente. Die Sidebar greift auf den Navigation-Slice zu (Struktur/Room/Zone), während die Kopfzeile die Simulationsteuerung über `useGameStore` koppelt und einen Event-Ticker aus `selectRecentEvents` einbettet.
+
 **Modal focus handling**
 
 - When a modal is open, the simulation content behind it is visually de‑emphasized using a blur.

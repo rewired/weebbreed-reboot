@@ -91,9 +91,14 @@
 
 ### Layout- und Navigationsmigration
 
-6. Layout-Shell refaktorieren: Kombiniere die Klickdummy-Header-/Sidebar-Elemente mit den vorhandenen Komponenten (DashboardHeader, Navigation, TimeDisplay) und verdrahte sie mit den Spiel- und Navigationsslices.
+6. ✅ Layout-Shell refaktorieren: Kombiniere die Klickdummy-Header-/Sidebar-Elemente mit den vorhandenen Komponenten (DashboardHeader, Navigation, TimeDisplay) und verdrahte sie mit den Spiel- und Navigationsslices.
+   - `src/frontend/src/App.tsx` nutzt jetzt eine zweispaltige Shell mit persistenter Kopfzeile und Facility-Sidebar.
+   - Header-Status, Zeit-Widget, Event-Ticker und View-Tabs werden über `DashboardHeader`, `TimeDisplay` und `Navigation` gerendert und lesen/steuern den Zustand aus `useGameStore`/`useAppStore`.
+   - Die Sidebar spiegelt die Struktur-/Raum-/Zonen-Hierarchie aus dem Navigation-Slice wider und erlaubt direkte Selektion per Store-Aktionen (`selectStructure`, `selectRoom`, `selectZone`).
 
-7. Breadcrumbs und Event-Ticker anbinden: Implementiere Breadcrumbs und Event-Log auf Basis der bestehenden Navigations- und Game-Store-Selektoren, um Auswahlzustand und Telemetrie zu spiegeln.
+7. ✅ Breadcrumbs und Event-Ticker anbinden: Implementiere Breadcrumbs und Event-Log auf Basis der bestehenden Navigations- und Game-Store-Selektoren, um Auswahlzustand und Telemetrie zu spiegeln.
+   - Breadcrumb-Leiste und „Up one level“-Aktion lesen den Zustand (`selectedStructureId`, `selectedRoomId`, `selectedZoneId`) aus `useAppStore` und rufen `navigateUp`/`resetSelection` auf.
+   - Der Kopfzeilen-Ticker zeigt die jüngsten Events (`selectRecentEvents`) kompakt an, während die rechte Spalte weiterhin das detaillierte Log liefert.
 
 8. Navigation-Slice erweitern: Ergänze den bestehenden Slice um Struktur-/Raum-Hierarchie und wende ihn sowohl für Sidebar als auch Kopfzeilen-Navigation an, um Doppelstaat zu vermeiden.
 
