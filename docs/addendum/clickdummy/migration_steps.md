@@ -113,9 +113,10 @@
    - `ZoneDetail` wurde in eine hierarchische Detailansicht für Strukturen, Räume und Zonen erweitert, inklusive verdichteter Kennzahlenleisten, Raum-/Zonenlisten mit Drilldown und erweiterter Status-Panels für Geometrie, Ressourcen und Gesundheitsdaten.
 
 10. ✅ Zonenansicht erweitern: Ergänze ZoneDetail um Steuer-Widgets, Pflanzenaktionen und Gerätelisten; nutze useZoneStore().sendSetpoint für Setpoint-Dispatch und extrahiere Form-Controls in components/forms.
-   - `ZoneDetail` stellt jetzt ein Panel „Environment controls“ bereit, das Temperatur-, Feuchte-, VPD-, CO₂- und PPFD-Setpoints über die neuen `components/forms`-Slider visualisiert und per `useZoneStore().sendSetpoint` an die Fassade sendet.
-   - Ein neues Pflanzenaktions-Panel bündelt Bewässerungs- und Nährstoffbefehle, Harvest-Batch-Kommandos sowie das Umschalten aktiver Pflanzpläne über die bestehenden `applyWater`/`applyNutrients`/`harvestPlantings`/`togglePlantingPlan`-Intents.
-   - Gerätegruppen werden als Automation-Panel mit Toggles dargestellt, während die Geräteinventur detaillierte Wartungs-, Laufzeit- und Settings-Metadaten pro Gerät ausgibt.
+
+- `ZoneDetail` stellt jetzt ein Panel „Environment controls“ bereit, das Temperatur-, Feuchte-, VPD-, CO₂- und PPFD-Setpoints über die neuen `components/forms`-Slider visualisiert und per `useZoneStore().sendSetpoint` an die Fassade sendet.
+- Ein neues Pflanzenaktions-Panel bündelt Bewässerungs- und Nährstoffbefehle, Harvest-Batch-Kommandos sowie das Umschalten aktiver Pflanzpläne über die bestehenden `applyWater`/`applyNutrients`/`harvestPlantings`/`togglePlantingPlan`-Intents.
+- Gerätegruppen werden als Automation-Panel mit Toggles dargestellt, während die Geräteinventur detaillierte Wartungs-, Laufzeit- und Settings-Metadaten pro Gerät ausgibt.
 
 11. ✅ Personalbereich neu aufbauen: Spiegle Bewerber- und Mitarbeiterdarstellungen im PersonnelView, verdrahte Hire/Fire-Intents und verlagere Modale in den globalen Modal-Slice.
     - Das Frontend rendert nun symmetrische Karten für Mitarbeitende und Bewerber:innen, inklusive Skill-/Trait-Details sowie Morale-/Energy-Balken.
@@ -128,7 +129,7 @@
 
 ### Modale und Workflows
 
-13. Modal-Descriptoren registrieren: Definiere typsichere Descriptoren für CRUD-, Duplizier-, Detail- und Bestätigungsmodale im Modal-Slice und implementiere zugehörige Inhaltskomponenten in den jeweiligen View-Ordnern.
+13. ✅ Modal-Descriptoren registrieren: Der Modal-Slice exportiert jetzt eine strikt typisierte `ModalDescriptor`-Union mit eigenen Payloads für Anlegen-, Umbenennen-, Duplizier-, Detail- und Löschflows. `ModalHost` rendert die neuen Inhaltskomponenten (`views/world/modals` sowie `views/zone/modals`) für Räume/Zonen/Strukturen und Pflanzen-Details und pausiert weiterhin deterministisch bei aktiven Dialogen.
 
 14. Fassade-Intents anbinden: Route Modale-Aktionen (z. B. duplicateRoom/duplicateZone) durch vorhandene Fassade-Intents, inklusive deterministischer Kosten-/Bestandsupdates.
 

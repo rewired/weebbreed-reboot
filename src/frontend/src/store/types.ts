@@ -191,27 +191,70 @@ export interface NavigationSlice {
   resetSelection: () => void;
 }
 
-export type ModalKind =
-  | 'settings'
-  | 'installDevice'
-  | 'planting'
-  | 'automationPlan'
-  | 'treatment'
-  | 'createEntity'
-  | 'updateEntity'
-  | 'deleteEntity'
-  | 'hireEmployee'
-  | 'fireEmployee'
-  | 'custom';
+export type ModalSize = 'sm' | 'md' | 'lg';
 
-export interface ModalDescriptor {
-  kind: ModalKind;
+type ModalDescriptorBase<TKind extends string, TPayload = undefined> = {
+  kind: TKind;
   title?: string;
   description?: string;
-  payload?: Record<string, unknown>;
   autoPause?: boolean;
-  size?: 'sm' | 'md' | 'lg';
-}
+  size?: ModalSize;
+} & (TPayload extends undefined ? { payload?: undefined } : { payload: TPayload });
+
+export type HireEmployeeModalDescriptor = ModalDescriptorBase<
+  'hireEmployee',
+  { candidateId: string }
+>;
+
+export type FireEmployeeModalDescriptor = ModalDescriptorBase<
+  'fireEmployee',
+  { employeeId: string }
+>;
+
+export type CreateRoomModalDescriptor = ModalDescriptorBase<'createRoom', { structureId: string }>;
+
+export type CreateZoneModalDescriptor = ModalDescriptorBase<'createZone', { roomId: string }>;
+
+export type DuplicateRoomModalDescriptor = ModalDescriptorBase<'duplicateRoom', { roomId: string }>;
+
+export type DuplicateZoneModalDescriptor = ModalDescriptorBase<'duplicateZone', { zoneId: string }>;
+
+export type RenameStructureModalDescriptor = ModalDescriptorBase<
+  'renameStructure',
+  { structureId: string }
+>;
+
+export type RenameRoomModalDescriptor = ModalDescriptorBase<'renameRoom', { roomId: string }>;
+
+export type RenameZoneModalDescriptor = ModalDescriptorBase<'renameZone', { zoneId: string }>;
+
+export type DeleteStructureModalDescriptor = ModalDescriptorBase<
+  'deleteStructure',
+  { structureId: string }
+>;
+
+export type DeleteRoomModalDescriptor = ModalDescriptorBase<'deleteRoom', { roomId: string }>;
+
+export type DeleteZoneModalDescriptor = ModalDescriptorBase<'deleteZone', { zoneId: string }>;
+
+export type PlantDetailModalDescriptor = ModalDescriptorBase<'plantDetails', { plantId: string }>;
+
+export type ModalDescriptor =
+  | HireEmployeeModalDescriptor
+  | FireEmployeeModalDescriptor
+  | CreateRoomModalDescriptor
+  | CreateZoneModalDescriptor
+  | DuplicateRoomModalDescriptor
+  | DuplicateZoneModalDescriptor
+  | RenameStructureModalDescriptor
+  | RenameRoomModalDescriptor
+  | RenameZoneModalDescriptor
+  | DeleteStructureModalDescriptor
+  | DeleteRoomModalDescriptor
+  | DeleteZoneModalDescriptor
+  | PlantDetailModalDescriptor;
+
+export type ModalKind = ModalDescriptor['kind'];
 
 export interface ModalSlice {
   activeModal: ModalDescriptor | null;
