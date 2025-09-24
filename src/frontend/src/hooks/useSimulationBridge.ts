@@ -179,6 +179,7 @@ export const useSimulationBridge = (
   const { url: overrideUrl, autoConnect = true, debug = false } = options;
   const resolvedUrl = overrideUrl ?? SOCKET_URL;
   const setConnectionStatus = useGameStore((state) => state.setConnectionStatus);
+  const setTransportAvailability = useGameStore((state) => state.setTransportAvailability);
   const ingestGameUpdate = useGameStore((state) => state.ingestUpdate);
   const appendEvents = useGameStore((state) => state.appendEvents);
   const registerTickCompleted = useGameStore((state) => state.registerTickCompleted);
@@ -198,35 +199,59 @@ export const useSimulationBridge = (
   const pendingSubscriptionsRef = useRef<PendingSubscription[]>([]);
   const [socketId, setSocketId] = useState<string | null>(null);
 
-  const sendControlCommand = useCallback((command: SimulationControlCommand) => {
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
-      console.warn('[useSimulationBridge] No active socket to send control command', command);
-      return;
-    }
+  const sendControlCommand = useCallback(
+    (command: SimulationControlCommand) => {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
+        if (debug) {
+          console.warn(
+            '[useSimulationBridge] Skipping control command; socket not connected',
+            command,
+          );
+        }
+        return;
+      }
 
-    socket.emit('simulationControl', { type: 'simulationControl', ...command });
-  }, []);
+      socket.emit('simulationControl', { type: 'simulationControl', ...command });
+    },
+    [debug],
+  );
 
-  const sendConfigUpdate = useCallback((update: SimulationConfigUpdate) => {
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
-      console.warn('[useSimulationBridge] No active socket to send config update', update);
-      return;
-    }
+  const sendConfigUpdate = useCallback(
+    (update: SimulationConfigUpdate) => {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
+        if (debug) {
+          console.warn(
+            '[useSimulationBridge] Skipping config update; socket not connected',
+            update,
+          );
+        }
+        return;
+      }
 
-    socket.emit('config.update', update);
-  }, []);
+      socket.emit('config.update', update);
+    },
+    [debug],
+  );
 
-  const sendFacadeIntent = useCallback((intent: FacadeIntentCommand) => {
-    const socket = socketRef.current;
-    if (!socket || !socket.connected) {
-      console.warn('[useSimulationBridge] No active socket to send facade intent', intent);
-      return;
-    }
+  const sendFacadeIntent = useCallback(
+    (intent: FacadeIntentCommand) => {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
+        if (debug) {
+          console.warn(
+            '[useSimulationBridge] Skipping facade intent; socket not connected',
+            intent,
+          );
+        }
+        return;
+      }
 
-    socket.emit('facade.intent', intent);
-  }, []);
+      socket.emit('facade.intent', intent);
+    },
+    [debug],
+  );
 
   useEffect(() => {
     setGameCommandHandlers(sendControlCommand, sendConfigUpdate);
@@ -285,15 +310,18 @@ export const useSimulationBridge = (
     const handleConnect = () => {
       setSocketId(socket.id ?? null);
       setConnectionStatus('connected');
+      setTransportAvailability(true);
       flushSubscriptions();
     };
 
     const handleDisconnect = () => {
       setSocketId(null);
+      setTransportAvailability(false);
       setConnectionStatus('disconnected');
     };
 
     const handleConnectError = (error: Error) => {
+      setTransportAvailability(false);
       setConnectionStatus('error', error.message);
     };
 
@@ -360,6 +388,7 @@ export const useSimulationBridge = (
       socket.disconnect();
       socketRef.current = null;
       setSocketId(null);
+      setTransportAvailability(false);
       setConnectionStatus('disconnected');
     };
   }, [
@@ -373,6 +402,7 @@ export const useSimulationBridge = (
     recordHREvent,
     registerTickCompleted,
     setConnectionStatus,
+    setTransportAvailability,
     resolvedUrl,
   ]);
 

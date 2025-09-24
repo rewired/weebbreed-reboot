@@ -38,11 +38,13 @@ import type {
 const createGameState = (overrides: Partial<GameStoreState> = {}): GameStoreState => ({
   connectionStatus: 'idle',
   events: overrides.events ?? [],
+  hasLiveTransport: overrides.hasLiveTransport ?? false,
   setConnectionStatus: vi.fn(),
   ingestUpdate: vi.fn(),
   appendEvents: vi.fn(),
   registerTickCompleted: vi.fn(),
   setCommandHandlers: vi.fn(),
+  setTransportAvailability: vi.fn(),
   issueControlCommand: vi.fn(),
   requestTickLength: vi.fn(),
   reset: vi.fn(),

@@ -1,6 +1,6 @@
 import type { SimulationEvent } from '@/types/simulation';
 
-const eventKey = (event: SimulationEvent): string => {
+export const getSimulationEventKey = (event: SimulationEvent): string => {
   return [
     event.type,
     event.tick ?? 'na',
@@ -21,11 +21,11 @@ export const mergeEvents = (
     return existing;
   }
 
-  const seen = new Set(existing.map(eventKey));
+  const seen = new Set(existing.map(getSimulationEventKey));
   const merged = [...existing];
 
   for (const event of incoming) {
-    const key = eventKey(event);
+    const key = getSimulationEventKey(event);
     if (seen.has(key)) {
       continue;
     }

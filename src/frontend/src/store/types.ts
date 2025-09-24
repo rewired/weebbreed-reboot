@@ -106,6 +106,7 @@ export interface GameStoreState {
   lastSnapshotTimestamp?: number;
   lastClockSnapshot?: SimulationSnapshot['clock'];
   lastRequestedTickLength?: number;
+  hasLiveTransport: boolean;
   sendControlCommand?: (command: SimulationControlCommand) => void;
   sendConfigUpdate?: (update: SimulationConfigUpdate) => void;
   setConnectionStatus: (status: ConnectionStatus, errorMessage?: string) => void;
@@ -116,6 +117,7 @@ export interface GameStoreState {
     control: (command: SimulationControlCommand) => void,
     config: (update: SimulationConfigUpdate) => void,
   ) => void;
+  setTransportAvailability: (available: boolean) => void;
   issueControlCommand: (command: SimulationControlCommand) => void;
   requestTickLength: (minutes: number) => void;
   reset: () => void;

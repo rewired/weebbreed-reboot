@@ -26,6 +26,7 @@ import {
   useZoneStore,
   type NavigationView,
 } from '@/store';
+import { getSimulationEventKey } from '@/store/utils/events';
 import { formatInGameTime } from '@/store/utils/time';
 
 const EVENT_LEVEL_CLASS: Record<string, string> = {
@@ -97,6 +98,7 @@ const App = () => {
   const recordFinanceTick = useZoneStore((state) => state.recordFinanceTick);
   const requestTickLength = useGameStore((state) => state.requestTickLength);
   const setConnectionStatus = useGameStore((state) => state.setConnectionStatus);
+  const setTransportAvailability = useGameStore((state) => state.setTransportAvailability);
 
   const connectionStatus = useGameStore((state) => state.connectionStatus);
   const currentTick = useGameStore(selectCurrentTick);
@@ -107,6 +109,7 @@ const App = () => {
   const targetTickRate = useGameStore(selectTargetTickRate);
   const currentSpeed = useGameStore(selectCurrentSpeed);
   const isPaused = useGameStore(selectIsPaused);
+  const hasLiveTransport = useGameStore((state) => state.hasLiveTransport);
   const tickLengthMinutes = useGameStore(
     (state) => state.lastRequestedTickLength ?? OFFLINE_BOOTSTRAP.tickLengthMinutes,
   );
@@ -160,6 +163,7 @@ const App = () => {
     }
     requestTickLength(OFFLINE_BOOTSTRAP.tickLengthMinutes);
     setConnectionStatus('connected');
+    setTransportAvailability(false);
     setBootstrapped(true);
   }, [
     bootstrapped,
@@ -170,12 +174,15 @@ const App = () => {
     recordFinanceTick,
     requestTickLength,
     setConnectionStatus,
+    setTransportAvailability,
   ]);
 
   const runState = toRunState(isPaused, currentSpeed);
   const timeDisplayStatus = toTimeDisplayStatus(runState);
   const connectionLabel =
     bootstrapped && connectionStatus === 'connected' ? 'Connected (fixture)' : connectionStatus;
+
+  const controlsDisabled = !hasLiveTransport;
 
   const simulationTimeLabel = formatInGameTime(currentTick);
   const realTimeLabel = lastClockSnapshot
@@ -277,6 +284,10 @@ const App = () => {
   const lastTickDuration = lastTickEvent?.durationMs
     ? `${lastTickEvent.durationMs.toFixed(0)} ms`
     : '—';
+
+  const controlsFooter = controlsDisabled
+    ? 'Connect to a live simulation backend to enable playback controls.'
+    : `Target tick rate: ${targetTickRate.toFixed(1)}x • Last tick duration: ${lastTickDuration}`;
 
   const breadcrumbItems = useMemo(() => {
     if (currentView === 'world') {
@@ -531,8 +542,9 @@ const App = () => {
                   minTickLength={1}
                   maxTickLength={120}
                   onTickLengthChange={handleTickLengthChange}
-                  footer={`Target tick rate: ${targetTickRate.toFixed(1)}x • Last tick duration: ${lastTickDuration}`}
+                  footer={controlsFooter}
                   className="border-none bg-transparent p-0 shadow-none"
+                  disabled={controlsDisabled}
                 />
               }
               meta={facilitySummary}
@@ -620,11 +632,9 @@ const App = () => {
                       {tickerEvents.map((event, index) => {
                         const toneClass =
                           EVENT_LEVEL_CLASS[event.level ?? 'info'] ?? EVENT_LEVEL_CLASS.info;
+                        const eventKey = getSimulationEventKey(event) || `${index}`;
                         return (
-                          <li
-                            key={`${event.ts ?? index}-ticker`}
-                            className="flex items-center gap-2"
-                          >
+                          <li key={`${eventKey}-ticker`} className="flex items-center gap-2">
                             <span
                               className={`text-xs font-semibold uppercase tracking-wide ${toneClass}`}
                             >
