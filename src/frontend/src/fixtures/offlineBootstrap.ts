@@ -1,28 +1,25 @@
-import type { SimulationEvent, SimulationUpdateEntry } from '@/types/simulation';
+import type {
+  SimulationEvent,
+  SimulationSnapshot,
+  SimulationUpdateEntry,
+} from '@/types/simulation';
 import type { FinanceTickEntry } from '@/store/types';
-import { createClickDummyFixture } from './clickDummyFactories';
+import { CLICKDUMMY_SEED, createClickDummyFixture } from './clickDummyFactories';
+import type { FixtureTranslationOptions } from './translator';
 import { translateClickDummyGameData } from './translator';
 
 const OFFLINE_TICK_LENGTH_MINUTES = 60;
 const OFFLINE_START_DATE = '2025-01-01T00:00:00.000Z';
-
-const { data: clickDummyData } = createClickDummyFixture();
-
-const { snapshot, financeHistory } = translateClickDummyGameData(clickDummyData, {
-  tickLengthMinutes: OFFLINE_TICK_LENGTH_MINUTES,
-  startDate: OFFLINE_START_DATE,
-  isPaused: true,
-  targetTickRate: 1,
-});
 
 const resolveTimestamp = (isoString: string): number => {
   const parsed = Date.parse(isoString);
   return Number.isFinite(parsed) ? parsed : Date.now();
 };
 
-const eventTimestamp = resolveTimestamp(snapshot.clock.lastUpdatedAt);
-
-const createOfflineEvents = (): SimulationEvent[] => {
+const createOfflineEvents = (
+  snapshot: SimulationSnapshot,
+  eventTimestamp: number,
+): SimulationEvent[] => {
   const events: SimulationEvent[] = [
     {
       type: 'sim.offlineFixtureLoaded',
@@ -53,19 +50,9 @@ const createOfflineEvents = (): SimulationEvent[] => {
   return events;
 };
 
-const offlineUpdate: SimulationUpdateEntry = {
-  tick: snapshot.tick,
-  ts: eventTimestamp,
-  events: createOfflineEvents(),
-  snapshot,
-  time: {
-    running: !snapshot.clock.isPaused,
-    paused: snapshot.clock.isPaused,
-    speed: snapshot.clock.isPaused ? 0 : 1,
-    tick: snapshot.clock.tick,
-    targetTickRate: snapshot.clock.targetTickRate,
-  },
-};
+export interface OfflineBootstrapOptions extends FixtureTranslationOptions {
+  seed?: number | string;
+}
 
 export interface OfflineBootstrapPayload {
   tickLengthMinutes: number;
@@ -73,8 +60,49 @@ export interface OfflineBootstrapPayload {
   financeHistory: FinanceTickEntry[];
 }
 
-export const OFFLINE_BOOTSTRAP: OfflineBootstrapPayload = {
-  tickLengthMinutes: OFFLINE_TICK_LENGTH_MINUTES,
-  update: offlineUpdate,
-  financeHistory,
+export const createOfflineBootstrapPayload = (
+  options: OfflineBootstrapOptions = {},
+): OfflineBootstrapPayload => {
+  const {
+    seed = CLICKDUMMY_SEED,
+    tickLengthMinutes = OFFLINE_TICK_LENGTH_MINUTES,
+    startDate = OFFLINE_START_DATE,
+    isPaused = true,
+    targetTickRate = 1,
+    roomPurposes,
+  } = options;
+
+  const { data: clickDummyData } = createClickDummyFixture({ seed });
+
+  const { snapshot, financeHistory } = translateClickDummyGameData(clickDummyData, {
+    tickLengthMinutes,
+    startDate,
+    isPaused,
+    targetTickRate,
+    roomPurposes,
+  });
+
+  const eventTimestamp = resolveTimestamp(snapshot.clock.lastUpdatedAt);
+
+  const update: SimulationUpdateEntry = {
+    tick: snapshot.tick,
+    ts: eventTimestamp,
+    events: createOfflineEvents(snapshot, eventTimestamp),
+    snapshot,
+    time: {
+      running: !snapshot.clock.isPaused,
+      paused: snapshot.clock.isPaused,
+      speed: snapshot.clock.isPaused ? 0 : 1,
+      tick: snapshot.clock.tick,
+      targetTickRate: snapshot.clock.targetTickRate,
+    },
+  };
+
+  return {
+    tickLengthMinutes,
+    update,
+    financeHistory,
+  };
 };
+
+export const OFFLINE_BOOTSTRAP = createOfflineBootstrapPayload();
