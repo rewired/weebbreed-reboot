@@ -97,8 +97,11 @@ styling when needed.
 Key directories to explore:
 
 - `src/components/` – reusable UI widgets (forms, panels, charts).
+  - `components/panels/BreakdownList.tsx` liefert aufschlüsselbare Listen, die u.a. vom Finanzdashboard genutzt werden.
 - `src/views/` – page-level compositions that stitch together components and
   store selectors.
+  - `FinancesView.tsx` bindet die tickbasierte `financeHistory` an Zeitbereichs-Umschalter,
+    Diagramme und Kostenaufschlüsselungen.
 - `src/providers/` – React context providers (theme, i18n, etc.).
 - `src/types/` – shared TypeScript contracts for simulation payloads.
 
