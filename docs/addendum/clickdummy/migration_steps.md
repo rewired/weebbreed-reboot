@@ -107,7 +107,10 @@
 
 ### View-spezifische Portierungen
 
-9. Struktur- und Raumansichten integrieren: Portiere Karten und Detailpanels in DashboardOverview/ZoneDetail, erstelle gemeinsame Kartenkomponenten unter components/cards und implementiere Drilldown-Logik plus Breadcrumbs.
+9. ✅ Struktur- und Raumansichten integrieren: Portiere Karten und Detailpanels in DashboardOverview/ZoneDetail, erstelle gemeinsame Kartenkomponenten unter components/cards und implementiere Drilldown-Logik plus Breadcrumbs.
+   - `src/frontend/src/components/cards` bündelt jetzt `StructureSummaryCard`, `RoomSummaryCard` und `ZoneSummaryCard`, die Drilldown-taugliche Kennzahlen, Interaktionen und Hervorhebungen kapseln.
+   - `DashboardOverview` rendert strukturierte Bereiche für Strukturen, Räume und Zonen, nutzt die neuen Kartenkomponenten und gruppiert die Aggregationen über `computeZoneAggregateMetrics`, sodass ein Klick direkt in die Weltansicht springt.
+   - `ZoneDetail` wurde in eine hierarchische Detailansicht für Strukturen, Räume und Zonen erweitert, inklusive verdichteter Kennzahlenleisten, Raum-/Zonenlisten mit Drilldown und erweiterter Status-Panels für Geometrie, Ressourcen und Gesundheitsdaten.
 
 10. Zonenansicht erweitern: Ergänze ZoneDetail um Steuer-Widgets, Pflanzenaktionen und Gerätelisten; nutze useZoneStore().sendSetpoint für Setpoint-Dispatch und extrahiere Form-Controls in components/forms.
 
