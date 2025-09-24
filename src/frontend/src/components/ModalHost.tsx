@@ -248,8 +248,8 @@ const ModalHost = () => {
           title={activeModal.title}
           description={activeModal.description}
           onCancel={closeModal}
-          onConfirm={() => {
-            duplicateRoom(room.id);
+          onConfirm={({ name }) => {
+            duplicateRoom(room.id, { name });
             closeModal();
           }}
         />
@@ -280,8 +280,8 @@ const ModalHost = () => {
           title={activeModal.title}
           description={activeModal.description}
           onCancel={closeModal}
-          onConfirm={() => {
-            duplicateZone(zone.id);
+          onConfirm={({ name, includeDevices, includeMethod }) => {
+            duplicateZone(zone.id, { name, includeDevices, includeMethod });
             closeModal();
           }}
         />

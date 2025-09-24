@@ -131,7 +131,7 @@
 
 13. ✅ Modal-Descriptoren registrieren: Der Modal-Slice exportiert jetzt eine strikt typisierte `ModalDescriptor`-Union mit eigenen Payloads für Anlegen-, Umbenennen-, Duplizier-, Detail- und Löschflows. `ModalHost` rendert die neuen Inhaltskomponenten (`views/world/modals` sowie `views/zone/modals`) für Räume/Zonen/Strukturen und Pflanzen-Details und pausiert weiterhin deterministisch bei aktiven Dialogen.
 
-14. Fassade-Intents anbinden: Route Modale-Aktionen (z. B. duplicateRoom/duplicateZone) durch vorhandene Fassade-Intents, inklusive deterministischer Kosten-/Bestandsupdates.
+14. ✅ Fassade-Intents anbinden: Die Duplizieren-Dialoge leiten ihre Bestätigungen jetzt an die Store-Helfer weiter, die getrimmte Namen und Options-Payloads an `facade.world.duplicateRoom` bzw. `facade.world.duplicateZone` senden. Geräte- und Methodenklone entstehen damit ausschließlich im Backend, wodurch CapEx-/Inventarereignisse deterministisch über die Facade-Finanzereignisse in den Stores landen (`src/frontend/src/components/ModalHost.tsx`, `src/frontend/src/store/zoneStore.ts`, `src/frontend/src/store/types.ts`).
 
 ### Gemeinsame Komponenten & Utilities
 
