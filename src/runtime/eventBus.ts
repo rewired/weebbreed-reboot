@@ -7,7 +7,7 @@ import {
   type EventFilter,
   type EventLevel,
   type SimulationEvent,
-} from '../backend/src/lib/eventBus.js';
+} from './eventBusCore.js';
 import { logger } from './logger.js';
 import type { TickCompletedPayload } from '../backend/src/sim/loop.js';
 
@@ -282,4 +282,4 @@ export { telemetryEventBus as eventBus };
 
 export type { EventBufferOptions, EventCollector, EventFilter, EventLevel, SimulationEvent };
 
-export { EventBus, createEventCollector } from '../backend/src/lib/eventBus.js';
+export { EventBus, createEventCollector } from './eventBusCore.js';
