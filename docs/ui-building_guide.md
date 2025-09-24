@@ -26,16 +26,25 @@ The application follows a structure → room → zone drill-down supported by pe
 - **Naming conventions.** Inputs and intents reuse the System Facade vocabulary (`world.createRoom`, `devices.installDevice`, `plants.addPlanting`, etc.) without introducing alternative spellings, keeping parity with backend docs.【F:docs/ui/ui_archictecture.md†L75-L140】【F:docs/ui/ui-implementation-spec.md†L260-L380】
 - **Design-system primitives.** Teams must rely on the shared Button, IconButton, form field, and InlineEdit primitives instead of ad-hoc styling so that theme and focus states remain centralised.【F:docs/ui/ui_elements.md†L5-L24】
 - **Modal discipline.** Opening a modal pauses the simulation, blurs background content, and focus is trapped until the modal closes, after which the prior run state is restored.【F:docs/ui/ui-implementation-spec.md†L96-L220】
-- **Dark-first theming.** Tailwind tokens rooted in the stone palette with lime accents define the dark theme across cards, inputs, and overlays; no light-theme variant exists yet.【F:docs/ui/ui-components-desciption.md†L551-L614】 **TODO:** Document light-theme requirements once defined for parity across surfaces.
-- **Responsive-first layouts.** Grids collapse to single columns below 900px, controls wrap, and mobile-first stacking is expected for dashboards, zone detail columns, and modal content.【F:docs/ui/ui-implementation-spec.md†L160-L220】【F:docs/ui/ui-components-desciption.md†L407-L533】 **TODO:** Provide explicit breakpoints and behavior for each view in handset and tablet widths to satisfy mobile-first guidance.
+- **Dark-first theming.** Tailwind tokens rooted in the stone palette with lime accents define the dark theme across cards, inputs, and overlays; the light theme pairs `#fafafa` surfaces and `#111827` text with lime-600 accents so both themes share semantic tokens and AA contrast.【F:docs/ui/ui-components-desciption.md†L551-L614】
+- **Responsive-first layouts.** Desktop is the design baseline. Breakpoints align with Tailwind (`lg ≥1024px`, `xl ≥1440px`) while `md`/`sm` fall back to stacked single-column layouts: dashboards switch to `grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))`, zone detail stacks below `md`, and header controls wrap under `sm` before rejoining on wider screens.【F:docs/ui/ui-implementation-spec.md†L160-L220】【F:docs/ui/ui-components-desciption.md†L407-L533】
+- **Tick length controlled by backend.** The UI only exposes deterministic play/pause and speed presets; users cannot adjust tick duration directly so simulation cadence remains façade governed.
 
 ## Layout & Navigation
 
 ### Application Shell
 
 - The single-page app keeps a persistent header (`DashboardHeader`), breadcrumb navigation, sidebar, and dynamic content area orchestrated by the navigation manager (`{ currentView, selectedStructureId?, selectedRoomId?, selectedZoneId? }`).【F:docs/ui/ui-implementation-spec.md†L11-L120】【F:docs/ui/ui_archictecture.md†L75-L140】【F:docs/ui/ui-components-desciption.md†L225-L360】
-- The start screen centers the Weedbreed.AI title, subtitle, and primary actions (New, Load, Import) before transitioning to the main shell once a run is active.【F:docs/ui/ui_elements.md†L11-L44】【F:docs/ui/ui-components-desciption.md†L393-L420】
+- The start screen centers the Weedbreed.AI title, subtitle, and primary actions (New, Load, Import) before transitioning to the main shell once a run is active.【F:docs/ui/ui_elements.md†L11-L44】【F:docs/ui/ui-components-desciption.md†L393-L420】 The "Quick Start" preset seeds `"WB-quickstart-default"`, rents one compact warehouse (≈600 m², 2.5 m height), provisions a growroom with three 20 m² zones configured for SOG, stocks 10 000 L water and 100 kg nutrients, equips each zone with 2× GrowLight (10–12 m² coverage), 1× ClimateUnit, 1× Dehumidifier, and 1× CO₂-Injector, and plants 40 `ak-47` strain starters with Auto-Replant disabled; simulation remains paused until the player explicitly starts it.
 - Sidebar navigation lists rooms and zones for the selected structure, with nested toggles and CTA hooks (e.g., "Add Room") tied to modal flows.【F:docs/ui/ui-components-desciption.md†L225-L360】
+
+### Responsive Breakpoints & Navigation Behaviour
+
+- Breakpoints follow a desktop-first Tailwind scale: `xs <480px`, `sm 480–767px`, `md 768–1023px`, `lg 1024–1439px`, `xl ≥1440px`. Only `lg` and `xl` have bespoke layouts; smaller breakpoints reuse stacked single-column variants.
+- Dashboard and grid surfaces use `grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))` from `sm` upward, collapsing to a single stretched card column on `xs` widths.
+- Zone detail presents two columns (`1.2fr / 1fr`) from `lg` upward; `md` and below stack content with the status column rendering before management panels to preserve reading order.
+- Header controls wrap into two rows under `sm`, then collapse back to a single row from `md` upward so presets stay reachable without overflow.
+- Sidebar becomes an off-canvas drawer below `md`, opened via hamburger button, locking body scroll, applying `.content-area.blurred`, and only closing via explicit controls; overlay clicks remain disabled to align with modal policy.
 
 ### Persistent Dashboard & Controls
 
@@ -64,7 +73,7 @@ The application follows a structure → room → zone drill-down supported by pe
 
 - The left cluster surfaces Capital, Cumulative Yield, planned plant capacity (hidden when zero), and an animated tick progress ring tied to in-game time.【F:docs/ui/ui-implementation-spec.md†L37-L120】【F:docs/ui/ui_elements.md†L24-L84】
 - The right cluster offers play/pause, multiple speed presets (0.5×–100×), quick links to Finances (`monitoring`) and Personnel (`groups`), notifications, and the game menu (`settings`).【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui_elements.md†L62-L116】
-- Notifications display an unread badge, and the game menu opens the shared modal to reach Save/Load/Export/Reset actions.【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui-components-desciption.md†L323-L337】
+- Notifications display an unread badge, and the game menu opens the shared modal to reach Save/Load/Export/Reset actions.【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui-components-desciption.md†L323-L337】 The notification popover contains tabs for _All_, _Warnings_, and _Errors_ with 20-item lazy-loaded pages, renders items shaped as `{ id, ts, severity, title, message, entityId?, entityType?, actions?[] }`, and raises the header badge with the count of unopened warning/error events sourced from `sim.*`, `world.*`, `hr.*`, and `finance.*` streams.
 
 ### Breadcrumbs & States
 
@@ -99,7 +108,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - Structure, room, and zone overviews rely on responsive card grids using `grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))`, ensuring cards wrap gracefully on narrow screens.【F:docs/ui/ui-implementation-spec.md†L120-L180】
 - The screenshot insights confirm that dashboard, structure, room, and zone compositions must preserve quick inline actions (rename, duplicate, delete) within these responsive layouts.【F:docs/ui/ui-screenshot-insights.md†L1-L64】
 - Personnel and finance views use tabbed and collapsible panels while remaining accessible through the persistent header navigation.【F:docs/ui/ui-components-desciption.md†L470-L533】
-- **TODO:** Document explicit off-canvas or bottom-sheet behavior for sidebar navigation and modal stacking on mobile to complete the mobile-first mandate.
+- Below `md` widths the sidebar shifts to an off-canvas drawer opened via the header hamburger, locking body scroll and applying `.content-area.blurred`; modal stacking follows the single-modal queue outlined in [Responsive Breakpoints & Navigation Behaviour](#responsive-breakpoints--navigation-behaviour).
 
 ## Core Views
 
@@ -107,7 +116,7 @@ The application follows a structure → room → zone drill-down supported by pe
 
 - Displays "Weedbreed.AI - Reboot" with subtitle "Your AI-powered cannabis cultivation simulator." and three actions: New Game, Load Game, Import Game (Quick Start optional per StartScreen component).【F:docs/ui/ui_elements.md†L11-L44】【F:docs/ui/ui-components-desciption.md†L393-L420】
 - The corresponding screenshot (`01-welcome-screen.png`) maps to `StartScreen` in `App.tsx`, invoking lifecycle intents (`newGame`, `load`, `importState`).【F:docs/ui/ui-components-desciption.md†L393-L420】
-- **TODO:** Specify Quick Start defaults (seed selection, structure presets) so the CTA can be implemented consistently across clients.
+- Quick Start loads the deterministic seed `"WB-quickstart-default"`, rents a 600 m² warehouse with a growroom of three 20 m² SOG zones, preloads 10 000 L water and 100 kg nutrients, installs 2× GrowLight, 1× ClimateUnit, 1× Dehumidifier, and 1× CO₂-Injector per zone, and plants 40 `ak-47` starters with Auto-Replant disabled.
 
 ### Dashboard & Global Chrome
 
@@ -115,21 +124,19 @@ The application follows a structure → room → zone drill-down supported by pe
 - Control cluster includes Play/Pause, speed presets, view switchers (Finances, Personnel), notifications popover, and settings flyout for Save/Load/Export/Reset.【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui-components-desciption.md†L225-L360】
 - `DashboardHeader` consumes stats, simulation state, and navigation callbacks; `EventLog` sits at the footer to surface recent telemetry color-coded by severity.【F:docs/ui/ui-components-desciption.md†L225-L360】
 - Screenshot insights show inline actions within cards to encourage drill-down and highlight consistent dark theming across cards.【F:docs/ui/ui-screenshot-insights.md†L1-L64】
-- **TODO:** Detail notification popover contents (grouping, pagination, severity icons) to align header alerts with toast/event log behavior.
+- Notification popover mirrors header alerts with tabs for _All_, _Warnings_, and _Errors_, paginates 20 items per lazy-loaded page, and surfaces severity icons consistent with toast/event log styling.
 
 ### Structures Overview
 
 - `DashboardView` renders rented structures as cards inside a responsive grid, each showing name, floor area, room count, plant summary, and inline rename/duplicate actions via `InlineEdit` + `ActionIcons`.【F:docs/ui/ui-implementation-spec.md†L120-L180】【F:docs/ui/ui-components-desciption.md†L483-L487】【F:docs/ui/ui_elements.md†L84-L140】
 - `+ Rent Structure` button launches the rent modal; duplication flows preview costs and device counts before dispatching intents.【F:docs/ui/ui-implementation-spec.md†L120-L180】【F:docs/ui/ui-components-desciption.md†L313-L360】
 - Screenshot `03-structure-overview.png` confirms these cards and quick actions.【F:docs/ui/ui-screenshot-insights.md†L1-L64】
-- **TODO:** Define sorting/default ordering for structure cards (e.g., by name, area, acquisition date) to ensure consistent dashboards.
 
 ### Structure Detail View
 
 - Header displays structure name with rename (`edit`) and delete (`delete`) icons, area usage, and CTA to `+ Add Room`. Cards for each room include area, purpose, zone counts, plant summaries, and inline rename/duplicate/delete actions.【F:docs/ui/ui-implementation-spec.md†L120-L200】【F:docs/ui/ui_elements.md†L116-L176】【F:docs/ui/ui-components-desciption.md†L521-L525】
 - Duplicate flows use modals summarizing footprint, zone counts, and CapEx estimates before invoking `world.duplicateStructure`.【F:docs/ui/ui-components-desciption.md†L313-L360】
 - Screenshot `09-structure-detailview.png` illustrates nested zone cards inside the structure detail.【F:docs/ui/ui-screenshot-insights.md†L21-L52】
-- **TODO:** Clarify duplicate cost breakdowns (devices vs. rooms vs. zones) and how copy-cost tooltips should present pricing.
 
 ### Room Detail View
 
@@ -146,16 +153,15 @@ The application follows a structure → room → zone drill-down supported by pe
   - General info for area, method, plant counts.
   - Supplies card with water/nutrient stocks plus buttons to add supply (modal).
   - Lighting card with cycle, coverage (color-coded classes), and DLI/PPFD metrics derived from backend `coverageRatio` and readings.【F:docs/ui/ui-implementation-spec.md†L240-L360】
-  - Environment card showing temperature, humidity, CO₂ with out-of-range highlighting and VPD proxy as secondary metric.【F:docs/ui/ui-implementation-spec.md†L240-L360】【F:docs/ui/ui-components-desciption.md†L407-L462】
-- **TODO:** Document threshold values for environment highlights (temperature, humidity, CO₂) and associated copy to avoid inconsistent warnings.
+  - Environment card showing temperature, humidity, CO₂ with out-of-range highlighting and VPD proxy as secondary metric.【F:docs/ui/ui-implementation-spec.md†L240-L360】【F:docs/ui/ui-components-desciption.md†L407-L462】 Thresholds: temperature 22–28 °C (green), 20–22/28–30 °C (yellow), <20/>30 °C (red with copy "Canopy warm → Transpiration ↑, Stress risk" when exceeding 30 °C); relative humidity 0.45–0.65 (green), 0.40–0.45/0.65–0.70 (yellow), <0.40/>0.70 (red with "Air too humid → Pathogen risk; increase dehumidification" at >0.70); CO₂ 800–1 200 ppm (green), 600–800/1 200–1 400 ppm (yellow), <600/>1 400 ppm (red, recommending safety shutdown above 1 800 ppm).
 - **Management Panels (right column):**
   - Plantings list supports expand/collapse, per-plant harvest (`content_cut`), group delete (`delete`), and strain info tooltips; Harvest All CTA appears when plants ready.【F:docs/ui/ui-implementation-spec.md†L260-L360】
 - Planting Plan panel manages auto-replant toggles, strain/quantity config, and edit/delete flows using modals.【F:docs/ui/ui-implementation-spec.md†L260-L360】
-- **TODO:** Clarify how manual planting interacts with active Auto-Replant plans (priority, conflict resolution, notifications).
+- Manual planting overrides Auto-Replant by applying a manual lock; the UI raises a banner "Auto-Replant paused (manual planting active)" with a "Resume Auto-Replant" CTA that clears the lock and emits `plants.autoReplantResumed`, while the pause event triggers `plants.autoReplantPaused`.
 - Devices list groups by type with status indicator chips (`status-on/off/mixed/broken`), toggles all-on/off, exposes tuning, light cycle, install, update, move, and remove actions via modals.【F:docs/ui/ui-implementation-spec.md†L260-L360】【F:docs/ui/ui-components-desciption.md†L421-L533】
-- **TODO:** Determine whether device group toggles require confirmation prompts or immediate execution feedback for safety-critical hardware.
+- Device group toggles confirm for safety-critical HVAC, CO₂, and dehumidifier groups with risk copy, while low-impact lighting and ventilation flips act immediately, showing "Group: ON/OFF" toasts and still awaiting façade acknowledgements.
   - ZonePlantPanel supports normal inspection (tooltips, direct actions) and batch-selection mode with BatchActionBar actions for Harvest/Trash/Treat across selected plants.【F:docs/ui/ui-components-desciption.md†L421-L533】
-- **TODO:** Define empty-state visuals and behavior when a zone has no devices, plantings, or automation plan to maintain UX parity.
+- Empty zone states include dedicated illustrations plus CTAs: "Install device" when device list empty, "Plant" when no plantings exist, and secondary "Configure Auto-Replant" when plans are absent; each tooltip explains prerequisites (e.g., method setup).
 - **TODO:** Specify tooltip content and data sources for strain info, pests, and disease icons within zone plant lists.
 
 ### Finances View
@@ -163,22 +169,22 @@ The application follows a structure → room → zone drill-down supported by pe
 - Presents high-level KPIs via `StatCard`s and collapsible panels for Revenue, OpEx, and CapEx, with time-range filters (1D/1W/1M/1Y).【F:docs/ui/ui-components-desciption.md†L470-L509】【F:docs/ui/ui_elements.md†L260-L300】
 - Icons include `trending_up`, `receipt_long`, `account_balance`, and `DollarIcon` for quick comprehension.【F:docs/ui/ui-components-desciption.md†L470-L509】
 - Screenshots `06` and `07` show collapsed vs. expanded states, confirming the toggle affordances.【F:docs/ui/ui-screenshot-insights.md†L41-L64】
-- **TODO:** Capture how negative values, missing telemetry, or long-range aggregations should display (e.g., placeholders vs. zeros).
-- **TODO:** Document currency formatting rules and localization strategy for all finance metrics to avoid mismatched displays.
+- Missing finance figures render an em dash (`—`) with tooltip "No data in range"; negative numbers tint red and may optionally use parentheses `(–1 234,56)` to emphasise losses while preserving locale formatting.
+- Currency and number formatting leverage `Intl.NumberFormat`, deriving locale from app language (DE/EN) and currency from configuration (default EUR) without storing currency codes in blueprints.
 
 ### Personnel View
 
 - Tabbed interface toggling between "Job Market" (candidate cards with hire actions) and "Your Staff" (employee cards with fire/assignment controls and morale/energy bars).【F:docs/ui/ui_components-desciption.md†L504-L509】【F:docs/ui/ui_elements.md†L300-L360】
 - Hiring uses `HireEmployeeModal`; firing uses global confirmation; refresh triggers `workforce.refreshCandidates`.【F:docs/ui/ui_components-desciption.md†L333-L337】【F:docs/ui/ui_interactions_spec.md†L58-L73】
 - Screenshots `04` and `05` illustrate both tabs and their CTAs.【F:docs/ui/ui-screenshot-insights.md†L41-L64】
-- **TODO:** Document pagination or virtualization thresholds for large candidate/employee pools to uphold performance guidance.
-- **TODO:** Define morale and energy scale ranges, color thresholds, and tooltip explanations for personnel cards.
+- Lists virtualize once they exceed 100 cards; pagination uses 50-card pages to keep keyboard navigation predictable while preserving infinite-scroll as an enhancement.
+- Morale and energy scales both span 0–100: morale renders green ≥75, yellow 50–74, red <50; energy below 20 shows a lightning icon labelled "Overtime risk" with tooltips describing impact on task claiming utility.
 
 ### Event Log & Ancillary Panels
 
 - `EventLog` sits at the footer, rendering `EventLogItem[]` with severity color coding to echo recent `sim.*`, `world.*`, `hr.*`, and `finance.*` events.【F:docs/ui/ui-components-desciption.md†L225-L360】
 - `ToastContainer` anchors notifications in the top-right, with `Toast` entries styled by type (`success`, `error`, etc.) and optional auto-dismiss for non-error states.【F:docs/ui/ui-components-desciption.md†L95-L220】
-- **TODO:** Specify retention length and truncation strategy for the footer event list and toast queue to avoid overflow.
+- Footer event log retains the latest 200 entries, dropping oldest first; the toast queue renders at most three concurrent toasts, keeping errors sticky until dismissed while other severities auto-dismiss after 4 s.
 
 ## UI Elements & Patterns
 
@@ -241,7 +247,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - **InstallDeviceModal/UpdateDeviceModal/MoveDeviceModal**: manage device lifecycle (install JSON validation, patch existing settings, relocate hardware) through zone-store helpers and `SimulationFacade` intents.【F:docs/ui/ui-components-desciption.md†L440-L533】
 - **Device removal confirmation**: reuses confirmation modal to call `devices.removeDevice` via zone store helper.【F:docs/ui/ui-components-desciption.md†L440-L533】
 - **RentStructureModal**: rents new structure with affordability gating; uses forms primitives.【F:docs/ui/ui-components-desciption.md†L533-L540】
-- **Duplicate flows** described above require inline cost previews and compliance with `allowedRoomPurposes` for devices.【F:docs/ui/ui-components-desciption.md†L360-L533】【F:docs/ui/ui_interactions_spec.md†L27-L54】
+- **Duplicate flows** described above require inline cost previews and compliance with `allowedRoomPurposes` for devices.【F:docs/ui/ui-components-desciption.md†L360-L533】【F:docs/ui/ui_interactions_spec.md†L27-L54】 Cost tooltips break totals into Rooms, Zones, Devices (count × individual CapEx via `devicePrices.json`), Setup (method/container/substrate), and Other, summing capital and setup costs while reminding players that maintenance remains separate.
 
 ### Simulation Components
 
@@ -252,7 +258,7 @@ The application follows a structure → room → zone drill-down supported by pe
 
 ### View Components (Composition Level)
 
-- **DashboardView**: default view listing structures; integrates InlineEdit and ActionIcons; default landing post-start.【F:docs/ui/ui-components-desciption.md†L470-L487】
+- **DashboardView**: default view listing structures; integrates InlineEdit and ActionIcons; default landing post-start.【F:docs/ui/ui-components-desciption.md†L470-L487】 Structure cards sort by most recently used (descending) with name (ascending) as fallback, persisting any user override in local storage or URL params so ordering remains stable across sessions.
 - **FinanceView**: detailed financial breakdown with collapsible cards and timeframe filter; uses `StatCard` icons (`trending_up`, `receipt_long`, `account_balance`).【F:docs/ui/ui-components-desciption.md†L470-L509】
 - **PersonnelView**: tabbed candidate/staff management with hire/fire actions and icon usage (e.g., `DeleteIcon`).【F:docs/ui/ui-components-desciption.md†L504-L509】
 - **RoomDetailView** and **StructureDetailView**: compose zone cards, InlineEdit, and ActionIcons to manage nested rooms/zones.【F:docs/ui/ui-components-desciption.md†L513-L525】
@@ -262,12 +268,97 @@ The application follows a structure → room → zone drill-down supported by pe
 
 - **ToastContext/ToastProvider** exposes `addToast` for success/error notifications while `ToastContainer` renders them; follows producer/consumer pattern to decouple triggers from presentation.【F:docs/ui/ui-components-desciption.md†L509-L533】
 
+### Contract Type Definitions
+
+```ts
+export type UUID = string;
+
+export interface Selection {
+  currentView: 'dashboard' | 'structure' | 'room' | 'zone' | 'finances' | 'personnel';
+  selectedStructureId?: UUID;
+  selectedRoomId?: UUID;
+  selectedZoneId?: UUID;
+}
+
+export interface StructureSummary {
+  id: UUID;
+  name: string;
+  area_m2: number | null;
+  roomCount: number;
+  plantCount: number;
+}
+
+export interface ZoneKpis {
+  area_m2: number;
+  methodId?: UUID;
+  plantCount: number;
+  env: {
+    temperature_C?: number;
+    relativeHumidity?: number;
+    co2_ppm?: number;
+    vpd_kPa?: number;
+    ppfd?: number;
+  };
+  coverageRatio?: number;
+}
+
+export interface ZoneSummary {
+  id: UUID;
+  name: string;
+  kpis: ZoneKpis;
+  deviceGroups: Array<{
+    kind: string;
+    count: number;
+    status: 'on' | 'off' | 'mixed' | 'broken';
+  }>;
+}
+
+export interface EventLogItem {
+  id: UUID;
+  ts: number;
+  severity: 'info' | 'success' | 'warning' | 'error';
+  type: string;
+  entityId?: UUID;
+  message: string;
+}
+
+export interface OnNavigatePayload {
+  target: 'dashboard' | 'structure' | 'room' | 'zone' | 'finances' | 'personnel';
+  id?: UUID;
+}
+
+export interface OnPlantActionPayload {
+  zoneId: UUID;
+  action: 'harvest' | 'trash' | 'treat' | 'plant';
+  plantIds?: UUID[];
+  strainId?: UUID;
+  quantity?: number;
+}
+
+export interface OnBatchActionPayload {
+  zoneId: UUID;
+  plantIds: UUID[];
+  action: 'harvest' | 'trash' | 'treat';
+}
+
+export interface OnUpdatePayload {
+  entity: 'zoneSetpoint' | 'deviceGroup' | 'inlineName';
+  zoneId?: UUID;
+  metric?: 'temperature' | 'relativeHumidity' | 'vpd' | 'co2' | 'ppfd';
+  value?: number;
+  kind?: string;
+  toggle?: 'on' | 'off';
+  targetId?: UUID;
+  name?: string;
+}
+```
+
+These interfaces mirror the façade intent contract and reinforce the intent-only, snapshot-read-only boundary.
+
 ### Documented Gaps from Component Audit
 
-- **TODO:** Provide type definitions for objects such as `gameData`, `selection`, `Structure`, `Zone`, and `EventLogItem` to unblock reimplementation clarity.【F:docs/ui/ui-components-desciption.md†L614-L688】
 - **TODO:** Describe state management and backend integration details (global store, Socket.IO subscriptions, API calls) beyond `App.tsx` owning state.【F:docs/ui/ui-components-desciption.md†L614-L688】
-- **TODO:** Document interaction contract payloads (`onUpdate`, `onBatchAction`, `onPlantAction`, `onNavigate`) with expected parameters and side effects.【F:docs/ui/ui-components-desciption.md†L614-L688】
-- **TODO:** Capture styling directives for Tailwind tokens, spacing, breakpoints, and responsiveness to back existing references.【F:docs/ui/ui-components-desciption.md†L614-L688】
+- **TODO:** Capture styling directives for Tailwind spacing scale, icon sizing, and bespoke responsiveness beyond the documented breakpoints.【F:docs/ui/ui-components-desciption.md†L614-L688】
 - **TODO:** Outline edge-case handling for validation errors, empty lists, network issues, and concurrent updates.【F:docs/ui/ui-components-desciption.md†L614-L688】
 
 ## Interactions
@@ -276,7 +367,7 @@ The application follows a structure → room → zone drill-down supported by pe
 
 - Start new games via modal capturing name/seed (`facade.newGame`), load/import snapshots (`facade.load`, `facade.importState`), and reset runs after confirmation.【F:docs/ui/ui_interactions_spec.md†L13-L35】【F:docs/ui/ui-components-desciption.md†L323-L353】
 - Save/export from the game menu dispatches `facade.save()` and `facade.exportState()`; loading or deleting slots routes through the same menu flows.【F:docs/ui/ui_interactions_spec.md†L18-L35】
-- Play/pause/step/fast-forward controls issue `simulationControl` intents (`play|pause|step|fastForward`, `setTickLength`, `setSetpoint`) through `useGameStore` and bridge hooks.【F:docs/ui/ui-implementation-spec.md†L260-L380】【F:docs/ui/ui-components-desciption.md†L225-L260】
+- Play/pause/step/fast-forward controls issue `simulationControl` intents (`play|pause|step|fastForward`, `setSetpoint`) through `useGameStore` and bridge hooks; tick length remains façade-managed and is not user-adjustable from the UI.【F:docs/ui/ui-implementation-spec.md†L260-L380】【F:docs/ui/ui-components-desciption.md†L225-L260】
 
 ### Infrastructure & Navigation
 
@@ -289,8 +380,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - Install devices (`facade.devices.installDevice`) with placement checks against `allowedRoomPurposes`, update device settings (`updateDevice`), move devices between zones (`moveDevice`), toggle groups, and remove devices via confirmation flows.【F:docs/ui/ui_interactions_spec.md†L40-L54】【F:docs/ui/ui-components-desciption.md†L421-L533】
 - Apply irrigation (`facade.plants.applyIrrigation`) and fertilizer (`facade.plants.applyFertilizer`) from supplies card actions; add supplies triggers shared modal flows.【F:docs/ui/ui_interactions_spec.md†L40-L54】【F:docs/ui/ui-implementation-spec.md†L240-L320】
 - Plant strains (`facade.plants.addPlanting`), harvest individual plants or groups (`facade.plants.harvestPlanting`), delete plantings, and manage automation via Planting Plan (create/edit/delete/toggle Auto-Replant).【F:docs/ui/ui_interactions_spec.md†L40-L54】【F:docs/ui/ui-implementation-spec.md†L260-L360】
-- Zone navigation arrows allow stepping between sibling zones; screenshot references confirm this quick switching behavior.【F:docs/ui/ui-implementation-spec.md†L220-L320】
-- **TODO:** Define wrap-around behavior and keyboard shortcuts (if any) for zone navigation arrows.
+- Zone navigation arrows allow stepping between sibling zones with wrap-around enabled at list boundaries; keyboard shortcuts mirror the behavior (Left/Right arrows) for quick cycling.【F:docs/ui/ui-implementation-spec.md†L220-L320】
 
 ### Environment & Telemetry Control
 
@@ -298,7 +388,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - Lighting cards display coverage sufficiency using `.lighting-ok` and `.lighting-insufficient` classes and allow editing light cycles through modals (`schedule`).【F:docs/ui/ui-implementation-spec.md†L240-L360】
 - Device status indicators (`status-on/off/mixed/broken`) toggle whole groups and open tuning modals using `tune`.【F:docs/ui/ui-implementation-spec.md†L260-L360】
 - **TODO:** Specify drag-and-drop mechanics for device or plant rearrangement, including whether move actions rely solely on modals or support direct manipulation.
-- **TODO:** Provide resize behavior for cultivation grids to honour the 0.5 m × 0.5 m layout rule when repositioning zones or plants.
+- Zone layout editing snaps rectangles to 0.5 m increments with a minimum footprint of 1.0 m × 1.0 m; the UI checks only visual collisions while the façade validates final placements.
 
 ### Personnel & Finance
 
@@ -309,7 +399,7 @@ The application follows a structure → room → zone drill-down supported by pe
 
 - Modal controller tracks `wasRunningBeforeModal`; opening a modal pauses the simulation and blurs background content; closing resumes if previously running. Overlay clicks do not close modals—only explicit buttons (Cancel/Save/etc.).【F:docs/ui/ui-implementation-spec.md†L96-L152】
 - Shared modal styles enforce dark overlay, bordered content, max width 720 px (or 92 vw), and rely on Tailwind for structure; focus remains trapped inside until closure.【F:docs/ui/ui-implementation-spec.md†L96-L152】
-- **TODO:** Clarify modal stacking rules (e.g., nested modals vs. sequential) and how to queue commands if multiple dialogs attempt to pause/resume simultaneously.
+- Only one modal may be active at a time; additional modal requests queue FIFO and open once the active modal closes. The controller stores `wasRunningBeforeModal` only for the first modal and restores the prior simulation state after the last modal exits.
 
 ## States & Telemetry
 
@@ -321,8 +411,8 @@ The application follows a structure → room → zone drill-down supported by pe
 - Event payloads carry minimal fields + UUIDs; the UI resolves details via the latest snapshot, never from event payload alone.【F:docs/ui/ui_archictecture.md†L140-L200】
 - Toast provider/context decouples producers from the UI, allowing components to emit notifications while `ToastContainer` renders them; event log component retains recent events for quick scanning.【F:docs/ui/ui-components-desciption.md†L193-L360】
 - Modal controller pauses simulation state, storing `wasRunningBeforeModal` to resume after closing, which is critical for deterministic telemetry history.【F:docs/ui/ui-implementation-spec.md†L96-L152】
-- **TODO:** Document loading indicators (e.g., skeletons or spinners) for initial snapshot fetch and long-running intents so teams can provide feedback during facade operations.
-- **TODO:** Define error banner/toast taxonomy for validation warnings vs. hard failures emitted by facade responses to ensure consistent UX.
+- Initial connection displays a full-screen skeleton (header bar, three stat cards, two-column placeholder) until the first snapshot arrives; long-running intents show inline button spinners with copy "… applying" beside the action.
+- Facade responses surface validation warnings as persistent yellow banners inside the originating modal, while hard `ERR_*` failures trigger red toasts and Event Log entries including the failing `payload.path`.
 - **TODO:** Clarify how long historical telemetry (charts, tables) is retained in-memory and whether snapshots are down-sampled for performance.
 
 ## Accessibility & Performance
@@ -333,7 +423,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - Virtualize large lists (zones, tasks, employees) and memoize selectors to limit re-render scope; throttle chart updates and downsample telemetry where necessary.【F:docs/ui/ui_archictecture.md†L140-L200】【F:docs/ui/ui_interactions_spec.md†L88-L120】
 - Use responsive layouts (column collapse below 900 px, grid auto-fill) and ensure controls wrap gracefully without overlap.【F:docs/ui/ui-implementation-spec.md†L160-L220】
 - Avoid optimistic UI; wait for facade ACK or events before updating to maintain deterministic order.【F:docs/ui/ui_interactions_spec.md†L120-L150】
-- **TODO:** Provide keyboard shortcut inventory (e.g., for play/pause, navigation) to ensure parity with power-user expectations.
+- Keyboard shortcuts: Space toggles Play/Pause (announced via SR-only live region), `ö`/`ä` adjust speed down/up, `g`/`f`/`p`/`s` jump to Dashboard/Finances/Personnel/Structures, and Left/Right arrows cycle zones with wrap-around.
 - **TODO:** Document screen-reader announcements for simulation state changes (tick progress, alerts) to confirm accessible feedback loops.
 - **TODO:** Define performance budgets for charts/tables (e.g., max rows before virtualization) and specify test strategies to enforce them.
 
@@ -368,7 +458,12 @@ The application follows a structure → room → zone drill-down supported by pe
 - Panels/cards: `bg-stone-800/30` with `border-stone-700`.
 - Primary accent: `bg-lime-600`, `text-lime-400`; status colors include `text-green-400`, `text-yellow-400`, `text-red-400`, `text-blue-400`, `text-cyan-400` for success/warning/danger/info states.【F:docs/ui/ui-components-desciption.md†L551-L574】
 - Typography: Inter font, headings styled via Tailwind utilities (`text-3xl font-bold`, etc.) instead of default heading tags.【F:docs/ui/ui-components-desciption.md†L551-L574】
-- **TODO:** Provide light-theme palette and contrast pairs once defined to support theme switching.
+- ### Light Theme Tokens
+
+- Background: `#fafafa` base with cards at `#ffffff` bordered by `#e5e7eb`.
+- Text: primary `#111827`, secondary `#6b7280` to mirror dark-theme contrast ratios.
+- Accent: lime-600 (`#65a30d`) with hover at `#4d7c0f`; status hues reuse green/yellow/red/blue/cyan 600 shades to keep semantic parity.
+- Buttons maintain AA contrast by pairing dark text with light fills and vice versa, sharing the same component tokens as the dark theme.
 
 ### Core CSS Snippets
 
@@ -485,39 +580,14 @@ Maintain this guide alongside facade, component, and screenshot updates: when ne
 
 ## Open Issues
 
-- [ ] [Guiding Principles](#guiding-principles) – Document light-theme requirements so dark/light parity can be achieved.
-- [ ] [Guiding Principles](#guiding-principles) – Provide explicit handset/tablet breakpoints and responsive behavior per view.
-- [ ] [Layout & Navigation](#layout--navigation) – Describe off-canvas or bottom-sheet patterns for mobile navigation and modal stacking.
-- [ ] [Core Views](#core-views) – Capture Quick Start defaults (seed, structures) for the start screen CTA.
-- [ ] [Core Views](#core-views) – Detail notification popover content structure, pagination, and severity indicators.
-- [ ] [Core Views](#core-views) – Define default sorting/ordering rules for structure cards.
-- [ ] [Core Views](#core-views) – Clarify duplicate cost breakdowns and copy-cost tooltip content.
 - [ ] [Core Views](#core-views) – Outline BreedingStation UI states and data requirements distinct from grow rooms.
-- [ ] [Core Views](#core-views) – Document environment highlight thresholds and warning copy for temperature, humidity, and CO₂.
-- [ ] [Core Views](#core-views) – Clarify manual planting vs. Auto-Replant behavior and resulting notifications.
-- [ ] [Core Views](#core-views) – Decide whether device group toggles need confirmations or immediate feedback messaging.
-- [ ] [Core Views](#core-views) – Provide empty-state visuals for zones without devices, plantings, or automation plans.
 - [ ] [Core Views](#core-views) – Specify tooltip content/data sources for strain, pest, and disease indicators in plant lists.
-- [ ] [Core Views](#core-views) – Define treatment for negative or missing finance metrics across time ranges.
-- [ ] [Core Views](#core-views) – Document currency formatting and localization strategy for finance KPIs and tables.
-- [ ] [Core Views](#core-views) – Establish pagination/virtualization thresholds for personnel lists.
-- [ ] [Core Views](#core-views) – Describe morale and energy scale ranges plus tooltip guidance on personnel cards.
-- [ ] [Core Views](#core-views) – Determine event log retention limits and toast queue truncation strategy.
-- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Publish type definitions for `gameData`, `selection`, `Structure`, `Zone`, and `EventLogItem`.
 - [ ] [UI Elements & Patterns](#ui-elements--patterns) – Document state management and backend integration flow (stores, Socket.IO subscriptions, API usage).
-- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Specify payload schemas for `onUpdate`, `onBatchAction`, `onPlantAction`, and `onNavigate` callbacks.
-- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Capture Tailwind token/spacing/breakpoint guidance referenced by components.
+- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Capture Tailwind spacing scale, icon sizing, and bespoke responsiveness guidance beyond current breakpoints.
 - [ ] [UI Elements & Patterns](#ui-elements--patterns) – Outline error, empty-list, network, and concurrency edge-case handling.
-- [ ] [Interactions](#interactions) – Define wrap-around behavior and shortcuts for zone navigation arrows.
 - [ ] [Interactions](#interactions) – Describe drag-and-drop mechanics (if any) for devices or plants versus modal-driven moves.
-- [ ] [Interactions](#interactions) – Provide resize rules honoring the 0.5 m × 0.5 m grid when repositioning layout elements.
-- [ ] [Interactions](#interactions) – Clarify modal stacking policy and command queuing when multiple dialogs pause/resume the sim.
-- [ ] [States & Telemetry](#states--telemetry) – Add loading indicator patterns for initial snapshots and long-running intents.
-- [ ] [States & Telemetry](#states--telemetry) – Define error banner/toast taxonomy for validation vs. fatal facade responses.
 - [ ] [States & Telemetry](#states--telemetry) – Document telemetry retention/downsampling strategy for charts and tables.
-- [ ] [Accessibility & Performance](#accessibility--performance) – Publish keyboard shortcut inventory for common controls.
 - [ ] [Accessibility & Performance](#accessibility--performance) – Describe screen-reader announcements for tick updates and alerts.
 - [ ] [Accessibility & Performance](#accessibility--performance) – Set performance budgets and validation tests for charts and tables.
-- [ ] [Visual Guardrails](#visual-guardrails) – Provide light-theme palette and contrast pairs when theme switching is supported.
 - [ ] [Visual Guardrails](#visual-guardrails) – Define spacing scale/vertical rhythm beyond Tailwind defaults for bespoke layouts.
 - [ ] [Visual Guardrails](#visual-guardrails) – Establish icon sizing guidelines across headers, tables, and cards.
