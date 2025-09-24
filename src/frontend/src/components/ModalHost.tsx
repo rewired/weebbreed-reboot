@@ -9,11 +9,9 @@ import RenameEntityModal from '@/views/world/modals/RenameEntityModal';
 import ConfirmDeletionModal from '@/views/world/modals/ConfirmDeletionModal';
 import PlantDetailModal from '@/views/zone/modals/PlantDetailModal';
 import {
-  selectIsPaused,
   selectRoomsGroupedByStructure,
   selectZonesGroupedByRoom,
   useAppStore,
-  useGameStore,
   usePersonnelStore,
   useZoneStore,
 } from '@/store';
@@ -21,11 +19,6 @@ import {
 const ModalHost = () => {
   const activeModal = useAppStore((state) => state.activeModal);
   const closeModal = useAppStore((state) => state.closeModal);
-  const wasRunningBeforeModal = useAppStore((state) => state.wasRunningBeforeModal);
-  const setWasRunningBeforeModal = useAppStore((state) => state.setWasRunningBeforeModal);
-
-  const issueControlCommand = useGameStore((state) => state.issueControlCommand);
-  const isPaused = useGameStore(selectIsPaused);
 
   const personnel = usePersonnelStore((state) => state.personnel);
   const hireCandidate = usePersonnelStore((state) => state.hireCandidate);
@@ -103,25 +96,6 @@ const ModalHost = () => {
     }
     return plants[plantId];
   }, [plantId, plants]);
-
-  useEffect(() => {
-    if (!activeModal) {
-      if (wasRunningBeforeModal) {
-        issueControlCommand({ action: 'play' });
-        setWasRunningBeforeModal(false);
-      }
-      return;
-    }
-
-    if (activeModal.autoPause) {
-      if (!isPaused) {
-        setWasRunningBeforeModal(true);
-        issueControlCommand({ action: 'pause' });
-      } else {
-        setWasRunningBeforeModal(false);
-      }
-    }
-  }, [activeModal, isPaused, issueControlCommand, setWasRunningBeforeModal, wasRunningBeforeModal]);
 
   useEffect(() => {
     if (!activeModal) {

@@ -278,6 +278,8 @@ Modals are used for actions requiring user input.
 - The modal controller stores whether the simulation was running _before_ opening a modal (e.g., `wasRunningBeforeModal`).
 - On open: pause the simulation explicitly.
 - On close: restore the prior running state; resume if it was previously running.
+- `useAppStore.openModal` applies this policy automatically: descriptors pause the sim unless `autoPause: false`, and the store
+  replays a `resume` control command when closing if the sim was running beforehand.
 
 **Close behavior**
 
