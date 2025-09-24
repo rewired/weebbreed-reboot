@@ -1,9 +1,11 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Card from '@/components/Card';
 import DashboardHeader from '@/components/DashboardHeader';
 import MetricsBar from '@/components/MetricsBar';
 import Panel from '@/components/Panel';
 import { RoomSummaryCard, ZoneSummaryCard } from '@/components/cards';
+import ToggleSwitch from '@/components/ToggleSwitch';
+import { FormField, NumberInputField, RangeField } from '@/components/forms';
 import { selectCurrentTick, useAppStore, useGameStore, useZoneStore } from '@/store';
 import { computeZoneAggregateMetrics } from '@/views/utils/zoneAggregates';
 
@@ -21,6 +23,16 @@ const percentageFormatter = new Intl.NumberFormat('en-US', {
 const numberFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 1,
 });
+
+type SetpointMetric = 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd' | 'vpd';
+
+const DEFAULT_SETPOINT_DRAFTS: Record<SetpointMetric, number> = {
+  temperature: 24,
+  relativeHumidity: 60,
+  co2: 800,
+  ppfd: 650,
+  vpd: 1.2,
+};
 
 const STRUCTURE_STATUS_LABEL = {
   active: 'Active',
@@ -115,6 +127,25 @@ const ZoneDetail = () => {
     timeline: state.timeline,
   }));
 
+  const lastSetpoints = useZoneStore((state) => state.lastSetpoints);
+  const sendSetpoint = useZoneStore((state) => state.sendSetpoint);
+  const applyWater = useZoneStore((state) => state.applyWater);
+  const applyNutrients = useZoneStore((state) => state.applyNutrients);
+  const togglePlantingPlan = useZoneStore((state) => state.togglePlantingPlan);
+  const harvestPlantings = useZoneStore((state) => state.harvestPlantings);
+  const toggleDeviceGroup = useZoneStore((state) => state.toggleDeviceGroup);
+
+  const [setpointDrafts, setSetpointDrafts] = useState<Record<SetpointMetric, number>>(() => ({
+    ...DEFAULT_SETPOINT_DRAFTS,
+  }));
+  const [waterCommandLiters, setWaterCommandLiters] = useState(10);
+  const [nutrientDraft, setNutrientDraft] = useState<{ N: number; P: number; K: number }>(() => ({
+    N: 10,
+    P: 5,
+    K: 5,
+  }));
+  const previousZoneIdRef = useRef<string | undefined>();
+
   const roomList = useMemo(() => Object.values(rooms), [rooms]);
   const zoneList = useMemo(() => Object.values(zones), [zones]);
 
@@ -127,6 +158,29 @@ const ZoneDetail = () => {
     : room
       ? (structures[room.structureId] ?? structureFromSelection)
       : structureFromSelection;
+
+  useEffect(() => {
+    if (!zone) {
+      previousZoneIdRef.current = undefined;
+      return;
+    }
+
+    if (previousZoneIdRef.current === zone.id) {
+      return;
+    }
+
+    previousZoneIdRef.current = zone.id;
+
+    setSetpointDrafts({
+      temperature: zone.environment.temperature,
+      relativeHumidity: zone.environment.relativeHumidity * 100,
+      co2: zone.environment.co2,
+      ppfd: zone.environment.ppfd,
+      vpd: zone.environment.vpd,
+    });
+    setWaterCommandLiters(10);
+    setNutrientDraft({ N: 10, P: 5, K: 5 });
+  }, [zone]);
 
   const structureRooms = useMemo(() => {
     if (!structure) {
@@ -173,6 +227,201 @@ const ZoneDetail = () => {
     const nutrientStrength = Math.max(0, Math.min(zone.resources.nutrientStrength ?? 0, 1));
     const plantingGroups = zone.plantingGroups ?? [];
     const displayedPlants = zone.plants.slice(0, 6);
+    const deviceGroups = zone.deviceGroups ?? [];
+    const harvestablePlantingIds = plantingGroups
+      .filter((group) => (group.harvestReadyCount ?? 0) > 0)
+      .map((group) => group.id);
+    const plantingPlan = zone.plantingPlan ?? null;
+    const plantingPlanEnabled = plantingPlan?.enabled ?? false;
+
+    const formatSetpointValue = (metric: SetpointMetric, value: number) => {
+      switch (metric) {
+        case 'temperature':
+          return value.toFixed(1);
+        case 'relativeHumidity':
+          return value.toFixed(0);
+        case 'co2':
+        case 'ppfd':
+          return value.toFixed(0);
+        case 'vpd':
+          return value.toFixed(2);
+        default:
+          return value.toString();
+      }
+    };
+
+    const formatSetpointWithUnit = (metric: SetpointMetric, value: number) => {
+      const base = formatSetpointValue(metric, value);
+      switch (metric) {
+        case 'temperature':
+          return `${base} °C`;
+        case 'relativeHumidity':
+          return `${base}%`;
+        case 'co2':
+          return `${base} ppm`;
+        case 'ppfd':
+          return `${base} μmol·m⁻²·s⁻¹`;
+        case 'vpd':
+          return `${base} kPa`;
+        default:
+          return base;
+      }
+    };
+
+    const getCurrentMetricValue = (metric: SetpointMetric) => {
+      switch (metric) {
+        case 'temperature':
+          return zone.environment.temperature;
+        case 'relativeHumidity':
+          return zone.environment.relativeHumidity * 100;
+        case 'co2':
+          return zone.environment.co2;
+        case 'ppfd':
+          return zone.environment.ppfd;
+        case 'vpd':
+          return zone.environment.vpd;
+        default:
+          return 0;
+      }
+    };
+
+    const getLastSetpointLabel = (metric: SetpointMetric) => {
+      const rawValue = lastSetpoints[`${zone.id}:${metric}`];
+      if (rawValue === undefined) {
+        return undefined;
+      }
+      const displayValue = metric === 'relativeHumidity' ? rawValue * 100 : rawValue;
+      return formatSetpointWithUnit(metric, displayValue);
+    };
+
+    const handleSetpointDispatch = (metric: SetpointMetric) => {
+      const pendingValue = setpointDrafts[metric];
+      const rawValue = metric === 'relativeHumidity' ? pendingValue / 100 : pendingValue;
+      sendSetpoint(zone.id, metric, Number(rawValue.toFixed(4)));
+    };
+
+    const handleApplyWater = () => {
+      if (waterCommandLiters <= 0) {
+        return;
+      }
+      applyWater(zone.id, waterCommandLiters);
+    };
+
+    const handleApplyNutrients = () => {
+      if (nutrientDraft.N <= 0 && nutrientDraft.P <= 0 && nutrientDraft.K <= 0) {
+        return;
+      }
+      applyNutrients(zone.id, nutrientDraft);
+    };
+
+    const handleHarvestReady = () => {
+      if (harvestablePlantingIds.length === 0) {
+        return;
+      }
+      harvestPlantings(harvestablePlantingIds);
+    };
+
+    const handleTogglePlantingPlan = (enabled: boolean) => {
+      if (!plantingPlan) {
+        return;
+      }
+      togglePlantingPlan(zone.id, enabled);
+    };
+
+    const setpointConfig: Array<{
+      metric: SetpointMetric;
+      label: string;
+      min: number;
+      max: number;
+      step: number;
+      unit: string;
+      description: string;
+    }> = [
+      {
+        metric: 'temperature',
+        label: 'Temperature',
+        min: 16,
+        max: 32,
+        step: 0.5,
+        unit: '°C',
+        description: 'Dispatch an HVAC setpoint for this zone.',
+      },
+      {
+        metric: 'relativeHumidity',
+        label: 'Humidity',
+        min: 35,
+        max: 95,
+        step: 1,
+        unit: '%',
+        description: 'Program humidity targets (converted to device commands by the facade).',
+      },
+      {
+        metric: 'vpd',
+        label: 'VPD',
+        min: 0,
+        max: 2.5,
+        step: 0.05,
+        unit: 'kPa',
+        description: 'Request a vapor pressure deficit setpoint for humidity automation.',
+      },
+      {
+        metric: 'co2',
+        label: 'CO₂',
+        min: 300,
+        max: 1500,
+        step: 25,
+        unit: 'ppm',
+        description: 'Set the CO₂ enrichment target for this zone.',
+      },
+      {
+        metric: 'ppfd',
+        label: 'PPFD',
+        min: 0,
+        max: 1600,
+        step: 25,
+        unit: 'μmol·m⁻²·s⁻¹',
+        description: 'Adjust the canopy lighting intensity setpoint.',
+      },
+    ];
+
+    const formatGroupStatus = (status?: string) => {
+      switch (status) {
+        case 'on':
+          return 'Active';
+        case 'off':
+          return 'Off';
+        case 'mixed':
+          return 'Mixed';
+        case 'broken':
+          return 'Broken';
+        default:
+          return 'Unknown';
+      }
+    };
+
+    const formatDeviceStatus = (status: string) => {
+      switch (status) {
+        case 'operational':
+          return 'Operational';
+        case 'maintenance':
+          return 'Maintenance';
+        case 'offline':
+          return 'Offline';
+        case 'failed':
+          return 'Failed';
+        default:
+          return status;
+      }
+    };
+
+    const nutrientKeys: Array<'N' | 'P' | 'K'> = ['N', 'P', 'K'];
+    const nutrientSummary = `${nutrientDraft.N.toFixed(1)} / ${nutrientDraft.P.toFixed(1)} / ${nutrientDraft.K.toFixed(1)} g`;
+    const plantingPlanLabel = plantingPlan
+      ? plantingPlanEnabled
+        ? 'Automation on'
+        : 'Automation off'
+      : 'No plan';
+    const harvestSummary = `${harvestablePlantingIds.length.toLocaleString()} ready`;
 
     const environmentMetrics = [
       {
@@ -238,6 +487,55 @@ const ZoneDetail = () => {
 
         <div className="grid gap-6 lg:grid-cols-[2fr,1fr]">
           <div className="space-y-6">
+            <Panel title="Environment controls" padding="lg" variant="elevated">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {setpointConfig.map((config) => {
+                  const sliderValue = setpointDrafts[config.metric];
+                  const currentValue = getCurrentMetricValue(config.metric);
+                  const lastValue = getLastSetpointLabel(config.metric);
+
+                  return (
+                    <RangeField
+                      key={config.metric}
+                      label={`${config.label} setpoint`}
+                      value={sliderValue}
+                      min={config.min}
+                      max={config.max}
+                      step={config.step}
+                      unit={config.unit}
+                      description={config.description}
+                      formatValue={(value) => formatSetpointValue(config.metric, value)}
+                      onChange={(next) =>
+                        setSetpointDrafts((prev) => ({
+                          ...prev,
+                          [config.metric]: next,
+                        }))
+                      }
+                      footer={
+                        <div className="mt-3 space-y-2 text-xs text-text-muted">
+                          <div className="flex items-center justify-between gap-2">
+                            <span>
+                              Current: {formatSetpointWithUnit(config.metric, currentValue)}
+                            </span>
+                            {lastValue ? <span>Last command: {lastValue}</span> : null}
+                          </div>
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => handleSetpointDispatch(config.metric)}
+                              className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-xs font-semibold text-surface transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                            >
+                              Dispatch
+                            </button>
+                          </div>
+                        </div>
+                      }
+                    />
+                  );
+                })}
+              </div>
+            </Panel>
+
             <Panel title="Environment detail" padding="lg" variant="elevated">
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="space-y-3">
@@ -314,6 +612,125 @@ const ZoneDetail = () => {
                     </div>
                   </dl>
                 </div>
+              </div>
+            </Panel>
+
+            <Panel title="Plant actions" padding="lg" variant="elevated">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <NumberInputField
+                  label="Irrigation command"
+                  value={waterCommandLiters}
+                  onChange={setWaterCommandLiters}
+                  min={0}
+                  step={0.5}
+                  unit="L"
+                  description="Send an immediate irrigation command to this zone."
+                  formatValue={(value) => value.toFixed(1)}
+                  footer={
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleApplyWater}
+                        disabled={waterCommandLiters <= 0}
+                        className="inline-flex items-center rounded-md border border-accent/70 bg-accent/90 px-3 py-1.5 text-xs font-semibold text-surface transition hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Apply water
+                      </button>
+                    </div>
+                  }
+                />
+
+                <FormField
+                  label="Nutrient mix"
+                  secondaryLabel={nutrientSummary}
+                  description="Apply an N-P-K fertilizer mix to the active planting groups."
+                >
+                  <div className="grid grid-cols-3 gap-2 text-xs text-text-muted">
+                    {nutrientKeys.map((key) => (
+                      <label key={key} className="flex flex-col gap-1">
+                        <span className="font-semibold uppercase tracking-wide text-text-secondary">
+                          {key}
+                        </span>
+                        <input
+                          type="number"
+                          min={0}
+                          step={0.5}
+                          value={nutrientDraft[key]}
+                          onChange={(event) => {
+                            const parsed = Number(event.target.value);
+                            if (Number.isNaN(parsed)) {
+                              return;
+                            }
+                            setNutrientDraft((prev) => ({
+                              ...prev,
+                              [key]: Math.max(0, parsed),
+                            }));
+                          }}
+                          className="w-full rounded-md border border-border/60 bg-surface px-2 py-1 text-sm text-text-primary shadow-inner focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/60"
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleApplyNutrients}
+                      disabled={
+                        nutrientDraft.N <= 0 && nutrientDraft.P <= 0 && nutrientDraft.K <= 0
+                      }
+                      className="inline-flex items-center rounded-md border border-border/60 bg-surfaceAlt px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-accent/60 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Apply nutrients
+                    </button>
+                  </div>
+                </FormField>
+              </div>
+
+              <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <FormField
+                  label="Planting plan"
+                  secondaryLabel={plantingPlanLabel}
+                  description={
+                    plantingPlan
+                      ? `Maintains ${plantingPlan.count.toLocaleString()} plants of ${plantingPlan.strainId}.`
+                      : 'Define a planting plan to enable automatic replanting.'
+                  }
+                >
+                  <ToggleSwitch
+                    checked={plantingPlanEnabled}
+                    onChange={handleTogglePlantingPlan}
+                    disabled={!plantingPlan}
+                    size="sm"
+                    label="Auto replant"
+                    description={
+                      plantingPlan?.autoReplant
+                        ? 'Automatically replant when capacity is available.'
+                        : 'Manual replanting required.'
+                    }
+                  />
+                </FormField>
+
+                <FormField
+                  label="Harvest batches"
+                  secondaryLabel={harvestSummary}
+                  description="Trigger batch harvest commands for planting groups reporting ready plants."
+                >
+                  <p className="text-sm text-text-secondary">
+                    {harvestablePlantingIds.length > 0
+                      ? 'Ready groups will be harvested immediately.'
+                      : 'No harvest-ready planting groups detected.'}
+                  </p>
+                  <div className="mt-3 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleHarvestReady}
+                      disabled={harvestablePlantingIds.length === 0}
+                      className="inline-flex items-center rounded-md border border-border/60 bg-surfaceAlt px-3 py-1.5 text-xs font-semibold text-text-secondary transition hover:border-accent/60 hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      Harvest ready groups
+                    </button>
+                  </div>
+                </FormField>
               </div>
             </Panel>
 
@@ -512,57 +929,150 @@ const ZoneDetail = () => {
               ) : null}
             </Panel>
 
-            <Panel title="Device overview" padding="lg" variant="elevated">
+            <Panel title="Device automation" padding="lg" variant="elevated">
+              {deviceGroups.length === 0 ? (
+                <p className="text-sm text-text-muted">
+                  No automation groups configured for this zone.
+                </p>
+              ) : (
+                <ul className="space-y-4 text-sm text-text-secondary">
+                  {deviceGroups.map((group) => {
+                    const isEnabled = group.status !== 'off';
+                    const statusLabel = formatGroupStatus(group.status);
+
+                    return (
+                      <li
+                        key={group.id}
+                        className="space-y-3 rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-text-primary">
+                              {group.label ?? group.kind}
+                            </p>
+                            <p className="text-xs uppercase tracking-wide text-text-muted">
+                              {group.kind} • {group.deviceIds.length.toLocaleString()} devices
+                            </p>
+                          </div>
+                          <ToggleSwitch
+                            checked={isEnabled}
+                            onChange={(checked) => toggleDeviceGroup(zone.id, group.kind, checked)}
+                            disabled={group.deviceIds.length === 0}
+                            size="sm"
+                            label="Enabled"
+                          />
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs text-text-muted">
+                          <span className="rounded-full border border-border/50 px-2 py-0.5">
+                            Status: {statusLabel}
+                          </span>
+                          {group.supportsScheduling ? (
+                            <span className="rounded-full border border-border/50 px-2 py-0.5">
+                              Scheduling
+                            </span>
+                          ) : null}
+                          {group.supportsTuning ? (
+                            <span className="rounded-full border border-border/50 px-2 py-0.5">
+                              Tuning
+                            </span>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel title="Device inventory" padding="lg" variant="elevated">
               {zone.devices.length === 0 ? (
                 <p className="text-sm text-text-muted">No devices assigned to this zone.</p>
               ) : (
                 <ul className="space-y-4 text-sm text-text-secondary">
-                  {zone.devices.map((device) => (
-                    <li
-                      key={device.id}
-                      className="rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-text-primary">{device.name}</p>
-                          <p className="text-xs uppercase tracking-wide text-text-muted">
-                            {device.kind}
-                          </p>
+                  {zone.devices.map((device) => {
+                    const statusClass =
+                      device.status === 'operational'
+                        ? 'text-positive'
+                        : device.status === 'maintenance'
+                          ? 'text-warning'
+                          : device.status === 'failed'
+                            ? 'text-danger'
+                            : 'text-text-muted';
+                    const settingsEntries = Object.entries(device.settings ?? {});
+
+                    return (
+                      <li
+                        key={device.id}
+                        className="space-y-3 rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-text-primary">{device.name}</p>
+                            <p className="text-xs uppercase tracking-wide text-text-muted">
+                              {device.kind}
+                            </p>
+                          </div>
+                          <span
+                            className={`text-xs font-semibold uppercase tracking-wide ${statusClass}`}
+                          >
+                            {formatDeviceStatus(device.status)}
+                          </span>
                         </div>
-                        <span className="text-xs font-medium uppercase tracking-wide text-text-muted">
-                          {device.status}
-                        </span>
-                      </div>
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <p className="text-text-muted">Blueprint</p>
-                          <p className="font-medium text-text-secondary">{device.blueprintId}</p>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <p className="text-text-muted">Blueprint</p>
+                            <p className="font-medium text-text-secondary">{device.blueprintId}</p>
+                          </div>
+                          <div>
+                            <p className="text-text-muted">Efficiency</p>
+                            <p className="font-medium text-text-secondary">
+                              {percentageFormatter.format(
+                                Math.max(0, Math.min(device.efficiency, 1)),
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-text-muted">Runtime hours</p>
+                            <p className="font-medium text-text-secondary">
+                              {numberFormatter.format(device.runtimeHours)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-text-muted">Condition</p>
+                            <p className="font-medium text-text-secondary">
+                              {percentageFormatter.format(
+                                Math.max(0, Math.min(device.maintenance.condition ?? 0, 1)),
+                              )}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-text-muted">Next maintenance</p>
+                            <p className="font-medium text-text-secondary">
+                              Tick {device.maintenance.nextDueTick.toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-text-muted">Degradation</p>
+                            <p className="font-medium text-text-secondary">
+                              {percentageFormatter.format(
+                                Math.max(0, Math.min(device.maintenance.degradation ?? 0, 1)),
+                              )}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-text-muted">Efficiency</p>
-                          <p className="font-medium text-text-secondary">
-                            {percentageFormatter.format(
-                              Math.max(0, Math.min(device.efficiency, 1)),
-                            )}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-text-muted">Runtime hours</p>
-                          <p className="font-medium text-text-secondary">
-                            {numberFormatter.format(device.runtimeHours)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-text-muted">Condition</p>
-                          <p className="font-medium text-text-secondary">
-                            {percentageFormatter.format(
-                              Math.max(0, Math.min(device.maintenance.condition ?? 0, 1)),
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
+                        {settingsEntries.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-2 text-xs text-text-muted">
+                            {settingsEntries.slice(0, 4).map(([key, value]) => (
+                              <div key={key}>
+                                <p className="uppercase tracking-wide">{key}</p>
+                                <p className="font-medium text-text-secondary">{String(value)}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </Panel>
