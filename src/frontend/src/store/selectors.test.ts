@@ -3,13 +3,23 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   selectAlertCount,
   selectAlertEvents,
-  selectRoomById,
-  selectRoomByZoneId,
+  selectCapital,
+  selectCumulativeYield,
+  selectCurrentSpeed,
+  selectCurrentTick,
+  selectFinanceSummary,
+  selectIsPaused,
+  selectLastTickEvent,
+  selectRecentEvents,
   selectRoomsByStructureId,
   selectRoomsGroupedByStructure,
+  selectRoomById,
+  selectRoomByZoneId,
   selectStructureById,
   selectStructureByRoomId,
   selectStructureByZoneId,
+  selectTimeStatus,
+  selectTargetTickRate,
   selectZoneById,
   selectZonesByRoomId,
   selectZonesByStructureId,
@@ -22,11 +32,12 @@ import type {
   RoomSnapshot,
   StructureSnapshot,
   ZoneSnapshot,
+  PlantSnapshot,
 } from '../types/simulation';
 
-const createState = (events: SimulationEvent[]): GameStoreState => ({
+const createGameState = (overrides: Partial<GameStoreState> = {}): GameStoreState => ({
   connectionStatus: 'idle',
-  events,
+  events: overrides.events ?? [],
   setConnectionStatus: vi.fn(),
   ingestUpdate: vi.fn(),
   appendEvents: vi.fn(),
@@ -37,6 +48,7 @@ const createState = (events: SimulationEvent[]): GameStoreState => ({
   reset: vi.fn(),
   sendControlCommand: undefined,
   sendConfigUpdate: undefined,
+  ...overrides,
 });
 
 describe('alert selectors', () => {
@@ -44,7 +56,7 @@ describe('alert selectors', () => {
     const warningEvent: SimulationEvent = { type: 'zone.thresholdCrossed', level: 'warning' };
     const errorEvent: SimulationEvent = { type: 'device.failed', level: 'error' };
     const infoEvent: SimulationEvent = { type: 'sim.tickCompleted', level: 'info' };
-    const state = createState([warningEvent, infoEvent, errorEvent]);
+    const state = createGameState({ events: [warningEvent, infoEvent, errorEvent] });
 
     expect(selectAlertEvents(state)).toEqual([warningEvent, errorEvent]);
   });
@@ -57,9 +69,73 @@ describe('alert selectors', () => {
       { type: 'hr.hired', level: 'debug' },
       { type: 'market.saleCompleted' },
     ];
-    const state = createState(events);
+    const state = createGameState({ events });
 
     expect(selectAlertCount(state)).toBe(2);
+  });
+});
+
+describe('game timeline selectors', () => {
+  it('uses the live time status when available', () => {
+    const state = createGameState({
+      timeStatus: { tick: 42, paused: false, speed: 4, targetTickRate: 8 },
+      lastTickCompleted: { tick: 41, ts: Date.now() },
+      lastClockSnapshot: {
+        tick: 40,
+        isPaused: true,
+        targetTickRate: 6,
+        startedAt: '2024-01-01T00:00:00Z',
+        lastUpdatedAt: '2024-01-01T01:00:00Z',
+      },
+    });
+
+    expect(selectCurrentTick(state)).toBe(42);
+    expect(selectIsPaused(state)).toBe(false);
+    expect(selectTargetTickRate(state)).toBe(8);
+    expect(selectCurrentSpeed(state)).toBe(4);
+    expect(selectTimeStatus(state)).toEqual(state.timeStatus);
+    expect(selectLastTickEvent(state)).toEqual(state.lastTickCompleted);
+  });
+
+  it('falls back to the last clock snapshot when live time status is missing', () => {
+    const state = createGameState({
+      timeStatus: undefined,
+      lastSnapshotTick: 27,
+      lastClockSnapshot: {
+        tick: 30,
+        isPaused: false,
+        targetTickRate: 3,
+        startedAt: '2024-01-01T00:00:00Z',
+        lastUpdatedAt: '2024-01-01T01:00:00Z',
+      },
+    });
+
+    expect(selectCurrentTick(state)).toBe(27);
+    expect(selectIsPaused(state)).toBe(false);
+    expect(selectTargetTickRate(state)).toBe(3);
+    expect(selectCurrentSpeed(state)).toBe(3);
+  });
+
+  it('defaults to safe baseline values when no timing data exists', () => {
+    const state = createGameState({ timeStatus: undefined, lastClockSnapshot: undefined });
+
+    expect(selectCurrentTick(state)).toBe(0);
+    expect(selectIsPaused(state)).toBe(true);
+    expect(selectTargetTickRate(state)).toBe(1);
+    expect(selectCurrentSpeed(state)).toBe(1);
+  });
+
+  it('returns recent events in reverse chronological order and respects the limit', () => {
+    const events: SimulationEvent[] = [
+      { type: 'event.one', level: 'info' },
+      { type: 'event.two', level: 'warning' },
+      { type: 'event.three', level: 'error' },
+    ];
+    const state = createGameState({ events });
+
+    expect(selectRecentEvents(0)(state)).toEqual([]);
+    expect(selectRecentEvents(2)(state)).toEqual([events[2], events[1]]);
+    expect(selectRecentEvents(5)(state)).toEqual([events[2], events[1], events[0]]);
   });
 });
 
@@ -164,6 +240,20 @@ const createZone = (id: string, structureId: string, roomId: string): ZoneSnapsh
   deviceGroups: [],
 });
 
+const createPlantSnapshot = (
+  id: string,
+  overrides: Partial<PlantSnapshot> = {},
+): PlantSnapshot => ({
+  id,
+  strainId: 'strain',
+  stage: 'vegetative',
+  health: 0.9,
+  stress: 0.1,
+  biomassDryGrams: 120,
+  yieldDryGrams: 0,
+  ...overrides,
+});
+
 describe('facility selectors', () => {
   const structures = {
     'structure-a': createStructure('structure-a', ['room-1']),
@@ -217,5 +307,36 @@ describe('facility selectors', () => {
       'room-1': [zones['zone-1'], zones['zone-2']],
       'room-2': [zones['zone-3']],
     });
+  });
+});
+
+describe('finance and production selectors', () => {
+  it('returns the finance summary and capital defaults', () => {
+    const summary = {
+      cashOnHand: 12500,
+      reservedCash: 500,
+      totalRevenue: 40000,
+      totalExpenses: 30000,
+      netIncome: 10000,
+      lastTickRevenue: 1200,
+      lastTickExpenses: 900,
+    } satisfies ZoneStoreState['financeSummary'];
+    const state = createZoneState({ financeSummary: summary });
+
+    expect(selectFinanceSummary(state)).toBe(summary);
+    expect(selectCapital(state)).toBe(12500);
+    expect(selectCapital(createZoneState({ financeSummary: undefined }))).toBe(0);
+  });
+
+  it('aggregates plant yield across the zone store', () => {
+    const plants = {
+      'plant-1': createPlantSnapshot('plant-1', { yieldDryGrams: 120 }),
+      'plant-2': createPlantSnapshot('plant-2', { yieldDryGrams: 80 }),
+      'plant-3': createPlantSnapshot('plant-3', { yieldDryGrams: undefined as unknown as number }),
+    } satisfies ZoneStoreState['plants'];
+
+    const state = createZoneState({ plants });
+
+    expect(selectCumulativeYield(state)).toBeCloseTo(200);
   });
 });

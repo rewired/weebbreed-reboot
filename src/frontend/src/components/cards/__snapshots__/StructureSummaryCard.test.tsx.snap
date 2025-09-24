@@ -1,0 +1,178 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StructureSummaryCard > matches the snapshot for highlighted structures 1`] = `
+<div
+  class="flex h-full flex-col gap-3 rounded-lg border border-border/50 bg-surfaceAlt/70 p-4 shadow-soft transition border-accent shadow-strong ring-1 ring-accent/40"
+>
+  <header
+    class="space-y-1"
+  >
+    <h3
+      class="text-lg font-semibold text-text-primary"
+    >
+      North Facility
+    </h3>
+    <p
+      class="text-sm text-text-secondary"
+    >
+      0 rooms • 0 zones
+    </p>
+  </header>
+  <dl
+    class="grid grid-cols-1 gap-3 text-xs text-text-muted sm:grid-cols-2"
+  >
+    <div
+      class="space-y-1 rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
+    >
+      <dt
+        class="uppercase tracking-wide"
+      >
+        Footprint area
+      </dt>
+      <dd
+        class="text-sm font-medium text-text-primary"
+      >
+        800 m²
+      </dd>
+    </div>
+    <div
+      class="space-y-1 rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
+    >
+      <dt
+        class="uppercase tracking-wide"
+      >
+        Footprint volume
+      </dt>
+      <dd
+        class="text-sm font-medium text-text-primary"
+      >
+        4,800 m³
+      </dd>
+    </div>
+    <div
+      class="space-y-1 rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
+    >
+      <dt
+        class="uppercase tracking-wide"
+      >
+        Rent per tick
+      </dt>
+      <dd
+        class="text-sm font-medium text-text-primary"
+      >
+        €1,250
+      </dd>
+    </div>
+    <div
+      class="space-y-1 rounded-md border border-border/40 bg-surfaceAlt/60 p-3"
+    >
+      <dt
+        class="uppercase tracking-wide"
+      >
+        Plants
+      </dt>
+      <dd
+        class="text-sm font-medium text-text-primary"
+      >
+        0
+      </dd>
+    </div>
+  </dl>
+  <div
+    class="flex-1 text-sm text-text-secondary"
+  >
+    <div
+      class="space-y-3 text-sm"
+    >
+      <div
+        class="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-text-muted"
+      >
+        <span>
+          Status
+        </span>
+        <span
+          class="rounded-full border border-border/50 bg-surfaceAlt/70 px-2 py-0.5 text-[0.65rem] font-semibold text-text-secondary"
+        >
+          Under construction
+        </span>
+      </div>
+      <div
+        class="grid grid-cols-2 gap-3"
+      >
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-text-muted"
+          >
+            Avg temperature
+          </p>
+          <p
+            class="text-base font-medium text-text-primary"
+          >
+            —
+          </p>
+        </div>
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-text-muted"
+          >
+            Avg humidity
+          </p>
+          <p
+            class="text-base font-medium text-text-primary"
+          >
+            —
+          </p>
+        </div>
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-text-muted"
+          >
+            Avg CO₂
+          </p>
+          <p
+            class="text-base font-medium text-text-primary"
+          >
+            —
+          </p>
+        </div>
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-text-muted"
+          >
+            Avg PPFD
+          </p>
+          <p
+            class="text-base font-medium text-text-primary"
+          >
+            —
+          </p>
+        </div>
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-text-muted"
+          >
+            Avg stress
+          </p>
+          <p
+            class="text-base font-medium text-text-primary"
+          >
+            50%
+          </p>
+        </div>
+        <div>
+          <p
+            class="text-xs uppercase tracking-wide text-text-muted"
+          >
+            Lighting coverage
+          </p>
+          <p
+            class="text-base font-medium text-text-primary"
+          >
+            30%
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+`;
