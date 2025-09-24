@@ -7,6 +7,51 @@ const rangeTuple = z.tuple([numericSetting, numericSetting]);
 const optionalNumericSetting = numericSetting.optional();
 const optionalRangeTuple = rangeTuple.optional();
 
+const canonicalSetpointKeys = new Map(
+  [
+    'targetTemperature',
+    'targetTemperatureRange',
+    'targetHumidity',
+    'targetCO2',
+    'targetCO2Range',
+  ].map((key) => [key.toLowerCase(), key] as const),
+);
+
+const settingsSchema = z
+  .object({
+    power: optionalNumericSetting,
+    ppfd: optionalNumericSetting,
+    coverageArea: optionalNumericSetting,
+    spectralRange: optionalRangeTuple,
+    heatFraction: optionalNumericSetting,
+    airflow: optionalNumericSetting,
+    coolingCapacity: optionalNumericSetting,
+    moistureRemoval: optionalNumericSetting,
+    targetTemperature: optionalNumericSetting,
+    targetTemperatureRange: optionalRangeTuple,
+    targetHumidity: optionalNumericSetting,
+    targetCO2: optionalNumericSetting,
+    targetCO2Range: optionalRangeTuple,
+  })
+  .passthrough()
+  .superRefine((settings, ctx) => {
+    if (!settings || typeof settings !== 'object') {
+      return;
+    }
+
+    for (const key of Object.keys(settings as Record<string, unknown>)) {
+      const canonicalKey = canonicalSetpointKeys.get(key.toLowerCase());
+
+      if (canonicalKey && canonicalKey !== key) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [key],
+          message: `Unrecognized setting "${key}". Did you mean "${canonicalKey}"?`,
+        });
+      }
+    }
+  });
+
 export const deviceSchema = z
   .object({
     id: z.string().uuid(),
@@ -16,23 +61,7 @@ export const deviceSchema = z
     complexity: numericSetting,
     lifespan: numericSetting,
     roomPurposes: roomPurposeCompatibilitySchema,
-    settings: z
-      .object({
-        power: optionalNumericSetting,
-        ppfd: optionalNumericSetting,
-        coverageArea: optionalNumericSetting,
-        spectralRange: optionalRangeTuple,
-        heatFraction: optionalNumericSetting,
-        airflow: optionalNumericSetting,
-        coolingCapacity: optionalNumericSetting,
-        moistureRemoval: optionalNumericSetting,
-        targetTemperature: optionalNumericSetting,
-        targetTemperatureRange: optionalRangeTuple,
-        targetHumidity: optionalNumericSetting,
-        targetCO2: optionalNumericSetting,
-        targetCO2Range: optionalRangeTuple,
-      })
-      .passthrough(),
+    settings: settingsSchema,
     meta: z
       .object({
         description: z.string().optional(),
