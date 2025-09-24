@@ -2,7 +2,7 @@
 
 The Weedbreed.AI dashboard renders read-only simulation snapshots and routes every user gesture through the System Facade so that the deterministic engine enforces geometry, biology, and economic rules.【F:docs/ui/ui_archictecture.md†L1-L74】【F:docs/ui/ui-implementation-spec.md†L1-L96】 This guide consolidates the architecture notes, interaction specs, component references, and screenshot insights into a single build manual for teams extending or rebuilding the frontend without introducing business logic to the UI layer.
 
-The application follows a structure → room → zone drill-down supported by persistent dashboard controls, breadcrumb navigation, and modal workflows that pause gameplay until intents succeed, aligning macro management with per-zone cultivation flows.【F:docs/ui/ui-implementation-spec.md†L11-L220】【F:docs/ui/ui-screenshot-insights.md†L1-L52】 All requirements below reuse the existing terminology (UUID identifiers, facade intents, Tailwind tokens) and highlight outstanding gaps as TODOs for future clarification.
+The application follows a structure → room → zone drill-down supported by persistent dashboard controls, breadcrumb navigation, and modal workflows that pause gameplay until intents succeed, aligning macro management with per-zone cultivation flows.【F:docs/ui/ui-implementation-spec.md†L11-L220】【F:docs/ui/ui-screenshot-insights.md†L1-L52】 All requirements below reuse the existing terminology (UUID identifiers, facade intents, Tailwind tokens) and consolidate the latest architecture decisions so downstream teams can implement features without guessing at contract details.
 
 ## Table of Contents
 
@@ -143,7 +143,14 @@ The application follows a structure → room → zone drill-down supported by pe
 - Header lists room name, purpose badge, rename/delete icons, and capacity usage; zone grids appear for grow rooms, while labs swap in the `BreedingStation` component.【F:docs/ui/ui-implementation-spec.md†L200-L260】【F:docs/ui/ui_elements.md†L140-L196】
 - Zone cards show name, area, cultivation method, plant summaries, and inline rename/duplicate/delete actions; clicking navigates to zone detail.【F:docs/ui/ui-implementation-spec.md†L200-L240】【F:docs/ui/ui-components-desciption.md†L407-L420】
 - Screenshot `10-room-overview-(growroom).png` captures the zone grid and inline actions.【F:docs/ui/ui-screenshot-insights.md†L21-L52】
-- **TODO:** Outline BreedingStation UI states, required data fields, and modal triggers distinct from grow-room zones.
+
+#### BreedingStation (Lab Rooms)
+
+- Lab-purpose rooms swap the standard zone grid for the `BreedingStation` workspace that manages deterministic breeding runs while keeping grow-room flows untouched.
+- Primary run states drive the view hierarchy: `Idle` (history table with "Start Cross" CTA), `Configuring` (parent picker, trait targets, batch size, deterministic seed), `Running` (progress timeline with simulated days, ETA, cancel/abort controls), `Completed` (offspring table with keep/discard actions, promote/export flows), and `Archived` (read-only review with option to re-open).
+- Core components include `ParentPicker` (multi-select by strain UUID with phenology/lighting hints), `TraitTargets` sliders (THC/CBD, vigor, stress resilience, growth duration), `CrossSummary` badges (F1/F2 label, batch size, seed, noise bounds), `RunProgress` (steps, elapsed ticks/days, logs), `OffspringTable` (sortable columns for id/genotype/chemotype/phenology/qualityScore/viability/notes with keep/promote actions), and `PromoteModal` (confirms new strain blueprint metadata and parent lineage).
+- Data contract relies on `BreedingRun` snapshots providing metadata, parent IDs, batch size, seed, optional trait targets, run status timestamps, offspring previews, and notes. Each offspring exposes heuristic quality/chemotype/phenology/resilience/viability fields plus `keep` flags for client-side toggles.
+- Facade intents routed through the bridge hook: `breeding.startRun`, `breeding.abortRun`, `breeding.finalizeRun`, and `breeding.promoteOffspring` (with blueprint naming + optional slug) — every action pauses the simulation like other modals and resumes after commit.
 
 ### Zone Detail View
 
@@ -162,7 +169,8 @@ The application follows a structure → room → zone drill-down supported by pe
 - Device group toggles confirm for safety-critical HVAC, CO₂, and dehumidifier groups with risk copy, while low-impact lighting and ventilation flips act immediately, showing "Group: ON/OFF" toasts and still awaiting façade acknowledgements.
   - ZonePlantPanel supports normal inspection (tooltips, direct actions) and batch-selection mode with BatchActionBar actions for Harvest/Trash/Treat across selected plants.【F:docs/ui/ui-components-desciption.md†L421-L533】
 - Empty zone states include dedicated illustrations plus CTAs: "Install device" when device list empty, "Plant" when no plantings exist, and secondary "Configure Auto-Replant" when plans are absent; each tooltip explains prerequisites (e.g., method setup).
-- **TODO:** Specify tooltip content and data sources for strain info, pests, and disease icons within zone plant lists.
+- Strain info tooltips (hover on `info` icon) display name, genotype percentages (sativa/indica/ruderalis when available), phenology (seedling/veg/flowering days), environmental targets (PPFD, temperature, RH corridors), NPK guidance for veg/flower, price hints (baseline harvest price when price maps resolve), and resolved lineage parent names pulled from strain blueprints and lineage lookups.
+- Pest/disease badges expose name + category (`Pest`/`Disease`), severity (0–1 or % with color coding), environment risk bands (e.g., “favored at RH > 0.7, 22–26 °C”), up to three bullet symptoms, any active timers (PHI, re-entry) when treatments exist, and a CTA to open the `InfoModal` for full blueprint details with current zone health context.
 
 ### Finances View
 
@@ -355,11 +363,25 @@ export interface OnUpdatePayload {
 
 These interfaces mirror the façade intent contract and reinforce the intent-only, snapshot-read-only boundary.
 
-### Documented Gaps from Component Audit
+### State Management & Backend Integration
 
-- **TODO:** Describe state management and backend integration details (global store, Socket.IO subscriptions, API calls) beyond `App.tsx` owning state.【F:docs/ui/ui-components-desciption.md†L614-L688】
-- **TODO:** Capture styling directives for Tailwind spacing scale, icon sizing, and bespoke responsiveness beyond the documented breakpoints.【F:docs/ui/ui-components-desciption.md†L614-L688】
-- **TODO:** Outline edge-case handling for validation errors, empty lists, network issues, and concurrent updates.【F:docs/ui/ui-components-desciption.md†L614-L688】
+- A lightweight Zustand store (`useGameStore`) is the single source of truth for connection status, latest snapshot, last tick, and event buffer. `connect(url)` instantiates a Socket.IO client (websocket transport), updates `connected` flags on connect/disconnect, and wires listeners for `simulationSnapshot` (full state) and `simulationUpdate` (diff + events) while capping the event buffer to the most recent 200 entries. The socket instance is exposed on `window.__wb_socket` for debugging.
+- `disconnect()` delegates to the underlying socket disconnect, and `sendIntent(domain, action, payload?)` emits `facade.intent` over the socket, returning a promise that resolves with the façade response so callers can await `{ ok, warnings?, errors? }` without optimistic UI.
+- Components use selectors to read the store, memoizing derived data (e.g., `selectSnapshot`, `selectEvents`) to avoid unnecessary renders; bridge hooks wrap `useGameStore` to expose typed façade commands to views.
+- App bootstrap calls `useGameStore.getState().connect(SOCKET_URL)` on mount and ensures cleanup on unmount. Intent dispatchers always disable their originating controls and show `… applying` copy until the promise settles, matching the deterministic façade loop.
+
+### Styling & Responsiveness Guardrails
+
+- Tailwind spacing adheres to a 4 px baseline: `space-1 = 4px`, `space-2 = 8px`, `space-3 = 12px`, `space-4 = 16px`, `space-6 = 24px`, `space-8 = 32px`, `space-10 = 40px`, `space-12 = 48px`. Vertical rhythm guidelines: section headers `mt-8`, card title-to-body `mt-4`, form rows `gap-3`, dense lists `gap-2`.
+- Card padding defaults to `px-6 py-5` on desktop and `px-4 py-4` on mobile; column layouts prefer `gap-4` with `gap-6` reserved for room/zone detail two-column layouts. Inline forms use `gap-3` with `min-w-[220px]` fields to maintain alignment.
+- Icon sizing is standardized: 24 px for header controls, 20 px for card action clusters, 18 px for table/list rows, and 10 px for status dots. Hover affordances adjust opacity only—no scaling to prevent layout shift.
+
+### Resilience Patterns
+
+- Validation warnings returned from intents render as persistent inline banners within the originating modal, referencing `payload.path` when present. Hard errors (`level: error`) trigger sticky red toasts and log entries including `entityId` (if provided).
+- Empty states ship bespoke illustrations and CTAs: zones without devices prompt “Install device,” plant-less zones show “Plant” plus “Configure Auto-Replant,” and finance panels render an em dash (`—`) with tooltip “No data in range.”
+- Network resilience uses exponential backoff up to 30 s while reconnecting; the header shows a “Reconnecting…” badge and, upon reconnect, the client requests a fresh `simulationSnapshot`.
+- Concurrency handling disables the initiating control while an intent is in flight and trusts the façade as the authority. If competing updates adjust a record, the client discards local assumptions and re-renders from the latest snapshot—no local merges.
 
 ## Interactions
 
@@ -387,8 +409,7 @@ These interfaces mirror the façade intent contract and reinforce the intent-onl
 - EnvironmentPanel adjustments send zone setpoints (`temperature`, `relativeHumidity`, `vpd`, `co2`, `ppfd`) via `config.update` while reflecting backend clamp warnings and `env.setpointUpdated` events.【F:docs/ui/ui-implementation-spec.md†L260-L360】【F:docs/ui/ui-components-desciption.md†L407-L462】
 - Lighting cards display coverage sufficiency using `.lighting-ok` and `.lighting-insufficient` classes and allow editing light cycles through modals (`schedule`).【F:docs/ui/ui-implementation-spec.md†L240-L360】
 - Device status indicators (`status-on/off/mixed/broken`) toggle whole groups and open tuning modals using `tune`.【F:docs/ui/ui-implementation-spec.md†L260-L360】
-- **TODO:** Specify drag-and-drop mechanics for device or plant rearrangement, including whether move actions rely solely on modals or support direct manipulation.
-- Zone layout editing snaps rectangles to 0.5 m increments with a minimum footprint of 1.0 m × 1.0 m; the UI checks only visual collisions while the façade validates final placements.
+- Zone layout editing supports drag-and-drop drawing/snapping of rectangles in 0.5 m increments (minimum 1.0 m × 1.0 m). Dropping proposals emits `world.createZone` or `world.resizeZone`, with the façade clamping invalid placements and returning adjustments via toast copy “Adjusted to valid placement.” Device tiles optionally support drag-and-drop within a zone to trigger ghost placement and `devices.moveDevice`; dropping confirms via façade intent. Plant management remains modal/batch-action only—no drag-and-drop to avoid complexity.
 
 ### Personnel & Finance
 
@@ -413,7 +434,8 @@ These interfaces mirror the façade intent contract and reinforce the intent-onl
 - Modal controller pauses simulation state, storing `wasRunningBeforeModal` to resume after closing, which is critical for deterministic telemetry history.【F:docs/ui/ui-implementation-spec.md†L96-L152】
 - Initial connection displays a full-screen skeleton (header bar, three stat cards, two-column placeholder) until the first snapshot arrives; long-running intents show inline button spinners with copy "… applying" beside the action.
 - Facade responses surface validation warnings as persistent yellow banners inside the originating modal, while hard `ERR_*` failures trigger red toasts and Event Log entries including the failing `payload.path`.
-- **TODO:** Clarify how long historical telemetry (charts, tables) is retained in-memory and whether snapshots are down-sampled for performance.
+- Telemetry retention follows three rings: per-tick series keep the last 15 minutes of real time, per-hour aggregates store the last seven in-game days, and per-day aggregates persist the last 90 in-game days. Keep total rendered points per series ≤ 5 000.
+- Downsampling occurs on every `sim.tickCompleted`, rolling per-tick data into hourly buckets (avg/min/max) and promoting to daily aggregates as ranges grow. Charts automatically switch to hourly/daily series when the visible range exceeds one day to guard performance.
 
 ## Accessibility & Performance
 
@@ -424,8 +446,8 @@ These interfaces mirror the façade intent contract and reinforce the intent-onl
 - Use responsive layouts (column collapse below 900 px, grid auto-fill) and ensure controls wrap gracefully without overlap.【F:docs/ui/ui-implementation-spec.md†L160-L220】
 - Avoid optimistic UI; wait for facade ACK or events before updating to maintain deterministic order.【F:docs/ui/ui_interactions_spec.md†L120-L150】
 - Keyboard shortcuts: Space toggles Play/Pause (announced via SR-only live region), `ö`/`ä` adjust speed down/up, `g`/`f`/`p`/`s` jump to Dashboard/Finances/Personnel/Structures, and Left/Right arrows cycle zones with wrap-around.
-- **TODO:** Document screen-reader announcements for simulation state changes (tick progress, alerts) to confirm accessible feedback loops.
-- **TODO:** Define performance budgets for charts/tables (e.g., max rows before virtualization) and specify test strategies to enforce them.
+- Provide a global ARIA live region (`role="status" aria-live="polite"`) that announces simulation pause/resume, throttled tick completions (≤ 1 announcement every 5 s), and warning/error titles so screen-reader users receive timely feedback. Icon-only controls require `aria-label` + `title`, and modal roots declare `role="dialog" aria-modal="true" aria-labelledby`.
+- Performance budgets: virtualize lists ≥ 100 rows, cap concurrent toasts at 3, limit chart line series to ≤ 2 000 rendered points, and throttle streaming UI updates to ≥ 250 ms. CI/dev validation includes a Jest/Vitest smoke test rendering `FinanceView` with 5 000 rows (target ≥ 50 FPS on reference laptop) and a bridge-hook stress test pumping 1 000 `simulationUpdate` messages at 20 Hz without memory growth over 20 MB.
 
 ## Visual Guardrails
 
@@ -450,6 +472,24 @@ These interfaces mirror the façade intent contract and reinforce the intent-onl
 | `arrow_back_ios`    | Navigate to previous zone.                               |
 | `arrow_forward_ios` | Navigate to next zone.                                   |
 | `person_remove`     | Fire an employee.                                        |
+
+### Spacing & Vertical Rhythm
+
+- Base spacing units follow Tailwind’s 4 px grid: `space-1` (4 px), `space-2` (8 px), `space-3` (12 px), `space-4` (16 px), `space-6` (24 px), `space-8` (32 px), `space-10` (40 px), `space-12` (48 px).
+- Section headers land at `mt-8` with `mb-3`, card title-to-body spacing uses `mt-4`, and vertical card stacks default to `gap-4` (upgrade to `gap-6` in two-column zone detail layouts).
+- Form rows observe `gap-3`, dense lists `gap-2`, and inline form fields keep `min-w-[220px]` to align labels/inputs.
+- Card padding defaults to `px-6 py-5` on desktop and `px-4 py-4` on mobile to respect touch targets without crowding.
+
+### Icon Sizing Guidelines
+
+| Context                    | Size  | Notes                                                       |
+| -------------------------- | ----- | ----------------------------------------------------------- |
+| Topbar/Header controls     | 24 px | Primary affordances (play/pause, menus); opacity hover only |
+| Card action clusters       | 20 px | Inline rename/duplicate/delete icons                        |
+| Table/List row leading     | 18 px | Row indicators, status glyphs                               |
+| Status dots (device group) | 10 px | Filled dots for aggregated device state                     |
+
+Maintain consistent icon weights (default Material weight) and avoid scaling on hover to prevent layout shifts; prefer opacity changes or background highlights for feedback.
 
 ### Dark Theme Tokens
 
@@ -552,8 +592,8 @@ These interfaces mirror the façade intent contract and reinforce the intent-onl
 - Card grids rely on `grid-template-columns: repeat(auto-fill, minmax(260px, 1fr))` with `gap: 1rem` to maintain consistent spacing across views.【F:docs/ui/ui-implementation-spec.md†L120-L200】
 - Zone detail columns use `grid-template-columns: 1.2fr 1fr` with `gap: 1rem`, collapsing to one column below 900 px.【F:docs/ui/ui-implementation-spec.md†L200-L240】
 - Modal overlay blur: apply `.content-area.blurred` (blur 3px, pointer-events none) to background when any modal is open.【F:docs/ui/ui-implementation-spec.md†L80-L106】
-- **TODO:** Define spacing scale (e.g., multiples of 4 px) and vertical rhythm to align bespoke layouts with Tailwind utilities.
-- **TODO:** Provide icon sizing guidelines (e.g., 24 px Material icons in headers, 20 px in tables) to maintain visual consistency.
+- Spacing and vertical rhythm follow the 4 px scale documented in [Styling & Responsiveness Guardrails](#styling--responsiveness-guardrails); custom CSS should align with those Tailwind utilities.
+- Icon usage must adhere to the standardized sizes in [Icon Sizing Guidelines](#icon-sizing-guidelines) to keep density consistent across headers, cards, and tables.
 
 ## Glossary
 
@@ -576,18 +616,4 @@ These interfaces mirror the façade intent contract and reinforce the intent-onl
 
 ## Changelog Note
 
-Maintain this guide alongside facade, component, and screenshot updates: when new intents or components ship, extend the relevant interaction lists, screenshot map, and glossary so downstream teams stay aligned with the System Facade contract.【F:docs/ui/ui_archictecture.md†L1-L200】【F:docs/ui/ui-components-desciption.md†L393-L462】 Incorporate the documented gaps (type definitions, dataflow diagrams, responsive specs, error states) as they become available to retire the TODO markers highlighted in this consolidation.【F:docs/ui/ui-components-desciption.md†L614-L688】 Ensure screenshot references remain current whenever the visual system or layout patterns change to keep this guide authoritative for rebuilds.【F:docs/ui/ui-screenshot-insights.md†L1-L64】
-
-## Open Issues
-
-- [ ] [Core Views](#core-views) – Outline BreedingStation UI states and data requirements distinct from grow rooms.
-- [ ] [Core Views](#core-views) – Specify tooltip content/data sources for strain, pest, and disease indicators in plant lists.
-- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Document state management and backend integration flow (stores, Socket.IO subscriptions, API usage).
-- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Capture Tailwind spacing scale, icon sizing, and bespoke responsiveness guidance beyond current breakpoints.
-- [ ] [UI Elements & Patterns](#ui-elements--patterns) – Outline error, empty-list, network, and concurrency edge-case handling.
-- [ ] [Interactions](#interactions) – Describe drag-and-drop mechanics (if any) for devices or plants versus modal-driven moves.
-- [ ] [States & Telemetry](#states--telemetry) – Document telemetry retention/downsampling strategy for charts and tables.
-- [ ] [Accessibility & Performance](#accessibility--performance) – Describe screen-reader announcements for tick updates and alerts.
-- [ ] [Accessibility & Performance](#accessibility--performance) – Set performance budgets and validation tests for charts and tables.
-- [ ] [Visual Guardrails](#visual-guardrails) – Define spacing scale/vertical rhythm beyond Tailwind defaults for bespoke layouts.
-- [ ] [Visual Guardrails](#visual-guardrails) – Establish icon sizing guidelines across headers, tables, and cards.
+Maintain this guide alongside facade, component, and screenshot updates: when new intents or components ship, extend the relevant interaction lists, screenshot map, and glossary so downstream teams stay aligned with the System Facade contract.【F:docs/ui/ui_archictecture.md†L1-L200】【F:docs/ui/ui-components-desciption.md†L393-L462】 Continue layering in type definitions, dataflow diagrams, and responsive specs as they mature, and ensure screenshot references remain current whenever the visual system or layout patterns change to keep this guide authoritative for rebuilds.【F:docs/ui/ui-components-desciption.md†L614-L688】【F:docs/ui/ui-screenshot-insights.md†L1-L64】
