@@ -212,7 +212,7 @@ export const useSimulationBridge = (
         return;
       }
 
-      socket.emit('simulationControl', { type: 'simulationControl', ...command });
+      socket.emit('simulationControl', command);
     },
     [debug],
   );
