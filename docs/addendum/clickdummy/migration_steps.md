@@ -122,7 +122,9 @@
     - Hire-/Fire-Aktionen öffnen globale Modale aus dem Modal-Slice; Bestätigungen senden die Facade-Intents `workforce.hire` und `workforce.fire`.
     - Der neue `ModalHost` pausiert die Simulation bei modalem Fokus und nutzt den globalen Slice für alle HR-Workflows.
 
-12. Finanzdashboard abstimmen: Übertrage Zeitbereichs-Umschalter und Aufschlüsselungslisten in FinancesView und stelle sicher, dass sie tickbasierte financeHistory-Daten konsumieren.
+12. ✅ Finanzdashboard abstimmen: Übertrage Zeitbereichs-Umschalter und Aufschlüsselungslisten in FinancesView und stelle sicher, dass sie tickbasierte financeHistory-Daten konsumieren.
+    - `src/frontend/src/views/FinancesView.tsx` ergänzt jetzt einen Zeitbereichs-Schalter, der die Diagramme und Kennzahlen direkt über `financeHistory`-Ticks filtert, und fasst die gewählte Spanne in einer kompakten Kennzahlenzeile zusammen.
+    - Neue Breakdown-Listen (`components/panels/BreakdownList`) aggregieren OpEx-, Versorgungs- und Wartungskosten auf Basis der Tickdaten und nutzen Geräte-Metadaten für Wartungsaufschlüsselungen.
 
 ### Modale und Workflows
 
