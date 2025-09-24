@@ -253,14 +253,20 @@ export const useZoneStore = create<ZoneStoreState>()((set) => ({
     }),
   updateStructureName: (structureId, name) =>
     set((state) => {
-      const trimmed = name.trim();
-      if (!trimmed) {
+      const trimmedName = name.trim();
+      if (!trimmedName) {
         return {};
       }
+
+      const currentName = state.structures[structureId]?.name?.trim();
+      if (currentName === trimmedName) {
+        return {};
+      }
+
       state.sendFacadeIntent?.({
         domain: 'world',
         action: 'renameStructure',
-        payload: { structureId, name: trimmed },
+        payload: { structureId, name: trimmedName },
       });
       return {};
     }),

@@ -72,7 +72,7 @@ Common categories are below.
 ### 4.3 World Building (Structures → Rooms → Zones)
 
 - `rentStructure(structureId: UUID)` — validates availability; applies CapEx/Fixed cost rules.
-- `renameStructure(structureId, name)` — trims whitespace, preserves determinism, emits rename events.
+- `renameStructure({ structureId, name })` — trims whitespace, preserves determinism, emits rename events.
 - `deleteStructure(structureId)` — enforces empty structure + accounting clean-up.
 - `createRoom(structureId, { name, purpose, area, height? })`
 - `updateRoom(roomId, patch)` / `deleteRoom(roomId)`
