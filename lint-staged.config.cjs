@@ -1,5 +1,10 @@
+const EXCLUDED_PATTERNS = ['src/frontend-legacy/', 'docs/addendum/clickdummy/']
+
+const filterTargets = (files) =>
+  files.filter((file) => !EXCLUDED_PATTERNS.some((pattern) => file.includes(pattern)))
+
 const runEslint = (files) => {
-  const targets = files.filter((file) => !file.includes('src/frontend-legacy/'))
+  const targets = filterTargets(files)
   if (!targets.length) {
     return []
   }
@@ -7,7 +12,16 @@ const runEslint = (files) => {
   return [`pnpm exec eslint --max-warnings=0 ${quoted}`]
 }
 
+const runPrettier = (files) => {
+  const targets = filterTargets(files)
+  if (!targets.length) {
+    return []
+  }
+  const quoted = targets.map((file) => `"${file}"`).join(' ')
+  return [`pnpm exec prettier --check --no-error-on-unmatched-pattern ${quoted}`]
+}
+
 module.exports = {
   '*.{ts,tsx,js,jsx}': runEslint,
-  '*.{ts,tsx,js,jsx,json,md,css,scss}': ['pnpm exec prettier --check --no-error-on-unmatched-pattern'],
+  '*.{ts,tsx,js,jsx,json,md,css,scss}': runPrettier,
 }
