@@ -35,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   aliases, and recorded ADR 0007 to explain the consolidation. Confirmed the
   frontend `@/engine` alias cleanup so the tooling no longer advertises the
   defunct path.
+- Expanded the clickdummy translator to normalize zone telemetry, resources,
+  and health restrictions in SI units before the frontend stores hydrate.
 
 ### Fixed
 

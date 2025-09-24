@@ -75,7 +75,10 @@
    - ✅ `translateClickDummyGameData` mappt die Klickdummy-Fixtures jetzt in `src/frontend/src/fixtures/translator.ts` auf vollständige `SimulationSnapshot`-Slices inklusive volumetrischer Geometrie, Ressourcen, Gerätegruppen sowie normalisierten Temperatur-/RH-/VPD-Werten. Tests (`src/frontend/src/fixtures/translator.test.ts`) sichern die SI-Konvertierungen und Gehalts-/Kosten-Normalisierung ab.
 
 2. Zone-Daten konvertieren: Rechne alle zonalen Kennzahlen (RH, KPIs, Ressourcen) in die erwarteten numerischen SI-Einheiten um und fülle fehlende Telemetrie-/Gesundheitsfelder auf, bevor sie die Stores hydratisieren.
-
+   - ✅ Die Übersetzungsschicht normalisiert jetzt sämtliche Zonenkennzahlen (Temperatur, RH, CO₂,
+     PPFD, DLI, Ressourcenstände, Verbräuche) auf SI-Einheiten und leitet daraus
+     versorgungs- sowie Gesundheitsrestriktionen ab, bevor die Daten in die Stores gelangen
+     (`src/frontend/src/fixtures/translator.ts`; Tests sichern die Konvertierung).
 3. Pflanzen-, Geräte-, Personal- und Finanzobjekte anreichern: Erweitere Fixtures um strain-IDs, Stadien, Geräte-Blueprint-Informationen, per-Tick-Kosten sowie tickbasierte Finanzhistorien, damit sie die Snapshot-Typen erfüllen.
 
 4. Deterministische Hilfsfunktionen zentralisieren: Ersetze deterministicUuid und globale SeededRandom-Instanzen durch eine seeded Helper-Utility in store/utils, die wiederholbare IDs und Zufallsdaten liefert.
