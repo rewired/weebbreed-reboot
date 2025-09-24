@@ -51,3 +51,11 @@ executes three independent jobs on every push and pull request:
 
 Each job installs dependencies with the pinned pnpm and Node.js versions so a
 failure in any command marks the workflow as failed.
+
+## Device Setpoint Casing Guard
+
+Device blueprints rely on precise casing for control setpoints that the engine
+expects (for example `targetTemperature`, `targetHumidity`, and `targetCO2`).
+The Zod schema backing `pnpm validate:data` now rejects mis-cased variants such
+as `targetCo2` and surfaces a clear suggestion in the validation report. This
+keeps blueprint typos from silently disabling device controllers.
