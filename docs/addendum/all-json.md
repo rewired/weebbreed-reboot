@@ -3,7 +3,7 @@
 _Important rule for the consistency_ if in other documents attributes are listed but not in this document, the other document is right and attributes and data has to be added to the following files!
 These files are crucial! The blueprinted Objects will be rehidrated from these configuration files, so there is no need, for hardcoded representation!
 
-## blueprints/cultivationMethods/basic_soil_pot.json
+## \data\blueprints\cultivationMethods\basic_soil_pot.json
 
 ```json
 {
@@ -41,7 +41,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/cultivationMethods/scrog.json
+## \data\blueprints\cultivationMethods\scrog.json
 
 ```json
 {
@@ -98,7 +98,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/cultivationMethods/sog.json
+## \data\blueprints\cultivationMethods\sog.json
 
 ```json
 {
@@ -128,16 +128,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "genotype.indica": {
         "min": 0.5
       },
-      "photoperiod.vegetationDays": {
-        "max": 21
+      "photoperiod.vegetationTime": {
+        "max": 1814400
       }
     },
     "conflicting": {
       "genotype.sativa": {
         "min": 0.5
       },
-      "photoperiod.vegetationDays": {
-        "min": 28
+      "photoperiod.vegetationTime": {
+        "min": 2419200
       }
     }
   },
@@ -157,7 +157,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/devices/climate_unit_01.json
+## \data\blueprints\devices\climate_unit_01.json
 
 ```json
 {
@@ -166,7 +166,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "CoolAir Split 3000",
   "quality": 0.9,
   "complexity": 0.4,
-  "lifespanInHours": 35040,
+  "lifespan": 126144000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 1.2,
     "coolingCapacity": 1.6,
@@ -193,7 +194,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/devices/co2injector-01.json
+## \data\blueprints\devices\co2injector-01.json
 
 ```json
 {
@@ -202,7 +203,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "CO2 Pulse",
   "quality": 0.85,
   "complexity": 0.15,
-  "lifespanInHours": 8760,
+  "lifespan": 31536000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.05,
     "targetCO2": 1100,
@@ -218,7 +220,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/devices/dehumidifier-01.json
+## \data\blueprints\devices\dehumidifier-01.json
 
 ```json
 {
@@ -227,7 +229,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "DryBox 200",
   "quality": 0.8,
   "complexity": 0.25,
-  "lifespanInHours": 26280,
+  "lifespan": 94608000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "latentRemovalKgPerTick": 0.05,
     "power": 0.3
@@ -240,7 +243,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/devices/exhaust_fan_01.json
+## \data\blueprints\devices\exhaust_fan_01.json
 
 ```json
 {
@@ -249,7 +252,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Exhaust Fan 4-inch",
   "quality": 0.7,
   "complexity": 0.1,
-  "lifespanInHours": 17520,
+  "lifespan": 63072000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.05,
     "airflow": 170
@@ -270,7 +274,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/devices/humidity_control_unit_01.json
+## \data\blueprints\devices\humidity_control_unit_01.json
 
 ```json
 {
@@ -279,7 +283,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Humidity Control Unit L1",
   "quality": 0.8,
   "complexity": 0.3,
-  "lifespanInHours": 8760,
+  "lifespan": 31536000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.35,
     "humidifyRateKgPerTick": 0.1,
@@ -295,7 +300,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/devices/veg_light_01.json
+## \data\blueprints\devices\veg_light_01.json
 
 ```json
 {
@@ -304,7 +309,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "LED VegLight 600",
   "quality": 0.95,
   "complexity": 0.2,
-  "lifespanInHours": 52560,
+  "lifespan": 189216000,
+  "roomPurposes": ["growroom"],
   "settings": {
     "power": 0.6,
     "ppfd": 800,
@@ -321,7 +327,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/anthracnose.json
+## \data\blueprints\diseases\anthracnose.json
 
 ```json
 {
@@ -355,7 +361,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/bacterial_leaf_spot.json
+## \data\blueprints\diseases\bacterial_leaf_spot.json
 
 ```json
 {
@@ -392,7 +398,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/bacterial_wilt.json
+## \data\blueprints\diseases\bacterial_wilt.json
 
 ```json
 {
@@ -426,7 +432,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/botrytis_gray_mold.json
+## \data\blueprints\diseases\botrytis_gray_mold.json
 
 ```json
 {
@@ -465,7 +471,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/downy_mildew.json
+## \data\blueprints\diseases\downy_mildew.json
 
 ```json
 {
@@ -500,7 +506,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/hop_latent_viroid.json
+## \data\blueprints\diseases\hop_latent_viroid.json
 
 ```json
 {
@@ -535,7 +541,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/mosaic_virus.json
+## \data\blueprints\diseases\mosaic_virus.json
 
 ```json
 {
@@ -570,7 +576,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/powdery_mildew.json
+## \data\blueprints\diseases\powdery_mildew.json
 
 ```json
 {
@@ -611,7 +617,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/diseases/root_rot.json
+## \data\blueprints\diseases\root_rot.json
 
 ```json
 {
@@ -647,7 +653,251 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/aphids.json
+## \data\blueprints\personnel\roles\Gardener.json
+
+```json
+{
+  "id": "Gardener",
+  "name": "Gardener",
+  "salary": {
+    "basePerTick": 24,
+    "skillFactor": { "base": 0.85, "perPoint": 0.04, "min": 0.85, "max": 1.45 },
+    "randomRange": { "min": 0.9, "max": 1.1 },
+    "skillWeights": { "primary": 1.2, "secondary": 0.6, "tertiary": 0.35 }
+  },
+  "maxMinutesPerTick": 90,
+  "roleWeight": 0.35,
+  "skillProfile": {
+    "primary": {
+      "skill": "Gardening",
+      "startingLevel": 4,
+      "roll": { "min": 3, "max": 5 }
+    },
+    "secondary": {
+      "skill": "Cleanliness",
+      "startingLevel": 2,
+      "roll": { "min": 1, "max": 4 }
+    },
+    "tertiary": {
+      "chance": 0.25,
+      "roll": { "min": 1, "max": 3 },
+      "candidates": [
+        { "skill": "Logistics", "startingLevel": 1 },
+        { "skill": "Administration", "startingLevel": 1 },
+        { "skill": "Maintenance", "startingLevel": 1 }
+      ]
+    }
+  }
+}
+```
+
+## \data\blueprints\personnel\roles\Janitor.json
+
+```json
+{
+  "id": "Janitor",
+  "name": "Janitor",
+  "salary": {
+    "basePerTick": 18,
+    "skillFactor": { "base": 0.85, "perPoint": 0.04, "min": 0.85, "max": 1.45 },
+    "randomRange": { "min": 0.88, "max": 1.08 },
+    "skillWeights": { "primary": 1.1, "secondary": 0.55, "tertiary": 0.3 }
+  },
+  "maxMinutesPerTick": 75,
+  "preferredShiftId": "shift.night",
+  "roleWeight": 0.15,
+  "skillProfile": {
+    "primary": {
+      "skill": "Cleanliness",
+      "startingLevel": 4,
+      "roll": { "min": 3, "max": 5 }
+    },
+    "secondary": {
+      "skill": "Logistics",
+      "startingLevel": 1,
+      "roll": { "min": 0, "max": 3 }
+    },
+    "tertiary": {
+      "chance": 0.3,
+      "roll": { "min": 1, "max": 3 },
+      "candidates": [
+        { "skill": "Administration", "startingLevel": 1 },
+        { "skill": "Gardening", "startingLevel": 1 },
+        { "skill": "Maintenance", "startingLevel": 1 }
+      ]
+    }
+  }
+}
+```
+
+## \data\blueprints\personnel\roles\Manager.json
+
+```json
+{
+  "id": "Manager",
+  "name": "Manager",
+  "salary": {
+    "basePerTick": 35,
+    "skillFactor": { "base": 0.85, "perPoint": 0.04, "min": 0.85, "max": 1.5 },
+    "randomRange": { "min": 0.95, "max": 1.18 },
+    "skillWeights": { "primary": 1.3, "secondary": 0.7, "tertiary": 0.45 }
+  },
+  "maxMinutesPerTick": 60,
+  "preferredShiftId": "shift.day",
+  "roleWeight": 0.12,
+  "skillProfile": {
+    "primary": {
+      "skill": "Administration",
+      "startingLevel": 4,
+      "roll": { "min": 3, "max": 5 }
+    },
+    "secondary": {
+      "skill": "Logistics",
+      "startingLevel": 2,
+      "roll": { "min": 1, "max": 4 }
+    },
+    "tertiary": {
+      "chance": 0.4,
+      "roll": { "min": 1, "max": 3 },
+      "candidates": [{ "skill": "Cleanliness", "startingLevel": 2, "weight": 2 }]
+    }
+  }
+}
+```
+
+## \data\blueprints\personnel\roles\Operator.json
+
+```json
+{
+  "id": "Operator",
+  "name": "Operator",
+  "salary": {
+    "basePerTick": 22,
+    "skillFactor": { "base": 0.85, "perPoint": 0.04, "min": 0.85, "max": 1.45 },
+    "randomRange": { "min": 0.9, "max": 1.1 },
+    "skillWeights": { "primary": 1.15, "secondary": 0.6, "tertiary": 0.35 }
+  },
+  "maxMinutesPerTick": 90,
+  "preferredShiftId": "shift.day",
+  "roleWeight": 0.18,
+  "skillProfile": {
+    "primary": {
+      "skill": "Logistics",
+      "startingLevel": 3,
+      "roll": { "min": 2, "max": 4 }
+    },
+    "secondary": {
+      "skill": "Administration",
+      "startingLevel": 2,
+      "roll": { "min": 1, "max": 4 }
+    },
+    "tertiary": {
+      "chance": 0.25,
+      "roll": { "min": 1, "max": 3 },
+      "candidates": [
+        { "skill": "Cleanliness", "startingLevel": 1 },
+        { "skill": "Gardening", "startingLevel": 1 },
+        { "skill": "Maintenance", "startingLevel": 1 }
+      ]
+    }
+  }
+}
+```
+
+## \data\blueprints\personnel\roles\Technician.json
+
+```json
+{
+  "id": "Technician",
+  "name": "Technician",
+  "salary": {
+    "basePerTick": 28,
+    "skillFactor": { "base": 0.85, "perPoint": 0.04, "min": 0.85, "max": 1.45 },
+    "randomRange": { "min": 0.9, "max": 1.12 },
+    "skillWeights": { "primary": 1.25, "secondary": 0.65, "tertiary": 0.4 }
+  },
+  "maxMinutesPerTick": 120,
+  "roleWeight": 0.2,
+  "skillProfile": {
+    "primary": {
+      "skill": "Maintenance",
+      "startingLevel": 4,
+      "roll": { "min": 3, "max": 5 }
+    },
+    "secondary": {
+      "skill": "Logistics",
+      "startingLevel": 2,
+      "roll": { "min": 1, "max": 4 }
+    },
+    "tertiary": {
+      "chance": 0.25,
+      "roll": { "min": 1, "max": 3 },
+      "candidates": [
+        { "skill": "Gardening", "startingLevel": 1 },
+        { "skill": "Administration", "startingLevel": 1 },
+        { "skill": "Cleanliness", "startingLevel": 1 }
+      ]
+    }
+  }
+}
+```
+
+## \data\blueprints\personnel\skills\Administration.json
+
+```json
+{
+  "id": "Administration",
+  "name": "Administration",
+  "description": "Planning, reporting, compliance oversight, and documentation workflows.",
+  "tags": ["management", "compliance"]
+}
+```
+
+## \data\blueprints\personnel\skills\Cleanliness.json
+
+```json
+{
+  "id": "Cleanliness",
+  "name": "Cleanliness",
+  "description": "Sanitation, hygiene, and compliance routines across rooms and devices.",
+  "tags": ["quality", "safety"]
+}
+```
+
+## \data\blueprints\personnel\skills\Gardening.json
+
+```json
+{
+  "id": "Gardening",
+  "name": "Gardening",
+  "description": "Plant care, canopy management, pruning, and phenology adjustments.",
+  "tags": ["cultivation"]
+}
+```
+
+## \data\blueprints\personnel\skills\Logistics.json
+
+```json
+{
+  "id": "Logistics",
+  "name": "Logistics",
+  "description": "Inventory stewardship, material handling, and production scheduling.",
+  "tags": ["operations"]
+}
+```
+
+## \data\blueprints\personnel\skills\Maintenance.json
+
+```json
+{
+  "id": "Maintenance",
+  "name": "Maintenance",
+  "description": "Device diagnostics, preventive maintenance, and facility upkeep routines.",
+  "tags": ["operations", "technical"]
+}
+```
+
+## \data\blueprints\pests\aphids.json
 
 ```json
 {
@@ -689,7 +939,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/broad_mites.json
+## \data\blueprints\pests\broad_mites.json
 
 ```json
 {
@@ -731,7 +981,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/caterpillars.json
+## \data\blueprints\pests\caterpillars.json
 
 ```json
 {
@@ -773,7 +1023,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/fungus_gnats.json
+## \data\blueprints\pests\fungus_gnats.json
 
 ```json
 {
@@ -816,7 +1066,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/root_aphids.json
+## \data\blueprints\pests\root_aphids.json
 
 ```json
 {
@@ -859,7 +1109,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/spider_mites.json
+## \data\blueprints\pests\spider_mites.json
 
 ```json
 {
@@ -903,7 +1153,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/thrips.json
+## \data\blueprints\pests\thrips.json
 
 ```json
 {
@@ -945,7 +1195,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/pests/whiteflies.json
+## \data\blueprints\pests\whiteflies.json
 
 ```json
 {
@@ -987,47 +1237,83 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/roomPurposes/breakroom.json
+## \data\blueprints\roomPurposes\breakroom.json
 
 ```json
 {
-  "id": "breakroom",
+  "id": "5ab7d9ac-f14a-45d9-b5f9-908182ca4a02",
+  "kind": "breakroom",
   "name": "Break Room",
-  "description": "A space for employees to rest and recover energy."
+  "description": "A space for employees to rest and recover energy.",
+  "flags": {
+    "supportsRest": true,
+    "staffOnly": true
+  },
+  "economy": {
+    "areaCost": 280,
+    "baseRentPerTick": 1.5
+  }
 }
 ```
 
-## blueprints/roomPurposes/growroom.json
+## \data\blueprints\roomPurposes\growroom.json
 
 ```json
 {
-  "id": "growroom",
+  "id": "2630459c-fc40-4e91-a69f-b47665b5a917",
+  "kind": "growroom",
   "name": "Grow Room",
-  "description": "A room designed for cultivating plants under controlled conditions."
+  "description": "A room designed for cultivating plants under controlled conditions.",
+  "flags": {
+    "supportsCultivation": true,
+    "requiresControlledEnvironment": true
+  },
+  "economy": {
+    "areaCost": 950,
+    "baseRentPerTick": 4.8
+  }
 }
 ```
 
-## blueprints/roomPurposes/lab.json
+## \data\blueprints\roomPurposes\lab.json
 
 ```json
 {
-  "id": "lab",
+  "id": "05566944-af3c-40f5-9d22-2cbe701457c7",
+  "kind": "lab",
   "name": "Laboratory",
-  "description": "A facility for research and breeding new plant strains."
+  "description": "A facility for research and breeding new plant strains.",
+  "flags": {
+    "supportsResearch": true,
+    "requiresSterileAccess": true
+  },
+  "economy": {
+    "areaCost": 1200,
+    "baseRentPerTick": 5.5
+  }
 }
 ```
 
-## blueprints/roomPurposes/salesroom.json
+## \data\blueprints\roomPurposes\salesroom.json
 
 ```json
 {
-  "id": "salesroom",
+  "id": "828aa416-37be-4176-bfa6-9ce847e9dfd5",
+  "kind": "salesroom",
   "name": "Sales Room",
-  "description": "A commercial space for selling harvested products."
+  "description": "A commercial space for selling harvested products.",
+  "flags": {
+    "customerFacing": true,
+    "requiresPointOfSale": true
+  },
+  "economy": {
+    "areaCost": 600,
+    "baseRentPerTick": 3.2
+  }
 }
 ```
 
-## blueprints/strains/ak-47.json
+## \data\blueprints\strains\ak-47.json
 
 ```json
 {
@@ -1054,8 +1340,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "leafAreaIndex": 3.2
   },
   "growthModel": {
-    "maxBiomassDry_g": 180.0,
-    "baseLUE_gPerMol": 0.9,
+    "maxBiomassDry": 0.18,
+    "baseLightUseEfficiency": 0.0009,
     "maintenanceFracPerDay": 0.01,
     "dryMatterFraction": {
       "vegetation": 0.25,
@@ -1138,9 +1424,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.95
   },
   "photoperiod": {
-    "vegetationDays": 28,
-    "floweringDays": 63,
-    "transitionTriggerHours": 12
+    "vegetationTime": 2419200,
+    "floweringTime": 5443200,
+    "transitionTrigger": 43200
   },
   "stageChangeThresholds": {
     "vegetative": {
@@ -1152,11 +1438,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [60, 75],
+  "harvestWindow": [5184000, 6480000],
   "harvestProperties": {
-    "ripeningTimeInHours": 48,
-    "maxStorageTimeInHours": 120,
-    "qualityDecayPerHour": 0.02
+    "ripeningTime": 172800,
+    "maxStorageTime": 432000,
+    "qualityDecayRate": 5.555555555555556e-6
   },
   "meta": {
     "description": "AK-47 is a classic hybrid cannabis strain known for its high THC levels and fast flowering. It combines strong sativa effects with compact indica growth.",
@@ -1170,7 +1456,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/strains/northern-lights.json
+## \data\blueprints\strains\northern-lights.json
 
 ```json
 {
@@ -1213,8 +1499,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "leafAreaIndex": 3.2
   },
   "growthModel": {
-    "maxBiomassDry_g": 180.0,
-    "baseLUE_gPerMol": 0.9,
+    "maxBiomassDry": 0.18,
+    "baseLightUseEfficiency": 0.0009,
     "maintenanceFracPerDay": 0.01,
     "dryMatterFraction": {
       "vegetation": 0.25,
@@ -1297,9 +1583,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.95
   },
   "photoperiod": {
-    "vegetationDays": 28,
-    "floweringDays": 50,
-    "transitionTriggerHours": 12
+    "vegetationTime": 2419200,
+    "floweringTime": 4320000,
+    "transitionTrigger": 43200
   },
   "stageChangeThresholds": {
     "vegetative": {
@@ -1311,11 +1597,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [48, 60],
+  "harvestWindow": [4147200, 5184000],
   "harvestProperties": {
-    "ripeningTimeInHours": 48,
-    "maxStorageTimeInHours": 120,
-    "qualityDecayPerHour": 0.02
+    "ripeningTime": 172800,
+    "maxStorageTime": 432000,
+    "qualityDecayRate": 5.555555555555556e-6
   },
   "meta": {
     "description": "Northern Lights is a legendary indica strain prized for its resilience and fast flowering time.",
@@ -1326,7 +1612,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/strains/skunk-1.json
+## \data\blueprints\strains\skunk-1.json
 
 ```json
 {
@@ -1369,8 +1655,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "leafAreaIndex": 3.2
   },
   "growthModel": {
-    "maxBiomassDry_g": 180.0,
-    "baseLUE_gPerMol": 0.9,
+    "maxBiomassDry": 0.18,
+    "baseLightUseEfficiency": 0.0009,
     "maintenanceFracPerDay": 0.01,
     "dryMatterFraction": {
       "vegetation": 0.25,
@@ -1453,9 +1739,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.95
   },
   "photoperiod": {
-    "vegetationDays": 30,
-    "floweringDays": 55,
-    "transitionTriggerHours": 12
+    "vegetationTime": 2592000,
+    "floweringTime": 4752000,
+    "transitionTrigger": 43200
   },
   "stageChangeThresholds": {
     "vegetative": {
@@ -1467,11 +1753,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [55, 65],
+  "harvestWindow": [4752000, 5616000],
   "harvestProperties": {
-    "ripeningTimeInHours": 48,
-    "maxStorageTimeInHours": 120,
-    "qualityDecayPerHour": 0.02
+    "ripeningTime": 172800,
+    "maxStorageTime": 432000,
+    "qualityDecayRate": 5.555555555555556e-6
   },
   "meta": {
     "description": "Skunk #1 set the standard for modern hybrids with its skunky aroma and balanced growth.",
@@ -1482,7 +1768,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/strains/sour-diesel.json
+## \data\blueprints\strains\sour-diesel.json
 
 ```json
 {
@@ -1525,8 +1811,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "leafAreaIndex": 3.2
   },
   "growthModel": {
-    "maxBiomassDry_g": 180.0,
-    "baseLUE_gPerMol": 0.9,
+    "maxBiomassDry": 0.18,
+    "baseLightUseEfficiency": 0.0009,
     "maintenanceFracPerDay": 0.01,
     "dryMatterFraction": {
       "vegetation": 0.25,
@@ -1609,9 +1895,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.95
   },
   "photoperiod": {
-    "vegetationDays": 36,
-    "floweringDays": 70,
-    "transitionTriggerHours": 12
+    "vegetationTime": 3110400,
+    "floweringTime": 6048000,
+    "transitionTrigger": 43200
   },
   "stageChangeThresholds": {
     "vegetative": {
@@ -1623,11 +1909,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.2
     }
   },
-  "harvestWindowInDays": [65, 80],
+  "harvestWindow": [5616000, 6912000],
   "harvestProperties": {
-    "ripeningTimeInHours": 48,
-    "maxStorageTimeInHours": 120,
-    "qualityDecayPerHour": 0.02
+    "ripeningTime": 172800,
+    "maxStorageTime": 432000,
+    "qualityDecayRate": 5.555555555555556e-6
   },
   "meta": {
     "description": "Sour Diesel delivers pungent aromas and energizing effects, popular among sativa enthusiasts.",
@@ -1638,7 +1924,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/strains/white-widow.json
+## \data\blueprints\strains\white-widow.json
 
 ```json
 {
@@ -1665,8 +1951,8 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "leafAreaIndex": 3.0
   },
   "growthModel": {
-    "maxBiomassDry_g": 180.0,
-    "baseLUE_gPerMol": 0.9,
+    "maxBiomassDry": 0.18,
+    "baseLightUseEfficiency": 0.0009,
     "maintenanceFracPerDay": 0.01,
     "dryMatterFraction": {
       "vegetation": 0.25,
@@ -1749,9 +2035,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     "fatalityThreshold": 0.95
   },
   "photoperiod": {
-    "vegetationDays": 28,
-    "floweringDays": 60,
-    "transitionTriggerHours": 12
+    "vegetationTime": 2419200,
+    "floweringTime": 5184000,
+    "transitionTrigger": 43200
   },
   "stageChangeThresholds": {
     "vegetative": {
@@ -1763,11 +2049,11 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "maxStressForStageChange": 0.25
     }
   },
-  "harvestWindowInDays": [58, 70],
+  "harvestWindow": [5011200, 6048000],
   "harvestProperties": {
-    "ripeningTimeInHours": 48,
-    "maxStorageTimeInHours": 120,
-    "qualityDecayPerHour": 0.02
+    "ripeningTime": 172800,
+    "maxStorageTime": 432000,
+    "qualityDecayRate": 5.555555555555556e-6
   },
   "meta": {
     "description": "White Widow is a balanced hybrid strain, a cross between a Brazilian sativa landrace and a resin-heavy South Indian indica. It is known for its resin production and relatively easy growth.",
@@ -1778,7 +2064,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/structures/medium_warehouse.json
+## \data\blueprints\structures\medium_warehouse.json
 
 ```json
 {
@@ -1794,7 +2080,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/structures/shed.json
+## \data\blueprints\structures\shed.json
 
 ```json
 {
@@ -1810,7 +2096,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## blueprints/structures/small_warehouse.json
+## \data\blueprints\structures\small_warehouse.json
 
 ```json
 {
@@ -1826,7 +2112,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs/difficulty.json
+## configs\difficulty.json
 
 ```json
 {
@@ -1893,7 +2179,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs/disease_balancing.json
+## configs\disease_balancing.json
 
 ```json
 {
@@ -2010,7 +2296,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs/pest_balancing.json
+## configs\pest_balancing.json
 
 ```json
 {
@@ -2131,13 +2417,13 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## configs/task_definitions.json
+## configs\task_definitions.json
 
 ```json
 {
   "repair_device": {
     "costModel": { "basis": "perAction", "laborMinutes": 90 },
-    "priority": 10,
+    "priority": 100,
     "requiredRole": "Technician",
     "requiredSkill": "Maintenance",
     "minSkillLevel": 2,
@@ -2145,7 +2431,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "maintain_device": {
     "costModel": { "basis": "perAction", "laborMinutes": 30 },
-    "priority": 3,
+    "priority": 30,
     "requiredRole": "Technician",
     "requiredSkill": "Maintenance",
     "minSkillLevel": 4,
@@ -2153,7 +2439,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "harvest_plants": {
     "costModel": { "basis": "perPlant", "laborMinutes": 5 },
-    "priority": 9,
+    "priority": 90,
     "requiredRole": "Gardener",
     "requiredSkill": "Gardening",
     "minSkillLevel": 0,
@@ -2161,7 +2447,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "refill_supplies_water": {
     "costModel": { "basis": "perAction", "laborMinutes": 15 },
-    "priority": 8,
+    "priority": 80,
     "requiredRole": "Gardener",
     "requiredSkill": "Gardening",
     "minSkillLevel": 0,
@@ -2169,7 +2455,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "refill_supplies_nutrients": {
     "costModel": { "basis": "perAction", "laborMinutes": 15 },
-    "priority": 8,
+    "priority": 80,
     "requiredRole": "Gardener",
     "requiredSkill": "Gardening",
     "minSkillLevel": 0,
@@ -2177,7 +2463,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "clean_zone": {
     "costModel": { "basis": "perSquareMeter", "laborMinutes": 1 },
-    "priority": 6,
+    "priority": 60,
     "requiredRole": "Janitor",
     "requiredSkill": "Cleanliness",
     "minSkillLevel": 0,
@@ -2185,7 +2471,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "overhaul_zone_substrate": {
     "costModel": { "basis": "perSquareMeter", "laborMinutes": 5 },
-    "priority": 7,
+    "priority": 70,
     "requiredRole": "Janitor",
     "requiredSkill": "Cleanliness",
     "minSkillLevel": 2,
@@ -2193,7 +2479,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "reset_light_cycle": {
     "costModel": { "basis": "perAction", "laborMinutes": 5 },
-    "priority": 5,
+    "priority": 50,
     "requiredRole": "Gardener",
     "requiredSkill": "Gardening",
     "minSkillLevel": 0,
@@ -2201,7 +2487,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "execute_planting_plan": {
     "costModel": { "basis": "perPlant", "laborMinutes": 2 },
-    "priority": 4,
+    "priority": 40,
     "requiredRole": "Gardener",
     "requiredSkill": "Gardening",
     "minSkillLevel": 0,
@@ -2209,16 +2495,24 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   },
   "adjust_light_cycle": {
     "costModel": { "basis": "perAction", "laborMinutes": 5 },
-    "priority": 8,
+    "priority": 80,
     "requiredRole": "Gardener",
     "requiredSkill": "Gardening",
     "minSkillLevel": 3,
     "description": "Adjust light cycle in {zoneName} for flowering"
+  },
+  "apply_treatment": {
+    "costModel": { "basis": "perPlant", "laborMinutes": 4 },
+    "priority": 90,
+    "requiredRole": "Gardener",
+    "requiredSkill": "Gardening",
+    "minSkillLevel": 2,
+    "description": "Apply {treatmentName} to affected plants in {zoneName}"
   }
 }
 ```
 
-## configs/treatment_options.json
+## configs\treatment_options.json
 
 ```json
 {
@@ -2627,7 +2921,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## personnel/names/firstNamesFemale.json
+## personnel\names\firstNamesFemale.json
 
 ```json
 [
@@ -2728,7 +3022,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel/names/firstNamesMale.json
+## personnel\names\firstNamesMale.json
 
 ```json
 [
@@ -2869,7 +3163,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel/names/lastNames.json
+## personnel\names\lastNames.json
 
 ```json
 [
@@ -3226,7 +3520,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel/randomSeeds.json
+## personnel\randomSeeds.json
 
 ```json
 [
@@ -3433,7 +3727,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## personnel/traits.json
+## personnel\traits.json
 
 ```json
 [
@@ -3518,7 +3812,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 ]
 ```
 
-## prices/devicePrices.json
+## prices\devicePrices.json
 
 ```json
 {
@@ -3557,7 +3851,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## prices/strainPrices.json
+## prices\strainPrices.json
 
 ```json
 {
@@ -3586,7 +3880,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
 }
 ```
 
-## prices/utilityPrices.json
+## prices\utilityPrices.json
 
 ```json
 {
