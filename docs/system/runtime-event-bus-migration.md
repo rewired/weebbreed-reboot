@@ -5,7 +5,9 @@
 The telemetry event bus now lives in `src/runtime/eventBus.ts`. The module exposes a
 singleton `eventBus`, a convenience `emit(type, payload?, tick?, level?)` helper, and
 observable accessors (`events`, `bufferedEvents`, `events$`). Downstream packages should
-consume this runtime module rather than instantiating their own telemetry bus.
+consume this runtime module rather than instantiating their own telemetry bus. The
+underlying contracts and implementation reside in `src/runtime/eventBusCore.ts`, which is
+also re-exported by the backend package for compatibility.
 
 Key behavioural tweaks:
 

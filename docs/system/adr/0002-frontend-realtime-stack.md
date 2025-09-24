@@ -20,7 +20,9 @@ can build features confidently and know which abstractions are stable.
 - Adopt [`socket.io-client`](https://socket.io/) with the bespoke
   `useSimulationBridge` hook as the integration point to the simulation gateway.
   The hook owns connection lifecycle, event fan-out, and exposes command helpers
-  to the stores.
+  to the stores. Telemetry contracts (event levels, buffering rules) now live in
+  the shared runtime module `@runtime/eventBusCore`, keeping the frontend bridge
+  aligned with backend semantics even when packages are consumed individually.
 - Use [`zustand`](https://github.com/pmndrs/zustand) as the global state
   container. Store slices are organised by domain (`game`, `zone`, `personnel`)
   plus lightweight UI state (`useAppStore`), enabling selective subscription and
@@ -35,7 +37,9 @@ can build features confidently and know which abstractions are stable.
 
 - Contributors can rely on the Socket.IO bridge hook and Zustand stores as the
   supported extension points for real-time data instead of rolling bespoke
-  wiring per view.
+  wiring per view. The shared runtime event bus contract ensures downstream
+  clients observe the same event typing whether the backend is bundled with the
+  dashboard or deployed separately.
 - Styling guidance is now explicit: Tailwind + design tokens is the baseline,
   which shortens onboarding and avoids drift toward inline styles or ad-hoc
   component libraries.
