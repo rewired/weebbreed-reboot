@@ -1,8 +1,4 @@
-import type { 
-  PlantState, 
-  ZoneEnvironmentState, 
-  SimulationTime 
-} from '@/state/models.js';
+import type { PlantState, ZoneEnvironmentState, SimulationTime } from '@/state/models.js';
 import type { EventCollector } from '@/lib/eventBus.js';
 import { enhancedStrainService, type StrainEnvironmentResult } from './enhancedStrainService.js';
 import type { EnhancedStrainBlueprint } from './enhancedStrainInterface.js';

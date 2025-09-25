@@ -114,12 +114,16 @@ export class EnhancedStrainService {
     );
 
     // Calculate overall stress from individual evaluations
-    const stressFactors = [temperature, humidity, co2, ppfd, vpdEval].map(evaluation => {
+    const stressFactors = [temperature, humidity, co2, ppfd, vpdEval].map((evaluation) => {
       switch (evaluation.status) {
-        case 'optimal': return 0;
-        case 'acceptable': return 0.2;
-        case 'stress': return 0.6;
-        case 'critical': return 1.0;
+        case 'optimal':
+          return 0;
+        case 'acceptable':
+          return 0.2;
+        case 'stress':
+          return 0.6;
+        case 'critical':
+          return 1.0;
       }
     });
 
