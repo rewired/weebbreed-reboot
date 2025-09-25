@@ -37,6 +37,57 @@
     "yieldFactor": 1.0,
     "leafAreaIndex": 3.2
   },
+  "envBands": {
+    "default": {
+      "temp_C": { "green": [22, 27], "yellowLow": 20, "yellowHigh": 29 },
+      "rh_frac": { "green": [0.5, 0.65], "yellowLow": 0.4, "yellowHigh": 0.75 },
+      "co2_ppm": { "green": [850, 1200], "yellowLow": 700, "yellowHigh": 1400 },
+      "ppfd_umol_m2s": { "green": [500, 750], "yellowLow": 400, "yellowHigh": 900 },
+      "vpd_kPa": { "green": [0.9, 1.4], "yellowLow": 0.7, "yellowHigh": 1.6 }
+    },
+    "veg": {
+      "temp_C": { "green": [21, 26], "yellowLow": 19, "yellowHigh": 28 },
+      "rh_frac": { "green": [0.55, 0.7], "yellowLow": 0.45, "yellowHigh": 0.75 },
+      "ppfd_umol_m2s": { "green": [450, 650], "yellowLow": 350, "yellowHigh": 750 }
+    },
+    "flower": {
+      "temp_C": { "green": [23, 28], "yellowLow": 21, "yellowHigh": 30 },
+      "rh_frac": { "green": [0.4, 0.55], "yellowLow": 0.35, "yellowHigh": 0.65 },
+      "co2_ppm": { "green": [900, 1300], "yellowLow": 750, "yellowHigh": 1500 },
+      "ppfd_umol_m2s": { "green": [600, 850], "yellowLow": 500, "yellowHigh": 1000 }
+    }
+  },
+  "stressTolerance": {
+    "temp_C": 1.5,
+    "rh_frac": 0.06,
+    "co2_ppm": 120,
+    "ppfd_umol_m2s": 75,
+    "vpd_kPa": 0.18
+  },
+  "methodAffinity": {
+    "85cc0916-0e8a-495e-af8f-50291abe6855": 0.8,
+    "659ba4d7-a5fc-482e-98d4-b614341883ac": 0.7,
+    "41229377-ef2d-4723-931f-72eea87d7a62": 0.8
+  },
+  "phaseDurations": {
+    "seedlingDays": 10,
+    "vegDays": 30,
+    "flowerDays": 55,
+    "ripeningDays": 7
+  },
+  "yieldModel": {
+    "baseGmPerPlant": 48,
+    "qualityFactors": {
+      "temp": 0.25,
+      "rh": 0.2,
+      "ppfd": 0.35,
+      "vpd": 0.2
+    },
+    "co2Response": {
+      "halfMax_ppm": 900,
+      "saturation_ppm": 1300
+    }
+  },
   "growthModel": {
     "maxBiomassDry": 0.18,
     "baseLightUseEfficiency": 0.0009,

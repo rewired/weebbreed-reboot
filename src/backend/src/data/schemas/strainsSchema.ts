@@ -8,6 +8,74 @@ const nutrientTripleSchema = z.object({
   potassium: z.number(),
 });
 
+// Environmental band schemas for the new envBands system
+const envBandSchema = z.object({
+  green: rangeTuple,
+  yellowLow: z.number(),
+  yellowHigh: z.number(),
+});
+
+const phaseEnvBandsSchema = z
+  .object({
+    temp_C: envBandSchema.optional(),
+    rh_frac: envBandSchema.optional(),
+    co2_ppm: envBandSchema.optional(),
+    ppfd_umol_m2s: envBandSchema.optional(),
+    vpd_kPa: envBandSchema.optional(),
+  })
+  .passthrough();
+
+const envBandsSchema = z
+  .object({
+    default: phaseEnvBandsSchema,
+    veg: phaseEnvBandsSchema.optional(),
+    flower: phaseEnvBandsSchema.optional(),
+    seedling: phaseEnvBandsSchema.optional(),
+    ripening: phaseEnvBandsSchema.optional(),
+  })
+  .passthrough();
+
+const stressToleranceSchema = z
+  .object({
+    vpd_kPa: z.number().optional(),
+    temp_C: z.number().optional(),
+    rh_frac: z.number().optional(),
+    co2_ppm: z.number().optional(),
+    ppfd_umol_m2s: z.number().optional(),
+  })
+  .passthrough();
+
+const methodAffinitySchema = z.record(z.string().uuid(), z.number().min(0).max(1));
+
+const phaseDurationsSchema = z
+  .object({
+    seedlingDays: z.number().min(0).optional(),
+    vegDays: z.number().min(0).optional(),
+    flowerDays: z.number().min(0).optional(),
+    ripeningDays: z.number().min(0).optional(),
+  })
+  .passthrough();
+
+const yieldModelSchema = z
+  .object({
+    baseGmPerPlant: z.number().min(0),
+    qualityFactors: z
+      .object({
+        vpd: z.number().min(0).max(1).optional(),
+        ppfd: z.number().min(0).max(1).optional(),
+        temp: z.number().min(0).max(1).optional(),
+        rh: z.number().min(0).max(1).optional(),
+      })
+      .passthrough(),
+    co2Response: z
+      .object({
+        saturation_ppm: z.number().min(0),
+        halfMax_ppm: z.number().min(0),
+      })
+      .optional(),
+  })
+  .passthrough();
+
 export const strainSchema = z
   .object({
     id: z.string().uuid(),
@@ -40,6 +108,13 @@ export const strainSchema = z
         leafAreaIndex: z.number(),
       })
       .passthrough(),
+    // NEW ENHANCED FIELDS
+    envBands: envBandsSchema.optional(),
+    stressTolerance: stressToleranceSchema.optional(),
+    methodAffinity: methodAffinitySchema.optional(),
+    phaseDurations: phaseDurationsSchema.optional(),
+    yieldModel: yieldModelSchema.optional(),
+    // END NEW FIELDS
     growthModel: z
       .object({
         maxBiomassDry: z.number(),
