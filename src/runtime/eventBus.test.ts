@@ -81,14 +81,15 @@ describe('createUiStream', () => {
       eventCount: 1,
     });
     expect(tickPacket?.payload.events).toEqual([
-      {
+      expect.objectContaining({
+        id: expect.any(String),
         type: 'device.degraded',
         payload: { deviceId: 'dev-1' },
         tick: 12,
         ts: eventTs,
         level: 'warning',
         tags: ['maintenance'],
-      },
+      }),
     ]);
 
     const updatePacket = packets.find((packet) => packet.channel === 'simulationUpdate');
@@ -104,14 +105,15 @@ describe('createUiStream', () => {
       snapshot: { tick: 42, label: 'snapshot' },
     });
     expect(updates[0].events).toEqual([
-      {
+      expect.objectContaining({
+        id: expect.any(String),
         type: 'device.degraded',
         payload: { deviceId: 'dev-1' },
         tick: 12,
         ts: eventTs,
         level: 'warning',
         tags: ['maintenance'],
-      },
+      }),
     ]);
 
     expect(snapshotProvider).toHaveBeenCalledTimes(1);
@@ -163,19 +165,21 @@ describe('createUiStream', () => {
 
     const domainBatch = packets.find((packet) => packet.channel === 'domainEvents');
     expect(domainBatch?.payload.events).toEqual([
-      {
+      expect.objectContaining({
+        id: expect.any(String),
         type: 'device.degraded',
         payload: { deviceId: 'dev-1' },
         tick: 5,
         ts: firstDomain.ts,
         level: 'warning',
-      },
-      {
+      }),
+      expect.objectContaining({
+        id: expect.any(String),
         type: 'plant.stageChanged',
         payload: { plantId: 'plant-1' },
         tick: 5,
         ts: secondDomain.ts,
-      },
+      }),
     ]);
 
     const fanoutDevice = packets.find((packet) => packet.channel === 'device.degraded');

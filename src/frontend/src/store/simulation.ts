@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { ensureSimulationEventId } from '../../../runtime/eventIdentity';
 import type {
   SimulationEvent,
   SimulationSnapshot,
@@ -42,6 +43,63 @@ interface SimulationActions {
 
 const MAX_EVENT_ENTRIES = 200;
 const MAX_ZONE_HISTORY_POINTS = 5000;
+
+const normaliseEventBatch = (
+  events: SimulationEvent[],
+  { includeSequence }: { includeSequence?: boolean } = {},
+): SimulationEvent[] => {
+  if (!events.length) {
+    return events;
+  }
+  return events.map((event, index) =>
+    ensureSimulationEventId(event, includeSequence ? { sequence: index, tick: event.tick } : {}),
+  );
+};
+
+const mergeEvents = (
+  existing: SimulationEvent[],
+  incoming: SimulationEvent[],
+): SimulationEvent[] => {
+  const existingWithIds = normaliseEventBatch(existing);
+  const incomingWithIds = normaliseEventBatch(incoming, { includeSequence: true });
+  const order: string[] = [];
+  const byId = new Map<string, SimulationEvent>();
+
+  const append = (event: SimulationEvent) => {
+    const ensured = event.id ? event : ensureSimulationEventId(event);
+    const id = ensured.id!;
+    if (byId.has(id)) {
+      const index = order.indexOf(id);
+      if (index !== -1) {
+        order.splice(index, 1);
+      }
+    }
+    order.push(id);
+    byId.set(id, ensured);
+  };
+
+  for (const event of existingWithIds) {
+    append(event);
+  }
+  for (const event of incomingWithIds) {
+    append(event);
+  }
+
+  const merged = order.map((id) => byId.get(id)!).slice(-MAX_EVENT_ENTRIES);
+
+  if (import.meta.env?.DEV) {
+    const unique = new Set(merged.map((event) => event.id ?? ''));
+    if (unique.size !== merged.length) {
+      // eslint-disable-next-line no-console -- diagnostic aid for dev builds only
+      console.warn('Duplicate simulation event identifiers detected', {
+        total: merged.length,
+        distinct: unique.size,
+      });
+    }
+  }
+
+  return merged;
+};
 
 const appendZoneHistory = (
   history: Record<string, ZoneHistoryPoint[]>,
@@ -92,7 +150,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     });
     set({
       snapshot,
-      events: events.slice(-MAX_EVENT_ENTRIES),
+      events: mergeEvents([], events),
       timeStatus: time ?? null,
       zoneHistory: finalHistory,
       lastTick: snapshot.clock.tick,
@@ -103,14 +161,14 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     set((state) => ({
       snapshot: update.snapshot,
       timeStatus: update.time,
-      events: [...state.events, ...update.events].slice(-MAX_EVENT_ENTRIES),
+      events: mergeEvents(state.events, update.events),
       zoneHistory: nextHistory,
       lastTick: update.tick,
     }));
   },
   recordEvents: (events) =>
     set((state) => ({
-      events: [...state.events, ...events].slice(-MAX_EVENT_ENTRIES),
+      events: mergeEvents(state.events, events),
     })),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setTimeStatus: (status) => set({ timeStatus: status }),

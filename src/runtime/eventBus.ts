@@ -22,7 +22,7 @@ const DEFAULT_DOMAIN_EVENT_PATTERN =
 
 export type UiDomainEvent = Pick<
   SimulationEvent,
-  'type' | 'payload' | 'tick' | 'ts' | 'level' | 'tags'
+  'id' | 'type' | 'payload' | 'tick' | 'ts' | 'level' | 'tags'
 >;
 
 export interface UiSimulationUpdateEntry<
@@ -82,6 +82,7 @@ export interface UiStreamOptions<Snapshot extends { tick: number }, TimeStatus> 
 }
 
 const sanitizeEventForUi = (event: SimulationEvent): UiDomainEvent => ({
+  id: event.id,
   type: event.type,
   payload: event.payload,
   tick: event.tick,
