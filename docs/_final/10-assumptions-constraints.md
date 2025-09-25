@@ -1,0 +1,7 @@
+# Assumptions and Constraints [ # Source: docs/vision_scope.md § 3. Success Criteria; docs/vision_scope.md § 12. Non-Functional Requirements (NFR); docs/vision_scope.md § 15. Risks & Assumptions; docs/vision_scope.md § 16. Binding Rules & Technical Guardrails (Coding‑Ready) ]
+
+- **Performance envelope.** The reference scenario must sustain at least one tick per second at 1× speed with a per-tick CPU budget under 50 ms, aligning balancing and benchmark work around that baseline.【F:docs/vision_scope.md†L61-L77】
+- **Deterministic numerics.** All randomness flows through seeded generators, SI units underpin every quantity, persistence uses JSON numbers with up to six decimal places, and audit comparisons apply tight relative and absolute tolerances, constraining both engine and content design.【F:docs/vision_scope.md†L305-L315】
+- **Validation and safety.** Safe defaults on parameter errors, strict schema validation at load, and prohibition of `Math.random` in the core guard against drift and ensure deterministic recovery.【F:docs/vision_scope.md†L245-L249】【F:docs/vision_scope.md†L311-L315】
+- **Community expectations.** The roadmap assumes modding demand, deterministic replays as a core value proposition, and broad acceptance of SI units, guiding documentation and tooling priorities.【F:docs/vision_scope.md†L293-L296】
+- **Localization and privacy.** Out-of-the-box support targets German and English with SI units and configurable formatting, while saves remain local and avoid personal data, bounding compliance scope.【F:docs/vision_scope.md†L247-L250】
