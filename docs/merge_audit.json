@@ -1,0 +1,47 @@
+{
+  "assembled_at": "2025-09-25T07:30:10Z",
+  "output": "docs/weedbreed-final-truth.md",
+  "sections": [
+    { "order": 1, "source": "docs/_final/01-title-scope.md", "heading": "Title & Scope" },
+    { "order": 2, "source": "docs/_final/02-core-principles.md", "heading": "Core Principles" },
+    { "order": 3, "source": "docs/_final/03-domain-model.md", "heading": "Domain Model" },
+    {
+      "order": 4,
+      "source": "docs/_final/04-simulation-lifecycle.md",
+      "heading": "Simulation Lifecycle"
+    },
+    {
+      "order": 5,
+      "source": "docs/_final/05-math-formulas-overview.md",
+      "heading": "Math Formulas Overview"
+    },
+    {
+      "order": 6,
+      "source": "docs/_final/06-devices-and-effects.md",
+      "heading": "Devices and Effects"
+    },
+    { "order": 7, "source": "docs/_final/07-economy-and-costs.md", "heading": "Economy and Costs" },
+    {
+      "order": 8,
+      "source": "docs/_final/08-data-and-blueprints.md",
+      "heading": "Data and Blueprints"
+    },
+    {
+      "order": 9,
+      "source": "docs/_final/09-telemetry-and-ui-views.md",
+      "heading": "Telemetry and UI Views"
+    },
+    {
+      "order": 10,
+      "source": "docs/_final/10-assumptions-constraints.md",
+      "heading": "Assumptions and Constraints"
+    },
+    { "order": 11, "source": "docs/_final/11-open-questions.md", "heading": "Open Questions" },
+    { "order": 12, "source": "docs/_final/12-provenance-index.md", "heading": "Provenance Index" }
+  ],
+  "notes": [
+    "Headings normalised to H2 for each section under a new document title.",
+    "Table of Contents inserted below the primary H1 heading.",
+    "Provenance table reformatted for consistent Markdown rendering."
+  ]
+}
