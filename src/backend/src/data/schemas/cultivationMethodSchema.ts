@@ -55,11 +55,6 @@ export const cultivationMethodSchema = z
         vpd_kPa: z.number().optional(),
       })
       .optional(),
-    laborProfile: z
-      .object({
-        hoursPerPlantPerWeek: z.number().positive(),
-      })
-      .optional(),
     capacityHints: z
       .object({
         plantsPer_m2: z.number().positive(),

@@ -36,9 +36,6 @@
     "temp_C": 0.5,
     "co2_ppm": 50
   },
-  "laborProfile": {
-    "hoursPerPlantPerWeek": 1.2
-  },
   "capacityHints": {
     "plantsPer_m2": 2,
     "canopyHeight_m": 0.8
