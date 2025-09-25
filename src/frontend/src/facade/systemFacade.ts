@@ -1,4 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
+import { SOCKET_PATH, SOCKET_URL, buildBackendReachabilityMessage } from '@/config/socket';
 import type {
   FacadeIntentCommand,
   SimulationConfigUpdate,
@@ -33,11 +34,11 @@ type PendingResolver<T> = {
 
 type ResultEvent = 'simulationControl.result' | 'config.update.result' | 'facade.intent.result';
 
-const SOCKET_URL = import.meta.env.VITE_SIMULATION_SOCKET_URL ?? undefined;
 const QUICKSTART_STRUCTURE_ID = '43ee4095-627d-4a0c-860b-b10affbcf603';
 const REQUEST_TIMEOUT_MS = 15_000;
 const INITIAL_RECONNECT_DELAY = 1_000;
 const MAX_RECONNECT_DELAY = 30_000;
+const QUICKSTART_HELP_SUFFIX = ' See README.md (Getting Started) for setup steps.';
 
 export interface SimulationBridge {
   connect: () => void;
@@ -93,8 +94,10 @@ class SocketSystemFacade implements SimulationBridge {
     const store = useSimulationStore.getState();
     store.setConnectionStatus('connecting');
 
-    const socket = io(SOCKET_URL ?? window.location.origin, {
-      transports: ['websocket'],
+    const socket = io(SOCKET_URL, {
+      path: SOCKET_PATH,
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
       autoConnect: false,
       reconnection: false,
     });
@@ -188,6 +191,10 @@ class SocketSystemFacade implements SimulationBridge {
   }
 
   async loadQuickStart(): Promise<CommandResponse<unknown>> {
+    if (!this.socket || !this.socket.connected) {
+      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
+      throw new Error(message);
+    }
     const intent: FacadeIntentCommand = {
       domain: 'world',
       action: 'rentStructure',

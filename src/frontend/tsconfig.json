@@ -13,7 +13,8 @@
       "@/hooks/*": ["hooks/*"],
       "@/styles/*": ["styles/*"],
       "@/data/*": ["data/*"],
-      "@/facade/*": ["facade/*"]
+      "@/facade/*": ["facade/*"],
+      "@/config/*": ["config/*"]
     }
   },
   "include": ["src", "vite.config.ts", "tailwind.config.ts"],
