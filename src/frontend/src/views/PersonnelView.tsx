@@ -3,9 +3,10 @@ import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { Badge } from '@/components/primitives/Badge';
+import { CandidateCard } from '@/components/personnel/CandidateCard';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
-import type { EmployeeSnapshot, ApplicantSnapshot } from '@/types/simulation';
+import type { EmployeeSnapshot } from '@/types/simulation';
 
 const EmployeeCard = ({ employee }: { employee: EmployeeSnapshot }) => {
   const openModal = useUIStore((state) => state.openModal);
@@ -109,82 +110,6 @@ const EmployeeCard = ({ employee }: { employee: EmployeeSnapshot }) => {
             </Badge>
           </div>
         </div>
-      </div>
-    </Card>
-  );
-};
-
-const ApplicantCard = ({ applicant }: { applicant: ApplicantSnapshot }) => {
-  const openModal = useUIStore((state) => state.openModal);
-
-  const skillEntries = Object.entries(applicant.skills).filter(([, level]) => level && level > 0);
-
-  return (
-    <Card
-      title={applicant.name}
-      subtitle={`${applicant.desiredRole} • €${applicant.expectedSalary}/tick`}
-      action={
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="primary"
-            icon={<Icon name="person_add" />}
-            onClick={() =>
-              openModal({
-                id: `hire-applicant-${applicant.id}`,
-                type: 'hireApplicant',
-                title: `Hire ${applicant.name}`,
-                subtitle: `Review terms and confirm hiring as ${applicant.desiredRole}`,
-                context: { applicantId: applicant.id },
-              })
-            }
-          >
-            Hire
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            icon={<Icon name="close" />}
-            onClick={() =>
-              openModal({
-                id: `reject-applicant-${applicant.id}`,
-                type: 'rejectApplicant',
-                title: `Reject ${applicant.name}`,
-                subtitle: 'Confirm rejection of this applicant',
-                context: { applicantId: applicant.id },
-              })
-            }
-          >
-            Reject
-          </Button>
-        </div>
-      }
-      className="border-dashed border-primary/30 bg-surface-muted/40"
-    >
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-wrap gap-2">
-          {applicant.traits.map((trait) => (
-            <Badge key={trait} tone="default" className="text-xs">
-              {trait}
-            </Badge>
-          ))}
-        </div>
-
-        {skillEntries.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-              Skills
-            </span>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {skillEntries.map(([skill, level]) => (
-                <div key={skill} className="flex items-center justify-between">
-                  <span className="text-text-muted">{skill}</span>
-                  <Badge tone="default">{level}</Badge>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </Card>
   );
@@ -356,7 +281,7 @@ export const PersonnelView = () => {
           ) : (
             <div className="grid gap-3">
               {personnel.applicants.map((applicant) => (
-                <ApplicantCard key={applicant.id} applicant={applicant} />
+                <CandidateCard key={applicant.id} applicant={applicant} />
               ))}
             </div>
           )}
