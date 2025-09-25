@@ -90,7 +90,6 @@ const mergeEvents = (
   if (import.meta.env?.DEV) {
     const unique = new Set(merged.map((event) => event.id ?? ''));
     if (unique.size !== merged.length) {
-      // eslint-disable-next-line no-console -- diagnostic aid for dev builds only
       console.warn('Duplicate simulation event identifiers detected', {
         total: merged.length,
         distinct: unique.size,

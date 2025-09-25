@@ -1,4 +1,4 @@
-const EXCLUDED_PATTERNS = ['src/frontend-legacy/', 'docs/addendum/clickdummy/']
+const EXCLUDED_PATTERNS = ['docs/addendum/clickdummy/']
 
 const filterTargets = (files) =>
   files.filter((file) => !EXCLUDED_PATTERNS.some((pattern) => file.includes(pattern)))

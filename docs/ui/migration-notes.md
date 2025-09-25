@@ -5,8 +5,8 @@
 - `src/frontend` now hosts the rebuilt Weedbreed.AI dashboard scaffolded with React, Vite, TypeScript, and Tailwind CSS. The
   layout follows the structure → room → zone drill-down defined in the UI building guide and wires navigation, breadcrumbs,
   modal handling, and telemetry mocks via a dedicated Zustand store and facade bridge.
-- The previous implementation lives under `src/frontend-legacy`. Its build scripts, Tailwind setup, and dependencies remain
-  intact so the legacy UI can still be executed or referenced during the transition period.
+- Die vorherige Implementierung wurde am 2025-09-25 entfernt. Sie kann bei Bedarf weiterhin über den Git-Tag
+  `legacy-frontend-final` eingesehen werden.
 - Type-only contracts (`src/frontend/src/types/simulation.ts`) and faceless utilities were copied from the legacy codebase to
   retain authoritative domain schemas without duplicating layout logic.
 
@@ -41,3 +41,15 @@ The dashboard now reads Socket.IO endpoints from `src/frontend/.env.development.
 server proxies both `/socket.io` and `/api` to that origin so browser requests remain same-origin while still reaching the Node
 runtime. When the socket has not finished connecting, Quick Start surfaces an actionable help link instead of firing a failing
 intent.
+
+## Retirement
+
+- **Datum:** 2025-09-25 (UTC)
+- **Tag:** `legacy-frontend-final`
+- **Gründe:** Das neue Frontend in `src/frontend` erfüllt sämtliche Akzeptanzkriterien aus dem UI Building Guide sowie den
+  Migration Notes. Die Legacy-Implementierung stellte nur noch redundante Layout- und Store-Konstrukte bereit, deren Pflege
+  zusätzliche CI-Laufzeit und Sicherheitsupdates erfordert hätte.
+- **Übernommene Artefakte:** Keine neuen Übernahmen im Zuge der Stilllegung. Typdefinitionen und Hilfsfunktionen wurden bereits
+  während der Migration in `src/frontend` konsolidiert.
+- **Verbleibende Referenzen:** Keine. Workspace-Konfiguration, Linting-Setup und Dokumentation verweisen nicht mehr auf
+  `src/frontend-legacy`.
