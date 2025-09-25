@@ -222,10 +222,6 @@ export const startBackendServer = async (
     loop,
   });
   const structureBlueprints = await loadStructureBlueprints(dataDirectory);
-  console.log(
-    'DEBUG: Loaded structure blueprints:',
-    structureBlueprints.map((s) => ({ id: s.id, name: s.name })),
-  );
   const worldService = new WorldService({
     state,
     rng,
