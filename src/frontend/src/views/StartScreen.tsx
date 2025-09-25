@@ -2,8 +2,14 @@ import { useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { useNavigationStore } from '@/store/navigation';
+import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
+import { buildBackendReachabilityMessage } from '@/config/socket';
 import type { SimulationBridge } from '@/facade/systemFacade';
+
+const DEV_README_URL =
+  'https://github.com/WeedBreed/weebbreed-reboot/blob/main/README.md#getting-started';
+const CONNECTION_HELP_MESSAGE = `${buildBackendReachabilityMessage()} See README.md (Getting Started) for setup steps.`;
 
 interface StartScreenProps {
   bridge: SimulationBridge;
@@ -12,8 +18,10 @@ interface StartScreenProps {
 export const StartScreen = ({ bridge }: StartScreenProps) => {
   const enterDashboard = useNavigationStore((state) => state.enterDashboard);
   const openModal = useUIStore((state) => state.openModal);
+  const connectionStatus = useSimulationStore((state) => state.connectionStatus);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDevHelp, setShowDevHelp] = useState(false);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-surface text-center">
@@ -34,6 +42,12 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
               return;
             }
             setError(null);
+            setShowDevHelp(false);
+            if (connectionStatus !== 'connected') {
+              setError(CONNECTION_HELP_MESSAGE);
+              setShowDevHelp(true);
+              return;
+            }
             setLoading(true);
             try {
               const quickStart = await bridge.loadQuickStart();
@@ -45,7 +59,12 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
               enterDashboard();
             } catch (exception) {
               console.error('Failed to initialise quick start', exception);
-              setError('Quick Start failed. Check backend connectivity.');
+              const message =
+                exception instanceof Error
+                  ? exception.message
+                  : 'Quick Start failed. Check backend connectivity.';
+              setError(message);
+              setShowDevHelp(message.includes(buildBackendReachabilityMessage()));
             } finally {
               setLoading(false);
             }
@@ -82,7 +101,21 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
           Import Game
         </Button>
       </div>
-      {error ? <p className="text-sm text-danger">{error}</p> : null}
+      {error ? (
+        <p className="text-sm text-danger">
+          {error}{' '}
+          {showDevHelp ? (
+            <a
+              href={DEV_README_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium underline"
+            >
+              Development README
+            </a>
+          ) : null}
+        </p>
+      ) : null}
     </div>
   );
 };

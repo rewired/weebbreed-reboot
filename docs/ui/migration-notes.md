@@ -33,3 +33,11 @@
 4. ✅ Extend automated tests for navigation, modal focus trapping, and responsive sidebar behaviour once the UI stabilises. Added
    Vitest suites cover navigation reducers, ModalFrame focus trapping, sidebar toggling, and telemetry history retention as a
    performance smoke test.
+
+## Connectivity
+
+The dashboard now reads Socket.IO endpoints from `src/frontend/.env.development.local`, using `VITE_BACKEND_HTTP_URL`,
+`VITE_SOCKET_URL`, and `VITE_SOCKET_PATH` to keep the client aligned with whichever backend host is running locally. Vite’s dev
+server proxies both `/socket.io` and `/api` to that origin so browser requests remain same-origin while still reaching the Node
+runtime. When the socket has not finished connecting, Quick Start surfaces an actionable help link instead of firing a failing
+intent.
