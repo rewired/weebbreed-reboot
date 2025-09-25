@@ -14,7 +14,12 @@ type ModalType =
   | 'duplicateRoom'
   | 'deleteRoom'
   | 'createZone'
-  | 'deleteZone';
+  | 'deleteZone'
+  | 'recruitStaff'
+  | 'hireApplicant'
+  | 'fireEmployee'
+  | 'rejectApplicant'
+  | 'employeeDetails';
 
 export interface ModalDescriptor {
   id: string;

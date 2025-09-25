@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-type View = 'start' | 'dashboard' | 'structure' | 'room' | 'zone';
+type View = 'start' | 'dashboard' | 'structure' | 'room' | 'zone' | 'personnel';
 
 interface NavigationState {
   currentView: View;
@@ -15,6 +15,7 @@ interface NavigationActions {
   openStructure: (structureId: string) => void;
   openRoom: (structureId: string, roomId: string) => void;
   openZone: (structureId: string, roomId: string, zoneId: string) => void;
+  openPersonnel: () => void;
   goToStructures: () => void;
   goToRoom: (roomId: string) => void;
   goToStructure: (structureId: string) => void;
@@ -71,6 +72,14 @@ export const useNavigationStore = create<NavigationState & NavigationActions>((s
     set(() => ({
       currentView: 'structure',
       selectedStructureId: structureId,
+      selectedRoomId: undefined,
+      selectedZoneId: undefined,
+      isSidebarOpen: false,
+    })),
+  openPersonnel: () =>
+    set(() => ({
+      currentView: 'personnel',
+      selectedStructureId: undefined,
       selectedRoomId: undefined,
       selectedZoneId: undefined,
       isSidebarOpen: false,

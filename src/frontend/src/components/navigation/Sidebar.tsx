@@ -8,21 +8,25 @@ import { useUIStore } from '@/store/ui';
 export const Sidebar = () => {
   const snapshot = useSimulationStore((state) => state.snapshot);
   const {
+    currentView,
     selectedStructureId,
     selectedRoomId,
     selectedZoneId,
     openStructure,
     openRoom,
     openZone,
+    openPersonnel,
     isSidebarOpen,
     toggleSidebar,
   } = useNavigationStore((state) => ({
+    currentView: state.currentView,
     selectedStructureId: state.selectedStructureId,
     selectedRoomId: state.selectedRoomId,
     selectedZoneId: state.selectedZoneId,
     openStructure: state.openStructure,
     openRoom: state.openRoom,
     openZone: state.openZone,
+    openPersonnel: state.openPersonnel,
     isSidebarOpen: state.isSidebarOpen,
     toggleSidebar: state.toggleSidebar,
   }));
@@ -34,6 +38,26 @@ export const Sidebar = () => {
 
   const content = (
     <div className="flex h-full flex-col gap-6 overflow-y-auto px-4 pb-8 pt-6">
+      <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          className={cx(
+            'flex items-center gap-3 rounded-2xl border border-border/40 p-4 text-left transition hover:bg-surface-elevated/60',
+            {
+              'bg-primary/15 border-primary/30 text-primary': currentView === 'personnel',
+              'bg-surface-muted/60 text-text-muted': currentView !== 'personnel',
+            },
+          )}
+          onClick={() => openPersonnel()}
+        >
+          <Icon name="groups" size={24} />
+          <div className="flex flex-col">
+            <span className="font-semibold">Personnel</span>
+            <span className="text-xs text-text-muted">Staff roster & hiring</span>
+          </div>
+        </button>
+      </div>
+
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-text-muted">
           Structures
