@@ -21,6 +21,25 @@ const DEFAULT_DOMAIN_BATCH_MAX_SIZE = 25;
 
 const ACCESS_CONTROL_ALLOW_HEADERS = 'Content-Type, Last-Event-ID';
 
+// Environment-based CORS configuration
+const getAllowedOrigin = (requestOrigin: string | undefined): string => {
+  // In production, restrict to specific origins
+  const allowedOrigins =
+    process.env.WEEBBREED_ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) ?? [];
+
+  if (process.env.NODE_ENV === 'production' && allowedOrigins.length > 0) {
+    return allowedOrigins.includes(requestOrigin ?? '') ? (requestOrigin ?? '') : 'null';
+  }
+
+  // In development, allow localhost origins and wildcard for convenience
+  if (requestOrigin?.match(/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/)) {
+    return requestOrigin;
+  }
+
+  // Fallback to wildcard in development only
+  return process.env.NODE_ENV === 'production' ? 'null' : '*';
+};
+
 const formatData = (data: unknown): string => {
   if (data === undefined) {
     return 'null';
@@ -143,8 +162,9 @@ export class SseGateway {
     }
 
     if (request.method === 'OPTIONS') {
+      const allowedOrigin = getAllowedOrigin(request.headers.origin);
       response.writeHead(204, {
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
         'Access-Control-Allow-Methods': 'GET,OPTIONS',
         'Access-Control-Allow-Headers': ACCESS_CONTROL_ALLOW_HEADERS,
       });
@@ -153,9 +173,10 @@ export class SseGateway {
     }
 
     if (request.method !== 'GET') {
+      const allowedOrigin = getAllowedOrigin(request.headers.origin);
       response.writeHead(405, {
         Allow: 'GET, OPTIONS',
-        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Origin': allowedOrigin,
       });
       response.end();
       return;
@@ -165,11 +186,12 @@ export class SseGateway {
   }
 
   private openStream(request: IncomingMessage, response: ServerResponse): void {
+    const allowedOrigin = getAllowedOrigin(request.headers.origin);
     response.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': allowedOrigin,
       'Access-Control-Allow-Headers': ACCESS_CONTROL_ALLOW_HEADERS,
       'X-Accel-Buffering': 'no',
     });

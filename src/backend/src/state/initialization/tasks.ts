@@ -52,9 +52,9 @@ export const loadTaskDefinitions = async (dataDirectory: string): Promise<TaskDe
 };
 
 export const createTasks = (
-  structure: StructureState,
-  room: StructureState['rooms'][number],
-  zone: StructureState['rooms'][number]['zones'][number],
+  structure: StructureState | undefined,
+  room: StructureState['rooms'][number] | undefined,
+  zone: StructureState['rooms'][number]['zones'][number] | undefined,
   plantCount: number,
   definitions: TaskDefinitionMap | undefined,
   idStream: RngStream,
@@ -73,14 +73,17 @@ export const createTasks = (
       priority: definition?.priority ?? fallbackPriority,
       createdAtTick: 0,
       dueTick: definition ? Math.round(definition.priority * 4) : undefined,
-      location: {
-        structureId: structure.id,
-        roomId: room.id,
-        zoneId: zone.id,
-      },
+      location:
+        structure && room && zone
+          ? {
+              structureId: structure.id,
+              roomId: room.id,
+              zoneId: zone.id,
+            }
+          : undefined,
       metadata: {
-        zoneName: zone.name,
-        structureName: structure.name,
+        ...(zone ? { zoneName: zone.name } : {}),
+        ...(structure ? { structureName: structure.name } : {}),
         ...(definition ? { description: definition.description } : {}),
         ...metadata,
       },
@@ -89,7 +92,7 @@ export const createTasks = (
 
   createTask('execute_planting_plan', 5, { plantCount });
   createTask('refill_supplies_water', 4, {});
-  createTask('maintain_device', 3, { deviceCount: zone.devices.length });
+  createTask('maintain_device', 3, { deviceCount: zone?.devices?.length || 0 });
 
   return {
     backlog,

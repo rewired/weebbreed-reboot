@@ -27,7 +27,7 @@ const sumDeviceCapitalCosts = (
 export const createFinanceState = (
   createdAt: string,
   economics: EconomicsSettings,
-  blueprint: StructureBlueprint,
+  blueprint: StructureBlueprint | undefined,
   installedDevices: DeviceBlueprint[],
   repository: BlueprintRepository,
   idStream: RngStream,
@@ -54,7 +54,7 @@ export const createFinanceState = (
     description: 'Initial capital injection',
   });
 
-  if (blueprint.upfrontFee > 0) {
+  if (blueprint && blueprint.upfrontFee > 0) {
     addEntry({
       amount: -blueprint.upfrontFee,
       type: 'expense',
@@ -74,8 +74,9 @@ export const createFinanceState = (
     });
   }
 
-  const cashOnHand = economics.initialCapital - blueprint.upfrontFee - deviceCosts;
-  const totalExpenses = blueprint.upfrontFee + deviceCosts;
+  const upfrontFee = blueprint?.upfrontFee ?? 0;
+  const cashOnHand = economics.initialCapital - upfrontFee - deviceCosts;
+  const totalExpenses = upfrontFee + deviceCosts;
 
   const summary: FinancialSummary = {
     totalRevenue: economics.initialCapital,

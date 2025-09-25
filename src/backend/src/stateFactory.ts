@@ -1,11 +1,13 @@
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type {
-  CultivationMethodBlueprint,
-  DeviceBlueprint,
+  // CultivationMethodBlueprint,
+  // DeviceBlueprint,
   StrainBlueprint,
 } from '@/data/schemas/index.js';
 import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
 import type {
+  CultivationMethodBlueprint,
+  DeviceBlueprint,
   DeviceInstanceState,
   DifficultyLevel,
   EconomicsSettings,
@@ -17,7 +19,6 @@ import type {
   HarvestBatch,
   PersonnelNameDirectory,
   PersonnelRoleBlueprint,
-  PlantHealthState,
   PlantState,
   ResourceInventory,
   SeedStockEntry,
@@ -185,7 +186,7 @@ const createDeviceInstance = (
       degradation: 0,
     },
     settings: cloneSettings(blueprint.settings),
-  } satisfies DeviceInstanceState;
+  };
 };
 
 const createZoneEnvironment = (): ZoneEnvironmentState => ({
@@ -224,7 +225,7 @@ const createZoneHealth = (plants: PlantState[]): ZoneHealthState => {
     {
       diseases: [],
       pests: [],
-    } satisfies PlantHealthState,
+    },
   ]);
 
   return {
@@ -448,12 +449,13 @@ export const createInitialState = async (
     throw new Error('No structure blueprints available to create initial state.');
   }
 
-  const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
-  const structureBlueprint = selectBlueprint(
-    structureBlueprints,
-    structureSelectionStream,
-    options.structureId,
-  );
+  // const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
+  // Structure blueprint is handled on-demand per structure creation
+  // const structureBlueprint = selectBlueprint(
+  //   structureBlueprints,
+  //   structureSelectionStream,
+  //   options.structureId,
+  // );
 
   const strains = context.repository.listStrains();
   if (strains.length === 0) {
@@ -469,6 +471,33 @@ export const createInitialState = async (
   if (cultivationMethods.length === 0) {
     throw new Error('Blueprint repository has no cultivation method blueprints.');
   }
+  // Cultivation method is handled on-demand per structure creation
+  // const method = selectBlueprint(
+  //   cultivationMethods,
+  //   context.rng.getStream(RNG_STREAM_IDS.methods),
+  //   options.preferredCultivationMethodId,
+  // );
+
+  // const growRoomPurpose = requireRoomPurposeByName(context.repository, 'Grow Room');
+  const devices = context.repository.listDevices();
+  if (devices.length === 0) {
+    throw new Error('Blueprint repository has no device blueprints.');
+  }
+  // Device blueprints are handled on-demand per structure creation
+  // const deviceBlueprints = chooseDeviceBlueprints(
+  //   devices,
+  //   context.rng.getStream(RNG_STREAM_IDS.devices),
+  //   growRoomPurpose.kind,
+  // );
+
+  // Create the first structure
+  const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
+  const structureBlueprint = selectBlueprint(
+    structureBlueprints,
+    structureSelectionStream,
+    options.structureId,
+  );
+
   const method = selectBlueprint(
     cultivationMethods,
     context.rng.getStream(RNG_STREAM_IDS.methods),
@@ -476,10 +505,6 @@ export const createInitialState = async (
   );
 
   const growRoomPurpose = requireRoomPurposeByName(context.repository, 'Grow Room');
-  const devices = context.repository.listDevices();
-  if (devices.length === 0) {
-    throw new Error('Blueprint repository has no device blueprints.');
-  }
   const deviceBlueprints = chooseDeviceBlueprints(
     devices,
     context.rng.getStream(RNG_STREAM_IDS.devices),
@@ -487,7 +512,7 @@ export const createInitialState = async (
   );
 
   const structureId = generateId(idStream, 'structure');
-  const structureResult = buildStructureState(
+  const result = buildStructureState(
     context,
     structureBlueprint,
     structureId,
@@ -500,6 +525,8 @@ export const createInitialState = async (
     defaultStructureHeight,
     options.zonePlantCount,
   );
+
+  const structures = [result.structure];
 
   const personnelDirectory =
     context.personnelDirectory ??
@@ -515,7 +542,7 @@ export const createInitialState = async (
   } as Record<EmployeeRole, number>;
 
   const personnel = createPersonnel(
-    structureId,
+    undefined,
     employeeCounts,
     personnelDirectory,
     context.rng,
@@ -523,13 +550,13 @@ export const createInitialState = async (
     { roleBlueprints: personnelRoleBlueprints },
   );
 
-  const inventory = createInventory(strain, structureResult.plantCount, idStream);
+  const inventory = createInventory(strain, result.plantCount, idStream);
 
   const finance = createFinanceState(
     createdAt,
     economics,
-    structureBlueprint,
-    structureResult.installedDeviceBlueprints,
+    undefined,
+    [],
     context.repository,
     idStream,
   );
@@ -539,10 +566,10 @@ export const createInitialState = async (
     (context.dataDirectory ? await loadTaskDefinitions(context.dataDirectory) : undefined);
 
   const tasks = createTasks(
-    structureResult.structure,
-    structureResult.growRoom,
-    structureResult.growZone,
-    structureResult.plantCount,
+    result.structure,
+    result.growRoom,
+    result.growZone,
+    result.plantCount,
     taskDefinitions,
     idStream,
   );
@@ -572,13 +599,13 @@ export const createInitialState = async (
       message: 'Simulation initialized.',
       level: 'info' as const,
     },
-    ...structureResult.installationNotes,
+    ...result.installationNotes,
   ];
 
   return {
     metadata,
     clock,
-    structures: [structureResult.structure],
+    structures,
     inventory,
     finances: finance,
     personnel,

@@ -372,10 +372,10 @@ const employeeStateSchema = z.object({
   hoursWorkedToday: z.number(),
   overtimeHours: z.number(),
   lastShiftResetTick: z.number().int().nonnegative().optional(),
-  assignedStructureId: nonEmptyString.optional(),
-  assignedRoomId: nonEmptyString.optional(),
-  assignedZoneId: nonEmptyString.optional(),
-  currentTaskId: nonEmptyString.optional(),
+  assignedStructureId: z.string().optional(),
+  assignedRoomId: z.string().optional(),
+  assignedZoneId: z.string().optional(),
+  currentTaskId: z.string().optional(),
 });
 
 const applicantStateSchema = z.object({

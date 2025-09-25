@@ -618,7 +618,7 @@ export interface CreatePersonnelOptions {
 }
 
 export const createPersonnel = (
-  structureId: string,
+  structureId: string | undefined,
   counts: Record<EmployeeRole, number>,
   directory: PersonnelNameDirectory | undefined,
   rng: RngService,
@@ -747,7 +747,7 @@ export const createPersonnel = (
         hoursWorkedToday: 0,
         overtimeHours: 0,
         lastShiftResetTick: 0,
-        assignedStructureId: structureId,
+        assignedStructureId: structureId || '',
       });
     }
   }

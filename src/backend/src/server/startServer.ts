@@ -1,3 +1,5 @@
+import { loadStructureBlueprints } from '@/state/initialization/blueprints.js';
+
 import { createServer, type Server } from 'node:http';
 import process from 'node:process';
 
@@ -219,7 +221,17 @@ export const startBackendServer = async (
     accounting: { service: costAccountingService },
     loop,
   });
-  const worldService = new WorldService({ state, rng, costAccounting: costAccountingService });
+  const structureBlueprints = await loadStructureBlueprints(dataDirectory);
+  console.log(
+    'DEBUG: Loaded structure blueprints:',
+    structureBlueprints.map((s) => ({ id: s.id, name: s.name })),
+  );
+  const worldService = new WorldService({
+    state,
+    rng,
+    costAccounting: costAccountingService,
+    structureBlueprints,
+  });
   const deviceGroupService = new DeviceGroupService({ state, rng });
   const plantingPlanService = new PlantingPlanService({ state, rng });
 

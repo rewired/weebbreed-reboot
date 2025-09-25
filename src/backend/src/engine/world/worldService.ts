@@ -8,6 +8,7 @@ import {
 } from '@/facade/index.js';
 import {
   type GameState,
+  type StructureBlueprint,
   type StructureState,
   type RoomState,
   type ZoneState,
@@ -106,6 +107,7 @@ export interface WorldServiceOptions {
   state: GameState;
   rng: RngService;
   costAccounting: CostAccountingService;
+  structureBlueprints: StructureBlueprint[];
 }
 
 export class WorldService {
@@ -115,10 +117,13 @@ export class WorldService {
 
   private readonly costAccounting: CostAccountingService;
 
+  private readonly structureBlueprints: StructureBlueprint[];
+
   constructor(options: WorldServiceOptions) {
     this.state = options.state;
     this.costAccounting = options.costAccounting;
     this.idStream = options.rng.getStream('world.structures');
+    this.structureBlueprints = options.structureBlueprints;
   }
 
   renameStructure(
@@ -150,22 +155,35 @@ export class WorldService {
     structureId: string,
     context: CommandExecutionContext,
   ): CommandResult<DuplicateStructureResult> {
-    const blueprint = this.state.blueprints.structures.find((s) => s.id === structureId);
+    console.log('DEBUG: rentStructure called with structureId:', structureId);
+    console.log(
+      'DEBUG: Available blueprints:',
+      this.structureBlueprints.map((s) => ({ id: s.id, name: s.name })),
+    );
+    const blueprint = this.structureBlueprints.find((s) => s.id === structureId);
     if (!blueprint) {
+      console.log('DEBUG: Blueprint not found for structureId:', structureId);
       return this.failure('ERR_NOT_FOUND', `Structure blueprint ${structureId} not found.`, [
         'world.rentStructure',
         'structureId',
       ]);
     }
+    console.log('DEBUG: Found blueprint:', { id: blueprint.id, name: blueprint.name });
 
     const existing = this.state.structures.find((s) => s.blueprintId === structureId);
+    console.log(
+      'DEBUG: Existing structures:',
+      this.state.structures.map((s) => ({ id: s.id, blueprintId: s.blueprintId, name: s.name })),
+    );
     if (existing) {
+      console.log('DEBUG: Structure already exists:', existing);
       return this.failure('ERR_CONFLICT', `Structure ${structureId} is already rented.`, [
         'world.rentStructure',
         'structureId',
       ]);
     }
 
+    console.log('DEBUG: Creating new structure from blueprint');
     const newStructure: StructureState = {
       id: this.createId('structure'),
       blueprintId: blueprint.id,
@@ -173,24 +191,20 @@ export class WorldService {
       status: 'active',
       footprint: { ...blueprint.footprint },
       rooms: [],
-      rentPerTick: blueprint.rentPerTick,
+      rentPerTick: blueprint.rentPerTick || 0,
       upfrontCostPaid: 0,
       notes: undefined,
     };
+    console.log('DEBUG: Created structure:', {
+      id: newStructure.id,
+      name: newStructure.name,
+      rentPerTick: newStructure.rentPerTick,
+    });
 
     this.state.structures.push(newStructure);
+    console.log('DEBUG: Added structure to state');
 
-    const accumulator = this.costAccounting.createAccumulator();
-    this.costAccounting.recordRent(
-      this.state,
-      newStructure.rentPerTick,
-      context.tick,
-      new Date().toISOString(),
-      accumulator,
-      context.events,
-      `Rented new structure: ${newStructure.name}`,
-    );
-    this.applyAccumulator(accumulator);
+    // Note: Structure rent costs are automatically handled by the accounting system during tick processing
 
     context.events.queue(
       'world.structureRented',
@@ -198,11 +212,14 @@ export class WorldService {
       context.tick,
       'info',
     );
+    console.log('DEBUG: Queued structureRented event');
 
-    return {
+    const result = {
       ok: true,
       data: { structureId: newStructure.id },
     } satisfies CommandResult<DuplicateStructureResult>;
+    console.log('DEBUG: Returning success result:', result);
+    return result;
   }
 
   deleteStructure(structureId: string, context: CommandExecutionContext): CommandResult {
