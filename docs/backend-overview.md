@@ -1,194 +1,142 @@
-# Backend Simulation Overview
+# Backend Overview
 
-The Weedbreed simulation backend models controlled-environment cultivation as a deterministic, tick-driven world that stays decoupled from any presentation layer. Its guiding principles are fairness across hardware, deterministic replay, and transparent cause-and-effect between player actions, environmental outcomes, and plant performance. The loop runs on fixed-duration ticks, batches state commits, and only exposes intent-based APIs so UI clients never mutate internals directly. Delta-based environment physics and stress-driven plant growth produce emergent complexity while remaining explainable to operators.
+## 1. Purpose & Non-Goals
 
-## Architecture at a Glance
+**Purpose.** Deliver a deterministic cultivation and economy simulation core that exposes structured telemetry and accepts validated intents without leaking internal coupling.
+
+**Non-Goals.**
+
+- Ship user interface code or rendering assets.
+- Introduce non-deterministic randomness; every stochastic source must be seeded.
+- Bind the engine to a specific persistence layer; storage adapters remain optional.
+
+## 2. Architecture Overview
 
 ```mermaid
-flowchart TB
-    Company[Company]
-    Company --> Structure[Structures]
-    Structure --> Room[Rooms]
-    Room --> Zone[Zones]
-    Zone --> Plant[Plants]
-
-    Room --> RoomDevices[Room Devices]
-    Zone --> ZoneDevices[Zone Devices]
-
-    subgraph EngineServices[Simulation Services]
-        Loop[SimulationLoop]
-        Env[ZoneEnvironmentService]
-        Growth[Plant Growth Model]
-        Cost[CostAccountingService]
-        Harvest[HarvestQualityService]
-        Degrade[DeviceDegradationService]
-        Events[EventBus & UI Stream]
-        RNG[RngService]
+flowchart LR
+    subgraph Engine Core
+        Scheduler[Tick Scheduler]
+        StateStore[Runtime State Store]
+        Physio[Simulation Subsystems]
     end
+    BlueprintRegistry[Blueprint Registry]
+    ScenarioLoader[Scenario Loader]
+    IntentRouter[Intent Router]
+    EventBus[Event & Telemetry Bus]
+    PersistenceAdapter[[Persistence Adapter (optional)]]
+    APIAdapter[[API Adapter (optional)]]
 
-    Loop --> Env
-    Loop --> Growth
-    Loop --> Cost
-    Loop --> Harvest
-    Loop --> Degrade
-    Loop --> Events
-    Loop --> RNG
-
-    Env --> Zone
-    Growth --> Plant
-    Cost --> Company
-    Harvest --> Plant
-    Degrade --> ZoneDevices
+    BlueprintRegistry --> ScenarioLoader
+    ScenarioLoader --> Scheduler
+    IntentRouter --> Scheduler
+    Scheduler --> StateStore
+    Scheduler --> Physio
+    Physio --> StateStore
+    StateStore --> EventBus
+    EventBus --> APIAdapter
+    StateStore --> PersistenceAdapter
 ```
 
-- **SimulationLoop** orchestrates the seven canonical phases (`applyDevices` → `commit`), measures timings, and publishes events via the shared bus, ensuring atomic state commits per tick.【F:src/backend/src/sim/loop.ts†L26-L198】
-- **ZoneEnvironmentService** aggregates device deltas, applies climate controllers, normalises the zone back toward ambient conditions, and enforces safety clamps before the plant phase runs.【F:src/backend/src/engine/environment/zoneEnvironment.ts†L48-L214】
-- **Plant growth model** converts blueprinted physiology into stress, health, growth, quality, and transpiration metrics, emitting alerts whenever thresholds are crossed.【F:src/backend/src/engine/plants/growthModel.ts†L1-L233】
-- **Resource and cost services** convert demand curves into water/NPK usage, compute OpEx/CapEx, and accumulate utility spend for accounting events, preserving tick-length normalisation.【F:src/backend/src/engine/plants/resourceDemand.ts†L19-L199】【F:src/backend/src/engine/economy/costAccounting.ts†L13-L200】
-- **Event bus & UI stream** expose snapshots, tick completions, and domain events with bounded buffers so every transport receives the same ordered payloads.【F:docs/system/socket_protocol.md†L3-L46】
-- **Seeded RNG** offers named streams that can be serialised and restored, guaranteeing reproducible simulations when combined with deterministic tick scheduling.【F:src/backend/src/lib/rng.ts†L6-L146】
+The engine core owns the tick scheduler, orchestrates subsystem execution, and keeps authoritative runtime state. Blueprints are stored in a read-only registry; a scenario loader materializes them into runtime instances. Intents are validated and sequenced before they reach the scheduler. Event telemetry is append-only; adapters consume snapshots without mutating state. Persistence and external API layers integrate through explicit ports.
 
-## Data Models: Blueprints
+## 3. Blueprints Provided & How to Use Them
 
-Blueprints are immutable JSON templates loaded into the `BlueprintRepository`; they validate against Zod schemas, expose query helpers, and support hot-reload with staging so runtime instances always reference consistent source data.【F:src/backend/src/data/blueprintRepository.ts†L17-L167】 Runtime state stores only blueprint IDs and per-instance metrics, keeping the separation between definition and simulation state clean.【F:src/backend/src/state/models.ts†L49-L259】 All physical values use SI units, aligning with the physiology helpers documented in the physio reference.【F:docs/system/wb-physio.md†L1-L53】
+### 3.1 Operating Principles
 
-### Strains
+- **Validated blueprint set.** The repository ships canonical JSON blueprints covering structures, room purposes, cultivation methods, strains, devices, pests, diseases, personnel roles/skills, and price maps for seeds, devices, and utilities.【F:data/blueprints/structures/small_warehouse.json†L1-L11】【F:data/blueprints/roomPurposes/growroom.json†L1-L13】【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】【F:data/blueprints/strains/ak-47.json†L1-L132】【F:data/blueprints/devices/veg_light_01.json†L1-L21】【F:data/blueprints/pests/spider_mites.json†L1-L44】【F:data/blueprints/diseases/powdery_mildew.json†L1-L44】【F:data/blueprints/personnel/roles/Gardener.json†L1-L32】【F:data/prices/devicePrices.json†L1-L11】
+- **Template → instance.** Blueprints are immutable templates; they are never executed directly. A materializer copies values, applies defaults, and assigns runtime identifiers before the engine can use them.
+- **Runtime reads from instances.** Environment, plant growth, device control, and economic subsystems must consume only the materialized runtime objects so that validation, overrides, and seed-controlled randomness are centralized.
+- **Analyse before implementing.** Inspect the relevant blueprint fields (names, units, value ranges, and constraints) before writing a subsystem formula. Designs must match the delivered data, especially when translating arrays (e.g., phase ranges) or nested settings blocks.
+- **Units & naming.** Values use SI units; keys are camelCase without unit suffixes. Convert at the edges if an external adapter requires alternative units.
+- **Validation gate.** Every blueprint passes schema validation before the engine starts. Files that fail validation must be rejected or migrated explicitly; do not coerce data silently.
+- **Change protocol.** When a formula needs a field that the current blueprints do not supply, document a “Proposed Blueprint Extension” in the docs with key name, type, SI unit, and rationale before implementation. Never introduce ad-hoc fields at runtime.
 
-Strain blueprints capture lineage, morphology, environmental preferences (temperature, humidity, PPFD), water use, NPK demand, photoperiods, and harvest windows, all keyed by growth phase for downstream conversions.【F:src/backend/src/data/schemas/strainsSchema.ts†L11-L112】 The growth model resolves these bands into Gaussian or saturation responses, derives VPD stress, and clamps biomass to blueprint caps.【F:src/backend/src/engine/plants/growthModel.ts†L43-L205】
+### 3.2 Blueprint–to–Subsystem Mapping
 
-```json
-{
-  "id": "550e8400-e29b-41d4-a716-446655440000",
-  "name": "Example Strain",
-  "environmentalPreferences": {
-    "idealTemperature": { "vegetation": [22, 26] },
-    "idealHumidity": { "flowering": [0.45, 0.55] },
-    "lightIntensity": { "vegetation": [300, 450] }
-  },
-  "waterDemand": {
-    "dailyWaterUsagePerSquareMeter": {
-      "vegetation": 3.8,
-      "flowering": 4.5
-    },
-    "minimumFractionRequired": 0.6
-  },
-  "nutrientDemand": {
-    "dailyNutrientDemand": {
-      "vegetation": { "nitrogen": 3.2, "phosphorus": 1.1, "potassium": 2.5 }
-    },
-    "npkTolerance": 0.1
-  },
-  "harvestWindow": [56, 63]
-}
-```
+| Subsystem          | Required blueprint fields (name + SI units)                                                                                                                                                                                                        | Derived runtime parameters (per tick)                                  | Validation rules                                                                                            |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Lighting           | `devices.settings.ppfd` (µmol·m⁻²·s⁻¹)<br>`devices.settings.coverageArea` (m²)<br>`devices.settings.power` (kW)<br>`strains.environmentalPreferences.lightCycle` (h·day⁻¹)                                                                         | Zone PPFD<br>Daily light integral<br>Lamp heat load                    | `ppfd > 0` and coverageArea > 0<br>Power within rated range<br>Light-cycle arrays length 2                  |
+| Climate / VPD      | `devices.settings.coolingCapacity` (kW)<br>`devices.settings.airflow` (m³·h⁻¹)<br>`devices.settings.targetTemperature` (°C)<br>`strains.environmentalPreferences.idealTemperature` (°C)<br>`strains.environmentalPreferences.idealHumidity` (0..1) | Temperature deltas<br>Air-mixing factor<br>VPD targets                 | Cooling capacity ≥ 0<br>Airflow ≥ 0<br>Target temperature within declared range<br>Humidity bounds in [0,1] |
+| Plant Growth       | `strains.growthModel.baseLightUseEfficiency` (light-use coefficient)<br>`strains.growthModel.maxBiomassDry` (kg)<br>`strains.morphology.leafAreaIndex` (m²·m⁻²)<br>`strains.environmentalPreferences.lightIntensity` (µmol·m⁻²·s⁻¹)                | Biomass increment<br>Stress indices<br>Canopy scaling                  | Values ≥ 0<br>Phase dictionaries include vegetation & flowering keys<br>Arrays sorted ascending             |
+| Water / NPK        | `strains.waterDemand.dailyWaterUsagePerSquareMeter` (L·m⁻²·day⁻¹)<br>`strains.nutrientDemand.dailyNutrientDemand` (g·plant⁻¹·day⁻¹)<br>`cultivationMethods.areaPerPlant` (m²·plant⁻¹)<br>`cultivationMethods.minimumSpacing` (m)                   | Irrigation volume<br>Nutrient delivery targets<br>Plant density checks | Non-negative volumes<br>Nutrient objects contain N/P/K keys<br>Spacing ≥ 0                                  |
+| Devices / Energy   | `devices.settings.power` (kW)<br>`devices.lifespan` (s)<br>`devices.quality` (0..1)<br>`devicePrices.*.capitalExpenditure` (EUR)<br>`utilityPrices.pricePerKwh` (EUR·kWh⁻¹)                                                                        | Device runtime health<br>Replacement horizon<br>Energy cost per tick   | Power ≥ 0<br>Lifespan > 0<br>Quality within [0,1]<br>Price entries ≥ 0                                      |
+| Economics / OPEX   | `roomPurposes.economy.baseRentPerTick` (EUR·tick⁻¹)<br>`roomPurposes.economy.areaCost` (EUR·m⁻²)<br>`devicePrices.*.baseMaintenanceCostPerTick` (EUR·tick⁻¹)<br>`strainPrices.*` (EUR)                                                             | Rent accrual<br>Maintenance charges<br>Revenue projections             | Monetary fields ≥ 0<br>Cross-map ids resolve                                                                |
+| Employees / Skills | `personnel.roles.salary.basePerTick` (EUR·tick⁻¹)<br>`personnel.roles.maxMinutesPerTick` (min)<br>`personnel.roles.skillProfile` (levels)<br>`personnel.skills.*` definitions                                                                      | Wage budgets<br>Shift capacity<br>Skill distribution                   | Salary ranges ≥ 0<br>Minutes per tick ≤ 1440<br>Skill ids referenced exist                                  |
 
-### Devices
+## 4. Blueprint Inventory
 
-Device blueprints define kind, room-purpose compatibility, efficiency attributes, and controller-facing settings such as `ppfd`, `targetTemperature`, airflow, and moisture removal capacity.【F:src/backend/src/data/schemas/deviceSchema.ts†L3-L74】 During `applyDevices`, these settings become deltas for heat, humidity, CO₂, and PPFD, with energy draw tracked for accounting.【F:src/backend/src/engine/environment/zoneEnvironment.ts†L171-L203】
+### 4.1 Structures & Room Purposes
 
-```json
-{
-  "id": "3b5f6ad7-672e-47cd-9a24-f0cc45c4101e",
-  "kind": "Lamp",
-  "name": "Spectrum Pro 600",
-  "roomPurposes": ["purpose-bloom"],
-  "settings": {
-    "ppfd": 520,
-    "coverageArea": 5.6,
-    "power": 0.65,
-    "heatFraction": 0.35
-  }
-}
-```
+- **Structures.** Each structure blueprint defines an `id`, `name`, and a `footprint` block with `length_m`, `width_m`, and `height_m` in metres, alongside `rentalCostPerSqmPerMonth` and `upfrontFee` in euros.【F:data/blueprints/structures/small_warehouse.json†L1-L11】
+- **Room purposes.** Room purpose files provide `id`, `kind`, `name`, a human-readable `description`, boolean `flags` (e.g., `supportsCultivation`, `requiresControlledEnvironment`), and an `economy` block with `areaCost` (EUR·m⁻²) and `baseRentPerTick` (EUR·tick⁻¹).【F:data/blueprints/roomPurposes/growroom.json†L1-L13】
+- There is no dedicated room or zone blueprint; zones are derived by combining structure geometry with selected room purposes during materialization.
 
-### Cultivation Methods
+### 4.2 Cultivation Methods
 
-Cultivation methods capture layout economics—setup cost, labour intensity, area per plant, substrate/container specs, and strain compatibility bands—so zones can infer capacity and automation behaviour.【F:src/backend/src/data/schemas/cultivationMethodSchema.ts†L19-L66】
+Cultivation method templates include `id`, `kind`, `name`, `setupCost` (EUR per installation), `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and `maxCycles` (count). Nested blocks describe `substrate` (type, `costPerSquareMeter`, `maxCycles`) and `containerSpec` (type, `volumeInLiters`, `footprintArea`, `reusableCycles`, `costPerUnit`, `packingDensity`). Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
 
-```json
-{
-  "id": "7a639d3d-4750-440a-a200-f90d11dc3c62",
-  "name": "Vertical Racks",
-  "areaPerPlant": 0.45,
-  "minimumSpacing": 0.3,
-  "laborIntensity": 1.2,
-  "containerSpec": { "type": "fabricPot", "volumeInLiters": 11 },
-  "idealConditions": { "idealHumidity": [0.5, 0.6] }
-}
-```
+### 4.3 Strain Blueprints
 
-### Structure & Purpose Blueprints
+Strain blueprints capture:
 
-Structure blueprints describe rentable shells (footprint, rent base rate, upfront fees), while room purpose blueprints constrain which devices and cultivation flows are valid in each room via flags and economic modifiers.【F:src/backend/src/state/models.ts†L60-L109】【F:src/backend/src/data/schemas/roomPurposeSchema.ts†L6-L25】 Zones reference both structure geometry and cultivation method IDs, maintaining per-zone environment, resources, devices, and planting plans.【F:src/backend/src/state/models.ts†L245-L262】
+- Identity (`id`, `slug`, `name`) and lineage metadata.【F:data/blueprints/strains/ak-47.json†L1-L12】
+- Composition: `genotype` fractions, `chemotype` THC/CBD ratios, `generalResilience`, and `germinationRate`. Values are unitless ratios within `[0,1]`.【F:data/blueprints/strains/ak-47.json†L5-L24】
+- Morphology (`growthRate`, `yieldFactor`, `leafAreaIndex`) and a `growthModel` with `maxBiomassDry` (kg), `baseLightUseEfficiency` (kg·µmol⁻¹ scaled by seconds), `maintenanceFracPerDay`, `dryMatterFraction` by phase, `harvestIndex`, `phaseCapMultiplier`, and temperature response parameters (`Q10`, `T_ref_C`).【F:data/blueprints/strains/ak-47.json†L24-L54】
+- Optional noise controls (`noise.enabled`, `noise.pct`) to modulate deterministic variance.【F:data/blueprints/strains/ak-47.json†L55-L58】
+- Environmental preferences: spectrum ranges in nanometres, light intensity bands (µmol·m⁻²·s⁻¹), light cycles (hour pairs per phase), temperature ranges (°C), humidity ranges (0..1), and `phRange`.【F:data/blueprints/strains/ak-47.json†L59-L88】
+- Nutrient demand: `dailyNutrientDemand` per phase with `nitrogen`, `phosphorus`, and `potassium` in grams per plant per day, plus `npkTolerance` and `npkStressIncrement`.【F:data/blueprints/strains/ak-47.json†L89-L110】
+- Water demand: `dailyWaterUsagePerSquareMeter` per phase (litres per square metre per day) and `minimumFractionRequired`.【F:data/blueprints/strains/ak-47.json†L111-L118】
+- Disease resistance: infection and recovery parameters, expressed as fractions per day.【F:data/blueprints/strains/ak-47.json†L119-L124】
+- Phenology: `photoperiod` timings in seconds, `stageChangeThresholds`, `harvestWindow` (seconds), and `harvestProperties` with ripening and storage timings plus `qualityDecayRate`.【F:data/blueprints/strains/ak-47.json†L125-L140】
+- Descriptive `meta` text for designers.【F:data/blueprints/strains/ak-47.json†L141-L150】
 
-```json
-{
-  "id": "c701efa6-1e90-4f28-8934-ea9c584596e4",
-  "name": "Warehouse Shell",
-  "footprint": { "length": 40, "width": 24, "height": 8 },
-  "rentalCostPerSqmPerMonth": 18,
-  "upfrontFee": 25000
-}
-```
+All numeric arrays are ordered `[min, max]`. Missing phases must be handled gracefully (e.g., if a strain omits flowering adjustments).
 
-## Lifecycle & Sequence (Tick Orchestration)
+### 4.4 Device Blueprints
 
-The scheduler accumulates wall-clock time, advances whole ticks in order, and after each commit emits a snapshot plus batched events.【F:docs/system/simulation-engine.md†L12-L25】 Within a tick, the state machine executes the canonical phase order, allowing service hooks per phase and guaranteeing atomicity when `commit` completes.【F:src/backend/src/sim/loop.ts†L26-L115】 Determinism arises from fixed tick ordering, pure helper functions, and named RNG streams seeded once at initialisation.【F:docs/system/simulation-engine.md†L23-L25】【F:src/backend/src/lib/rng.ts†L6-L146】
+Device templates share `id`, `kind`, `name`, `quality` (0..1), `complexity` (0..1), `lifespan` (seconds of rated operation), `roomPurposes`, nested `settings`, and optional `meta` text.【F:data/blueprints/devices/veg_light_01.json†L1-L21】 Settings are device-class specific:
 
-```mermaid
-flowchart TD
-    Init[Init] --> Blueprints[Load Blueprints & State]
-    Blueprints --> Seed[Seed RNG Streams]
-    Seed --> Tick{Per Tick}
-    Tick --> Intents[Read Facade Intents]
-    Intents --> Devices[Apply Device Deltas]
-    Devices --> Normalize[Normalize & Mix Environment]
-    Normalize --> Irrigation[Irrigation & Nutrients]
-    Irrigation --> Plants[Update Plants & Stress]
-    Plants --> Events[Emit Events & Logs]
-    Events --> Costs[Account for Costs & Utilities]
-    Costs --> Snapshot[Snapshot & Audit]
-    Snapshot --> Tick
-```
+- **Lamp:** `power` (kW), `ppfd` (µmol·m⁻²·s⁻¹), `coverageArea` (m²), `spectralRange` (nm), `heatFraction` (0..1).【F:data/blueprints/devices/veg_light_01.json†L9-L17】
+- **ClimateUnit:** `power` (kW), `coolingCapacity` (kW), `airflow` (m³·h⁻¹), `targetTemperature` (°C), `targetTemperatureRange` (°C), `cop`, `hysteresisK`, and `fullPowerAtDeltaK` (°C).【F:data/blueprints/devices/climate_unit_01.json†L9-L22】
+- **Dehumidifier:** `latentRemovalKgPerTick` (kg·tick⁻¹) and `power` (kW).【F:data/blueprints/devices/dehumidifier-01.json†L9-L16】
 
-The same loop powers replay, pausing, stepping, and speed changes exposed through the facade’s control surface.【F:docs/system/facade.md†L55-L102】
+Additional device kinds (e.g., CO₂ injectors, exhaust fans) follow the same pattern with their own setting keys. Engines must branch on `kind` and validate the expected settings block.
 
-## Hierarchy & Assignment
+### 4.5 Pest & Disease Blueprints
 
-Game state tracks company metadata (seed, economics, tick length), an array of structures, and world subsystems such as inventory, finances, workforce, and tasks.【F:src/backend/src/state/models.ts†L24-L57】 Structures provide rentable space with rooms that apply purpose constraints and cleanliness/maintenance metrics.【F:src/backend/src/state/models.ts†L82-L109】 Zones bind rooms to cultivation methods, maintain environment readings, resource reservoirs, and control setpoints, and host both plant instances and device installations.【F:src/backend/src/state/models.ts†L245-L314】 Plants are instantiated with a strain blueprint reference, stage, health, biomass, and quality fields, enabling phenology and stress calculations per tick.【F:src/backend/src/state/models.ts†L265-L291】 Devices remain attached to zones (or rooms through assignment helpers) with maintenance state and free-form settings, supporting move/toggle/update intents enforced by the facade.【F:src/backend/src/state/models.ts†L303-L314】【F:docs/system/facade.md†L86-L109】 Planting plans, irrigation overrides, and treatment queues share the same zone scope so automation and manual commands resolve consistently.【F:src/backend/src/state/models.ts†L149-L260】【F:docs/system/facade.md†L94-L107】
+Pest blueprints define `id`, `kind`, `name`, `category`, `targets`, `environmentalRisk` (temperature and humidity ranges plus qualitative risk factors), `populationDynamics`, `damageModel`, `detection` guidance, and `controlOptions`. Values are ratios per day or boolean flags as indicated.【F:data/blueprints/pests/spider_mites.json†L1-L44】
 
-## Effect Models & Calculations (High-Level)
+Disease blueprints mirror this structure with `pathogenType`, `environmentalRisk`, a `model` of infection parameters, `detection` hints, and `treatments` grouped by approach.【F:data/blueprints/diseases/powdery_mildew.json†L1-L44】
 
-- **Light & PPFD:** Device `ppfd` outputs project across coverage area; the plant model converts canopy PPFD into photon dose and a saturation response, then multiplies by stage caps and health to update biomass and yield.【F:src/backend/src/engine/environment/zoneEnvironment.ts†L171-L203】【F:src/backend/src/engine/plants/growthModel.ts†L98-L205】
-- **Climate:** HVAC, humidifiers, dehumidifiers, and CO₂ devices add deltas; normalization uses exponential approaches to pull temperature, RH, and CO₂ toward ambient based on airflow and passive leakage.【F:src/backend/src/engine/environment/zoneEnvironment.ts†L188-L214】 Physio helpers define the underlying exponential and Gaussian formulas, all in SI units.【F:docs/system/wb-physio.md†L8-L35】
-- **VPD & Stress:** VPD derives from temperature and RH, with strain-specific tolerance ranges converted into Gaussian responses; deviations raise stress that lowers health and growth multipliers while generating alerts.【F:src/backend/src/engine/plants/growthModel.ts†L41-L149】
-- **Water & Nutrients:** Strain curves expressed in g/m²/day and L/m²/day become per-plant, per-tick demands; available supply fractions translate into stress multipliers feeding the combined resource response.【F:src/backend/src/engine/plants/resourceDemand.ts†L19-L199】
-- **Transpiration:** Estimated from VPD, canopy area, and LAI, contributing humidity back into the zone while depleting reservoirs, keeping environment and resource loops in sync.【F:docs/system/simulation-engine.md†L51-L111】【F:docs/system/wb-physio.md†L45-L60】
-- **Stress & Health:** Aggregated stress drives health decay or recovery and can trigger stage transitions or quality adjustments; thresholds emit events for downstream automation.【F:docs/system/simulation-engine.md†L80-L104】【F:src/backend/src/engine/plants/growthModel.ts†L165-L233】
-- **Costs:** The accounting phase multiplies utility usage by configurable prices, adds maintenance based on device age and degradation, and records rent using tick-length normalisation, separating OpEx and CapEx streams.【F:docs/system/simulation-engine.md†L173-L190】【F:src/backend/src/engine/economy/costAccounting.ts†L120-L200】
+### 4.6 Personnel Roles & Skills
 
-## System Interfaces
+Personnel role files specify `id`, `name`, a `salary` block (`basePerTick` in EUR·tick⁻¹, `skillFactor` weights, optional `randomRange`), `maxMinutesPerTick`, `roleWeight`, and a structured `skillProfile` describing primary, secondary, and optional tertiary skills with level rolls. Values are deterministic ranges for procedural generation.【F:data/blueprints/personnel/roles/Gardener.json†L1-L32】
 
-External systems interact exclusively through the facade, which validates intents, enforces invariants, and routes commands to domain services (world, devices, plants, health, workforce, finance).【F:docs/system/facade.md†L7-L125】 The same facade drives the scheduler (start, pause, step, speed changes) and provides immutable snapshots plus query utilities. Emitted events flow through the runtime event bus into the shared `uiStream$`, which batches simulation updates, tick completions, and domain events for Socket.IO and SSE adapters while preserving order and buffer limits.【F:docs/system/socket_protocol.md†L3-L46】【F:docs/system/socket_protocol.md†L62-L152】
+Skill definitions list `id`, `name`, `description`, and optional `tags` for classification.【F:data/blueprints/personnel/skills/Gardening.json†L1-L6】
 
-## Reproducibility & Tests
+### 4.7 Price & Cost Blueprints
 
-Named RNG streams record offsets so save games can restore exact random sequences, complementing the deterministic tick scheduler.【F:src/backend/src/lib/rng.ts†L6-L146】【F:docs/system/simulation-engine.md†L23-L25】 Golden-master tests cover the physio helpers, ensuring formula stability, while integration suites replay fixed seeds to verify tick ordering, environment deltas, and accounting outputs.【F:docs/system/wb-physio.md†L55-L63】【F:docs/system/simulation-engine.md†L12-L19】 Audit snapshots and telemetry batches provide replayable evidence for long multi-day runs, enabling regression detection without UI coupling.【F:docs/system/socket_protocol.md†L62-L152】
+- **Device prices.** Map device `id` to `capitalExpenditure`, `baseMaintenanceCostPerTick`, and `costIncreasePer1000Ticks`, all in euros.【F:data/prices/devicePrices.json†L1-L11】
+- **Strain prices.** Map strain `id` to `seedPrice` and `harvestPricePerGram` in euros.【F:data/prices/strainPrices.json†L1-L13】
+- **Utility prices.** Provide `pricePerKwh`, `pricePerLiterWater`, and `pricePerGramNutrients` in euros for operating cost calculations.【F:data/prices/utilityPrices.json†L1-L4】
 
-## Glossary
+## 5. Materialization & Runtime State
 
-- **Blueprint:** Immutable JSON definition for strains, devices, cultivation methods, or structures referenced by runtime entities via UUID IDs.【F:src/backend/src/data/blueprintRepository.ts†L17-L86】
-- **Device Delta:** The per-tick temperature, humidity, CO₂, airflow, and PPFD changes contributed by a device before normalization.【F:src/backend/src/engine/environment/zoneEnvironment.ts†L171-L203】
-- **Tick:** Fixed unit of simulation time processed atomically; runs all phases before emitting telemetry.【F:src/backend/src/sim/loop.ts†L26-L115】
-- **Intent:** Validated command submitted to the facade that triggers world mutations while maintaining determinism.【F:docs/system/facade.md†L44-L102】
-- **Event:** Structured notification carrying minimal payload (type, tick, IDs) broadcast via the shared UI stream.【F:docs/system/socket_protocol.md†L3-L46】
-- **VPD (Vapour Pressure Deficit):** Difference between saturation and actual vapour pressure, derived from zone temperature and RH, used to drive transpiration and stress models.【F:docs/system/wb-physio.md†L37-L53】【F:src/backend/src/engine/plants/growthModel.ts†L72-L91】
-- **OpEx / CapEx:** Operating expenses tracked per tick (utilities, maintenance, rent) versus capital expenditure for purchases, both emitted as finance events.【F:docs/system/simulation-engine.md†L173-L190】
+1. **Load & validate.** Parse blueprints, run schema validation, and reject or migrate files that fall outside required ranges.
+2. **Materialize instances.** Copy template values into runtime records, apply scenario overrides, derive geometric aggregates (e.g., structure volume), and attach deterministic identifiers.
+3. **Link cross-references.** Resolve ids across maps (e.g., device prices, strain prices) before the first tick. Missing references are fatal until documented and added to the blueprint set.
+4. **Runtime usage.** Engine subsystems read only from materialized instances, ensuring tick execution cannot mutate shared template data. Derived telemetry must include source blueprint ids for auditability.
 
-## Appendix
+## 6. Identifier Strategy
 
-- Simulation loop implementation: `src/backend/src/sim/loop.ts`
-- Environment services: `src/backend/src/engine/environment/zoneEnvironment.ts`
-- Plant physiology: `src/backend/src/engine/plants/growthModel.ts`
-- Blueprint schemas: `src/backend/src/data/schemas/*.ts`
-- Facade contract: `docs/system/facade.md`
+Prefer hierarchical addresses for static assets (structure/room/device) built from blueprint slugs or ids to keep telemetry readable. Use UUIDs for mobile entities (plants, employees) where collisions or reassignment are likely. Record remapping events at tick boundaries if identifiers change so downstream consumers can reconcile history.
+
+## 7. Quality Gates & Validation
+
+- Enforce numeric bounds indicated by the blueprints (e.g., humidity `[0,1]`, probability weights `[0,1]`, non-negative costs). Violations block scenario load.
+- Maintain schema definitions alongside blueprints to guard against drift. When extending a schema, version the document and migrate existing JSON explicitly.
+- Unit tests should cover blueprint ingestion, ensuring every `kind` branch is exercised with fixture data taken from the shipped files.
+
+---
+
+Reviewed against current blueprint set on 2025-09-25; removed unsupported claims; added proposals where fields are missing.
