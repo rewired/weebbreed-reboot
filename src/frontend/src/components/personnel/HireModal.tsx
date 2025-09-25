@@ -70,8 +70,12 @@ export const HireModal = ({ bridge, closeModal, context }: HireModalProps) => {
     try {
       const response = await bridge.sendIntent({
         domain: 'workforce',
-        action: 'hireApplicant',
-        payload: { applicantId },
+        action: 'hire',
+        payload: {
+          candidateId: applicantId,
+          role: applicant.desiredRole,
+          wage: applicant.expectedSalary,
+        },
       });
       if (!response.ok) {
         const warning = response.errors?.[0]?.message ?? response.warnings?.[0];

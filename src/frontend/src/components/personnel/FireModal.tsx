@@ -71,7 +71,7 @@ export const FireModal = ({ bridge, closeModal, context }: FireModalProps) => {
     try {
       const response = await bridge.sendIntent({
         domain: 'workforce',
-        action: 'fireEmployee',
+        action: 'fire',
         payload: { employeeId },
       });
       if (!response.ok) {
