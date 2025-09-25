@@ -2,6 +2,7 @@ import { Observable, Subject, bufferTime, filter as rxFilter, share } from 'rxjs
 import type { OperatorFunction } from 'rxjs';
 import type { Level } from 'pino';
 
+import { ensureSimulationEventId } from './eventIdentity.js';
 import { logger } from './logger.js';
 
 type MaybeArray<T> = T | T[];
@@ -9,6 +10,7 @@ type MaybeArray<T> = T | T[];
 export type EventLevel = 'debug' | 'info' | 'warning' | 'error';
 
 export interface SimulationEvent<T = unknown> {
+  id?: string;
   type: string;
   payload?: T;
   tick?: number;
@@ -146,6 +148,8 @@ export class EventBus {
     .asObservable()
     .pipe(share({ resetOnError: false, resetOnComplete: false, resetOnRefCountZero: false }));
 
+  private nextSequence = 0;
+
   emit<T>(event: SimulationEvent<T>): void;
   emit<T>(type: SimulationEvent<T>['type'], payload?: T, tick?: number, level?: EventLevel): void;
   emit<T>(
@@ -166,10 +170,13 @@ export class EventBus {
       return;
     }
 
-    const enriched: SimulationEvent = {
-      ...eventOrType,
-      ts: eventOrType.ts ?? Date.now(),
-    };
+    const enriched: SimulationEvent = ensureSimulationEventId(eventOrType, {
+      sequence: this.nextSequence++,
+      tick: eventOrType.tick,
+    });
+    if (!enriched.ts) {
+      enriched.ts = Date.now();
+    }
     logSimulationEvent(enriched);
     this.subject.next(enriched);
   }
@@ -209,29 +216,38 @@ export class EventBus {
 }
 
 export const createEventCollector = (buffer: SimulationEvent[], tick: number): EventCollector => {
+  let sequence = 0;
   const queue: EventQueueFunction = ((
     eventOrType: SimulationEvent | SimulationEvent['type'],
     payload?: unknown,
     overrideTick?: number,
     level?: EventLevel,
   ) => {
+    const currentSequence = sequence++;
     if (typeof eventOrType === 'string') {
-      const event: SimulationEvent = { type: eventOrType, payload };
       const resolvedTick = overrideTick ?? tick;
-      if (resolvedTick !== undefined) {
-        event.tick = resolvedTick;
-      }
+      const baseEvent: SimulationEvent = {
+        type: eventOrType,
+        payload,
+        tick: resolvedTick,
+      };
       if (level !== undefined) {
-        event.level = level;
+        baseEvent.level = level;
       }
+      const event = ensureSimulationEventId(baseEvent, {
+        tick: resolvedTick,
+        sequence: currentSequence,
+      });
       buffer.push(event);
       return;
     }
 
-    buffer.push({
-      ...eventOrType,
-      tick: eventOrType.tick ?? tick,
-    });
+    const resolvedTick = eventOrType.tick ?? tick;
+    const enriched = ensureSimulationEventId(
+      { ...eventOrType, tick: resolvedTick },
+      { tick: resolvedTick, sequence: currentSequence },
+    );
+    buffer.push(enriched);
   }) as EventQueueFunction;
 
   return {

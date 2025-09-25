@@ -217,6 +217,7 @@ export interface SimulationSnapshot {
 }
 
 export interface SimulationEvent {
+  id?: string;
   type: string;
   level?: 'debug' | 'info' | 'warning' | 'error';
   message?: string;
