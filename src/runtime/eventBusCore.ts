@@ -17,6 +17,10 @@ export interface SimulationEvent<T = unknown> {
   ts?: number;
   level?: EventLevel;
   tags?: string[];
+  message?: string;
+  plantId?: string;
+  deviceId?: string;
+  zoneId?: string;
 }
 
 export type EventFilterPredicate = (event: SimulationEvent) => boolean;
