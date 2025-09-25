@@ -21,6 +21,14 @@
     "packingDensity": 0.9
   },
   "strainTraitCompatibility": {},
+  "envBias": {},
+  "laborProfile": {
+    "hoursPerPlantPerWeek": 0.2
+  },
+  "capacityHints": {
+    "plantsPer_m2": 4,
+    "canopyHeight_m": 1.2
+  },
   "idealConditions": {
     "idealTemperature": [20, 28],
     "idealHumidity": [0.5, 0.7]

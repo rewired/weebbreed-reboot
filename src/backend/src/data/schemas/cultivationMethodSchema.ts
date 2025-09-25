@@ -46,6 +46,26 @@ export const cultivationMethodSchema = z
       .passthrough()
       .optional(),
     strainTraitCompatibility: strainTraitCompatibilitySchema.optional(),
+    envBias: z
+      .object({
+        temp_C: z.number().optional(),
+        rh_frac: z.number().optional(),
+        co2_ppm: z.number().optional(),
+        ppfd_umol_m2s: z.number().optional(),
+        vpd_kPa: z.number().optional(),
+      })
+      .optional(),
+    laborProfile: z
+      .object({
+        hoursPerPlantPerWeek: z.number().positive(),
+      })
+      .optional(),
+    capacityHints: z
+      .object({
+        plantsPer_m2: z.number().positive(),
+        canopyHeight_m: z.number().positive(),
+      })
+      .optional(),
     idealConditions: z
       .object({
         idealTemperature: rangeTuple.optional(),

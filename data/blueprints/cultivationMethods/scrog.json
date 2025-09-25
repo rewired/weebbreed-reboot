@@ -32,6 +32,17 @@
       }
     }
   },
+  "envBias": {
+    "temp_C": 0.5,
+    "co2_ppm": 50
+  },
+  "laborProfile": {
+    "hoursPerPlantPerWeek": 1.2
+  },
+  "capacityHints": {
+    "plantsPer_m2": 2,
+    "canopyHeight_m": 0.8
+  },
   "idealConditions": {
     "idealTemperature": [21, 27],
     "idealHumidity": [0.55, 0.7]

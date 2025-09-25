@@ -38,6 +38,17 @@
       }
     }
   },
+  "envBias": {
+    "vpd_kPa": 0.1,
+    "rh_frac": -0.05
+  },
+  "laborProfile": {
+    "hoursPerPlantPerWeek": 0.3
+  },
+  "capacityHints": {
+    "plantsPer_m2": 18,
+    "canopyHeight_m": 0.6
+  },
   "idealConditions": {
     "idealTemperature": [22, 28],
     "idealHumidity": [0.5, 0.65]
