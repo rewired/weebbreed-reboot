@@ -43,7 +43,7 @@ const App = () => {
     return (
       <>
         <StartScreen bridge={bridge} />
-        <ModalHost />
+        <ModalHost bridge={bridge} />
       </>
     );
   }
@@ -51,7 +51,7 @@ const App = () => {
   return (
     <>
       <DashboardShell bridge={bridge}>{content}</DashboardShell>
-      <ModalHost />
+      <ModalHost bridge={bridge} />
     </>
   );
 };

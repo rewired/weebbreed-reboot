@@ -45,9 +45,10 @@ export const StructureView = () => {
               onClick={() =>
                 openModal({
                   id: `rename-${structure.id}`,
-                  type: 'duplicateStructure',
+                  type: 'renameStructure',
                   title: 'Rename Structure',
-                  subtitle: 'Renames apply immediately through world.renameStructure',
+                  subtitle: 'Names persist once world.renameStructure succeeds',
+                  context: { structureId: structure.id, currentName: structure.name },
                 })
               }
             >
@@ -60,9 +61,10 @@ export const StructureView = () => {
               onClick={() =>
                 openModal({
                   id: `delete-${structure.id}`,
-                  type: 'duplicateStructure',
+                  type: 'deleteStructure',
                   title: 'Remove Structure',
-                  subtitle: 'Removals are gated behind deterministic confirmation',
+                  subtitle: 'Confirm removal before dispatching world.deleteStructure',
+                  context: { structureId: structure.id },
                 })
               }
             >
@@ -95,6 +97,7 @@ export const StructureView = () => {
                         type: 'duplicateRoom',
                         title: `Duplicate ${room.name}`,
                         subtitle: 'Review device inventory before duplicating',
+                        context: { roomId: room.id },
                       })
                     }
                   >

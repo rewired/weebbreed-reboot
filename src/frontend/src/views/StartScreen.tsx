@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { useNavigationStore } from '@/store/navigation';
@@ -11,6 +12,8 @@ interface StartScreenProps {
 export const StartScreen = ({ bridge }: StartScreenProps) => {
   const enterDashboard = useNavigationStore((state) => state.enterDashboard);
   const openModal = useUIStore((state) => state.openModal);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-8 bg-surface text-center">
@@ -25,13 +28,30 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
         <Button
           variant="primary"
           icon={<Icon name="auto_mode" />}
-          onClick={() => {
-            bridge.loadQuickStart();
-            bridge.sendControl({ action: 'pause' });
-            enterDashboard();
+          disabled={loading}
+          onClick={async () => {
+            if (loading) {
+              return;
+            }
+            setError(null);
+            setLoading(true);
+            try {
+              const quickStart = await bridge.loadQuickStart();
+              if (!quickStart.ok) {
+                setError('Quick Start failed. Review facade warnings in the event log.');
+                return;
+              }
+              await bridge.sendControl({ action: 'pause' });
+              enterDashboard();
+            } catch (exception) {
+              console.error('Failed to initialise quick start', exception);
+              setError('Quick Start failed. Check backend connectivity.');
+            } finally {
+              setLoading(false);
+            }
           }}
         >
-          Quick Start
+          {loading ? 'Initialising…' : 'Quick Start'}
         </Button>
         <Button
           variant="secondary"
@@ -62,6 +82,7 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
           Import Game
         </Button>
       </div>
+      {error ? <p className="text-sm text-danger">{error}</p> : null}
     </div>
   );
 };

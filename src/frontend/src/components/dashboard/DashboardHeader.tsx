@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Icon } from '@/components/common/Icon';
 import { Button, IconButton } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
@@ -16,13 +16,14 @@ interface DashboardHeaderProps {
 export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
   const snapshot = useSimulationStore((state) => state.snapshot);
   const timeStatus = useSimulationStore((state) => state.timeStatus);
-  const markPaused = useSimulationStore((state) => state.markPaused);
-  const markRunning = useSimulationStore((state) => state.markRunning);
+  const connectionStatus = useSimulationStore((state) => state.connectionStatus);
   const openModal = useUIStore((state) => state.openModal);
   const notificationsUnread = useUIStore((state) => state.notificationsUnread);
   const incrementNotifications = useUIStore((state) => state.incrementNotifications);
   const markNotificationsRead = useUIStore((state) => state.markNotificationsRead);
   const goToStructures = useNavigationStore((state) => state.goToStructures);
+  const [controlPending, setControlPending] = useState(false);
+  const [speedPending, setSpeedPending] = useState<string | null>(null);
 
   const finance = snapshot?.finance;
   const totalPlants = useMemo(
@@ -41,13 +42,23 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
   const isPaused = snapshot.clock.isPaused;
   const currentSpeed = timeStatus?.speed ?? snapshot.clock.targetTickRate;
 
-  const handlePlayPause = () => {
-    if (isPaused) {
-      bridge.sendControl({ action: 'play', gameSpeed: currentSpeed });
-      markRunning(currentSpeed);
-    } else {
-      bridge.sendControl({ action: 'pause' });
-      markPaused();
+  const handlePlayPause = async () => {
+    if (controlPending) {
+      return;
+    }
+    setControlPending(true);
+    try {
+      const response = await bridge.sendControl(
+        isPaused ? { action: 'play', gameSpeed: currentSpeed } : { action: 'pause' },
+      );
+      if (!response.ok) {
+        incrementNotifications();
+      }
+    } catch (error) {
+      console.error('Failed to toggle simulation state', error);
+      incrementNotifications();
+    } finally {
+      setControlPending(false);
     }
   };
 
@@ -106,6 +117,9 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
           <Badge tone={isPaused ? 'warning' : 'success'}>
             {isPaused ? 'Paused' : 'Running'} · {currentSpeed}×
           </Badge>
+          <Badge tone={connectionStatus === 'connected' ? 'success' : 'warning'}>
+            {connectionStatus === 'connected' ? 'Live' : 'Reconnecting…'}
+          </Badge>
         </div>
       </div>
       <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
@@ -115,14 +129,29 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
             size="md"
             icon={<Icon name={isPaused ? 'play_arrow' : 'pause'} />}
             onClick={handlePlayPause}
+            disabled={controlPending}
           >
             {isPaused ? 'Start simulation' : 'Pause simulation'}
           </Button>
           <IconButton
             aria-label="Step one tick"
-            onClick={() => {
-              bridge.sendControl({ action: 'step', ticks: 1 });
-              incrementNotifications();
+            disabled={controlPending}
+            onClick={async () => {
+              if (controlPending) {
+                return;
+              }
+              setControlPending(true);
+              try {
+                const response = await bridge.sendControl({ action: 'step', ticks: 1 });
+                if (!response.ok) {
+                  incrementNotifications();
+                }
+              } catch (error) {
+                console.error('Failed to step simulation', error);
+                incrementNotifications();
+              } finally {
+                setControlPending(false);
+              }
             }}
           >
             <Icon name="skip_next" />
@@ -133,9 +162,26 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
                 key={preset}
                 size="sm"
                 active={Math.abs(currentSpeed - preset) < 0.01}
-                onClick={() => {
-                  bridge.sendControl({ action: 'fastForward', multiplier: preset });
-                  markRunning(preset);
+                disabled={Boolean(speedPending) || controlPending}
+                onClick={async () => {
+                  if (speedPending || controlPending) {
+                    return;
+                  }
+                  setSpeedPending(preset.toString());
+                  try {
+                    const response = await bridge.sendControl({
+                      action: 'fastForward',
+                      multiplier: preset,
+                    });
+                    if (!response.ok) {
+                      incrementNotifications();
+                    }
+                  } catch (error) {
+                    console.error('Failed to adjust simulation speed', error);
+                    incrementNotifications();
+                  } finally {
+                    setSpeedPending(null);
+                  }
                 }}
               >
                 <span className="text-xs font-semibold text-text">{preset}×</span>

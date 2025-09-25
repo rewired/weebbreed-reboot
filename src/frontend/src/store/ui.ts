@@ -8,13 +8,18 @@ type ModalType =
   | 'notifications'
   | 'rentStructure'
   | 'duplicateStructure'
-  | 'duplicateRoom';
+  | 'renameStructure'
+  | 'deleteStructure'
+  | 'duplicateRoom'
+  | 'deleteRoom'
+  | 'deleteZone';
 
 export interface ModalDescriptor {
   id: string;
   type: ModalType;
   title: string;
   subtitle?: string;
+  context?: Record<string, unknown>;
 }
 
 interface UIState {
