@@ -606,6 +606,9 @@ const CreateZoneModal = ({
   const room = useSimulationStore((state) =>
     roomId ? (state.snapshot?.rooms.find((item) => item.id === roomId) ?? null) : null,
   );
+  const zones = useSimulationStore((state) =>
+    roomId ? (state.snapshot?.zones.filter((zone) => zone.roomId === roomId) ?? []) : [],
+  );
   const [zoneName, setZoneName] = useState('');
   const [methodId, setMethodId] = useState('85cc0916-0e8a-495e-af8f-50291abe6855'); // Default to Basic Soil Pot
   const [area, setArea] = useState(10);
@@ -670,19 +673,8 @@ const CreateZoneModal = ({
     },
   ];
 
-  const existingArea = room.zones?.reduce((sum, zone) => sum + zone.area, 0) ?? 0;
+  const existingArea = zones.reduce((sum, zone) => sum + zone.area, 0);
   const availableArea = Math.max(0, room.area - existingArea);
-
-  // Debug logging
-  console.log('CreateZoneModal - Area calculation:', {
-    roomId,
-    roomName: room.name,
-    roomArea: room.area,
-    zoneCount: room.zones?.length ?? 0,
-    zones: room.zones?.map((z) => ({ id: z.id, name: z.name, area: z.area })) ?? [],
-    existingArea,
-    availableArea,
-  });
 
   return (
     <div className="grid gap-4">
