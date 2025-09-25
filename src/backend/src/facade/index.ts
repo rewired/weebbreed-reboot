@@ -455,7 +455,7 @@ export type SetUtilityPricesIntent = z.infer<typeof setUtilityPricesSchema>;
 export type SetMaintenancePolicyIntent = z.infer<typeof setMaintenancePolicySchema>;
 
 export interface WorldIntentHandlers {
-  rentStructure: ServiceCommandHandler<RentStructureIntent>;
+  rentStructure: ServiceCommandHandler<RentStructureIntent, DuplicateStructureResult>;
   createRoom: ServiceCommandHandler<CreateRoomIntent>;
   updateRoom: ServiceCommandHandler<UpdateRoomIntent>;
   deleteRoom: ServiceCommandHandler<DeleteRoomIntent>;
@@ -575,7 +575,7 @@ export interface TimeIntentAPI {
 }
 
 export interface WorldIntentAPI {
-  rentStructure(intent: RentStructureIntent): Promise<CommandResult>;
+  rentStructure(intent: RentStructureIntent): Promise<CommandResult<DuplicateStructureResult>>;
   createRoom(intent: CreateRoomIntent): Promise<CommandResult>;
   updateRoom(intent: UpdateRoomIntent): Promise<CommandResult>;
   deleteRoom(intent: DeleteRoomIntent): Promise<CommandResult>;
@@ -642,7 +642,7 @@ interface TimeCommandRegistry {
 }
 
 interface WorldCommandRegistry {
-  rentStructure: CommandRegistration<RentStructureIntent>;
+  rentStructure: CommandRegistration<RentStructureIntent, DuplicateStructureResult>;
   createRoom: CommandRegistration<CreateRoomIntent>;
   updateRoom: CommandRegistration<UpdateRoomIntent>;
   deleteRoom: CommandRegistration<DeleteRoomIntent>;

@@ -146,6 +146,65 @@ export class WorldService {
     return { ok: true } satisfies CommandResult;
   }
 
+  rentStructure(
+    structureId: string,
+    context: CommandExecutionContext,
+  ): CommandResult<DuplicateStructureResult> {
+    const blueprint = this.state.blueprints.structures.find((s) => s.id === structureId);
+    if (!blueprint) {
+      return this.failure('ERR_NOT_FOUND', `Structure blueprint ${structureId} not found.`, [
+        'world.rentStructure',
+        'structureId',
+      ]);
+    }
+
+    const existing = this.state.structures.find((s) => s.blueprintId === structureId);
+    if (existing) {
+      return this.failure('ERR_CONFLICT', `Structure ${structureId} is already rented.`, [
+        'world.rentStructure',
+        'structureId',
+      ]);
+    }
+
+    const newStructure: StructureState = {
+      id: this.createId('structure'),
+      blueprintId: blueprint.id,
+      name: blueprint.name,
+      status: 'active',
+      footprint: { ...blueprint.footprint },
+      rooms: [],
+      rentPerTick: blueprint.rentPerTick,
+      upfrontCostPaid: 0,
+      notes: undefined,
+    };
+
+    this.state.structures.push(newStructure);
+
+    const accumulator = this.costAccounting.createAccumulator();
+    this.costAccounting.recordRent(
+      this.state,
+      newStructure.rentPerTick,
+      context.tick,
+      new Date().toISOString(),
+      accumulator,
+      context.events,
+      `Rented new structure: ${newStructure.name}`,
+    );
+    this.applyAccumulator(accumulator);
+
+    context.events.queue(
+      'world.structureRented',
+      { structureId: newStructure.id, name: newStructure.name },
+      context.tick,
+      'info',
+    );
+
+    return {
+      ok: true,
+      data: { structureId: newStructure.id },
+    } satisfies CommandResult<DuplicateStructureResult>;
+  }
+
   deleteStructure(structureId: string, context: CommandExecutionContext): CommandResult {
     const lookup = findStructure(this.state, structureId);
     if (!lookup) {
