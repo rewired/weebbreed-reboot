@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Room Creation System**: Implemented complete room creation functionality allowing players to add custom rooms to structures with configurable names, purposes (Grow Room, Laboratory, Break Room, Sales Room), and areas. Includes frontend modal interface, backend validation, and real-time UI updates.
 - **Zone Creation System**: Added comprehensive zone creation functionality enabling players to add cultivation zones to rooms with selectable names, areas, and cultivation methods (Basic Soil Pot, Screen of Green, Sea of Green). Features area validation, real-time available space calculation, and full game integration.
+- **Available Space Display**: Enhanced room creation modal to show available space within structures, including real-time calculation of remaining footprint area, visual feedback for invalid inputs, and form validation to prevent exceeding structure capacity.
 - Introduced the changelog to capture noteworthy changes for upcoming releases.
 - Recorded ADR 0003 describing the façade messaging overhaul and modular intent registry.
 - Created a clickdummy fixture translator (`src/frontend/src/fixtures/translator.ts`) to hydrate stores with `SimulationSnapshot`-konformen Daten inklusive normalisierter SI-Einheiten und Geometriefeldern.

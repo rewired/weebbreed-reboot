@@ -392,6 +392,11 @@ const CreateRoomModal = ({
       ? (state.snapshot?.structures.find((item) => item.id === structureId) ?? null)
       : null,
   );
+  const rooms = useSimulationStore((state) =>
+    structureId
+      ? (state.snapshot?.rooms.filter((room) => room.structureId === structureId) ?? [])
+      : [],
+  );
   const [roomName, setRoomName] = useState('');
   const [purpose, setPurpose] = useState('Grow Room');
   const [area, setArea] = useState(50);
@@ -409,6 +414,10 @@ const CreateRoomModal = ({
   const handleCreate = async () => {
     if (!roomName.trim()) {
       setFeedback('Room name is required.');
+      return;
+    }
+    if (area > availableArea) {
+      setFeedback(`Room area (${area} m²) exceeds available space (${availableArea} m²).`);
       return;
     }
     setBusy(true);
@@ -446,6 +455,9 @@ const CreateRoomModal = ({
     { id: 'Break Room', name: 'Break Room', description: 'Staff rest and recovery' },
     { id: 'Sales Room', name: 'Sales Room', description: 'Commercial product sales' },
   ];
+
+  const existingRoomArea = rooms.reduce((sum, room) => sum + room.area, 0);
+  const availableArea = Math.max(0, structure.footprint.area - existingRoomArea);
 
   return (
     <div className="grid gap-4">
@@ -487,8 +499,18 @@ const CreateRoomModal = ({
             value={area}
             onChange={(event) => setArea(Number(event.target.value))}
             min="1"
-            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+            max={availableArea}
+            step="1"
+            className={`w-full rounded-lg border px-3 py-2 text-sm text-text focus:outline-none ${
+              area > availableArea
+                ? 'border-red-500 bg-red-50 focus:border-red-500'
+                : 'border-border/60 bg-surface-muted/50 focus:border-primary'
+            }`}
           />
+          <span className={`text-xs ${area > availableArea ? 'text-red-600' : 'text-text-muted'}`}>
+            Available: {availableArea.toFixed(0)} m² (structure footprint:{' '}
+            {structure.footprint.area} m²)
+          </span>
         </label>
       </div>
       {feedback ? <Feedback message={feedback} /> : null}
@@ -496,7 +518,7 @@ const CreateRoomModal = ({
         onCancel={closeModal}
         onConfirm={handleCreate}
         confirmLabel={busy ? 'Creating…' : 'Create room'}
-        confirmDisabled={busy}
+        confirmDisabled={busy || area > availableArea}
         cancelDisabled={busy}
       />
     </div>
