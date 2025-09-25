@@ -4,8 +4,24 @@
   "name": "Exhaust Fan 4-inch",
   "quality": 0.7,
   "complexity": 0.1,
-  "lifespan": 63072000,
+  "lifetime_h": 17520,
   "roomPurposes": ["growroom"],
+  "coverage": {
+    "maxVolume_m3": 15.0,
+    "ventilationPattern": "exhaust"
+  },
+  "limits": {
+    "power_W": 50,
+    "airflow_m3_h": 200,
+    "minAirflow_m3_h": 100,
+    "maxStaticPressure_Pa": 150
+  },
+  "efficiencyDegeneration": 0.5,
+  "maintenance": {
+    "intervalDays": 30,
+    "costPerService_eur": 10.0,
+    "hoursPerService": 0.25
+  },
   "settings": {
     "power": 0.05,
     "airflow": 170

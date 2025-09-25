@@ -4,8 +4,24 @@
   "name": "CO2 Pulse",
   "quality": 0.85,
   "complexity": 0.15,
-  "lifespan": 31536000,
+  "lifetime_h": 8760,
   "roomPurposes": ["growroom"],
+  "coverage": {
+    "maxVolume_m3": 30.0,
+    "distributionPattern": "point-source"
+  },
+  "limits": {
+    "power_W": 50,
+    "co2Rate_ppm_min": 200,
+    "maxCO2_ppm": 1500,
+    "minCO2_ppm": 350
+  },
+  "efficiencyDegeneration": 0.8,
+  "maintenance": {
+    "intervalDays": 60,
+    "costPerService_eur": 25.0,
+    "hoursPerService": 0.75
+  },
   "settings": {
     "power": 0.05,
     "targetCO2": 1100,

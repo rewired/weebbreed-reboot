@@ -4,8 +4,24 @@
   "name": "LED VegLight 600",
   "quality": 0.95,
   "complexity": 0.2,
-  "lifespan": 189216000,
+  "lifetime_h": 52560,
   "roomPurposes": ["growroom"],
+  "coverage": {
+    "maxArea_m2": 1.2,
+    "effectivePPFD_at_m": 0.6,
+    "beamProfile": "wide"
+  },
+  "limits": {
+    "power_W": 600,
+    "maxPPFD": 1200,
+    "minPPFD": 200
+  },
+  "efficiencyDegeneration": 2.5,
+  "maintenance": {
+    "intervalDays": 30,
+    "costPerService_eur": 15.0,
+    "hoursPerService": 0.5
+  },
   "settings": {
     "power": 0.6,
     "ppfd": 800,
