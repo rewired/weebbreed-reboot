@@ -3,20 +3,11 @@
   "kind": "Disease",
   "name": "Hop Latent Viroid (HpLVd)",
   "pathogenType": "viroid",
-  "targets": [
-    "systemic"
-  ],
+  "targets": ["systemic"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      28
-    ]
+    "temperatureRange": [18, 28]
   },
-  "transmission": [
-    "clones",
-    "sap",
-    "tools"
-  ],
+  "transmission": ["clones", "sap", "tools"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.03,
@@ -33,12 +24,7 @@
     ]
   },
   "treatments": {
-    "cultural": [
-      "Use tested clones only",
-      "Strict tool hygiene"
-    ],
-    "mechanical": [
-      "Screen and remove infected mother plants"
-    ]
+    "cultural": ["Use tested clones only", "Strict tool hygiene"],
+    "mechanical": ["Screen and remove infected mother plants"]
   }
 }

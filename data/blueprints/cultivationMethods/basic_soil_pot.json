@@ -22,25 +22,12 @@
   },
   "strainTraitCompatibility": {},
   "idealConditions": {
-    "idealTemperature": [
-      20,
-      28
-    ],
-    "idealHumidity": [
-      0.5,
-      0.7
-    ]
+    "idealTemperature": [20, 28],
+    "idealHumidity": [0.5, 0.7]
   },
   "meta": {
     "description": "Simple cultivation method: one plant per pot in soil. Low setup cost, minimal labor, universally compatible.",
-    "advantages": [
-      "Very low initial cost",
-      "Compatible with most strains",
-      "Easy to manage"
-    ],
-    "disadvantages": [
-      "Moderate space usage",
-      "Lower productivity than advanced methods"
-    ]
+    "advantages": ["Very low initial cost", "Compatible with most strains", "Easy to manage"],
+    "disadvantages": ["Moderate space usage", "Lower productivity than advanced methods"]
   }
 }

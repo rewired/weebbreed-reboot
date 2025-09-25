@@ -55,7 +55,12 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
                 setError('Quick Start failed. Review facade warnings in the event log.');
                 return;
               }
+              console.log('Quick Start successful, stepping simulation to refresh snapshot...');
+
+              // Step the simulation once to trigger snapshot update, then pause
+              await bridge.sendControl({ action: 'step', ticks: 1 });
               await bridge.sendControl({ action: 'pause' });
+
               enterDashboard();
             } catch (exception) {
               console.error('Failed to initialise quick start', exception);

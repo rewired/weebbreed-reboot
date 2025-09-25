@@ -5,7 +5,6 @@ import type {
   SimulationConfigUpdate,
   SimulationControlCommand,
   SimulationEvent,
-  SimulationSnapshot,
   SimulationTimeStatus,
   SimulationUpdateEntry,
 } from '@/types/simulation';
@@ -122,25 +121,49 @@ class SocketSystemFacade implements SimulationBridge {
       store.setTimeStatus(payload.status ?? null);
     });
 
-    socket.on('simulationSnapshot', (payload) => {
-      if (payload && typeof payload === 'object') {
-        const snapshot = (payload as { snapshot?: unknown }).snapshot;
-        if (snapshot) {
-          store.hydrate({
-            snapshot: snapshot as SimulationSnapshot,
-            events: extractEvents(payload),
-            time: (payload as { time?: SimulationTimeStatus }).time,
-          });
-        }
-      }
-    });
-
     socket.on('simulationUpdate', (payload) => {
       if (!isSimulationUpdateMessage(payload)) {
         return;
       }
+
+      const currentSnapshot = useSimulationStore.getState().snapshot;
+      console.log('📡 SimulationUpdate received:', {
+        updateCount: payload.updates.length,
+        hasSnapshot: !!currentSnapshot,
+        latestTick: payload.updates[0]?.tick,
+      });
+
+      // Handle the first update as initial hydration
+      if (payload.updates.length > 0 && !currentSnapshot) {
+        const firstUpdate = payload.updates[0];
+        console.log('🔄 Initial hydration with tick:', firstUpdate.tick);
+        store.hydrate({
+          snapshot: firstUpdate.snapshot,
+          events: firstUpdate.events || [],
+          time: firstUpdate.time,
+        });
+
+        // Process remaining updates normally
+        for (let i = 1; i < payload.updates.length; i++) {
+          const update = payload.updates[i];
+          console.log('⚡ Processing additional update tick:', update.tick);
+          store.applyUpdate(update);
+        }
+      } else {
+        // Normal update processing
+        for (const update of payload.updates) {
+          console.log(
+            '🔥 Processing ongoing update tick:',
+            update.tick,
+            'structures:',
+            update.snapshot?.structures?.length,
+          );
+          store.applyUpdate(update);
+        }
+      }
+
+      // Notify update handlers
       for (const update of payload.updates) {
-        store.applyUpdate(update);
         for (const handler of this.updateHandlers) {
           handler(update);
         }

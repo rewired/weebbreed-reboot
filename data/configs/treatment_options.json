@@ -10,14 +10,8 @@
       "cooldownDaysDefault": 3
     },
     "sideEffects": {
-      "phytotoxicityRiskKeys": [
-        "oilOnBloom",
-        "uvcOnTenderLeaves"
-      ],
-      "beneficialsHarmRiskKeys": [
-        "broadSpectrumInsecticide",
-        "sulfurHighDose"
-      ]
+      "phytotoxicityRiskKeys": ["oilOnBloom", "uvcOnTenderLeaves"],
+      "beneficialsHarmRiskKeys": ["broadSpectrumInsecticide", "sulfurHighDose"]
     },
     "costModel": {
       "costBasis": {
@@ -33,17 +27,8 @@
       "id": "defbc266-d4a8-4d1d-bb90-c603ea4574d6",
       "name": "Increase Airflow",
       "category": "cultural",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower",
-        "lateFlower",
-        "ripening"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower", "lateFlower", "ripening"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.92,
@@ -68,14 +53,8 @@
       "id": "97187f66-817f-4e8a-b0cb-db237b663743",
       "name": "Dehumidify Night Cycle",
       "category": "cultural",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "earlyFlower",
-        "lateFlower",
-        "ripening"
-      ],
+      "targets": ["disease"],
+      "applicability": ["earlyFlower", "lateFlower", "ripening"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.85,
@@ -96,15 +75,8 @@
       "id": "0828046f-3986-456b-9abe-3f35f5a1f9c4",
       "name": "Dry-Down Irrigation Cycle",
       "category": "cultural",
-      "targets": [
-        "pest",
-        "disease"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest", "disease"],
+      "applicability": ["seedling", "vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.85,
@@ -128,14 +100,8 @@
       "id": "fa328792-9539-4254-bd5d-cbe8233b6289",
       "name": "Predatory Mites (Phytoseiulus/Amblyseius)",
       "category": "biological",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower",
-        "lateFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation", "earlyFlower", "lateFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.75,
@@ -158,13 +124,8 @@
       "id": "a0e34f90-c9de-4a95-a88d-9a1a615dd747",
       "name": "Bacillus subtilis (foliar)",
       "category": "biological",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["disease"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.8,
@@ -184,15 +145,8 @@
       "id": "80edee83-4577-4063-877c-68f8d6ab35bc",
       "name": "Trichoderma (root drench)",
       "category": "biological",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.82,
@@ -216,14 +170,8 @@
       "id": "26eba5ec-66e0-41e9-98b5-cce64ebbc079",
       "name": "Bti (Bacillus thuringiensis israelensis)",
       "category": "biological",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.7,
@@ -243,14 +191,8 @@
       "id": "8241536e-1b0e-4f7b-8857-63bca0179c3e",
       "name": "Remove Infected Tissue",
       "category": "mechanical",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower",
-        "lateFlower"
-      ],
+      "targets": ["disease"],
+      "applicability": ["vegetation", "earlyFlower", "lateFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.85,
@@ -270,16 +212,8 @@
       "id": "40d709c5-5cc6-4bbf-92d0-7e172057170c",
       "name": "Sticky Cards (yellow/blue)",
       "category": "mechanical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "seedling",
-        "vegetation",
-        "earlyFlower",
-        "lateFlower",
-        "ripening"
-      ],
+      "targets": ["pest"],
+      "applicability": ["seedling", "vegetation", "earlyFlower", "lateFlower", "ripening"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.95,
@@ -299,12 +233,8 @@
       "id": "327a4266-caba-4129-8538-0f7f2c12fbd0",
       "name": "Rinse/Jet Wash",
       "category": "mechanical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.85,
@@ -324,14 +254,8 @@
       "id": "91d9ee39-32e5-4d83-9702-1365d171a5ea",
       "name": "Horticultural Oil (foliar)",
       "category": "chemical",
-      "targets": [
-        "pest",
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest", "disease"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.7,
@@ -358,13 +282,8 @@
       "id": "ba30fafa-3751-4c56-9315-c289c8780dd0",
       "name": "Potassium Bicarbonate (foliar)",
       "category": "chemical",
-      "targets": [
-        "disease"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["disease"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.75,
@@ -384,13 +303,8 @@
       "id": "131fe37b-967b-4ff3-a9fd-d15cab018dc0",
       "name": "Sulfur (vapor/low-dose spray)",
       "category": "chemical",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "vegetation"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["vegetation"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.7,
@@ -417,13 +331,8 @@
       "id": "b5792994-eb74-4d89-8c50-246308b138a2",
       "name": "Spinosad (where permitted)",
       "category": "chemical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation", "earlyFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.6,
@@ -446,14 +355,8 @@
       "id": "dfac9a95-ea56-4606-9417-e5e1382892ed",
       "name": "Btk (Bacillus thuringiensis kurstaki)",
       "category": "chemical",
-      "targets": [
-        "pest"
-      ],
-      "applicability": [
-        "vegetation",
-        "earlyFlower",
-        "lateFlower"
-      ],
+      "targets": ["pest"],
+      "applicability": ["vegetation", "earlyFlower", "lateFlower"],
       "efficacy": {
         "pest": {
           "reproductionMultiplier": 0.7,
@@ -473,13 +376,8 @@
       "id": "5dc92d86-7f0f-4e7f-8577-69b50f71ee78",
       "name": "UV-C Pass (controlled exposure)",
       "category": "physical",
-      "targets": [
-        "disease",
-        "pest"
-      ],
-      "applicability": [
-        "vegetation"
-      ],
+      "targets": ["disease", "pest"],
+      "applicability": ["vegetation"],
       "efficacy": {
         "disease": {
           "infectionMultiplier": 0.85,

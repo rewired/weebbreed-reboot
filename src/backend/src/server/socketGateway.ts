@@ -304,6 +304,11 @@ export class SocketGateway {
       },
       ack,
     );
+
+    // Broadcast time status changes to all clients
+    if (result.ok && result.data) {
+      this.io.emit('time.status', { status: result.data });
+    }
   }
 
   private async handleConfigUpdate(
@@ -338,6 +343,11 @@ export class SocketGateway {
       },
       ack,
     );
+
+    // Broadcast time status changes to all clients
+    if (result.ok && result.data) {
+      this.io.emit('time.status', { status: result.data });
+    }
   }
 
   private async handleFacadeIntent(
@@ -406,6 +416,26 @@ export class SocketGateway {
       },
       ack,
     );
+
+    // Broadcast immediate snapshot update for successful domain commands
+    if (result.ok) {
+      const snapshot = this.facade.select((state) =>
+        buildSimulationSnapshot(state, this.roomPurposeSource),
+      );
+      const time = this.facade.getTimeStatus();
+
+      this.io.emit('simulationUpdate', {
+        updates: [
+          {
+            tick: snapshot.tick,
+            ts: Date.now(),
+            events: [],
+            snapshot,
+            time,
+          } satisfies SimulationUpdateEntry,
+        ],
+      } satisfies SimulationUpdateMessage);
+    }
   }
 
   private async executeSimulationControl(

@@ -35,6 +35,7 @@ const expectedBlueprintSubdirectories: string[][] = [
   ['blueprints', 'devices'],
   ['blueprints', 'cultivationMethods'],
   ['blueprints', 'roomPurposes'],
+  ['blueprints', 'structures'],
   ['prices'],
 ];
 

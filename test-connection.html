@@ -1,0 +1,93 @@
+<!doctype html>
+<html>
+  <head>
+    <title>WebSocket Connection Test</title>
+  </head>
+  <body>
+    <h1>WebSocket Connection Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+      const statusDiv = document.getElementById('status');
+      const messagesDiv = document.getElementById('messages');
+
+      function addMessage(message) {
+        const div = document.createElement('div');
+        div.textContent = new Date().toISOString() + ': ' + message;
+        messagesDiv.appendChild(div);
+        console.log(message);
+      }
+
+      addMessage('Attempting to connect to WebSocket...');
+
+      const socket = io('http://localhost:7331', {
+        path: '/socket.io',
+        transports: ['websocket', 'polling'],
+        withCredentials: true,
+        autoConnect: true,
+      });
+
+      socket.on('connect', () => {
+        statusDiv.textContent = 'Connected!';
+        statusDiv.style.color = 'green';
+        addMessage('Successfully connected to WebSocket');
+      });
+
+      socket.on('disconnect', () => {
+        statusDiv.textContent = 'Disconnected';
+        statusDiv.style.color = 'red';
+        addMessage('WebSocket disconnected');
+      });
+
+      socket.on('error', (error) => {
+        statusDiv.textContent = 'Error: ' + error;
+        statusDiv.style.color = 'red';
+        addMessage('WebSocket error: ' + JSON.stringify(error));
+      });
+
+      // Listen for all events
+      const originalOn = socket.on.bind(socket);
+      socket.on = (event, handler) => {
+        return originalOn(event, (...args) => {
+          if (event !== 'connect' && event !== 'disconnect' && event !== 'error') {
+            addMessage('Received event: ' + event + ' - ' + JSON.stringify(args));
+          }
+          return handler(...args);
+        });
+      };
+
+      // Listen for specific events we expect
+      socket.on('gateway.protocol', (data) => {
+        addMessage('Protocol version: ' + JSON.stringify(data));
+      });
+
+      socket.on('time.status', (data) => {
+        addMessage('Time status: ' + JSON.stringify(data));
+      });
+
+      socket.on('simulationUpdate', (data) => {
+        addMessage(
+          'Simulation update received with ' +
+            (data.updates ? data.updates.length : 0) +
+            ' updates',
+        );
+        if (data.updates && data.updates[0] && data.updates[0].snapshot) {
+          const snapshot = data.updates[0].snapshot;
+          addMessage(
+            'Snapshot has ' +
+              (snapshot.structures ? snapshot.structures.length : 0) +
+              ' structures',
+          );
+        }
+      });
+
+      socket.on('domainEvents', (data) => {
+        addMessage('Domain events: ' + (data.events ? data.events.length : 0) + ' events');
+      });
+
+      window.socket = socket; // For debugging in console
+    </script>
+  </body>
+</html>

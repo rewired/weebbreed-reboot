@@ -66,3 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected the validate-data CLI import path to target the actual data loader module location.
 - Upgraded the frontend Socket.IO client to `^4.8.1` to match the backend
   dependency and eliminate protocol drift.
+- Fixed simulation control flow so new games always start in paused state, allowing players to examine initial conditions before starting the simulation clock.
+- Implemented real-time time status synchronization between backend and frontend, ensuring play/pause button states reflect actual simulation status across all connected clients.
+- Added immediate snapshot broadcasts for successful domain commands (structure rentals, room/zone creation, etc.) so UI updates appear instantly regardless of simulation running/paused state.
+- Resolved duplicate structure rental prevention that was blocking multiple rentals of the same blueprint type - players can now rent multiple "Small Warehouse" structures and other blueprint types as intended.

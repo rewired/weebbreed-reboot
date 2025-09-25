@@ -301,13 +301,24 @@ export const startBackendServer = async (
   await startHttpServer(httpServer, port);
   serverLogger.info({ port }, 'Listening for HTTP connections.');
 
+  // Start the simulation clock but immediately pause it for new games
   const startResult = await facade.time.start();
   if (!startResult.ok) {
     const details = startResult.errors?.map((error) => error.message).join(', ') ?? 'unknown error';
     serverLogger.error({ details }, 'Failed to start simulation clock.');
   } else {
-    const statusDescription = formatTimeStatus(startResult.data);
-    serverLogger.info({ status: startResult.data, statusDescription }, 'Simulation clock started.');
+    const pauseResult = await facade.time.pause();
+    if (!pauseResult.ok) {
+      serverLogger.warn(
+        { errors: pauseResult.errors },
+        'Failed to pause simulation after startup.',
+      );
+    }
+    const statusDescription = formatTimeStatus(pauseResult.data ?? startResult.data);
+    serverLogger.info(
+      { status: pauseResult.data ?? startResult.data, statusDescription },
+      'Simulation clock started and paused.',
+    );
   }
 
   let shuttingDown = false;

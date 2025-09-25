@@ -11,6 +11,13 @@ export const DashboardView = () => {
   const openStructure = useNavigationStore((state) => state.openStructure);
   const openModal = useUIStore((state) => state.openModal);
 
+  console.log(
+    '💵 DashboardView render - tick:',
+    snapshot?.tick,
+    'structures:',
+    snapshot?.structures?.length,
+  );
+
   if (!snapshot) {
     return null;
   }

@@ -1,6 +1,7 @@
 # Weedbreed.AI — Technical Design Document (TDD)
 
 ## 0) Goals & Principles
+
 - **Data-driven simulation**: All gameplay is configured by JSON files described in the DD.
 - **Separation of concerns**: Headless simulation engine; any UI consumes snapshots/events.
 - **Determinism**: Given same seed and inputs, outcomes are reproducible.
@@ -8,10 +9,12 @@
 - **Extensibility**: Add new devices/strains/treatments/pests/diseases via data without code changes.
 
 ---
+
 ## 1) Authoritative State & Public API
+
 - **Single authoritative state**: Composite object covering Company → Structures → Rooms → Zones → Plantings/Plants; Devices; Inventory; Personnel; Tasks; Finance; Health; Clocks; RNG seed.
 - **Mutation constraints**:
-	- Only via **tick processing** and **explicit actions** (player / AI).- All external consumers get read-only snapshots (immutable from the UI perspective).
+  - Only via **tick processing** and **explicit actions** (player / AI).- All external consumers get read-only snapshots (immutable from the UI perspective).
 - **Event stream** (pub/sub): `sim.tickCompleted`, `plant.stageChanged`, `device.failed`, `market.saleCompleted`, `pest.detected`, `treatment.applied`, `employee.taskPicked`, `task.completed`, etc.
 - **Persistence**: Load/save full state; load/merge blueprints; support hot-reload with validation and atomic swap.
 
@@ -20,29 +23,29 @@
 ## 2) Simulation Loop (fixed-step)
 
 - **Scheduler-agnostic**: The loop may run on a server timer, a worker, or a frame callback. The contract is fixed-step:
-    1. Accumulate real time.    
-    2. Execute ticks when `accumulated ≥ tickInterval / gameSpeed`.    
-    3. **Catch-up**: Process up to `maxTicksPerFrame` to avoid long stalls.    
+  1. Accumulate real time.
+  2. Execute ticks when `accumulated ≥ tickInterval / gameSpeed`.
+  3. **Catch-up**: Process up to `maxTicksPerFrame` to avoid long stalls.
 - **Recommended tick phases (order)**:
-    1. **Device control** (evaluate setpoints, on/off, hysteresis).    
-    2. **Apply device effects** (to zone environment: ΔT, ΔRH, PPFD, CO₂).    
-    3. **Environment mixing/normalization** (ambient exchange scaled by airflow/enclosure).    
-    4. **Irrigation/Nutrients** (compute per-tick water/N/P/K demands from phase-based curves; update stocks, log deficits).    
-    5. **Plants** (growth, phenology, stress from temp/RH/CO₂/light & resource status; stage changes).    
-    6. **Health** (detect → progress → spread → treatments; apply PHI/re-entry).    
-    7. **Tasks & Agents** (generate tasks; employees seek/claim/execute respecting skills/tools/locks).    
-    8. **Harvest/Inventory/Market** (lot creation, timestamps, quality decay).    
-    9. **Accounting** (OPEX: maintenance/energy/water/nutrients/labor/rent; CapEx events).    
-    10. **Commit** (snapshot + batched events).    
+  1. **Device control** (evaluate setpoints, on/off, hysteresis).
+  2. **Apply device effects** (to zone environment: ΔT, ΔRH, PPFD, CO₂).
+  3. **Environment mixing/normalization** (ambient exchange scaled by airflow/enclosure).
+  4. **Irrigation/Nutrients** (compute per-tick water/N/P/K demands from phase-based curves; update stocks, log deficits).
+  5. **Plants** (growth, phenology, stress from temp/RH/CO₂/light & resource status; stage changes).
+  6. **Health** (detect → progress → spread → treatments; apply PHI/re-entry).
+  7. **Tasks & Agents** (generate tasks; employees seek/claim/execute respecting skills/tools/locks).
+  8. **Harvest/Inventory/Market** (lot creation, timestamps, quality decay).
+  9. **Accounting** (OPEX: maintenance/energy/water/nutrients/labor/rent; CapEx events).
+  10. **Commit** (snapshot + batched events).
 
 ---
 
 ## 3) Environment & Device Models
 
 - **Devices** act as sources/sinks per tick:
-    - **GrowLight**: Heat + PPFD to covered area. Use `ppf_umol_s` & geometry factor to translate to canopy PPFD; cap by `coverage_m2`.    
-    - **Climate/HVAC**: `coolingCapacity` and `airflow` drive ΔT; dehumidifiers reduce RH using `moistureRemoval_Lph`; fans mix air (faster normalization).    
-    - **CO₂Injector**: Pulsed injection towards `targetCO2_ppm` capped by `maxSafeCO2_ppm`.    
+  - **GrowLight**: Heat + PPFD to covered area. Use `ppf_umol_s` & geometry factor to translate to canopy PPFD; cap by `coverage_m2`.
+  - **Climate/HVAC**: `coolingCapacity` and `airflow` drive ΔT; dehumidifiers reduce RH using `moistureRemoval_Lph`; fans mix air (faster normalization).
+  - **CO₂Injector**: Pulsed injection towards `targetCO2_ppm` capped by `maxSafeCO2_ppm`.
 - **Normalization**: Exponential decay towards ambient for T/RH/CO₂, scaled by ventilation (`airflow`) and enclosure leakage.
 
 **Implementation note**: Start with a simplified “well-mixed bucket” model. Permit future upgrades (Magnus formula for saturation vapor pressure, Penman–Monteith for ET0) behind the same API.
@@ -54,12 +57,12 @@
 - **Plantings**: Group of same-strain plants started together. Each Plant tracks `biomass`, `health`, `stress`, `stage`, `age`.
 - **Phenology**: Stage transitions by elapsed days & photoperiod rules; events emitted on transitions.
 - **Growth model**:
-    - Potential growth from light/CO₂/temperature response curves (saturating light response, Gaussian temperature response, CO₂ half-saturation).    
-    - Modulate by health, stress, and resource fulfillment (water, NPK).    
-    - Enforce caps (e.g., `maxBiomassDry_g` × `phaseCapMultiplier`).    
+  - Potential growth from light/CO₂/temperature response curves (saturating light response, Gaussian temperature response, CO₂ half-saturation).
+  - Modulate by health, stress, and resource fulfillment (water, NPK).
+  - Enforce caps (e.g., `maxBiomassDry_g` × `phaseCapMultiplier`).
 - **Resources**:
-    - Convert **NPK g/m²/day** to per-tick, per-plant requirement using zone area and plant count from cultivation method.    
-    - Under-supply increments stress and reduces growth; over-supply may raise disease risk via `overfertilizationRisk`.    
+  - Convert **NPK g/m²/day** to per-tick, per-plant requirement using zone area and plant count from cultivation method.
+  - Under-supply increments stress and reduces growth; over-supply may raise disease risk via `overfertilizationRisk`.
 
 ---
 
@@ -67,12 +70,11 @@
 
 - **Data-first**: Diseases and pests are fully described in JSON blueprints; operational treatments in `treatment_options.json`.
 - **Tick logic**:
-    1. **Detect**: Visibility increases over time; **scouting tasks** and traps add detection rolls.    
-    2. **Progress**: Severity grows with favorable environment and balancing multipliers.    
-    3. **Spread**: Probabilistic transmission within zone and to neighbors; influenced by airflow/sanitation/tools.    
-    4. **Treatments**: Apply efficacy to severity/infection; respect `cooldownDays`, **`reentryIntervalTicks`**, **`preHarvestIntervalTicks`**.    
-    5. **Events**: `pest.detected`, `disease.confirmed`, `health.spread`, `treatment.applied`, `outbreak.contained`.
-        
+  1. **Detect**: Visibility increases over time; **scouting tasks** and traps add detection rolls.
+  2. **Progress**: Severity grows with favorable environment and balancing multipliers.
+  3. **Spread**: Probabilistic transmission within zone and to neighbors; influenced by airflow/sanitation/tools.
+  4. **Treatments**: Apply efficacy to severity/infection; respect `cooldownDays`, **`reentryIntervalTicks`**, **`preHarvestIntervalTicks`**.
+  5. **Events**: `pest.detected`, `disease.confirmed`, `health.spread`, `treatment.applied`, `outbreak.contained`.
 - **IPM**: Cultural/biological first, chemical last; PHI enforced; sanitation score reduces background risk and tool-borne transmission.
 
 ---
@@ -82,8 +84,8 @@
 - **Model**: Employees have `skills`, `traits`, `certifications`, `hourlyWage`, state (`Idle`, `Working`, `Resting`, `OffDuty`), `energy`, `morale`.
 - **Task generation**: Each tick, scan world → produce tasks with `priority`, `requiredSkills`, `location`, `estimatedDuration`, `deadline`, `toolsRequired`, `safetyConstraints`.
 - **Utility-based claiming** (per Idle employee):
-	U = w1*priority + w2*skillMatch + w3*roleAffinity + w4*urgency
-	     w5*distance - w6*fatigue + w7*morale + w8*toolAvailability ± traitMods
+  U = w1*priority + w2*skillMatch + w3*roleAffinity + w4*urgency
+  w5*distance - w6*fatigue + w7*morale + w8*toolAvailability ± traitMods
 - **Locks**: Tools/resources are exclusive; tasks can be `blocking` or `splittable`.
 - **Safety**: Treatments set PHI/re-entry timers; employees without certification or before re-entry may not claim.
 - **Progress & learning**: Time accrues; completion mutates state & emits events; optional skill XP.
@@ -96,6 +98,7 @@
 - **Profile synthesis**: for each candidate, generate `skills`, `traits`, and `hourlyWage` from balancing rules (deterministic when seeded).
 - **Privacy constraint**: requests must be name-only (no additional PII).
 - **Events**: `hr.candidatesRefreshed`, `hr.candidateHired`, `hr.candidateRejected`.
+
 ### Task Engine (augment)
 
 - **Generation**: Every tick, scan world state to create tasks; read base parameters from `task_definitions.json`.
@@ -117,10 +120,10 @@
 - **Energy coupling**: Each tick of work reduces energy; employees finish the **current task** even if energy dips below 0.
 - **Overtime calculation**: convert negative energy at completion into **overtime hours**.
 - **Compensation policy**:
-    - `payout`: pay **overtimeMultiplier × hourlyWage** instantly; proceed to standard rest.
-    - `timeOff`: credit overtime to `leaveHours`; the next OffDuty window is extended accordingly.
+  - `payout`: pay **overtimeMultiplier × hourlyWage** instantly; proceed to standard rest.
+  - `timeOff`: credit overtime to `leaveHours`; the next OffDuty window is extended accordingly.
 - **Events**: `hr.overtimeAccrued`, `hr.overtimePaid`, `hr.timeOffScheduled`.
-    
+
 ### Data & Validation Hooks (augment)
 
 - **Personnel schema** must include: `id (UUID)`, `name`, `role`, `skills`, `traits`, `hourlyWage`, `energy`, `morale`, `status`, optional `leaveHours`, optional `certifications`, optional `assignedStructureId`.
@@ -141,8 +144,8 @@
 ## 8) Device Placement Rules
 
 - Enforce `allowedRoomPurposes` on device install/move.
-    - Lights & HVAC default to `["growroom"]`.    
-    - Neutral items (shelves/furniture/sensors) default to `["*"]`.    
+  - Lights & HVAC default to `["growroom"]`.
+  - Neutral items (shelves/furniture/sensors) default to `["*"]`.
 - Validation emits warnings/errors with actionable messages.
 
 ---
@@ -151,11 +154,11 @@
 
 - **Loading order**: (a) schemas/manifest, (b) blueprints, (c) configs/prices, (d) balancing.
 - **Validation**:
-    - Types, ranges, required keys.    
-    - Cross-file references by **`id` (UUID)**. Try slug fallback only in price maps if needed.    
+  - Types, ranges, required keys.
+  - Cross-file references by **`id` (UUID)**. Try slug fallback only in price maps if needed.
 - **Hot reload**:
-    - Load → validate → stage → swap at phase boundary to avoid partial state.    
-    - Emit `data.reloaded` with a summary of diffs.    
+  - Load → validate → stage → swap at phase boundary to avoid partial state.
+  - Emit `data.reloaded` with a summary of diffs.
 
 ---
 
@@ -164,13 +167,13 @@
 - **Primary key everywhere**: `id` (UUID v4).
 - **No `uuid` field**.
 - **Migration rules**:
-    - If old `id` is already a UUID → keep.    
-    - If old `id` is not a UUID:    
-        - If `name` exists → create a new UUID for `id` (keep `name`).        
-        - If `name` missing → derive a readable `name` from the old id/filename, then assign new UUID to `id`.        
+  - If old `id` is already a UUID → keep.
+  - If old `id` is not a UUID:
+    - If `name` exists → create a new UUID for `id` (keep `name`).
+    - If `name` missing → derive a readable `name` from the old id/filename, then assign new UUID to `id`.
 - **Strain lineage**:
-    - `lineage.parents` must list parent `id` (UUID). Empty or missing ⇒ ur-plant.    
-    - During migration, map parents by prior `name`, `slug`, or old `id`. Unresolved → leave empty and report.    
+  - `lineage.parents` must list parent `id` (UUID). Empty or missing ⇒ ur-plant.
+  - During migration, map parents by prior `name`, `slug`, or old `id`. Unresolved → leave empty and report.
 
 ---
 
@@ -191,10 +194,10 @@
 - **Determinism**: All stochastic draws come from an injected RNG (seeded). `noise` in strains modulates breeding variance.
 - **Performance targets**: Document max zones × plants × devices × agents × health checks per tick; measure and enforce budgets per phase.
 - **Testing**:
-    - Schema tests (JSON validation).    
-    - Deterministic scenario tests (fixed seed, golden outputs).    
-    - Health/treatment scenarios (efficacy, PHI/re-entry).    
-    - Performance regression tests (tick time under target loads).    
+  - Schema tests (JSON validation).
+  - Deterministic scenario tests (fixed seed, golden outputs).
+  - Health/treatment scenarios (efficacy, PHI/re-entry).
+  - Performance regression tests (tick time under target loads).
 
 ---
 

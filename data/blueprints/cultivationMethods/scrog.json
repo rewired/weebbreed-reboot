@@ -33,14 +33,8 @@
     }
   },
   "idealConditions": {
-    "idealTemperature": [
-      21,
-      27
-    ],
-    "idealHumidity": [
-      0.55,
-      0.7
-    ]
+    "idealTemperature": [21, 27],
+    "idealHumidity": [0.55, 0.7]
   },
   "meta": {
     "description": "Screen of Green (SCROG) is a low-density cultivation method that uses a screen to train plants to grow horizontally, creating a flat, even canopy. It maximizes light exposure for a smaller number of larger plants.",

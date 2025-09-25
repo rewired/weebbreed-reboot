@@ -3,21 +3,11 @@
   "kind": "Disease",
   "name": "Mosaic Virus (TMV/CMV-like)",
   "pathogenType": "virus",
-  "targets": [
-    "leaves",
-    "systemic"
-  ],
+  "targets": ["leaves", "systemic"],
   "environmentalRisk": {
-    "temperatureRange": [
-      18,
-      28
-    ]
+    "temperatureRange": [18, 28]
   },
-  "transmission": [
-    "sap",
-    "tools",
-    "pests"
-  ],
+  "transmission": ["sap", "tools", "pests"],
   "contagious": true,
   "model": {
     "dailyInfectionIncrement": 0.04,
@@ -34,12 +24,7 @@
     ]
   },
   "treatments": {
-    "cultural": [
-      "Use pathogen-free plant material",
-      "Disinfect tools"
-    ],
-    "mechanical": [
-      "Remove infected plants"
-    ]
+    "cultural": ["Use pathogen-free plant material", "Disinfect tools"],
+    "mechanical": ["Remove infected plants"]
   }
 }

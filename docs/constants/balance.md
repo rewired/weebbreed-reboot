@@ -1,4 +1,5 @@
 # Game Balance Constants
+
 ## Human Resources & Employee Morale
 
 `SEVERANCE_PAY_DAYS = 7`
@@ -19,7 +20,7 @@ The morale penalty an employee suffers when their raise request is denied.
 `CYCLE_COMPLETION_MORALE_GAIN = 2`
 A small morale boost an employee gets after successfully completing a full work-rest cycle.
 
-`TICKS_BETWEEN_RAISE_REQUESTS = 8760` (calculated from 365 * 24)
+`TICKS_BETWEEN_RAISE_REQUESTS = 8760` (calculated from 365 \* 24)
 The minimum in-game time (in hours) before an employee is eligible to ask for another raise.
 
 `LOW_MORALE_QUIT_CHANCE_PER_DAY = 0.05` (or 5%)
@@ -41,7 +42,9 @@ If an employee's energy falls below this level, they will stop working and prior
 
 `OFF_DUTY_DURATION_TICKS = 16`
 The number of hours an employee is unavailable for work after their energy is completely depleted, allowing them to fully recover.
+
 ## Skills & Experience
+
 `XP_PER_LEVEL = 100`
 The amount of experience points needed to increase a skill by one full level.
 
@@ -50,6 +53,7 @@ The amount of experience an employee gains in the relevant skill after successfu
 
 `DAILY_ROLE_XP_GAIN = 2`
 A small amount of "passive" experience an employee gains each day in the primary skill associated with their assigned job role.
+
 ## Plant Growth & Health
 
 `PLANT_STRESS_IMPACT_FACTOR = 0.05`
@@ -69,6 +73,8 @@ The number of in-game days a plant will remain in the seedling stage before prog
 
 `PLANT_STAGE_TRANSITION_PROB_PER_DAY = 0.25` (or 25%)
 After a plant has spent the minimum required time in its current growth stage, this is the daily chance it will transition to the next stage.
+
 ## General Time
+
 `TICKS_PER_MONTH = 30`
 The number of in-game hours that are considered one "month" for calculating recurring costs like rent.

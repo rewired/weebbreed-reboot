@@ -39,7 +39,7 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
     return null;
   }
 
-  const isPaused = snapshot.clock.isPaused;
+  const isPaused = timeStatus?.paused ?? snapshot.clock.isPaused;
   const currentSpeed = timeStatus?.speed ?? snapshot.clock.targetTickRate;
 
   const handlePlayPause = async () => {

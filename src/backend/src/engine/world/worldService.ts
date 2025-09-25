@@ -163,28 +163,83 @@ export class WorldService {
       ]);
     }
 
-    const existing = this.state.structures.find((s) => s.blueprintId === structureId);
-    if (existing) {
-      // For Quick Start compatibility: if the structure is already rented, return success with existing structure
-      return {
-        ok: true,
-        data: { structureId: existing.id },
-      } satisfies CommandResult<DuplicateStructureResult>;
+    // Allow renting multiple structures of any blueprint type
+
+    // Check if player has enough cash for upfront fee
+    if (this.state.finances.cashOnHand < blueprint.upfrontFee) {
+      return this.failure(
+        'ERR_INSUFFICIENT_FUNDS',
+        `Insufficient funds for upfront fee. Required: ${blueprint.upfrontFee}, Available: ${this.state.finances.cashOnHand}`,
+        ['world.rentStructure', 'upfrontFee'],
+      );
     }
+
+    // Convert monthly rental cost to per-tick cost
+    // Assuming 30 days per month and tick length from game metadata
+    const tickLengthHours = this.state.metadata.tickLengthMinutes / 60;
+    const hoursPerMonth = 30 * 24; // 720 hours per month
+    const area = blueprint.footprint.length * blueprint.footprint.width;
+    const monthlyRentTotal = blueprint.rentalCostPerSqmPerMonth * area;
+    const hourlyRent = monthlyRentTotal / hoursPerMonth;
+    const rentPerTick = hourlyRent * tickLengthHours;
 
     const newStructure: StructureState = {
       id: this.createId('structure'),
       blueprintId: blueprint.id,
       name: blueprint.name,
       status: 'active',
-      footprint: { ...blueprint.footprint },
+      footprint: {
+        ...blueprint.footprint,
+        area: area,
+        volume: area * (blueprint.footprint.height || 2.5),
+      },
       rooms: [],
-      rentPerTick: blueprint.rentPerTick || 0,
-      upfrontCostPaid: 0,
+      rentPerTick: rentPerTick,
+      upfrontCostPaid: blueprint.upfrontFee,
       notes: undefined,
     };
 
     this.state.structures.push(newStructure);
+
+    // Deduct upfront fee from cash
+    this.state.finances.cashOnHand -= blueprint.upfrontFee;
+
+    // Record upfront fee as a capital expenditure if there's an amount
+    if (blueprint.upfrontFee > 0) {
+      const timestamp = new Date().toISOString();
+
+      // Create ledger entry for upfront fee
+      const ledgerEntry = {
+        id: `ledger_${this.state.finances.ledger.length + 1}`,
+        tick: context.tick,
+        timestamp,
+        amount: -blueprint.upfrontFee,
+        type: 'expense' as const,
+        category: 'rent' as const,
+        description: `Structure rental upfront fee: ${newStructure.name}`,
+      };
+
+      this.state.finances.ledger.push(ledgerEntry);
+
+      // Update finance summary
+      this.state.finances.summary.totalExpenses += blueprint.upfrontFee;
+      this.state.finances.summary.lastTickExpenses = blueprint.upfrontFee;
+      this.state.finances.summary.netIncome =
+        this.state.finances.summary.totalRevenue - this.state.finances.summary.totalExpenses;
+
+      context.events.queue(
+        'finance.capex',
+        {
+          tick: context.tick,
+          amount: blueprint.upfrontFee,
+          category: 'rent',
+          description: `Structure rental upfront fee: ${newStructure.name}`,
+          structureId: newStructure.id,
+        },
+        context.tick,
+        'info',
+      );
+    }
 
     // Note: Structure rent costs are automatically handled by the accounting system during tick processing
 

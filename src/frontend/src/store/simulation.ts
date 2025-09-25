@@ -156,6 +156,12 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     });
   },
   applyUpdate: (update) => {
+    console.log(
+      '💾 Store applying update - tick:',
+      update.tick,
+      'structures:',
+      update.snapshot?.structures?.length,
+    );
     const nextHistory = appendZoneHistory(get().zoneHistory, update);
     set((state) => ({
       snapshot: update.snapshot,
