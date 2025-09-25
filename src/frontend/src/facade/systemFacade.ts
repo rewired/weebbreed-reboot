@@ -10,7 +10,6 @@ import type {
   SimulationUpdateEntry,
 } from '@/types/simulation';
 import { useSimulationStore } from '@/store/simulation';
-import { useNavigationStore } from '@/store/navigation';
 
 type CommandError = {
   code?: string;
@@ -108,11 +107,6 @@ class SocketSystemFacade implements SimulationBridge {
       this.isConnecting = false;
       this.reconnectDelay = INITIAL_RECONNECT_DELAY;
       store.setConnectionStatus('connected');
-      const { enterDashboard } = useNavigationStore.getState();
-      const snapshot = useSimulationStore.getState().snapshot;
-      if (!snapshot) {
-        enterDashboard();
-      }
     });
 
     socket.on('disconnect', () => {
