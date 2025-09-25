@@ -5,6 +5,8 @@ import {
   type CommandExecutionContext,
   type CommandResult,
   type ErrorCode,
+  type CreateRoomIntent,
+  type CreateZoneIntent,
 } from '@/facade/index.js';
 import {
   type GameState,
@@ -18,6 +20,7 @@ import {
 } from '@/state/models.js';
 import { validateStructureGeometry } from '@/state/geometry.js';
 import { findStructure, findRoom, findZone, type ZoneLookupResult } from './stateSelectors.js';
+import { type RoomPurposeSource, resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 
 const DEFAULT_ZONE_RESERVOIR_LEVEL = 0.75;
 const DEFAULT_ZONE_WATER_LITERS = 800;
@@ -99,6 +102,14 @@ export interface DuplicateRoomResult {
   roomId: string;
 }
 
+export interface CreateRoomResult {
+  roomId: string;
+}
+
+export interface CreateZoneResult {
+  zoneId: string;
+}
+
 export interface DuplicateZoneResult {
   zoneId: string;
 }
@@ -108,6 +119,7 @@ export interface WorldServiceOptions {
   rng: RngService;
   costAccounting: CostAccountingService;
   structureBlueprints: StructureBlueprint[];
+  roomPurposeSource: RoomPurposeSource;
 }
 
 export class WorldService {
@@ -119,11 +131,14 @@ export class WorldService {
 
   private readonly structureBlueprints: StructureBlueprint[];
 
+  private readonly roomPurposeSource: RoomPurposeSource;
+
   constructor(options: WorldServiceOptions) {
     this.state = options.state;
     this.costAccounting = options.costAccounting;
     this.idStream = options.rng.getStream('world.structures');
     this.structureBlueprints = options.structureBlueprints;
+    this.roomPurposeSource = options.roomPurposeSource;
   }
 
   renameStructure(
@@ -192,6 +207,7 @@ export class WorldService {
         ...blueprint.footprint,
         area: area,
         volume: area * (blueprint.footprint.height || 2.5),
+        height: blueprint.footprint.height || 2.5,
       },
       rooms: [],
       rentPerTick: rentPerTick,
@@ -254,6 +270,157 @@ export class WorldService {
       ok: true,
       data: { structureId: newStructure.id },
     } satisfies CommandResult<DuplicateStructureResult>;
+  }
+
+  createRoom(
+    intent: CreateRoomIntent,
+    context: CommandExecutionContext,
+  ): CommandResult<CreateRoomResult> {
+    const { structureId, room } = intent;
+    const lookup = findStructure(this.state, structureId);
+    if (!lookup) {
+      return this.failure('ERR_NOT_FOUND', `Structure ${structureId} was not found.`, [
+        'world.createRoom',
+        'structureId',
+      ]);
+    }
+
+    const structure = lookup.structure;
+
+    // Resolve room purpose ID from name
+    let purposeId: string;
+    try {
+      purposeId = resolveRoomPurposeId(this.roomPurposeSource, room.purpose);
+    } catch (error) {
+      return this.failure('ERR_NOT_FOUND', `Unknown room purpose: ${room.purpose}`, [
+        'world.createRoom',
+        'room.purpose',
+      ]);
+    }
+
+    // Check if adding the room would exceed the structure footprint
+    const totalExistingArea = structure.rooms.reduce((sum, current) => sum + current.area, 0);
+    if (totalExistingArea + room.area > structure.footprint.area) {
+      return this.failure(
+        'ERR_CONFLICT',
+        'Adding the room would exceed the structure footprint area.',
+        ['world.createRoom', 'room.area'],
+      );
+    }
+
+    // Create the new room
+    const height = room.height ?? 2.5; // Default height if not specified
+    const newRoom: RoomState = {
+      id: this.createId('room'),
+      structureId,
+      name: room.name.trim(),
+      purposeId,
+      area: room.area,
+      height,
+      volume: room.area * height,
+      cleanliness: 1, // Start with perfect cleanliness
+      maintenanceLevel: 1, // Start with perfect maintenance
+      zones: [], // Start with no zones
+    } satisfies RoomState;
+
+    // Add the room to the structure
+    structure.rooms.push(newRoom);
+
+    // Validate the structure geometry
+    validateStructureGeometry(structure);
+
+    // Queue an event
+    context.events.queue(
+      'world.roomCreated',
+      { roomId: newRoom.id, structureId, name: newRoom.name },
+      context.tick,
+      'info',
+    );
+
+    return {
+      ok: true,
+      data: { roomId: newRoom.id },
+    } satisfies CommandResult<CreateRoomResult>;
+  }
+
+  createZone(
+    intent: CreateZoneIntent,
+    context: CommandExecutionContext,
+  ): CommandResult<CreateZoneResult> {
+    const { roomId, zone } = intent;
+    const lookup = findRoom(this.state, roomId);
+    if (!lookup) {
+      return this.failure('ERR_NOT_FOUND', `Room ${roomId} was not found.`, [
+        'world.createZone',
+        'roomId',
+      ]);
+    }
+
+    const room = lookup.room;
+    const structure = lookup.structure;
+
+    // Check if adding the zone would exceed the room area
+    const totalExistingArea = room.zones.reduce((sum, current) => sum + current.area, 0);
+    if (totalExistingArea + zone.area > room.area) {
+      return this.failure('ERR_CONFLICT', 'Adding the zone would exceed the room area.', [
+        'world.createZone',
+        'zone.area',
+      ]);
+    }
+
+    // Create the new zone with default values
+    const ceilingHeight = room.height || 2.5;
+    const newZone: ZoneState = {
+      id: this.createId('zone'),
+      roomId,
+      name: zone.name.trim(),
+      cultivationMethodId: zone.methodId,
+      strainId: undefined, // No strain assigned initially
+      area: zone.area,
+      ceilingHeight,
+      volume: zone.area * ceilingHeight,
+      environment: {
+        temperature: 22, // Default temperature
+        relativeHumidity: 0.6, // Default humidity
+        co2: 400, // Default CO2
+        ppfd: 0, // No light initially
+        vpd: 1.2, // Will be computed based on temp/humidity
+      },
+      resources: createDefaultResources(),
+      plants: [], // Start with no plants
+      devices: [], // Start with no devices
+      metrics: {
+        averageTemperature: 22,
+        averageHumidity: 0.6,
+        averageCo2: 400,
+        averagePpfd: 0,
+        stressLevel: 0,
+        lastUpdatedTick: context.tick,
+      },
+      control: { setpoints: {} }, // Default control state
+      health: createEmptyHealth(),
+      activeTaskIds: [],
+      plantingPlan: undefined, // No planting plan initially
+    } satisfies ZoneState;
+
+    // Add the zone to the room
+    room.zones.push(newZone);
+
+    // Validate the structure geometry
+    validateStructureGeometry(structure);
+
+    // Queue an event
+    context.events.queue(
+      'world.zoneCreated',
+      { zoneId: newZone.id, roomId, structureId: structure.id, name: newZone.name },
+      context.tick,
+      'info',
+    );
+
+    return {
+      ok: true,
+      data: { zoneId: newZone.id },
+    } satisfies CommandResult<CreateZoneResult>;
   }
 
   deleteStructure(structureId: string, context: CommandExecutionContext): CommandResult {

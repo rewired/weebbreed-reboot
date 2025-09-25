@@ -10,8 +10,10 @@ type ModalType =
   | 'duplicateStructure'
   | 'renameStructure'
   | 'deleteStructure'
+  | 'createRoom'
   | 'duplicateRoom'
   | 'deleteRoom'
+  | 'createZone'
   | 'deleteZone';
 
 export interface ModalDescriptor {

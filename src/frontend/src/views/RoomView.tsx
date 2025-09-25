@@ -142,6 +142,27 @@ export const RoomView = () => {
             </div>
           </Card>
         ))}
+        <Card
+          title="Add Zone"
+          subtitle="Create a new cultivation zone"
+          className="flex items-center justify-center border-dashed border-primary/30"
+        >
+          <Button
+            variant="primary"
+            icon={<Icon name="add" />}
+            onClick={() =>
+              openModal({
+                id: `add-zone-${room.id}`,
+                type: 'createZone',
+                title: 'Add Zone',
+                subtitle: `Create a new zone in ${room.name}`,
+                context: { roomId: room.id },
+              })
+            }
+          >
+            Add Zone
+          </Button>
+        </Card>
       </section>
     </div>
   );

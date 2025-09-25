@@ -145,9 +145,10 @@ export const StructureView = () => {
               onClick={() =>
                 openModal({
                   id: `add-room-${structure.id}`,
-                  type: 'duplicateRoom',
+                  type: 'createRoom',
                   title: 'Add Room',
                   subtitle: 'Select blueprint, area, and device presets',
+                  context: { structureId: structure.id },
                 })
               }
             >

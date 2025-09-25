@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Room Creation System**: Implemented complete room creation functionality allowing players to add custom rooms to structures with configurable names, purposes (Grow Room, Laboratory, Break Room, Sales Room), and areas. Includes frontend modal interface, backend validation, and real-time UI updates.
+- **Zone Creation System**: Added comprehensive zone creation functionality enabling players to add cultivation zones to rooms with selectable names, areas, and cultivation methods (Basic Soil Pot, Screen of Green, Sea of Green). Features area validation, real-time available space calculation, and full game integration.
 - Introduced the changelog to capture noteworthy changes for upcoming releases.
 - Recorded ADR 0003 describing the façade messaging overhaul and modular intent registry.
 - Created a clickdummy fixture translator (`src/frontend/src/fixtures/translator.ts`) to hydrate stores with `SimulationSnapshot`-konformen Daten inklusive normalisierter SI-Einheiten und Geometriefeldern.
@@ -70,3 +72,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented real-time time status synchronization between backend and frontend, ensuring play/pause button states reflect actual simulation status across all connected clients.
 - Added immediate snapshot broadcasts for successful domain commands (structure rentals, room/zone creation, etc.) so UI updates appear instantly regardless of simulation running/paused state.
 - Resolved duplicate structure rental prevention that was blocking multiple rentals of the same blueprint type - players can now rent multiple "Small Warehouse" structures and other blueprint types as intended.
+- Fixed missing "Add Room" functionality that was showing incorrect "Room data unavailable" messages - implemented proper CreateRoomModal component with backend validation and room purpose resolution.
+- Resolved missing "Add Zone" interface preventing users from adding zones to rooms - added CreateZoneModal with cultivation method selection and area validation against room constraints.

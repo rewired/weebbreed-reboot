@@ -20,6 +20,8 @@ import type { ZoneEnvironmentOptions } from '@/engine/environment/zoneEnvironmen
 import type {
   DuplicateStructureResult,
   DuplicateRoomResult,
+  CreateRoomResult,
+  CreateZoneResult,
   DuplicateZoneResult,
 } from '@/engine/world/worldService.js';
 import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
@@ -42,6 +44,7 @@ export type ErrorCode =
   | 'ERR_VALIDATION'
   | 'ERR_RATE_LIMIT'
   | 'ERR_DATA_RELOAD_PENDING'
+  | 'ERR_INSUFFICIENT_FUNDS'
   | 'ERR_INTERNAL';
 
 export interface CommandError {
@@ -456,10 +459,10 @@ export type SetMaintenancePolicyIntent = z.infer<typeof setMaintenancePolicySche
 
 export interface WorldIntentHandlers {
   rentStructure: ServiceCommandHandler<RentStructureIntent, DuplicateStructureResult>;
-  createRoom: ServiceCommandHandler<CreateRoomIntent>;
+  createRoom: ServiceCommandHandler<CreateRoomIntent, CreateRoomResult>;
   updateRoom: ServiceCommandHandler<UpdateRoomIntent>;
   deleteRoom: ServiceCommandHandler<DeleteRoomIntent>;
-  createZone: ServiceCommandHandler<CreateZoneIntent>;
+  createZone: ServiceCommandHandler<CreateZoneIntent, CreateZoneResult>;
   updateZone: ServiceCommandHandler<UpdateZoneIntent>;
   deleteZone: ServiceCommandHandler<DeleteZoneIntent>;
   renameStructure: ServiceCommandHandler<RenameStructureIntent>;
@@ -1172,7 +1175,7 @@ export class SimulationFacade {
         rentStructureSchema,
         () => this.services.world?.rentStructure,
       ),
-      createRoom: this.createServiceCommand(
+      createRoom: this.createServiceCommand<CreateRoomIntent, CreateRoomResult>(
         'world.createRoom',
         createRoomSchema,
         () => this.services.world?.createRoom,
@@ -1187,7 +1190,7 @@ export class SimulationFacade {
         deleteRoomSchema,
         () => this.services.world?.deleteRoom,
       ),
-      createZone: this.createServiceCommand(
+      createZone: this.createServiceCommand<CreateZoneIntent, CreateZoneResult>(
         'world.createZone',
         createZoneSchema,
         () => this.services.world?.createZone,

@@ -227,6 +227,7 @@ export const startBackendServer = async (
     rng,
     costAccounting: costAccountingService,
     structureBlueprints,
+    roomPurposeSource: repository,
   });
   const deviceGroupService = new DeviceGroupService({ state, rng });
   const plantingPlanService = new PlantingPlanService({ state, rng });
@@ -234,6 +235,8 @@ export const startBackendServer = async (
   facade.updateServices({
     world: {
       rentStructure: (intent, context) => worldService.rentStructure(intent.structureId, context),
+      createRoom: (intent, context) => worldService.createRoom(intent, context),
+      createZone: (intent, context) => worldService.createZone(intent, context),
       renameStructure: (intent, context) =>
         worldService.renameStructure(intent.structureId, intent.name, context),
       deleteStructure: (intent, context) =>

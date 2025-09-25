@@ -377,6 +377,132 @@ const DeleteStructureModal = ({
   );
 };
 
+const CreateRoomModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const structureId = typeof context?.structureId === 'string' ? context.structureId : null;
+  const structure = useSimulationStore((state) =>
+    structureId
+      ? (state.snapshot?.structures.find((item) => item.id === structureId) ?? null)
+      : null,
+  );
+  const [roomName, setRoomName] = useState('');
+  const [purpose, setPurpose] = useState('Grow Room');
+  const [area, setArea] = useState(50);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  if (!structure || !structureId) {
+    return (
+      <p className="text-sm text-text-muted">
+        Structure data unavailable. Select a structure to add room.
+      </p>
+    );
+  }
+
+  const handleCreate = async () => {
+    if (!roomName.trim()) {
+      setFeedback('Room name is required.');
+      return;
+    }
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const response = await bridge.sendIntent({
+        domain: 'world',
+        action: 'createRoom',
+        payload: {
+          structureId,
+          room: {
+            name: roomName.trim(),
+            purpose,
+            area,
+          },
+        },
+      });
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Room creation rejected by facade.');
+        return;
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Failed to create room', error);
+      setFeedback('Connection error while creating room.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const purposeOptions = [
+    { id: 'Grow Room', name: 'Grow Room', description: 'Cultivation and plant management' },
+    { id: 'Laboratory', name: 'Laboratory', description: 'Breeding and research activities' },
+    { id: 'Break Room', name: 'Break Room', description: 'Staff rest and recovery' },
+    { id: 'Sales Room', name: 'Sales Room', description: 'Commercial product sales' },
+  ];
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-3">
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Room name
+          </span>
+          <input
+            type="text"
+            value={roomName}
+            onChange={(event) => setRoomName(event.target.value)}
+            placeholder="Enter room name"
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          />
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Purpose
+          </span>
+          <select
+            value={purpose}
+            onChange={(event) => setPurpose(event.target.value)}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          >
+            {purposeOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.name} - {option.description}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Area (m²)
+          </span>
+          <input
+            type="number"
+            value={area}
+            onChange={(event) => setArea(Number(event.target.value))}
+            min="1"
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          />
+        </label>
+      </div>
+      {feedback ? <Feedback message={feedback} /> : null}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleCreate}
+        confirmLabel={busy ? 'Creating…' : 'Create room'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
 const DuplicateRoomModal = ({
   bridge,
   closeModal,
@@ -467,6 +593,147 @@ const DuplicateRoomModal = ({
   );
 };
 
+const CreateZoneModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const roomId = typeof context?.roomId === 'string' ? context.roomId : null;
+  const room = useSimulationStore((state) =>
+    roomId ? (state.snapshot?.rooms.find((item) => item.id === roomId) ?? null) : null,
+  );
+  const [zoneName, setZoneName] = useState('');
+  const [methodId, setMethodId] = useState('85cc0916-0e8a-495e-af8f-50291abe6855'); // Default to Basic Soil Pot
+  const [area, setArea] = useState(10);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  if (!room || !roomId) {
+    return (
+      <p className="text-sm text-text-muted">Room data unavailable. Select a room to add zone.</p>
+    );
+  }
+
+  const handleCreate = async () => {
+    if (!zoneName.trim()) {
+      setFeedback('Zone name is required.');
+      return;
+    }
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const response = await bridge.sendIntent({
+        domain: 'world',
+        action: 'createZone',
+        payload: {
+          roomId,
+          zone: {
+            name: zoneName.trim(),
+            area,
+            methodId,
+          },
+        },
+      });
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Zone creation rejected by facade.');
+        return;
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Failed to create zone', error);
+      setFeedback('Connection error while creating zone.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cultivationMethods = [
+    {
+      id: '85cc0916-0e8a-495e-af8f-50291abe6855',
+      name: 'Basic Soil Pot',
+      description: 'Simple cultivation method: one plant per pot in soil',
+    },
+    {
+      id: '41229377-ef2d-4723-931f-72eea87d7a62',
+      name: 'Screen of Green',
+      description: 'Low-density method using screens to train plants horizontally',
+    },
+    {
+      id: '659ba4d7-a5fc-482e-98d4-b614341883ac',
+      name: 'Sea of Green',
+      description: 'High-density method with many small plants close together',
+    },
+  ];
+
+  const existingArea = room.zones?.reduce((sum, zone) => sum + zone.area, 0) ?? 0;
+  const availableArea = Math.max(0, room.area - existingArea);
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-3">
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Zone name
+          </span>
+          <input
+            type="text"
+            value={zoneName}
+            onChange={(event) => setZoneName(event.target.value)}
+            placeholder="Enter zone name"
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          />
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Cultivation Method
+          </span>
+          <select
+            value={methodId}
+            onChange={(event) => setMethodId(event.target.value)}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          >
+            {cultivationMethods.map((method) => (
+              <option key={method.id} value={method.id}>
+                {method.name} - {method.description}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1 text-sm">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Area (m²)
+          </span>
+          <input
+            type="number"
+            value={area}
+            onChange={(event) => setArea(Number(event.target.value))}
+            min="0.1"
+            max={availableArea}
+            step="0.1"
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          />
+          <span className="text-xs text-text-muted">
+            Available: {availableArea.toFixed(1)} m² (room area: {room.area} m²)
+          </span>
+        </label>
+      </div>
+      {feedback ? <Feedback message={feedback} /> : null}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleCreate}
+        confirmLabel={busy ? 'Creating…' : 'Create zone'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
 const modalRenderers: Record<
   ModalDescriptor['type'],
   (args: {
@@ -525,6 +792,9 @@ const modalRenderers: Record<
   deleteStructure: ({ bridge, closeModal, context }) => (
     <DeleteStructureModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
+  createRoom: ({ bridge, closeModal, context }) => (
+    <CreateRoomModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
   duplicateRoom: ({ bridge, closeModal, context }) => (
     <DuplicateRoomModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
@@ -532,6 +802,9 @@ const modalRenderers: Record<
     <p className="text-sm text-text-muted">
       Room deletion flow is not yet wired. Select a room and confirm via dashboard controls.
     </p>
+  ),
+  createZone: ({ bridge, closeModal, context }) => (
+    <CreateZoneModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
   deleteZone: () => (
     <p className="text-sm text-text-muted">
