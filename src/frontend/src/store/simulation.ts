@@ -162,6 +162,20 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       'structures:',
       update.snapshot?.structures?.length,
     );
+
+    // Debug logging for zones
+    const rooms = update.snapshot?.rooms ?? [];
+    const totalZones = rooms.reduce((sum, room) => sum + (room.zones?.length ?? 0), 0);
+    console.log('💾 Store update - rooms:', rooms.length, 'total zones:', totalZones);
+    rooms.forEach((room) => {
+      console.log(
+        `💾 Room ${room.name} (${room.id}): ${room.zones?.length ?? 0} zones, ${room.area}m²`,
+      );
+      room.zones?.forEach((zone) => {
+        console.log(`  💾 Zone ${zone.name} (${zone.id}): ${zone.area}m²`);
+      });
+    });
+
     const nextHistory = appendZoneHistory(get().zoneHistory, update);
     set((state) => ({
       snapshot: update.snapshot,
