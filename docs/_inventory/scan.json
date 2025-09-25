@@ -1,0 +1,3939 @@
+{
+  "docs/CHANGELOG.md": {
+    "counts": {
+      "headings": 4,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 1,
+        "3": 2
+      },
+      "links": 2,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 3
+    },
+    "headings": [
+      {
+        "title": "Documentation Changelog",
+        "level": 1,
+        "children": [
+          {
+            "title": "[Unreleased]",
+            "level": 2,
+            "children": [
+              {
+                "title": "Added",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Changed",
+                "level": 3,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "docs/DD.md": {
+    "counts": {
+      "headings": 26,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 11,
+        "3": 14
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 2,
+      "tables": 0,
+      "listItems": 124
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Data Dictionary (DD)",
+        "level": 1,
+        "children": [
+          {
+            "title": "Conventions (apply to all files)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "1) Strains — `/data/blueprints/strains/*.json`",
+            "level": 2,
+            "children": [
+              {
+                "title": "Purpose",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Schema (fields & meaning)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Example (minimal)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "2) Devices — `/data/blueprints/devices/*.json`",
+            "level": 2,
+            "children": [
+              {
+                "title": "Purpose",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Schema",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Example (Grow light)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "3) Cultivation Methods — `/data/blueprints/cultivationMethods/*.json`",
+            "level": 2,
+            "children": [
+              {
+                "title": "Purpose",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Schema",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4) Diseases — `/data/blueprints/diseases/*.json`",
+            "level": 2,
+            "children": [
+              {
+                "title": "Purpose",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Schema",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "5) Pests — `/data/blueprints/pests/*.json`",
+            "level": 2,
+            "children": [
+              {
+                "title": "Purpose",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Schema",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "6) Treatment Options — `/data/configs/treatment_options.json`",
+            "level": 2,
+            "children": [
+              {
+                "title": "Purpose",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Schema",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "7) Prices — `/data/prices/*.json`",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Task Definitions — `/data/configs/task_definitions.json`",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "9) Structures — `/data/blueprints/structures/*.json`",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "10) Personnel Pools — `/data/personnel`",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/TDD.md": {
+    "counts": {
+      "headings": 22,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 16,
+        "3": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 132
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Technical Design Document (TDD)",
+        "level": 1,
+        "children": [
+          {
+            "title": "0) Goals & Principles",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "1) Authoritative State & Public API",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Simulation Loop (fixed-step)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) Environment & Device Models",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4) Plants & Growth",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) Health System (Pests & Diseases)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6) Personnel as Agents",
+            "level": 2,
+            "children": [
+              {
+                "title": "Personnel & Labor Market",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Task Engine (augment)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Agentic Employees (augment)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Overtime Mechanics",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Data & Validation Hooks (augment)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "7) Economy & Inventory",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Device Placement Rules",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "9) Data Loading, Validation, & Hot Reload",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "10) Identifier Policy (final)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "11) Events & Telemetry (examples)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "12) Determinism, Performance, Testing",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "13) Security & Safety",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "14) Extensibility & Roadmap",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "15) Example Public API (shape-only, stack-neutral)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/addendum/all-json.md": {
+    "counts": {
+      "headings": 61,
+      "headingsByLevel": {
+        "2": 61
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 61,
+      "tables": 0,
+      "listItems": 0
+    },
+    "headings": [
+      {
+        "title": "/data/blueprints/cultivationMethods/basic_soil_pot.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/cultivationMethods/scrog.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/cultivationMethods/sog.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/devices/climate_unit_01.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/devices/co2injector-01.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/devices/dehumidifier-01.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/devices/exhaust_fan_01.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/devices/humidity_control_unit_01.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/devices/veg_light_01.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/anthracnose.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/bacterial_leaf_spot.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/bacterial_wilt.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/botrytis_gray_mold.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/downy_mildew.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/hop_latent_viroid.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/mosaic_virus.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/powdery_mildew.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/diseases/root_rot.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/roles/Gardener.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/roles/Janitor.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/roles/Manager.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/roles/Operator.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/roles/Technician.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/skills/Administration.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/skills/Cleanliness.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/skills/Gardening.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/skills/Logistics.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/personnel/skills/Maintenance.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/aphids.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/broad_mites.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/caterpillars.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/fungus_gnats.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/root_aphids.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/spider_mites.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/thrips.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/pests/whiteflies.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/roomPurposes/breakroom.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/roomPurposes/growroom.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/roomPurposes/lab.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/roomPurposes/salesroom.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/strains/ak-47.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/strains/northern-lights.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/strains/skunk-1.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/strains/sour-diesel.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/strains/white-widow.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/structures/medium_warehouse.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/structures/shed.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "/data/blueprints/structures/small_warehouse.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "configs/difficulty.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "configs/disease_balancing.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "configs/pest_balancing.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "configs/task_definitions.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "configs/treatment_options.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "personnel/names/firstNamesFemale.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "personnel/names/firstNamesMale.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "personnel/names/lastNames.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "personnel/randomSeeds.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "personnel/traits.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "prices/devicePrices.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "prices/strainPrices.json",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "prices/utilityPrices.json",
+        "level": 2,
+        "children": []
+      }
+    ]
+  },
+  "docs/addendum/ideas/breeding_module.md": {
+    "counts": {
+      "headings": 10,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 9
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 7,
+      "tables": 0,
+      "listItems": 27
+    },
+    "headings": [
+      {
+        "title": "Weed Breed — Breeding Module (TS + Pseudocode)",
+        "level": 1,
+        "children": [
+          {
+            "title": "0) Goals",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "1) Real → Game Mapping (Time)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Strain Fields used (subset)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) Breeding Core (TypeScript)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4) Time Model (TypeScript)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) UI (React/Vite) — Pseudocode",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6) CLI Demo (optional)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7) Balancing Knobs",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Integration Tips",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/addendum/ideas/kief_dsl.md": {
+    "counts": {
+      "headings": 13,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 12
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 9,
+      "tables": 0,
+      "listItems": 65
+    },
+    "headings": [
+      {
+        "title": "KIEF DSL — High‑Level Integration (Monorepo, `data/kief`, Pseudocode‑Only)",
+        "level": 1,
+        "children": [
+          {
+            "title": "1) Core Idea",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Monorepo Folder Structure (Proposal)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) KIEF File (Author View)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4) Parser → IR (Pseudocode)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) Compiler (IR → Closures)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6) Runtime & Hooks",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7) Engine Integration (Main Loop, Backend under `src/backend/src`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Root Scripts (PNPM, Repo Root)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "9) Telemetry & Tests",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "10) Authoring Guardrails",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "11) Starter Packages (`/data/kief`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "12) Integration Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/addendum/ideas/room-purpose-registry.md": {
+    "counts": {
+      "headings": 4,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 3
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 2,
+      "tables": 0,
+      "listItems": 5
+    },
+    "headings": [
+      {
+        "title": "Room Purpose Registry",
+        "level": 1,
+        "children": [
+          {
+            "title": "Overview",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "API",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Schema",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/addendum/ideas/terpenes.md": {
+    "counts": {
+      "headings": 16,
+      "headingsByLevel": {
+        "1": 2,
+        "2": 11,
+        "3": 3
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 6,
+      "tables": 0,
+      "listItems": 110
+    },
+    "headings": [
+      {
+        "title": "Terpene & Effects — High‑Level Concepts for Strain Blueprints (Augmented)",
+        "level": 1,
+        "children": [
+          {
+            "title": "0) Guardrails",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "1) Target Schema (Concept)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Normalization (Concept)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) Axis Derivation from Terpene Profile (Heuristic, Concept)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4) Deriving Positive/Negative Effects (Concept)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) ETL Pipeline (Concept)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      },
+      {
+        "title": "Appendices (New)",
+        "level": 1,
+        "children": [
+          {
+            "title": "A) **Effect Vocabulary — English (Canon Keys)**",
+            "level": 2,
+            "children": [
+              {
+                "title": "A.1 Positive effects (list)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "A.2 Negative effects (list)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "A.3 Experience descriptors (\"Wirkung\") — English list",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "B) **Cannabis‑Relevant Terpene Canon — English**",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "C) JSON Blueprint Stubs (Effects & Terpenes)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "D) Validation & Canon Checks (Zod Sketch)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "E) UI/Gameplay Hooks (Quick Notes)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/addendum/migrations/2025-01-22-typescript-toolchain.md": {
+    "counts": {
+      "headings": 4,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 3
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 11
+    },
+    "headings": [
+      {
+        "title": "Migration — Backend TypeScript Toolchain",
+        "level": 1,
+        "children": [
+          {
+            "title": "Summary",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Required actions for feature branches",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Notes",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/backend-overview.md": {
+    "counts": {
+      "headings": 17,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 7,
+        "3": 9
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 1,
+      "tables": 9,
+      "listItems": 36
+    },
+    "headings": [
+      {
+        "title": "Backend Overview",
+        "level": 1,
+        "children": [
+          {
+            "title": "1. Purpose & Non-Goals",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2. Architecture Overview",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3. Blueprints Provided & How to Use Them",
+            "level": 2,
+            "children": [
+              {
+                "title": "3.1 Operating Principles",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.2 Blueprint–to–Subsystem Mapping",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4. Blueprint Inventory",
+            "level": 2,
+            "children": [
+              {
+                "title": "4.1 Structures & Room Purposes",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.2 Cultivation Methods",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.3 Strain Blueprints",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.4 Device Blueprints",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.5 Pest & Disease Blueprints",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.6 Personnel Roles & Skills",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.7 Price & Cost Blueprints",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "5. Materialization & Runtime State",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6. Identifier Strategy",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7. Quality Gates & Validation",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/constants/balance.md": {
+    "counts": {
+      "headings": 5,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 4
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 0
+    },
+    "headings": [
+      {
+        "title": "Game Balance Constants",
+        "level": 1,
+        "children": [
+          {
+            "title": "Human Resources & Employee Morale",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Skills & Experience",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Plant Growth & Health",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "General Time",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/constants/environment.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 0
+    },
+    "headings": [
+      {
+        "title": "Environmental Simulation Constants",
+        "level": 1,
+        "children": [
+          {
+            "title": "Zone Sufficiency & Climate Control",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Ambient (External) Environment Conditions",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Normalization & Physics Factors",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Device & Plant Effect Factors",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Durability & Disease",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/releases/2025-02-si-blueprint-migration.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 13,
+      "listItems": 11
+    },
+    "headings": [
+      {
+        "title": "Blueprint Unit Migration (SI Base Units)",
+        "level": 1,
+        "children": [
+          {
+            "title": "Summary",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Renamed Fields & Unit Changes",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Authoring Guidance",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Runtime Implications",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Migration Checklist",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0001-typescript-toolchain.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 2,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 22
+    },
+    "headings": [
+      {
+        "title": "ADR 0001 — Backend TypeScript Toolchain Stabilization",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0002-frontend-realtime-stack.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 2,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 18
+    },
+    "headings": [
+      {
+        "title": "ADR 0002 — Frontend Real-Time Dashboard Stack",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0003-facade-messaging-overhaul.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 22
+    },
+    "headings": [
+      {
+        "title": "ADR 0003 — Facade Messaging Overhaul",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0004-zone-setpoint-routing.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 19
+    },
+    "headings": [
+      {
+        "title": "ADR 0004 — Zone Setpoint Routing",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0005-snapshot-time-sync.md": {
+    "counts": {
+      "headings": 5,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 4
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 17
+    },
+    "headings": [
+      {
+        "title": "ADR 0005 — Snapshot & Time Status Telemetry Contract",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "References",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0006-socket-transport-parity.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 14
+    },
+    "headings": [
+      {
+        "title": "ADR 0006 — Socket Transport Version Parity",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0007-physio-module-relocation.md": {
+    "counts": {
+      "headings": 7,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 6
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 18
+    },
+    "headings": [
+      {
+        "title": "ADR 0007 — Physiology Modules Collocate with the Engine",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Status Updates",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/adr/0008-randomuser-provisioning.md": {
+    "counts": {
+      "headings": 8,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 7
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 6,
+      "listItems": 18
+    },
+    "headings": [
+      {
+        "title": "ADR 0008 — Auto-Provision Personnel Directory from RandomUser",
+        "level": 1,
+        "children": [
+          {
+            "title": "Context",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Decision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Consequences",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Failure Modes & Mitigations",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Operational Guidance",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Alternatives Considered",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Rollback Plan",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/audit.md": {
+    "counts": {
+      "headings": 5,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 1,
+        "3": 3
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 3,
+      "tables": 0,
+      "listItems": 9
+    },
+    "headings": [
+      {
+        "title": "Simulation Audit Runner",
+        "level": 1,
+        "children": [
+          {
+            "title": "Running an audit",
+            "level": 2,
+            "children": [
+              {
+                "title": "Output structure",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Baseline comparisons",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "CI integration",
+                "level": 3,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/data-validation.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 4,
+        "3": 1
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 1,
+      "tables": 5,
+      "listItems": 6
+    },
+    "headings": [
+      {
+        "title": "Blueprint Data Validation Workflow",
+        "level": 1,
+        "children": [
+          {
+            "title": "Command",
+            "level": 2,
+            "children": [
+              {
+                "title": "Options",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Output",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Continuous Integration",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Device Setpoint Casing Guard",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/employees.md": {
+    "counts": {
+      "headings": 10,
+      "headingsByLevel": {
+        "1": 2,
+        "2": 8
+      },
+      "links": 1,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 56
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Employee System",
+        "level": 1,
+        "children": [
+          {
+            "title": "Overview",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "1) Candidate Generation & External Name Provider",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Work as Discrete Tasks",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) Overtime (Energy-Linked)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      },
+      {
+        "title": "DD Additions",
+        "level": 1,
+        "children": [
+          {
+            "title": "Personnel (new or clarified fields)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Hiring / Candidate Source",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Tasks (augment existing section)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Overtime & Policy",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/facade.md": {
+    "counts": {
+      "headings": 26,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 15,
+        "3": 10
+      },
+      "links": 1,
+      "images": 0,
+      "codeBlocks": 1,
+      "tables": 0,
+      "listItems": 99
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — System Facade",
+        "level": 1,
+        "children": [
+          {
+            "title": "1) Purpose & Responsibilities",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Contract & Guarantees",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) Data Surfaces",
+            "level": 2,
+            "children": [
+              {
+                "title": "3.1 Read API (snapshots & queries)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.2 Write API (intents/commands)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4) Command Surface (categories)",
+            "level": 2,
+            "children": [
+              {
+                "title": "4.1 Time & Simulation Control",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.2 Data Lifecycle",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.3 World Building (Structures → Rooms → Zones)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.4 Devices",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.5 Plants & Plantings",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.6 Health (Pests/Diseases & Treatments)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.7 Personnel & Tasks",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "4.8 Finance & Market",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "5) Error Handling & Validation",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6) Events (taxonomy)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7) Concurrency Models",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Tick Orchestration (conformance to Simulation Deep Dive)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "9) Identity & Referencing",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "10) Security & Safety",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "11) Testing & Observability",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "12) Example API Shape (pseudo‑types)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "13) Anti‑Patterns (explicitly disallowed)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "14) Migration & Hot‑Reload Notes",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "15) Extensibility",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/job_market_population.md": {
+    "counts": {
+      "headings": 10,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 9
+      },
+      "links": 1,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 9,
+      "listItems": 48
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Job Market Population",
+        "level": 1,
+        "children": [
+          {
+            "title": "Weekly Refresh Lifecycle",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Remote Provider Contract (randomuser.me)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Startup Provisioning Service",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Deterministic Seeding Strategy",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Candidate Synthesis Pipeline",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Fallback Strategy (Offline Mode)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Configuration & Operations",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Monitoring & Observability",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Operational Checklist",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/logging.md": {
+    "counts": {
+      "headings": 4,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 3
+      },
+      "links": 1,
+      "images": 0,
+      "codeBlocks": 2,
+      "tables": 4,
+      "listItems": 0
+    },
+    "headings": [
+      {
+        "title": "Logging & Telemetry Configuration",
+        "level": 1,
+        "children": [
+          {
+            "title": "Environment Variables",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Sample `.env`",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Telemetry Context",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/personnel_roles_blueprint.md": {
+    "counts": {
+      "headings": 7,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 4,
+        "3": 2
+      },
+      "links": 3,
+      "images": 0,
+      "codeBlocks": 4,
+      "tables": 0,
+      "listItems": 19
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Personnel Role Blueprint",
+        "level": 1,
+        "children": [
+          {
+            "title": "Directory Layout",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "PersonnelRoleBlueprint Fields",
+            "level": 2,
+            "children": [
+              {
+                "title": "Salary Config",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Skill Profile",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Normalization & Fallbacks",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Runtime Consumers",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/runtime-event-bus-migration.md": {
+    "counts": {
+      "headings": 4,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 2,
+        "3": 1
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 7
+    },
+    "headings": [
+      {
+        "title": "Runtime Event Bus Migration Notes",
+        "level": 1,
+        "children": [
+          {
+            "title": "Overview",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Migration Guidance",
+            "level": 2,
+            "children": [
+              {
+                "title": "Suggested Codemod",
+                "level": 3,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/simulation-engine.md": {
+    "counts": {
+      "headings": 21,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 10,
+        "3": 10
+      },
+      "links": 2,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 84
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Simulation Engine Deep Dive",
+        "level": 1,
+        "children": [
+          {
+            "title": "Timebase & Core Loop (fixed-step, scheduler-agnostic)",
+            "level": 2,
+            "children": [
+              {
+                "title": "Goals",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Process",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Environment Model (per Zone; well-mixed, delta-based)",
+            "level": 2,
+            "children": [
+              {
+                "title": "Tick Order (environment phase)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Plant Growth, Stress, Health (per Planting/Plant)",
+            "level": 2,
+            "children": [
+              {
+                "title": "Inputs from DD",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Tick Order (plant phase)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Health: Pests & Diseases (detect → progress → spread → treat)",
+            "level": 2,
+            "children": [
+              {
+                "title": "Tick Order (health phase)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Tasks & Agentic Employees (utility-based; overtime-aware)",
+            "level": 2,
+            "children": [
+              {
+                "title": "Task generation (per tick)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Claiming (pull model with utility)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Execution & completion",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Overtime (energy-linked)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Economics (currency-neutral)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Persistence, Validation, and Hot-Reload",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Determinism & RNG Streams",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Error Handling & Safety",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Future Enhancements (compatible with current contracts)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/simulation_philosophy.md": {
+    "counts": {
+      "headings": 7,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 6
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 19
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Simulation Philosophy Deep Dive",
+        "level": 1,
+        "children": [
+          {
+            "title": "1. Time & Simulation Loop: Stability and Fairness",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2. Environmental Model: Emergent Complexity from Simple Rules",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3. Plant Growth Model: The Core Feedback Loop",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4. Personnel & AI: Autonomous Agents and Indirect Control",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5. Economic Model: Constant Pressure and Rewarding Mastery",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6. Genetics & Breeding: Player-Driven Discovery",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/socket_protocol.md": {
+    "counts": {
+      "headings": 18,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 8,
+        "3": 8,
+        "4": 1
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 5,
+      "tables": 18,
+      "listItems": 57
+    },
+    "headings": [
+      {
+        "title": "Socket Protocol — Simulation Gateway",
+        "level": 1,
+        "children": [
+          {
+            "title": "UI Stream (`uiStream$`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Connection & Handshake",
+            "level": 2,
+            "children": [
+              {
+                "title": "Frontend Configuration",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Outgoing Events",
+            "level": 2,
+            "children": [
+              {
+                "title": "`simulationUpdate`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`sim.tickCompleted`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`domainEvents`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Server-Sent Events (`/events`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Incoming Commands",
+            "level": 2,
+            "children": [
+              {
+                "title": "Common Envelope",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`facade.intent` — Domain Command Envelope",
+                "level": 3,
+                "children": [
+                  {
+                    "title": "Supported actions per domain",
+                    "level": 4,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "title": "`simulationControl`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`config.update`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Error Handling",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Batching Guarantees",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Versioning",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/system/wb-physio.md": {
+    "counts": {
+      "headings": 8,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 7
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 31
+    },
+    "headings": [
+      {
+        "title": "Weed Breed Physiology Reference",
+        "level": 1,
+        "children": [
+          {
+            "title": "Temperature Mixing (`temp.ts`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Relative Humidity Mixing (`rh.ts`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "CO₂ Dynamics (`co2.ts`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Photosynthetic Photons (`ppfd.ts`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Vapour Pressure Deficit (`vpd.ts`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Transpiration (`transpiration.ts`)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Integration Points",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/tasks/20250923-clickdummy-migration_steps.md": {
+    "counts": {
+      "headings": 12,
+      "headingsByLevel": {
+        "2": 6,
+        "3": 6
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 11,
+      "listItems": 79
+    },
+    "headings": [
+      {
+        "title": "Inventory",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "Data shape gaps vs PRD",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "Non-determinism & global state to replace",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "Migration backlog",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "Open questions / risks",
+        "level": 2,
+        "children": []
+      },
+      {
+        "title": "Lösungsweg",
+        "level": 2,
+        "children": [
+          {
+            "title": "Daten- und Zustandsnormalisierung",
+            "level": 3,
+            "children": []
+          },
+          {
+            "title": "Layout- und Navigationsmigration",
+            "level": 3,
+            "children": []
+          },
+          {
+            "title": "View-spezifische Portierungen",
+            "level": 3,
+            "children": []
+          },
+          {
+            "title": "Modale und Workflows",
+            "level": 3,
+            "children": []
+          },
+          {
+            "title": "Gemeinsame Komponenten & Utilities",
+            "level": 3,
+            "children": []
+          },
+          {
+            "title": "Qualitätssicherung",
+            "level": 3,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/tasks/20250923-todo-findings.md": {
+    "counts": {
+      "headings": 0,
+      "headingsByLevel": {},
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 0
+    },
+    "headings": []
+  },
+  "docs/tasks/20250924-todo-findings.md": {
+    "counts": {
+      "headings": 0,
+      "headingsByLevel": {},
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 0
+    },
+    "headings": []
+  },
+  "docs/tasks/20250925-job-market-refresh.md": {
+    "counts": {
+      "headings": 1,
+      "headingsByLevel": {
+        "1": 1
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 9
+    },
+    "headings": [
+      {
+        "title": "2025-09-25 — Randomuser-backed job market refresh",
+        "level": 1,
+        "children": []
+      }
+    ]
+  },
+  "docs/tasks/20250926-personnel-provisioning.md": {
+    "counts": {
+      "headings": 1,
+      "headingsByLevel": {
+        "1": 1
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 9
+    },
+    "headings": [
+      {
+        "title": "2025-09-26 — Personnel directory provisioning follow-ups",
+        "level": 1,
+        "children": []
+      }
+    ]
+  },
+  "docs/ui/migration-notes.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 15
+    },
+    "headings": [
+      {
+        "title": "Frontend Migration Notes",
+        "level": 1,
+        "children": [
+          {
+            "title": "Summary",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Omitted Legacy Elements",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Follow-up Tasks",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Connectivity",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Retirement",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui/ui-components-desciption.md": {
+    "counts": {
+      "headings": 71,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 12,
+        "3": 58
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 5,
+      "tables": 55,
+      "listItems": 316
+    },
+    "headings": [
+      {
+        "title": "Component Documentation",
+        "level": 1,
+        "children": [
+          {
+            "title": "Screenshot Reference Map",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Simulation Facade Intent Coverage",
+            "level": 2,
+            "children": [
+              {
+                "title": "Time & Loop Control",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Environment Configuration",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "World Domain (Structures, Rooms, Zones)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Device Domain",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Plant Domain",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Health Domain",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Workforce Domain",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Finance Domain",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "1. Top-Level Components",
+            "level": 2,
+            "children": [
+              {
+                "title": "`src/App.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "2. Common Components (`src/components/common/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`ActionIcons.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Breadcrumbs.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Buttons.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Form.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Icons.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`InlineEdit.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Modal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`StatCard.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Toast.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "3. Layout Components (`src/components/layout/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`DashboardHeader.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`EventLog.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`MainContent.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`Sidebar.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4. Modal Components (`src/components/modals/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`AddDeviceModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`CreateRoomModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`CreateZoneModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`RentStructureModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`DuplicateStructureModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`DuplicateRoomModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`DuplicateZoneModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`GameMenuModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`HireEmployeeModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`InfoModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`NewGameModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`PlantDetailModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`PlantStrainModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`InstallDeviceModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`UpdateDeviceModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`MoveDeviceModal.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Device removal confirmation",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`RentStructureModal.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "5. Screen Components (`src/components/screens/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`StartScreen.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "6. Simulation Components (`src/components/simulation/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`EnvironmentPanel.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`ZoneCard.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`ZoneDeviceList.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`ZonePlantPanel.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "7. View Components (`src/components/views/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`DashboardView.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`FinanceView.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`PersonnelView.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`RoomDetailView.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`StructureDetailView.tsx`",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "`ZoneDetailView.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "8. Contexts (`src/contexts/`)",
+            "level": 2,
+            "children": [
+              {
+                "title": "`ToastContext.tsx`",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Styling and Design System",
+            "level": 2,
+            "children": [
+              {
+                "title": "Core Philosophy: Tailwind CSS Utility-First",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Color Palette (Dark Theme)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Typography",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Common UI Pattern Snippets",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Custom CSS: Scrollbar",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Fehlende Schlüsselinformationen für einen UI-Neubau",
+            "level": 2,
+            "children": [
+              {
+                "title": "Empfohlene Ergänzungen",
+                "level": 3,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui/ui-implementation-spec.md": {
+    "counts": {
+      "headings": 15,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 8,
+        "3": 6
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 10,
+      "tables": 19,
+      "listItems": 95
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Frontend Implementation Spec",
+        "level": 1,
+        "children": [
+          {
+            "title": "1) Overall Architecture & Layout",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Core Components (Behavior & Layout)",
+            "level": 2,
+            "children": [
+              {
+                "title": "2.1 Dashboard (primary info & controls)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "2.2 Navigation Bar (breadcrumbs)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "3) Hierarchical Views (Structure → Room → Zone)",
+            "level": 2,
+            "children": [
+              {
+                "title": "3.1 Structures View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.2 Structure Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.3 Room Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.4 Zone Detail View",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4) Modal System",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) Implemented User Interactions (Command Mapping)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6) Icons (Material Symbols Outlined)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7) Accessibility & Responsiveness",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Non‑Goals / Anti‑Patterns",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui/ui-screenshot-insights.md": {
+    "counts": {
+      "headings": 6,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5
+      },
+      "links": 21,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 0
+    },
+    "headings": [
+      {
+        "title": "UI Screenshot Insights",
+        "level": 1,
+        "children": [
+          {
+            "title": "Overview of the Frontend Idea",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Game Lifecycle Surfaces",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Strategic Management Views",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Operations, Personnel, and Finance Loops",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Interaction & Visual Patterns",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui/ui_archictecture.md": {
+    "counts": {
+      "headings": 16,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 9,
+        "3": 6
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 58
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — UI Architecture",
+        "level": 1,
+        "children": [
+          {
+            "title": "1) Core Philosophy — “Dumb” UI, Smart Engine",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2) Unidirectional Dataflow (Render → Act → Apply → Notify → Re‑render)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3) Technical Building Blocks (UI layer)",
+            "level": 2,
+            "children": [
+              {
+                "title": "3.1 Bridge Hook (UI ↔ Facade)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.2 Application Orchestrator",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.3 Navigation Manager",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.4 Modal Manager (Input Workflows)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.5 Views vs. Components",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.6 Styling & Theming",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4) Read Models & Identity in the UI",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) Command Usage Patterns (UI)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6) Event Consumption",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7) Performance & Robustness",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8) Anti‑Patterns (explicitly disallowed)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "9) Optional React Mapping (for teams using React)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui/ui_elements.md": {
+    "counts": {
+      "headings": 14,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5,
+        "3": 8
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 26
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — UI Elements",
+        "level": 1,
+        "children": [
+          {
+            "title": "Design-System-Primitiven",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "1. Start Screen",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2. Main Game Interface",
+            "level": 2,
+            "children": [
+              {
+                "title": "2.1. The Dashboard (Persistent Header)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "2.2. Navigation Bar (Breadcrumbs)",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "3. Main Content Views",
+            "level": 2,
+            "children": [
+              {
+                "title": "3.1. Structures List (Default View)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.2. Structure Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.3. Room Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.4. Zone Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.5. Finances View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "3.6. Personnel View",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "4. Modals (Pop-ups)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui/ui_interactions_spec.md": {
+    "counts": {
+      "headings": 17,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 5,
+        "3": 11
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 0,
+      "tables": 0,
+      "listItems": 82
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — UI Interaction Spec",
+        "level": 1,
+        "children": [
+          {
+            "title": "1) Overview of Implemented User Interactions",
+            "level": 2,
+            "children": [
+              {
+                "title": "A. Game Lifecycle & Setup",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "B. Infrastructure Management (Macro Loop)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "C. Cultivation & Zone Management (Micro Loop)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "D. Personnel Management",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "E. Financial & Strategic Overview",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "2) Technical UI Component Breakdown (illustrative)",
+            "level": 2,
+            "children": [
+              {
+                "title": "A. Core Application Structure",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "B. Primary Views",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "C. Hierarchical Detail Components",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "D. UI Chrome & Navigation",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "E. Modals (managed by the modal controller)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "F. Reusable & Specialized Components",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "3) Identity, Validation & Safety (UI Contract)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4) Performance & UX Notes",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5) Anti‑Patterns (explicitly disallowed)",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/ui-building_guide.md": {
+    "counts": {
+      "headings": 54,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 12,
+        "3": 40,
+        "4": 1
+      },
+      "links": 14,
+      "images": 0,
+      "codeBlocks": 7,
+      "tables": 40,
+      "listItems": 220
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI UI Building Guide",
+        "level": 1,
+        "children": [
+          {
+            "title": "Table of Contents",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Guiding Principles",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Layout & Navigation",
+            "level": 2,
+            "children": [
+              {
+                "title": "Application Shell",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Responsive Breakpoints & Navigation Behaviour",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Persistent Dashboard & Controls",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Breadcrumbs & States",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Panel Layouts & Responsive Breakpoints",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Core Views",
+            "level": 2,
+            "children": [
+              {
+                "title": "Start Screen",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Dashboard & Global Chrome",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Structures Overview",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Structure Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Room Detail View",
+                "level": 3,
+                "children": [
+                  {
+                    "title": "BreedingStation (Lab Rooms)",
+                    "level": 4,
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "title": "Zone Detail View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Finances View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Personnel View",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Event Log & Ancillary Panels",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "UI Elements & Patterns",
+            "level": 2,
+            "children": [
+              {
+                "title": "Screenshot Reference Map",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Design-System Primitives",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Generic Components",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Layout Components",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Modal Components",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Simulation Components",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "View Components (Composition Level)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Context Providers",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Contract Type Definitions",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "State Management & Backend Integration",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Styling & Responsiveness Guardrails",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Resilience Patterns",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Interactions",
+            "level": 2,
+            "children": [
+              {
+                "title": "Game Lifecycle",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Infrastructure & Navigation",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Cultivation & Zone Management",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Environment & Telemetry Control",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Personnel & Finance",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Modals & Focus Management",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "States & Telemetry",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Accessibility & Performance",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Visual Guardrails",
+            "level": 2,
+            "children": [
+              {
+                "title": "Iconography",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Spacing & Vertical Rhythm",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Icon Sizing Guidelines",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Dark Theme Tokens",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Core CSS Snippets",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Tailwind Building Blocks",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Custom Scrollbar",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "Layout Reminders",
+                "level": 3,
+                "children": []
+              }
+            ]
+          },
+          {
+            "title": "Glossary",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Changelog Note",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "Open Issues",
+            "level": 2,
+            "children": []
+          }
+        ]
+      }
+    ]
+  },
+  "docs/vision_scope.md": {
+    "counts": {
+      "headings": 33,
+      "headingsByLevel": {
+        "1": 1,
+        "2": 17,
+        "3": 15
+      },
+      "links": 0,
+      "images": 0,
+      "codeBlocks": 2,
+      "tables": 0,
+      "listItems": 131
+    },
+    "headings": [
+      {
+        "title": "Weedbreed.AI — Vision & Scope",
+        "level": 1,
+        "children": [
+          {
+            "title": "1. Vision",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "2. Target Audiences & Stakeholders",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "3. Success Criteria",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "4. Canonical Domain Model",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "5. Simulation Philosophy",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6. Progression & Economy",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "6a. Quality Grades & Price Functions",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "7. Automation & Agents",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "8. Content & Data Strategy",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "9. UX & Presentation Vision (Technology-Agnostic)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "10. Persistence & Compatibility",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "11. Telemetry, Validation & Tests",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "12. Non-Functional Requirements (NFR)",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "13. Legal & Ethics",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "14. Roadmap & Release Criteria",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "15. Risks & Assumptions",
+            "level": 2,
+            "children": []
+          },
+          {
+            "title": "16. Binding Rules & Technical Guardrails (Coding‑Ready)",
+            "level": 2,
+            "children": [
+              {
+                "title": "16.1 Units & Numerics (SI policy, rounding, tolerances)",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.2 Seed policy & RNG sources",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.3 Time scaling & pause semantics",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.4 Task arbiter – deterministic priorities & fairness",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.5 Device degradation & maintenance",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.6 Market / price baseline",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.7 Storage & post‑harvest quality decay",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.8 Pest/disease treatments – side effects",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.9 Savegame schema & migrations",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.10 Audit metrics – definitions & thresholds",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.11 Maximum plants per zone – binding formula",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.12 Climate controller – control strategy",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.13 Staff shift model",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.14 Device conflict / capacity rules",
+                "level": 3,
+                "children": []
+              },
+              {
+                "title": "16.15 Failure & degrade‑mode matrix",
+                "level": 3,
+                "children": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

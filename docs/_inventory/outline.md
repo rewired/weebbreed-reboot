@@ -1,0 +1,711 @@
+# Documentation Outline
+
+- docs/CHANGELOG.md
+  - # Documentation Changelog
+    - ## [Unreleased]
+      - ### Added
+      - ### Changed
+
+- docs/DD.md
+  - # Weedbreed.AI — Data Dictionary (DD)
+    - ## Conventions (apply to all files)
+    - ## 1) Strains — `/data/blueprints/strains/*.json`
+      - ### Purpose
+      - ### Schema (fields & meaning)
+      - ### Example (minimal)
+    - ## 2) Devices — `/data/blueprints/devices/*.json`
+      - ### Purpose
+      - ### Schema
+      - ### Example (Grow light)
+    - ## 3) Cultivation Methods — `/data/blueprints/cultivationMethods/*.json`
+      - ### Purpose
+      - ### Schema
+    - ## 4) Diseases — `/data/blueprints/diseases/*.json`
+      - ### Purpose
+      - ### Schema
+    - ## 5) Pests — `/data/blueprints/pests/*.json`
+      - ### Purpose
+      - ### Schema
+    - ## 6) Treatment Options — `/data/configs/treatment_options.json`
+      - ### Purpose
+      - ### Schema
+    - ## 7) Prices — `/data/prices/*.json`
+    - ## 8) Task Definitions — `/data/configs/task_definitions.json`
+    - ## 9) Structures — `/data/blueprints/structures/*.json`
+    - ## 10) Personnel Pools — `/data/personnel`
+
+- docs/TDD.md
+  - # Weedbreed.AI — Technical Design Document (TDD)
+    - ## 0) Goals & Principles
+    - ## 1) Authoritative State & Public API
+    - ## 2) Simulation Loop (fixed-step)
+    - ## 3) Environment & Device Models
+    - ## 4) Plants & Growth
+    - ## 5) Health System (Pests & Diseases)
+    - ## 6) Personnel as Agents
+      - ### Personnel & Labor Market
+      - ### Task Engine (augment)
+      - ### Agentic Employees (augment)
+      - ### Overtime Mechanics
+      - ### Data & Validation Hooks (augment)
+    - ## 7) Economy & Inventory
+    - ## 8) Device Placement Rules
+    - ## 9) Data Loading, Validation, & Hot Reload
+    - ## 10) Identifier Policy (final)
+    - ## 11) Events & Telemetry (examples)
+    - ## 12) Determinism, Performance, Testing
+    - ## 13) Security & Safety
+    - ## 14) Extensibility & Roadmap
+    - ## 15) Example Public API (shape-only, stack-neutral)
+
+- docs/addendum/all-json.md
+  - ## /data/blueprints/cultivationMethods/basic_soil_pot.json
+  - ## /data/blueprints/cultivationMethods/scrog.json
+  - ## /data/blueprints/cultivationMethods/sog.json
+  - ## /data/blueprints/devices/climate_unit_01.json
+  - ## /data/blueprints/devices/co2injector-01.json
+  - ## /data/blueprints/devices/dehumidifier-01.json
+  - ## /data/blueprints/devices/exhaust_fan_01.json
+  - ## /data/blueprints/devices/humidity_control_unit_01.json
+  - ## /data/blueprints/devices/veg_light_01.json
+  - ## /data/blueprints/diseases/anthracnose.json
+  - ## /data/blueprints/diseases/bacterial_leaf_spot.json
+  - ## /data/blueprints/diseases/bacterial_wilt.json
+  - ## /data/blueprints/diseases/botrytis_gray_mold.json
+  - ## /data/blueprints/diseases/downy_mildew.json
+  - ## /data/blueprints/diseases/hop_latent_viroid.json
+  - ## /data/blueprints/diseases/mosaic_virus.json
+  - ## /data/blueprints/diseases/powdery_mildew.json
+  - ## /data/blueprints/diseases/root_rot.json
+  - ## /data/blueprints/personnel/roles/Gardener.json
+  - ## /data/blueprints/personnel/roles/Janitor.json
+  - ## /data/blueprints/personnel/roles/Manager.json
+  - ## /data/blueprints/personnel/roles/Operator.json
+  - ## /data/blueprints/personnel/roles/Technician.json
+  - ## /data/blueprints/personnel/skills/Administration.json
+  - ## /data/blueprints/personnel/skills/Cleanliness.json
+  - ## /data/blueprints/personnel/skills/Gardening.json
+  - ## /data/blueprints/personnel/skills/Logistics.json
+  - ## /data/blueprints/personnel/skills/Maintenance.json
+  - ## /data/blueprints/pests/aphids.json
+  - ## /data/blueprints/pests/broad_mites.json
+  - ## /data/blueprints/pests/caterpillars.json
+  - ## /data/blueprints/pests/fungus_gnats.json
+  - ## /data/blueprints/pests/root_aphids.json
+  - ## /data/blueprints/pests/spider_mites.json
+  - ## /data/blueprints/pests/thrips.json
+  - ## /data/blueprints/pests/whiteflies.json
+  - ## /data/blueprints/roomPurposes/breakroom.json
+  - ## /data/blueprints/roomPurposes/growroom.json
+  - ## /data/blueprints/roomPurposes/lab.json
+  - ## /data/blueprints/roomPurposes/salesroom.json
+  - ## /data/blueprints/strains/ak-47.json
+  - ## /data/blueprints/strains/northern-lights.json
+  - ## /data/blueprints/strains/skunk-1.json
+  - ## /data/blueprints/strains/sour-diesel.json
+  - ## /data/blueprints/strains/white-widow.json
+  - ## /data/blueprints/structures/medium_warehouse.json
+  - ## /data/blueprints/structures/shed.json
+  - ## /data/blueprints/structures/small_warehouse.json
+  - ## configs/difficulty.json
+  - ## configs/disease_balancing.json
+  - ## configs/pest_balancing.json
+  - ## configs/task_definitions.json
+  - ## configs/treatment_options.json
+  - ## personnel/names/firstNamesFemale.json
+  - ## personnel/names/firstNamesMale.json
+  - ## personnel/names/lastNames.json
+  - ## personnel/randomSeeds.json
+  - ## personnel/traits.json
+  - ## prices/devicePrices.json
+  - ## prices/strainPrices.json
+  - ## prices/utilityPrices.json
+
+- docs/addendum/ideas/breeding_module.md
+  - # Weed Breed — Breeding Module (TS + Pseudocode)
+    - ## 0) Goals
+    - ## 1) Real → Game Mapping (Time)
+    - ## 2) Strain Fields used (subset)
+    - ## 3) Breeding Core (TypeScript)
+    - ## 4) Time Model (TypeScript)
+    - ## 5) UI (React/Vite) — Pseudocode
+    - ## 6) CLI Demo (optional)
+    - ## 7) Balancing Knobs
+    - ## 8) Integration Tips
+
+- docs/addendum/ideas/kief_dsl.md
+  - # KIEF DSL — High‑Level Integration (Monorepo, `data/kief`, Pseudocode‑Only)
+    - ## 1) Core Idea
+    - ## 2) Monorepo Folder Structure (Proposal)
+    - ## 3) KIEF File (Author View)
+    - ## 4) Parser → IR (Pseudocode)
+    - ## 5) Compiler (IR → Closures)
+    - ## 6) Runtime & Hooks
+    - ## 7) Engine Integration (Main Loop, Backend under `src/backend/src`)
+    - ## 8) Root Scripts (PNPM, Repo Root)
+    - ## 9) Telemetry & Tests
+    - ## 10) Authoring Guardrails
+    - ## 11) Starter Packages (`/data/kief`)
+    - ## 12) Integration Plan
+
+- docs/addendum/ideas/room-purpose-registry.md
+  - # Room Purpose Registry
+    - ## Overview
+    - ## API
+    - ## Schema
+
+- docs/addendum/ideas/terpenes.md
+  - # Terpene & Effects — High‑Level Concepts for Strain Blueprints (Augmented)
+    - ## 0) Guardrails
+    - ## 1) Target Schema (Concept)
+    - ## 2) Normalization (Concept)
+    - ## 3) Axis Derivation from Terpene Profile (Heuristic, Concept)
+    - ## 4) Deriving Positive/Negative Effects (Concept)
+    - ## 5) ETL Pipeline (Concept)
+  - # Appendices (New)
+    - ## A) **Effect Vocabulary — English (Canon Keys)**
+      - ### A.1 Positive effects (list)
+      - ### A.2 Negative effects (list)
+      - ### A.3 Experience descriptors ("Wirkung") — English list
+    - ## B) **Cannabis‑Relevant Terpene Canon — English**
+    - ## C) JSON Blueprint Stubs (Effects & Terpenes)
+    - ## D) Validation & Canon Checks (Zod Sketch)
+    - ## E) UI/Gameplay Hooks (Quick Notes)
+
+- docs/addendum/migrations/2025-01-22-typescript-toolchain.md
+  - # Migration — Backend TypeScript Toolchain
+    - ## Summary
+    - ## Required actions for feature branches
+    - ## Notes
+
+- docs/backend-overview.md
+  - # Backend Overview
+    - ## 1. Purpose & Non-Goals
+    - ## 2. Architecture Overview
+    - ## 3. Blueprints Provided & How to Use Them
+      - ### 3.1 Operating Principles
+      - ### 3.2 Blueprint–to–Subsystem Mapping
+    - ## 4. Blueprint Inventory
+      - ### 4.1 Structures & Room Purposes
+      - ### 4.2 Cultivation Methods
+      - ### 4.3 Strain Blueprints
+      - ### 4.4 Device Blueprints
+      - ### 4.5 Pest & Disease Blueprints
+      - ### 4.6 Personnel Roles & Skills
+      - ### 4.7 Price & Cost Blueprints
+    - ## 5. Materialization & Runtime State
+    - ## 6. Identifier Strategy
+    - ## 7. Quality Gates & Validation
+
+- docs/constants/balance.md
+  - # Game Balance Constants
+    - ## Human Resources & Employee Morale
+    - ## Skills & Experience
+    - ## Plant Growth & Health
+    - ## General Time
+
+- docs/constants/environment.md
+  - # Environmental Simulation Constants
+    - ## Zone Sufficiency & Climate Control
+    - ## Ambient (External) Environment Conditions
+    - ## Normalization & Physics Factors
+    - ## Device & Plant Effect Factors
+    - ## Durability & Disease
+
+- docs/releases/2025-02-si-blueprint-migration.md
+  - # Blueprint Unit Migration (SI Base Units)
+    - ## Summary
+    - ## Renamed Fields & Unit Changes
+    - ## Authoring Guidance
+    - ## Runtime Implications
+    - ## Migration Checklist
+
+- docs/system/adr/0001-typescript-toolchain.md
+  - # ADR 0001 — Backend TypeScript Toolchain Stabilization
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Alternatives Considered
+    - ## Rollback Plan
+
+- docs/system/adr/0002-frontend-realtime-stack.md
+  - # ADR 0002 — Frontend Real-Time Dashboard Stack
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Alternatives Considered
+    - ## Rollback Plan
+
+- docs/system/adr/0003-facade-messaging-overhaul.md
+  - # ADR 0003 — Facade Messaging Overhaul
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Alternatives Considered
+    - ## Rollback Plan
+
+- docs/system/adr/0004-zone-setpoint-routing.md
+  - # ADR 0004 — Zone Setpoint Routing
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Alternatives Considered
+    - ## Rollback Plan
+
+- docs/system/adr/0005-snapshot-time-sync.md
+  - # ADR 0005 — Snapshot & Time Status Telemetry Contract
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## References
+
+- docs/system/adr/0006-socket-transport-parity.md
+  - # ADR 0006 — Socket Transport Version Parity
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Alternatives Considered
+    - ## Rollback Plan
+
+- docs/system/adr/0007-physio-module-relocation.md
+  - # ADR 0007 — Physiology Modules Collocate with the Engine
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Alternatives Considered
+    - ## Rollback Plan
+    - ## Status Updates
+
+- docs/system/adr/0008-randomuser-provisioning.md
+  - # ADR 0008 — Auto-Provision Personnel Directory from RandomUser
+    - ## Context
+    - ## Decision
+    - ## Consequences
+    - ## Failure Modes & Mitigations
+    - ## Operational Guidance
+    - ## Alternatives Considered
+    - ## Rollback Plan
+
+- docs/system/audit.md
+  - # Simulation Audit Runner
+    - ## Running an audit
+      - ### Output structure
+      - ### Baseline comparisons
+      - ### CI integration
+
+- docs/system/data-validation.md
+  - # Blueprint Data Validation Workflow
+    - ## Command
+      - ### Options
+    - ## Output
+    - ## Continuous Integration
+    - ## Device Setpoint Casing Guard
+
+- docs/system/employees.md
+  - # Weedbreed.AI — Employee System
+    - ## Overview
+    - ## 1) Candidate Generation & External Name Provider
+    - ## 2) Work as Discrete Tasks
+    - ## 3) Overtime (Energy-Linked)
+  - # DD Additions
+    - ## Personnel (new or clarified fields)
+    - ## Hiring / Candidate Source
+    - ## Tasks (augment existing section)
+    - ## Overtime & Policy
+
+- docs/system/facade.md
+  - # Weedbreed.AI — System Facade
+    - ## 1) Purpose & Responsibilities
+    - ## 2) Contract & Guarantees
+    - ## 3) Data Surfaces
+      - ### 3.1 Read API (snapshots & queries)
+      - ### 3.2 Write API (intents/commands)
+    - ## 4) Command Surface (categories)
+      - ### 4.1 Time & Simulation Control
+      - ### 4.2 Data Lifecycle
+      - ### 4.3 World Building (Structures → Rooms → Zones)
+      - ### 4.4 Devices
+      - ### 4.5 Plants & Plantings
+      - ### 4.6 Health (Pests/Diseases & Treatments)
+      - ### 4.7 Personnel & Tasks
+      - ### 4.8 Finance & Market
+    - ## 5) Error Handling & Validation
+    - ## 6) Events (taxonomy)
+    - ## 7) Concurrency Models
+    - ## 8) Tick Orchestration (conformance to Simulation Deep Dive)
+    - ## 9) Identity & Referencing
+    - ## 10) Security & Safety
+    - ## 11) Testing & Observability
+    - ## 12) Example API Shape (pseudo‑types)
+    - ## 13) Anti‑Patterns (explicitly disallowed)
+    - ## 14) Migration & Hot‑Reload Notes
+    - ## 15) Extensibility
+
+- docs/system/job_market_population.md
+  - # Weedbreed.AI — Job Market Population
+    - ## Weekly Refresh Lifecycle
+    - ## Remote Provider Contract (randomuser.me)
+    - ## Startup Provisioning Service
+    - ## Deterministic Seeding Strategy
+    - ## Candidate Synthesis Pipeline
+    - ## Fallback Strategy (Offline Mode)
+    - ## Configuration & Operations
+    - ## Monitoring & Observability
+    - ## Operational Checklist
+
+- docs/system/logging.md
+  - # Logging & Telemetry Configuration
+    - ## Environment Variables
+    - ## Sample `.env`
+    - ## Telemetry Context
+
+- docs/system/personnel_roles_blueprint.md
+  - # Weedbreed.AI — Personnel Role Blueprint
+    - ## Directory Layout
+    - ## PersonnelRoleBlueprint Fields
+      - ### Salary Config
+      - ### Skill Profile
+    - ## Normalization & Fallbacks
+    - ## Runtime Consumers
+
+- docs/system/runtime-event-bus-migration.md
+  - # Runtime Event Bus Migration Notes
+    - ## Overview
+    - ## Migration Guidance
+      - ### Suggested Codemod
+
+- docs/system/simulation-engine.md
+  - # Weedbreed.AI — Simulation Engine Deep Dive
+    - ## Timebase & Core Loop (fixed-step, scheduler-agnostic)
+      - ### Goals
+      - ### Process
+    - ## Environment Model (per Zone; well-mixed, delta-based)
+      - ### Tick Order (environment phase)
+    - ## Plant Growth, Stress, Health (per Planting/Plant)
+      - ### Inputs from DD
+      - ### Tick Order (plant phase)
+    - ## Health: Pests & Diseases (detect → progress → spread → treat)
+      - ### Tick Order (health phase)
+    - ## Tasks & Agentic Employees (utility-based; overtime-aware)
+      - ### Task generation (per tick)
+      - ### Claiming (pull model with utility)
+      - ### Execution & completion
+      - ### Overtime (energy-linked)
+    - ## Economics (currency-neutral)
+    - ## Persistence, Validation, and Hot-Reload
+    - ## Determinism & RNG Streams
+    - ## Error Handling & Safety
+    - ## Future Enhancements (compatible with current contracts)
+
+- docs/system/simulation_philosophy.md
+  - # Weedbreed.AI — Simulation Philosophy Deep Dive
+    - ## 1. Time & Simulation Loop: Stability and Fairness
+    - ## 2. Environmental Model: Emergent Complexity from Simple Rules
+    - ## 3. Plant Growth Model: The Core Feedback Loop
+    - ## 4. Personnel & AI: Autonomous Agents and Indirect Control
+    - ## 5. Economic Model: Constant Pressure and Rewarding Mastery
+    - ## 6. Genetics & Breeding: Player-Driven Discovery
+
+- docs/system/socket_protocol.md
+  - # Socket Protocol — Simulation Gateway
+    - ## UI Stream (`uiStream$`)
+    - ## Connection & Handshake
+      - ### Frontend Configuration
+    - ## Outgoing Events
+      - ### `simulationUpdate`
+      - ### `sim.tickCompleted`
+      - ### `domainEvents`
+    - ## Server-Sent Events (`/events`)
+    - ## Incoming Commands
+      - ### Common Envelope
+      - ### `facade.intent` — Domain Command Envelope
+        - #### Supported actions per domain
+      - ### `simulationControl`
+      - ### `config.update`
+    - ## Error Handling
+    - ## Batching Guarantees
+    - ## Versioning
+
+- docs/system/wb-physio.md
+  - # Weed Breed Physiology Reference
+    - ## Temperature Mixing (`temp.ts`)
+    - ## Relative Humidity Mixing (`rh.ts`)
+    - ## CO₂ Dynamics (`co2.ts`)
+    - ## Photosynthetic Photons (`ppfd.ts`)
+    - ## Vapour Pressure Deficit (`vpd.ts`)
+    - ## Transpiration (`transpiration.ts`)
+    - ## Integration Points
+
+- docs/tasks/20250923-clickdummy-migration_steps.md
+  - ## Inventory
+  - ## Data shape gaps vs PRD
+  - ## Non-determinism & global state to replace
+  - ## Migration backlog
+  - ## Open questions / risks
+  - ## Lösungsweg
+    - ### Daten- und Zustandsnormalisierung
+    - ### Layout- und Navigationsmigration
+    - ### View-spezifische Portierungen
+    - ### Modale und Workflows
+    - ### Gemeinsame Komponenten & Utilities
+    - ### Qualitätssicherung
+
+- docs/tasks/20250923-todo-findings.md
+
+- docs/tasks/20250924-todo-findings.md
+
+- docs/tasks/20250925-job-market-refresh.md
+  - # 2025-09-25 — Randomuser-backed job market refresh
+
+- docs/tasks/20250926-personnel-provisioning.md
+  - # 2025-09-26 — Personnel directory provisioning follow-ups
+
+- docs/ui/migration-notes.md
+  - # Frontend Migration Notes
+    - ## Summary
+    - ## Omitted Legacy Elements
+    - ## Follow-up Tasks
+    - ## Connectivity
+    - ## Retirement
+
+- docs/ui/ui-components-desciption.md
+  - # Component Documentation
+    - ## Screenshot Reference Map
+    - ## Simulation Facade Intent Coverage
+      - ### Time & Loop Control
+      - ### Environment Configuration
+      - ### World Domain (Structures, Rooms, Zones)
+      - ### Device Domain
+      - ### Plant Domain
+      - ### Health Domain
+      - ### Workforce Domain
+      - ### Finance Domain
+    - ## 1. Top-Level Components
+      - ### `src/App.tsx`
+    - ## 2. Common Components (`src/components/common/`)
+      - ### `ActionIcons.tsx`
+      - ### `Breadcrumbs.tsx`
+      - ### `Buttons.tsx`
+      - ### `Form.tsx`
+      - ### `Icons.tsx`
+      - ### `InlineEdit.tsx`
+      - ### `Modal.tsx`
+      - ### `StatCard.tsx`
+      - ### `Toast.tsx`
+    - ## 3. Layout Components (`src/components/layout/`)
+      - ### `DashboardHeader.tsx`
+      - ### `EventLog.tsx`
+      - ### `MainContent.tsx`
+      - ### `Sidebar.tsx`
+    - ## 4. Modal Components (`src/components/modals/`)
+      - ### `AddDeviceModal.tsx`
+      - ### `CreateRoomModal.tsx`
+      - ### `CreateZoneModal.tsx`
+      - ### `RentStructureModal.tsx`
+      - ### `DuplicateStructureModal.tsx`
+      - ### `DuplicateRoomModal.tsx`
+      - ### `DuplicateZoneModal.tsx`
+      - ### `GameMenuModal.tsx`
+      - ### `HireEmployeeModal.tsx`
+      - ### `InfoModal.tsx`
+      - ### `NewGameModal.tsx`
+      - ### `PlantDetailModal.tsx`
+      - ### `PlantStrainModal.tsx`
+      - ### `InstallDeviceModal.tsx`
+      - ### `UpdateDeviceModal.tsx`
+      - ### `MoveDeviceModal.tsx`
+      - ### Device removal confirmation
+      - ### `RentStructureModal.tsx`
+    - ## 5. Screen Components (`src/components/screens/`)
+      - ### `StartScreen.tsx`
+    - ## 6. Simulation Components (`src/components/simulation/`)
+      - ### `EnvironmentPanel.tsx`
+      - ### `ZoneCard.tsx`
+      - ### `ZoneDeviceList.tsx`
+      - ### `ZonePlantPanel.tsx`
+    - ## 7. View Components (`src/components/views/`)
+      - ### `DashboardView.tsx`
+      - ### `FinanceView.tsx`
+      - ### `PersonnelView.tsx`
+      - ### `RoomDetailView.tsx`
+      - ### `StructureDetailView.tsx`
+      - ### `ZoneDetailView.tsx`
+    - ## 8. Contexts (`src/contexts/`)
+      - ### `ToastContext.tsx`
+    - ## Styling and Design System
+      - ### Core Philosophy: Tailwind CSS Utility-First
+      - ### Color Palette (Dark Theme)
+      - ### Typography
+      - ### Common UI Pattern Snippets
+      - ### Custom CSS: Scrollbar
+    - ## Fehlende Schlüsselinformationen für einen UI-Neubau
+      - ### Empfohlene Ergänzungen
+
+- docs/ui/ui-implementation-spec.md
+  - # Weedbreed.AI — Frontend Implementation Spec
+    - ## 1) Overall Architecture & Layout
+    - ## 2) Core Components (Behavior & Layout)
+      - ### 2.1 Dashboard (primary info & controls)
+      - ### 2.2 Navigation Bar (breadcrumbs)
+    - ## 3) Hierarchical Views (Structure → Room → Zone)
+      - ### 3.1 Structures View
+      - ### 3.2 Structure Detail View
+      - ### 3.3 Room Detail View
+      - ### 3.4 Zone Detail View
+    - ## 4) Modal System
+    - ## 5) Implemented User Interactions (Command Mapping)
+    - ## 6) Icons (Material Symbols Outlined)
+    - ## 7) Accessibility & Responsiveness
+    - ## 8) Non‑Goals / Anti‑Patterns
+
+- docs/ui/ui-screenshot-insights.md
+  - # UI Screenshot Insights
+    - ## Overview of the Frontend Idea
+    - ## Game Lifecycle Surfaces
+    - ## Strategic Management Views
+    - ## Operations, Personnel, and Finance Loops
+    - ## Interaction & Visual Patterns
+
+- docs/ui/ui_archictecture.md
+  - # Weedbreed.AI — UI Architecture
+    - ## 1) Core Philosophy — “Dumb” UI, Smart Engine
+    - ## 2) Unidirectional Dataflow (Render → Act → Apply → Notify → Re‑render)
+    - ## 3) Technical Building Blocks (UI layer)
+      - ### 3.1 Bridge Hook (UI ↔ Facade)
+      - ### 3.2 Application Orchestrator
+      - ### 3.3 Navigation Manager
+      - ### 3.4 Modal Manager (Input Workflows)
+      - ### 3.5 Views vs. Components
+      - ### 3.6 Styling & Theming
+    - ## 4) Read Models & Identity in the UI
+    - ## 5) Command Usage Patterns (UI)
+    - ## 6) Event Consumption
+    - ## 7) Performance & Robustness
+    - ## 8) Anti‑Patterns (explicitly disallowed)
+    - ## 9) Optional React Mapping (for teams using React)
+
+- docs/ui/ui_elements.md
+  - # Weedbreed.AI — UI Elements
+    - ## Design-System-Primitiven
+    - ## 1. Start Screen
+    - ## 2. Main Game Interface
+      - ### 2.1. The Dashboard (Persistent Header)
+      - ### 2.2. Navigation Bar (Breadcrumbs)
+    - ## 3. Main Content Views
+      - ### 3.1. Structures List (Default View)
+      - ### 3.2. Structure Detail View
+      - ### 3.3. Room Detail View
+      - ### 3.4. Zone Detail View
+      - ### 3.5. Finances View
+      - ### 3.6. Personnel View
+    - ## 4. Modals (Pop-ups)
+
+- docs/ui/ui_interactions_spec.md
+  - # Weedbreed.AI — UI Interaction Spec
+    - ## 1) Overview of Implemented User Interactions
+      - ### A. Game Lifecycle & Setup
+      - ### B. Infrastructure Management (Macro Loop)
+      - ### C. Cultivation & Zone Management (Micro Loop)
+      - ### D. Personnel Management
+      - ### E. Financial & Strategic Overview
+    - ## 2) Technical UI Component Breakdown (illustrative)
+      - ### A. Core Application Structure
+      - ### B. Primary Views
+      - ### C. Hierarchical Detail Components
+      - ### D. UI Chrome & Navigation
+      - ### E. Modals (managed by the modal controller)
+      - ### F. Reusable & Specialized Components
+    - ## 3) Identity, Validation & Safety (UI Contract)
+    - ## 4) Performance & UX Notes
+    - ## 5) Anti‑Patterns (explicitly disallowed)
+
+- docs/ui-building_guide.md
+  - # Weedbreed.AI UI Building Guide
+    - ## Table of Contents
+    - ## Guiding Principles
+    - ## Layout & Navigation
+      - ### Application Shell
+      - ### Responsive Breakpoints & Navigation Behaviour
+      - ### Persistent Dashboard & Controls
+      - ### Breadcrumbs & States
+      - ### Panel Layouts & Responsive Breakpoints
+    - ## Core Views
+      - ### Start Screen
+      - ### Dashboard & Global Chrome
+      - ### Structures Overview
+      - ### Structure Detail View
+      - ### Room Detail View
+        - #### BreedingStation (Lab Rooms)
+      - ### Zone Detail View
+      - ### Finances View
+      - ### Personnel View
+      - ### Event Log & Ancillary Panels
+    - ## UI Elements & Patterns
+      - ### Screenshot Reference Map
+      - ### Design-System Primitives
+      - ### Generic Components
+      - ### Layout Components
+      - ### Modal Components
+      - ### Simulation Components
+      - ### View Components (Composition Level)
+      - ### Context Providers
+      - ### Contract Type Definitions
+      - ### State Management & Backend Integration
+      - ### Styling & Responsiveness Guardrails
+      - ### Resilience Patterns
+    - ## Interactions
+      - ### Game Lifecycle
+      - ### Infrastructure & Navigation
+      - ### Cultivation & Zone Management
+      - ### Environment & Telemetry Control
+      - ### Personnel & Finance
+      - ### Modals & Focus Management
+    - ## States & Telemetry
+    - ## Accessibility & Performance
+    - ## Visual Guardrails
+      - ### Iconography
+      - ### Spacing & Vertical Rhythm
+      - ### Icon Sizing Guidelines
+      - ### Dark Theme Tokens
+      - ### Core CSS Snippets
+      - ### Tailwind Building Blocks
+      - ### Custom Scrollbar
+      - ### Layout Reminders
+    - ## Glossary
+    - ## Changelog Note
+    - ## Open Issues
+
+- docs/vision_scope.md
+  - # Weedbreed.AI — Vision & Scope
+    - ## 1. Vision
+    - ## 2. Target Audiences & Stakeholders
+    - ## 3. Success Criteria
+    - ## 4. Canonical Domain Model
+    - ## 5. Simulation Philosophy
+    - ## 6. Progression & Economy
+    - ## 6a. Quality Grades & Price Functions
+    - ## 7. Automation & Agents
+    - ## 8. Content & Data Strategy
+    - ## 9. UX & Presentation Vision (Technology-Agnostic)
+    - ## 10. Persistence & Compatibility
+    - ## 11. Telemetry, Validation & Tests
+    - ## 12. Non-Functional Requirements (NFR)
+    - ## 13. Legal & Ethics
+    - ## 14. Roadmap & Release Criteria
+    - ## 15. Risks & Assumptions
+    - ## 16. Binding Rules & Technical Guardrails (Coding‑Ready)
+      - ### 16.1 Units & Numerics (SI policy, rounding, tolerances)
+      - ### 16.2 Seed policy & RNG sources
+      - ### 16.3 Time scaling & pause semantics
+      - ### 16.4 Task arbiter – deterministic priorities & fairness
+      - ### 16.5 Device degradation & maintenance
+      - ### 16.6 Market / price baseline
+      - ### 16.7 Storage & post‑harvest quality decay
+      - ### 16.8 Pest/disease treatments – side effects
+      - ### 16.9 Savegame schema & migrations
+      - ### 16.10 Audit metrics – definitions & thresholds
+      - ### 16.11 Maximum plants per zone – binding formula
+      - ### 16.12 Climate controller – control strategy
+      - ### 16.13 Staff shift model
+      - ### 16.14 Device conflict / capacity rules
+      - ### 16.15 Failure & degrade‑mode matrix
