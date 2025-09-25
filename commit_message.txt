@@ -1,7 +1,0 @@
-feat(backend): implement rentStructure and fix startup error
-
-This commit introduces the implementation for the `rentStructure` action,
-which is required for the "Quick Start" feature to function correctly.
-
-It also fixes a syntax error in `startServer.ts` that was preventing the
-backend from starting.
