@@ -6,6 +6,7 @@ import { StructureView } from '@/views/StructureView';
 import { RoomView } from '@/views/RoomView';
 import { ZoneView } from '@/views/ZoneView';
 import { PersonnelView } from '@/views/PersonnelView';
+import { FinanceView } from '@/views/FinanceView';
 import { ModalHost } from '@/components/modals/ModalHost';
 import { useSimulationBridge } from '@/hooks/useSimulationBridge';
 import { useNavigationStore } from '@/store/navigation';
@@ -36,6 +37,8 @@ const App = () => {
         return <ZoneView />;
       case 'personnel':
         return <PersonnelView bridge={bridge} />;
+      case 'finance':
+        return <FinanceView bridge={bridge} />;
       case 'dashboard':
       default:
         return <DashboardView />;

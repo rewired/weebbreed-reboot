@@ -22,6 +22,7 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
   const incrementNotifications = useUIStore((state) => state.incrementNotifications);
   const markNotificationsRead = useUIStore((state) => state.markNotificationsRead);
   const goToStructures = useNavigationStore((state) => state.goToStructures);
+  const openFinance = useNavigationStore((state) => state.openFinance);
   const [controlPending, setControlPending] = useState(false);
   const [speedPending, setSpeedPending] = useState<string | null>(null);
 
@@ -197,6 +198,22 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
             onClick={goToStructures}
           >
             Structures
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Icon name="account_balance" />}
+            onClick={openFinance}
+          >
+            Finance
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Icon name="account_balance" />}
+            onClick={openFinance}
+          >
+            Finance
           </Button>
           <IconButton
             aria-label="Open notifications"
