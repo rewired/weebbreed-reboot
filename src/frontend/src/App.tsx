@@ -35,12 +35,12 @@ const App = () => {
       case 'zone':
         return <ZoneView />;
       case 'personnel':
-        return <PersonnelView />;
+        return <PersonnelView bridge={bridge} />;
       case 'dashboard':
       default:
         return <DashboardView />;
     }
-  }, [currentView]);
+  }, [currentView, bridge]);
 
   if (!snapshot || currentView === 'start') {
     return (

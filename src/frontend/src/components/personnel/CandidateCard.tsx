@@ -4,6 +4,13 @@ import { Icon } from '@/components/common/Icon';
 import { Badge } from '@/components/primitives/Badge';
 import { useUIStore } from '@/store/ui';
 import type { ApplicantSnapshot } from '@/types/simulation';
+import {
+  getSkillColor,
+  getSkillDescription,
+  formatSkillLevel,
+  getRoleDisplayName,
+  getGenderIcon,
+} from './utils';
 
 interface CandidateCardProps {
   applicant: ApplicantSnapshot;
@@ -14,43 +21,6 @@ export const CandidateCard = ({ applicant, className }: CandidateCardProps) => {
   const openModal = useUIStore((state) => state.openModal);
 
   const skillEntries = Object.entries(applicant.skills).filter(([, level]) => level && level > 0);
-
-  const getSkillColor = (level: number): 'success' | 'warning' | 'danger' | 'default' => {
-    if (level >= 8) return 'success';
-    if (level >= 6) return 'warning';
-    if (level >= 4) return 'default';
-    return 'danger';
-  };
-
-  const getSkillDescription = (level: number): string => {
-    if (level >= 9) return 'Expert';
-    if (level >= 7) return 'Advanced';
-    if (level >= 5) return 'Proficient';
-    if (level >= 3) return 'Intermediate';
-    if (level >= 1) return 'Novice';
-    return 'No experience';
-  };
-
-  const formatSkillLevel = (level: number): string => {
-    // Format float skills from 0-10 with 1 decimal place
-    return level.toFixed(1);
-  };
-
-  const getRoleDisplayName = (role: string): string => {
-    // Convert role ID to display name (e.g., "IPMSpecialist" -> "IPM Specialist")
-    return role.replace(/([A-Z])/g, ' $1').trim();
-  };
-
-  const getGenderIcon = (gender?: string): string => {
-    switch (gender?.toLowerCase()) {
-      case 'female':
-        return 'person_3';
-      case 'male':
-        return 'person_4';
-      default:
-        return 'person';
-    }
-  };
 
   return (
     <Card

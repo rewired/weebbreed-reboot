@@ -3,6 +3,8 @@ import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { ModalFrame } from '@/components/modals/ModalFrame';
 import { structureBlueprintOptions } from '@/data/structureBlueprints';
+import { HireModal } from '@/components/personnel/HireModal';
+import { FireModal } from '@/components/personnel/FireModal';
 import { useUIStore } from '@/store/ui';
 import type { ModalDescriptor } from '@/store/ui';
 import { useSimulationStore } from '@/store/simulation';
@@ -667,204 +669,6 @@ const RecruitStaffModal = ({
   );
 };
 
-const HireApplicantModal = ({
-  bridge,
-  closeModal,
-  context,
-}: {
-  bridge: SimulationBridge;
-  closeModal: () => void;
-  context?: Record<string, unknown>;
-}) => {
-  const applicantId = typeof context?.applicantId === 'string' ? context.applicantId : null;
-  const applicant = useSimulationStore((state) =>
-    applicantId
-      ? (state.snapshot?.personnel.applicants.find((item) => item.id === applicantId) ?? null)
-      : null,
-  );
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  if (!applicant || !applicantId) {
-    return (
-      <p className="text-sm text-text-muted">
-        Applicant data unavailable. Select an applicant before hiring.
-      </p>
-    );
-  }
-
-  const handleHire = async () => {
-    setBusy(true);
-    setFeedback(null);
-    try {
-      const response = await bridge.sendIntent({
-        domain: 'workforce',
-        action: 'hireApplicant',
-        payload: { applicantId },
-      });
-      if (!response.ok) {
-        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
-        setFeedback(warning ?? 'Hiring rejected by workforce engine.');
-        return;
-      }
-      closeModal();
-    } catch (error) {
-      console.error('Failed to hire applicant', error);
-      setFeedback('Connection error while hiring applicant.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const skillEntries = Object.entries(applicant.skills).filter(([, level]) => level && level > 0);
-
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-3 text-sm">
-        <div className="flex justify-between">
-          <span className="text-text-muted">Role</span>
-          <span className="font-medium text-text">{applicant.desiredRole}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-text-muted">Expected Salary</span>
-          <span className="font-medium text-text">€{applicant.expectedSalary}/tick</span>
-        </div>
-        {applicant.traits.length > 0 && (
-          <div className="flex justify-between">
-            <span className="text-text-muted">Traits</span>
-            <span className="font-medium text-text">{applicant.traits.join(', ')}</span>
-          </div>
-        )}
-        {skillEntries.length > 0 && (
-          <div className="grid gap-2">
-            <span className="text-text-muted">Skills</span>
-            <div className="grid gap-1">
-              {skillEntries.map(([skill, level]) => (
-                <div key={skill} className="flex justify-between">
-                  <span className="text-text-muted">{skill}</span>
-                  <span className="font-medium text-text">Level {level}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-      <p className="text-xs text-text-muted">
-        Hiring will add {applicant.name} to your workforce immediately. Their salary will be
-        deducted from company funds each tick.
-      </p>
-      {feedback ? <Feedback message={feedback} /> : null}
-      <ActionFooter
-        onCancel={closeModal}
-        onConfirm={handleHire}
-        confirmLabel={busy ? 'Hiring…' : `Hire ${applicant.name}`}
-        confirmDisabled={busy}
-        cancelDisabled={busy}
-      />
-    </div>
-  );
-};
-
-const FireEmployeeModal = ({
-  bridge,
-  closeModal,
-  context,
-}: {
-  bridge: SimulationBridge;
-  closeModal: () => void;
-  context?: Record<string, unknown>;
-}) => {
-  const employeeId = typeof context?.employeeId === 'string' ? context.employeeId : null;
-  const employee = useSimulationStore((state) =>
-    employeeId
-      ? (state.snapshot?.personnel.employees.find((item) => item.id === employeeId) ?? null)
-      : null,
-  );
-  const [confirmation, setConfirmation] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-
-  if (!employee || !employeeId) {
-    return (
-      <p className="text-sm text-text-muted">
-        Employee data unavailable. Select an employee to terminate.
-      </p>
-    );
-  }
-
-  const handleFire = async () => {
-    setBusy(true);
-    setFeedback(null);
-    try {
-      const response = await bridge.sendIntent({
-        domain: 'workforce',
-        action: 'fireEmployee',
-        payload: { employeeId },
-      });
-      if (!response.ok) {
-        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
-        setFeedback(warning ?? 'Termination rejected by workforce engine.');
-        return;
-      }
-      closeModal();
-    } catch (error) {
-      console.error('Failed to fire employee', error);
-      setFeedback('Connection error while terminating employee.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const confirmMatches = confirmation.trim().toLowerCase() === employee.name.toLowerCase();
-
-  return (
-    <div className="grid gap-4">
-      <div className="grid gap-2">
-        <p className="text-sm text-text-muted">
-          Terminating <span className="font-semibold text-text">{employee.name}</span> will
-          immediately remove them from your workforce. This action cannot be undone.
-        </p>
-        <div className="rounded-lg bg-surface-muted/40 p-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-text-muted">Role</span>
-            <span className="text-text">{employee.role}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-text-muted">Current Salary</span>
-            <span className="text-text">€{employee.salaryPerTick}/tick</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-text-muted">Status</span>
-            <span className="text-text">
-              {employee.status.charAt(0).toUpperCase() + employee.status.slice(1)}
-            </span>
-          </div>
-        </div>
-      </div>
-      <label className="grid gap-1 text-sm">
-        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          Type the employee's name to confirm
-        </span>
-        <input
-          type="text"
-          value={confirmation}
-          onChange={(event) => setConfirmation(event.target.value)}
-          placeholder={employee.name}
-          className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
-        />
-      </label>
-      {feedback ? <Feedback message={feedback} /> : null}
-      <ActionFooter
-        onCancel={closeModal}
-        onConfirm={handleFire}
-        confirmLabel={busy ? 'Terminating…' : 'Terminate Employee'}
-        confirmDisabled={!confirmMatches || busy}
-        cancelDisabled={busy}
-      />
-    </div>
-  );
-};
-
 const RejectApplicantModal = ({
   bridge,
   closeModal,
@@ -1229,10 +1033,10 @@ const modalRenderers: Record<
     <RecruitStaffModal bridge={bridge} closeModal={closeModal} />
   ),
   hireApplicant: ({ bridge, closeModal, context }) => (
-    <HireApplicantModal bridge={bridge} closeModal={closeModal} context={context} />
+    <HireModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
   fireEmployee: ({ bridge, closeModal, context }) => (
-    <FireEmployeeModal bridge={bridge} closeModal={closeModal} context={context} />
+    <FireModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
   rejectApplicant: ({ bridge, closeModal, context }) => (
     <RejectApplicantModal bridge={bridge} closeModal={closeModal} context={context} />
