@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -15,6 +15,7 @@ import {
   getCoreRowModel,
   createColumnHelper,
 } from '@tanstack/react-table';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
@@ -23,6 +24,7 @@ import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
 import type { PlantSnapshot } from '@/types/simulation';
+import type { ZoneHistoryPoint } from '@/store/simulation';
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
@@ -54,7 +56,7 @@ const plantColumns = [
 
 export const ZoneView = () => {
   const snapshot = useSimulationStore((state) => state.snapshot);
-  const updates = useSimulationStore((state) => state.updates);
+  const zoneHistoryMap = useSimulationStore((state) => state.zoneHistory);
   const { selectedZoneId, selectedRoomId, selectedStructureId } = useNavigationStore((state) => ({
     selectedZoneId: state.selectedZoneId,
     selectedRoomId: state.selectedRoomId,
@@ -70,34 +72,85 @@ export const ZoneView = () => {
     getCoreRowModel: getCoreRowModel(),
   });
 
-  const history = useMemo(
-    () =>
-      !zone
-        ? []
-        : updates
-            .map((entry) => {
-              const entryZone = entry.snapshot.zones.find((item) => item.id === zone.id);
-              if (!entryZone) {
-                return null;
-              }
-              return {
-                tick: entry.tick,
-                temperature: entryZone.environment.temperature,
-                humidity: entryZone.environment.relativeHumidity * 100,
-                ppfd: entryZone.environment.ppfd,
-                vpd: entryZone.environment.vpd,
-              };
-            })
-            .filter((point): point is NonNullable<typeof point> => Boolean(point)),
-    [updates, zone],
-  );
+  const history = useMemo(() => {
+    if (!zone) {
+      return [] as ZoneHistoryPoint[];
+    }
+    return zoneHistoryMap[zone.id] ?? [];
+  }, [zone, zoneHistoryMap]);
+
+  const aggregateHistory = useMemo(() => {
+    if (!history.length) {
+      return [] as {
+        tick: number;
+        temperature: number;
+        humidity: number;
+        ppfd: number;
+        vpd: number;
+      }[];
+    }
+    const MAX_POINTS = 5000;
+    if (history.length <= MAX_POINTS) {
+      return history.map((point) => ({
+        tick: point.tick,
+        temperature: point.temperature,
+        humidity: point.relativeHumidity * 100,
+        ppfd: point.ppfd,
+        vpd: point.vpd,
+      }));
+    }
+    const bucketSize = Math.ceil(history.length / MAX_POINTS);
+    const aggregated: {
+      tick: number;
+      temperature: number;
+      humidity: number;
+      ppfd: number;
+      vpd: number;
+    }[] = [];
+    for (let index = 0; index < history.length; index += bucketSize) {
+      const slice = history.slice(index, index + bucketSize);
+      if (!slice.length) {
+        continue;
+      }
+      const totals = slice.reduce(
+        (acc, point) => {
+          acc.temperature += point.temperature;
+          acc.humidity += point.relativeHumidity;
+          acc.ppfd += point.ppfd;
+          acc.vpd += point.vpd;
+          return acc;
+        },
+        { temperature: 0, humidity: 0, ppfd: 0, vpd: 0 },
+      );
+      const count = slice.length;
+      const midpoint = slice[Math.floor(count / 2)];
+      aggregated.push({
+        tick: midpoint.tick,
+        temperature: totals.temperature / count,
+        humidity: (totals.humidity / count) * 100,
+        ppfd: totals.ppfd / count,
+        vpd: totals.vpd / count,
+      });
+    }
+    return aggregated;
+  }, [history]);
+
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const plantRowCount = zone?.plants.length ?? 0;
+  const shouldVirtualize = plantRowCount > 100;
+  const rowVirtualizer = useVirtualizer({
+    count: shouldVirtualize ? plantRowCount : 0,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 44,
+    overscan: 8,
+  });
 
   if (!snapshot || !selectedZoneId || !selectedRoomId || !selectedStructureId || !zone) {
     return null;
   }
 
-  const chartData = history.length
-    ? history
+  const chartData = aggregateHistory.length
+    ? aggregateHistory
     : [
         {
           tick: snapshot.clock.tick,
@@ -107,6 +160,9 @@ export const ZoneView = () => {
           vpd: zone.environment.vpd,
         },
       ];
+
+  const rows = table.getRowModel().rows;
+  const virtualRows = shouldVirtualize ? rowVirtualizer.getVirtualItems() : [];
 
   return (
     <div className="grid gap-6">
@@ -276,9 +332,12 @@ export const ZoneView = () => {
             </div>
           </Card>
           <Card title="Plants" subtitle="Batch overview">
-            <div className="overflow-hidden rounded-2xl border border-border/30">
+            <div
+              ref={tableContainerRef}
+              className="max-h-96 overflow-y-auto rounded-2xl border border-border/30"
+            >
               <table className="min-w-full divide-y divide-border/30 text-sm">
-                <thead className="bg-surface-muted/60 text-xs uppercase tracking-wide text-text-muted">
+                <thead className="sticky top-0 z-10 bg-surface-muted/80 text-xs uppercase tracking-wide text-text-muted">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
                       {headerGroup.headers.map((header) => (
@@ -291,16 +350,44 @@ export const ZoneView = () => {
                     </tr>
                   ))}
                 </thead>
-                <tbody className="divide-y divide-border/20 bg-surface-elevated/40">
-                  {table.getRowModel().rows.map((row) => (
-                    <tr key={row.id}>
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id} className="px-4 py-3">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
+                <tbody
+                  className="relative bg-surface-elevated/40"
+                  style={
+                    shouldVirtualize ? { height: `${rowVirtualizer.getTotalSize()}px` } : undefined
+                  }
+                >
+                  {shouldVirtualize
+                    ? virtualRows.map((virtualRow) => {
+                        const row = rows[virtualRow.index];
+                        return (
+                          <tr
+                            key={row.id}
+                            className="divide-x divide-border/10"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="px-4 py-3">
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })
+                    : rows.map((row) => (
+                        <tr key={row.id} className="divide-x divide-border/10">
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id} className="px-4 py-3">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          ))}
+                        </tr>
                       ))}
-                    </tr>
-                  ))}
                 </tbody>
               </table>
             </div>

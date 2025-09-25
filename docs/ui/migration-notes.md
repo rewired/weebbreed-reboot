@@ -21,10 +21,15 @@
 
 ## Follow-up Tasks
 
-1. Replace the mock facade (`src/frontend/src/facade/systemFacade.ts`) with live Socket.IO wiring once the backend exposes the
-   deterministic streams documented in `/docs/system`.
-2. Reintegrate analytics-heavy components (Recharts time-series expansions, TanStack Table virtualisation) using live data when
-   telemetry volume warrants it.
-3. Port modal workflows for rent/duplicate/delete actions to real facade intents, including optimistic UI feedback and command
-   acknowledgements.
-4. Extend automated tests for navigation, modal focus trapping, and responsive sidebar behaviour once the UI stabilises.
+1. ✅ Replace the mock facade (`src/frontend/src/facade/systemFacade.ts`) with live Socket.IO wiring once the backend exposes the
+   deterministic streams documented in `/docs/system`. The bridge now connects to the real gateway, manages reconnection, routes
+   intent ACKs, and hydrates the global simulation store without optimistic updates.
+2. ✅ Reintegrate analytics-heavy components (Recharts time-series expansions, TanStack Table virtualisation) using live data when
+   telemetry volume warrants it. Zone telemetry respects the 5 000-point budget via dynamic downsampling and virtualised plant
+   tables render efficiently beyond 100 rows.
+3. ✅ Port modal workflows for rent/duplicate/delete actions to real facade intents, including optimistic UI feedback and command
+   acknowledgements. Rent, duplicate, rename, and delete flows pause the simulation, await façade ACKs, and resume only after
+   modal closure.
+4. ✅ Extend automated tests for navigation, modal focus trapping, and responsive sidebar behaviour once the UI stabilises. Added
+   Vitest suites cover navigation reducers, ModalFrame focus trapping, sidebar toggling, and telemetry history retention as a
+   performance smoke test.

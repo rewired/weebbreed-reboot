@@ -56,6 +56,7 @@ export const DashboardView = () => {
                         type: 'duplicateStructure',
                         title: `Duplicate ${structure.name}`,
                         subtitle: 'Review device coverage and CapEx before duplicating',
+                        context: { structureId: structure.id },
                       })
                     }
                   >

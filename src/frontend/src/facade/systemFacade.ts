@@ -1,84 +1,215 @@
+import { io, type Socket } from 'socket.io-client';
 import type {
   FacadeIntentCommand,
   SimulationConfigUpdate,
   SimulationControlCommand,
+  SimulationEvent,
+  SimulationSnapshot,
+  SimulationTimeStatus,
   SimulationUpdateEntry,
 } from '@/types/simulation';
-import { mockEvents, mockUpdate, mockUpdates, quickstartSnapshot } from '@/data/mockTelemetry';
 import { useSimulationStore } from '@/store/simulation';
-import { useUIStore } from '@/store/ui';
+import { useNavigationStore } from '@/store/navigation';
+
+type CommandError = {
+  code?: string;
+  message: string;
+  path?: (string | number)[];
+};
+
+type CommandResponse<T> = {
+  ok: boolean;
+  data?: T;
+  warnings?: string[];
+  errors?: CommandError[];
+  requestId?: string;
+};
+
+type PendingResolver<T> = {
+  resolve: (response: CommandResponse<T>) => void;
+  reject: (error: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+};
+
+type ResultEvent = 'simulationControl.result' | 'config.update.result' | 'facade.intent.result';
+
+const SOCKET_URL = import.meta.env.VITE_SIMULATION_SOCKET_URL ?? undefined;
+const QUICKSTART_STRUCTURE_ID = '43ee4095-627d-4a0c-860b-b10affbcf603';
+const REQUEST_TIMEOUT_MS = 15_000;
+const INITIAL_RECONNECT_DELAY = 1_000;
+const MAX_RECONNECT_DELAY = 30_000;
 
 export interface SimulationBridge {
   connect: () => void;
-  loadQuickStart: () => void;
-  sendControl: (command: SimulationControlCommand) => void;
-  sendConfigUpdate: (update: SimulationConfigUpdate) => void;
-  sendIntent: (intent: FacadeIntentCommand) => void;
+  loadQuickStart: () => Promise<CommandResponse<unknown>>;
+  sendControl: (
+    command: SimulationControlCommand,
+  ) => Promise<CommandResponse<SimulationTimeStatus | undefined>>;
+  sendConfigUpdate: (
+    update: SimulationConfigUpdate,
+  ) => Promise<CommandResponse<SimulationTimeStatus | undefined>>;
+  sendIntent: <T = unknown>(intent: FacadeIntentCommand) => Promise<CommandResponse<T>>;
   subscribeToUpdates: (handler: (update: SimulationUpdateEntry) => void) => () => void;
 }
 
-class MockSystemFacade implements SimulationBridge {
-  private updateHandlers = new Set<(update: SimulationUpdateEntry) => void>();
-  private syntheticTick = mockUpdate.tick;
+const generateRequestId = () =>
+  typeof crypto !== 'undefined' ? crypto.randomUUID() : `req_${Date.now()}`;
+
+const isSimulationUpdateMessage = (
+  payload: unknown,
+): payload is { updates: SimulationUpdateEntry[] } =>
+  Boolean(
+    payload &&
+      typeof payload === 'object' &&
+      Array.isArray((payload as { updates?: unknown }).updates),
+  );
+
+const extractEvents = (payload: unknown): SimulationEvent[] => {
+  if (!payload || typeof payload !== 'object') {
+    return [];
+  }
+  const events = (payload as { events?: unknown }).events;
+  return Array.isArray(events) ? (events as SimulationEvent[]) : [];
+};
+
+class SocketSystemFacade implements SimulationBridge {
+  private socket: Socket | null = null;
+
+  private readonly updateHandlers = new Set<(update: SimulationUpdateEntry) => void>();
+
+  private readonly pending: Map<string, PendingResolver<unknown>> = new Map();
+
+  private reconnectDelay = INITIAL_RECONNECT_DELAY;
+
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+  private isConnecting = false;
 
   connect() {
-    const { setConnectionStatus } = useSimulationStore.getState();
-    setConnectionStatus('connecting');
-    setTimeout(() => {
-      setConnectionStatus('connected');
-    }, 150);
-  }
+    if (this.socket || this.isConnecting) {
+      return;
+    }
+    this.isConnecting = true;
+    const store = useSimulationStore.getState();
+    store.setConnectionStatus('connecting');
 
-  loadQuickStart() {
-    const { hydrate } = useSimulationStore.getState();
-    hydrate({
-      snapshot: quickstartSnapshot,
-      updates: mockUpdates,
-      events: mockEvents,
-      time: mockUpdate.time,
+    const socket = io(SOCKET_URL ?? window.location.origin, {
+      transports: ['websocket'],
+      autoConnect: false,
+      reconnection: false,
     });
-    this.syntheticTick = quickstartSnapshot.clock.tick;
-    const warningCount = mockEvents.filter(
-      (event) => event.level === 'warning' || event.level === 'error',
-    ).length;
-    if (warningCount) {
-      useUIStore.getState().incrementNotifications(warningCount);
-    }
-  }
 
-  sendControl(command: SimulationControlCommand) {
-    const state = useSimulationStore.getState();
-    const { markPaused, markRunning } = state;
-    switch (command.action) {
-      case 'pause':
-        markPaused();
-        break;
-      case 'play':
-        markRunning(command.gameSpeed ?? 1);
-        break;
-      case 'resume': {
-        const resumeSpeed = state.timeStatus?.speed ?? state.snapshot?.clock.targetTickRate ?? 1;
-        markRunning(resumeSpeed);
-        break;
+    (window as typeof window & { __wb_socket?: Socket }).__wb_socket = socket;
+
+    socket.on('connect', () => {
+      this.isConnecting = false;
+      this.reconnectDelay = INITIAL_RECONNECT_DELAY;
+      store.setConnectionStatus('connected');
+      const { enterDashboard } = useNavigationStore.getState();
+      const snapshot = useSimulationStore.getState().snapshot;
+      if (!snapshot) {
+        enterDashboard();
       }
-      case 'fastForward':
-        markRunning(command.multiplier);
-        break;
-      case 'step':
-        this.dispatchSyntheticUpdate();
-        break;
-      default:
-        break;
-    }
+    });
+
+    socket.on('disconnect', () => {
+      store.setConnectionStatus('reconnecting');
+      this.scheduleReconnect();
+    });
+
+    socket.on('reconnect_attempt', () => {
+      store.setConnectionStatus('reconnecting');
+    });
+
+    socket.on('time.status', (payload: { status?: SimulationTimeStatus }) => {
+      store.setTimeStatus(payload.status ?? null);
+    });
+
+    socket.on('simulationSnapshot', (payload) => {
+      if (payload && typeof payload === 'object') {
+        const snapshot = (payload as { snapshot?: unknown }).snapshot;
+        if (snapshot) {
+          store.hydrate({
+            snapshot: snapshot as SimulationSnapshot,
+            events: extractEvents(payload),
+            time: (payload as { time?: SimulationTimeStatus }).time,
+          });
+        }
+      }
+    });
+
+    socket.on('simulationUpdate', (payload) => {
+      if (!isSimulationUpdateMessage(payload)) {
+        return;
+      }
+      for (const update of payload.updates) {
+        store.applyUpdate(update);
+        for (const handler of this.updateHandlers) {
+          handler(update);
+        }
+      }
+    });
+
+    socket.on('domainEvents', (payload) => {
+      const events = extractEvents(payload);
+      if (events.length) {
+        store.recordEvents(events);
+      }
+    });
+
+    socket.on('sim.tickCompleted', (payload) => {
+      const events = extractEvents(payload);
+      if (events.length) {
+        store.recordEvents(events);
+      }
+    });
+
+    socket.on('simulationControl.result', (response) => {
+      this.resolvePending('simulationControl.result', response);
+    });
+
+    socket.on('config.update.result', (response) => {
+      this.resolvePending('config.update.result', response);
+    });
+
+    socket.on('facade.intent.result', (response) => {
+      this.resolvePending('facade.intent.result', response);
+    });
+
+    socket.on('error', () => {
+      if (!socket.connected) {
+        store.setConnectionStatus('reconnecting');
+        this.scheduleReconnect();
+      }
+    });
+
+    socket.connect();
+    this.socket = socket;
   }
 
-  sendConfigUpdate(update: SimulationConfigUpdate) {
-    console.info('[MockFacade] config update', update);
+  async loadQuickStart(): Promise<CommandResponse<unknown>> {
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'rentStructure',
+      payload: { structureId: QUICKSTART_STRUCTURE_ID },
+    };
+    return this.sendIntent(intent);
   }
 
-  sendIntent(intent: FacadeIntentCommand) {
-    console.info('[MockFacade] facade intent', intent);
-    useUIStore.getState().incrementNotifications();
+  sendControl(
+    command: SimulationControlCommand,
+  ): Promise<CommandResponse<SimulationTimeStatus | undefined>> {
+    return this.emitWithAck('simulationControl', command, 'simulationControl.result');
+  }
+
+  sendConfigUpdate(
+    update: SimulationConfigUpdate,
+  ): Promise<CommandResponse<SimulationTimeStatus | undefined>> {
+    return this.emitWithAck('config.update', update, 'config.update.result');
+  }
+
+  sendIntent<T = unknown>(intent: FacadeIntentCommand): Promise<CommandResponse<T>> {
+    return this.emitWithAck('facade.intent', intent, 'facade.intent.result');
   }
 
   subscribeToUpdates(handler: (update: SimulationUpdateEntry) => void) {
@@ -88,26 +219,68 @@ class MockSystemFacade implements SimulationBridge {
     };
   }
 
-  private dispatchSyntheticUpdate() {
-    this.syntheticTick += 1;
-    const update: SimulationUpdateEntry = {
-      ...mockUpdate,
-      tick: this.syntheticTick,
-      ts: Date.now(),
-      snapshot: {
-        ...quickstartSnapshot,
-        tick: this.syntheticTick,
-        clock: {
-          ...quickstartSnapshot.clock,
-          tick: this.syntheticTick,
-          lastUpdatedAt: new Date().toISOString(),
-        },
-      },
-    };
-    useSimulationStore.getState().applyUpdate(update);
-    for (const handler of this.updateHandlers) {
-      handler(update);
+  private emitWithAck<T>(event: string, payload: unknown, resultEvent: ResultEvent) {
+    const socket = this.socket;
+    if (!socket) {
+      return Promise.reject(new Error('Socket connection not initialised.'));
     }
+    const requestId =
+      (payload as { requestId?: string } | undefined)?.requestId ?? generateRequestId();
+    const enriched = { ...((payload ?? {}) as Record<string, unknown>), requestId };
+
+    return new Promise<CommandResponse<T>>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pending.delete(requestId);
+        reject(new Error(`Request ${requestId} timed out after ${REQUEST_TIMEOUT_MS}ms.`));
+      }, REQUEST_TIMEOUT_MS);
+      this.pending.set(requestId, {
+        resolve: resolve as (value: CommandResponse<unknown>) => void,
+        reject,
+        timeout,
+      });
+      socket.emit(event, enriched, (ack: CommandResponse<T>) => {
+        if (ack && typeof ack === 'object' && ack.requestId === requestId) {
+          this.resolvePending(resultEvent, ack);
+        }
+      });
+    });
+  }
+
+  private resolvePending(event: ResultEvent, response: CommandResponse<unknown>) {
+    const requestId = response.requestId;
+    if (!requestId) {
+      return;
+    }
+    const entry = this.pending.get(requestId);
+    if (!entry) {
+      return;
+    }
+    clearTimeout(entry.timeout);
+    this.pending.delete(requestId);
+    entry.resolve(response);
+    if (event === 'simulationControl.result' && response.ok && response.data) {
+      useSimulationStore.getState().setTimeStatus(response.data as SimulationTimeStatus);
+    }
+  }
+
+  private scheduleReconnect() {
+    if (this.reconnectTimer) {
+      return;
+    }
+    const attempt = () => {
+      if (!this.socket) {
+        return;
+      }
+      if (this.socket.connected || this.isConnecting) {
+        this.reconnectTimer = null;
+        return;
+      }
+      this.isConnecting = true;
+      this.socket.connect();
+      this.reconnectTimer = null;
+      this.reconnectDelay = Math.min(this.reconnectDelay * 2, MAX_RECONNECT_DELAY);
+    };
+    this.reconnectTimer = setTimeout(attempt, this.reconnectDelay);
   }
 }
 
@@ -115,7 +288,7 @@ let instance: SimulationBridge | null = null;
 
 export const getSimulationBridge = (): SimulationBridge => {
   if (!instance) {
-    instance = new MockSystemFacade();
+    instance = new SocketSystemFacade();
   }
   return instance;
 };
