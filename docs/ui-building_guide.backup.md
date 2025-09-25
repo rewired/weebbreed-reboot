@@ -71,16 +71,8 @@ The application follows a structure → room → zone drill-down supported by pe
 }
 ```
 
-- The left cluster renders StatCards for the global KPIs and time display:
-  - **Capital:** shows the current balance with currency-neutral formatting applied by the UI layer.【F:docs/ui/ui-implementation-spec.md†L56-L58】【F:docs/ui/ui_elements.md†L31-L33】
-  - **Cumulative Yield:** totals harvested output in grams.【F:docs/ui/ui-implementation-spec.md†L56-L58】【F:docs/ui/ui_elements.md†L33-L34】
-  - **Planned plant capacity:** sums `zones[].plantingPlan.count` for enabled plans and hides when the aggregate is zero to avoid early-run clutter.【F:docs/ui/ui-implementation-spec.md†L56-L58】
-  - **Time display:** combines the in-game date/time (e.g., `Y1, D30, 14:00`) with an SVG tick-progress ring that animates toward the next tick via `stroke-dashoffset` transitions.【F:docs/ui/ui-implementation-spec.md†L59-L66】【F:docs/ui/ui_elements.md†L31-L34】
-- The right cluster groups the deterministic controls and shortcuts:
-  - **Play/Pause** toggle using `play_circle` / `pause_circle` icons.【F:docs/ui/ui-implementation-spec.md†L69-L71】【F:docs/ui/ui_elements.md†L36-L40】
-  - **Game speed presets** for `0.5x`, `1x`, `10x`, `25x`, `50x`, and `100x`, with the active button styled via the `.active` class and the primary color token.【F:docs/ui/ui-implementation-spec.md†L69-L81】【F:docs/ui/ui_elements.md†L36-L41】
-  - **View switchers** for Finances (`monitoring`) and Personnel (`groups`).【F:docs/ui/ui-implementation-spec.md†L84-L86】【F:docs/ui/ui_elements.md†L41-L44】
-  - **Notifications** button with an unread badge plus the **Game Menu** (`settings`) flyout exposing Save, Load, Export, and Reset actions.【F:docs/ui/ui-implementation-spec.md†L88-L89】【F:docs/ui/ui_elements.md†L44-L46】
+- The left cluster surfaces Capital, Cumulative Yield, planned plant capacity (hidden when zero), and an animated tick progress ring tied to in-game time.【F:docs/ui/ui-implementation-spec.md†L37-L120】【F:docs/ui/ui_elements.md†L24-L84】
+- The right cluster offers play/pause, multiple speed presets (0.5×–100×), quick links to Finances (`monitoring`) and Personnel (`groups`), notifications, and the game menu (`settings`).【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui_elements.md†L62-L116】
 - Notifications display an unread badge, and the game menu opens the shared modal to reach Save/Load/Export/Reset actions.【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui-components-desciption.md†L323-L337】 The notification popover contains tabs for _All_, _Warnings_, and _Errors_ with 20-item lazy-loaded pages, renders items shaped as `{ id, ts, severity, title, message, entityId?, entityType?, actions?[] }`, and raises the header badge with the count of unopened warning/error events sourced from `sim.*`, `world.*`, `hr.*`, and `finance.*` streams.
 
 ### Breadcrumbs & States
@@ -128,8 +120,8 @@ The application follows a structure → room → zone drill-down supported by pe
 
 ### Dashboard & Global Chrome
 
-- Persistent header presents StatCards for **Capital**, **Cumulative Yield**, and **Planned plant capacity**, plus the in-game **Time display** with its SVG tick-progress ring to visualize the march toward the next tick.【F:docs/ui/ui-implementation-spec.md†L56-L66】【F:docs/ui/ui_elements.md†L31-L34】
-- Control cluster covers the **Play/Pause** toggle, the `0.5x`/`1x`/`10x`/`25x`/`50x`/`100x` game-speed presets with `.active` styling, Finances and Personnel view switchers, the notifications popover, and the `settings` flyout for Save/Load/Export/Reset.【F:docs/ui/ui-implementation-spec.md†L69-L89】【F:docs/ui/ui-components-desciption.md†L223-L360】【F:docs/ui/ui_elements.md†L36-L46】
+- Persistent header summarising Capital, Cumulative Yield, planned plant capacity, and an in-game clock with tick progress ring.【F:docs/ui/ui-implementation-spec.md†L37-L120】【F:docs/ui/ui_elements.md†L24-L84】
+- Control cluster includes Play/Pause, speed presets, view switchers (Finances, Personnel), notifications popover, and settings flyout for Save/Load/Export/Reset.【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui-components-desciption.md†L225-L360】
 - `DashboardHeader` consumes stats, simulation state, and navigation callbacks; `EventLog` sits at the footer to surface recent telemetry color-coded by severity.【F:docs/ui/ui-components-desciption.md†L225-L360】
 - Screenshot insights show inline actions within cards to encourage drill-down and highlight consistent dark theming across cards.【F:docs/ui/ui-screenshot-insights.md†L1-L64】
 - Notification popover mirrors header alerts with tabs for _All_, _Warnings_, and _Errors_, paginates 20 items per lazy-loaded page, and surfaces severity icons consistent with toast/event log styling.
