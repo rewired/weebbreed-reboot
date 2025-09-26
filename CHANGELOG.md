@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Alliteration Support**: Optional alliteration preference with soft upweighting for cohesive naming
   - **Quality Constraints**: Length limits, score thresholds, and blacklist enforcement for consistent output
 
+- **Difficulty Presets Facade Investigation**: Documented how `config.getDifficultyConfig` travels from `difficulty.json` through the backend facade to the frontend socket bridge, and identified the socket channel mismatch (`config.intent.result` vs. `facade.intent.result`) that prevents the UI from receiving the presets.
+
 ### Fixed
 
 - **New Game Difficulty Presets**: Restored automatic loading of backend
