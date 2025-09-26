@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
-import { nonNegativeNumber, positiveInteger, uuid } from './commonSchemas.js';
+import { entityIdentifier, nonNegativeNumber, positiveInteger, uuid } from './commonSchemas.js';
 import {
   createServiceCommand,
   type CommandRegistration,
@@ -52,7 +52,7 @@ const applyFertilizerSchema = z
 
 const togglePlantingPlanSchema = z
   .object({
-    zoneId: uuid,
+    zoneId: entityIdentifier,
     enabled: z.boolean(),
   })
   .strict();
