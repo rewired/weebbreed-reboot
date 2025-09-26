@@ -64,31 +64,45 @@ const isValidDataDirectory = async (candidate: string): Promise<boolean> => {
 export const resolveDataDirectory = async (
   options: ResolveDataDirectoryOptions = {},
 ): Promise<string> => {
-  const baseDirectory = options.moduleDirectory ?? moduleDirectory;
+  const baseDirectory = path.resolve(options.moduleDirectory ?? moduleDirectory);
   const cwd = options.cwd ?? process.cwd();
   const envCandidate = Object.prototype.hasOwnProperty.call(options, 'envOverride')
     ? options.envOverride
     : process.env.WEEBBREED_DATA_DIR;
 
   const envOverride = envCandidate ? path.resolve(envCandidate) : undefined;
-
-  const candidates = [
-    envOverride,
-    path.resolve(baseDirectory, '..', 'data'),
-    path.resolve(baseDirectory, '../../..', 'data'),
-    path.resolve(baseDirectory, '../../../..', 'data'),
-    path.resolve(cwd, 'data'),
-    path.resolve(cwd, '..', 'data'),
-  ].filter(Boolean) as string[];
-
   const checked = new Set<string>();
+  const candidates: string[] = [];
+
+  const addCandidate = (candidate: string | undefined) => {
+    if (!candidate) {
+      return;
+    }
+    const resolved = path.resolve(candidate);
+    if (checked.has(resolved)) {
+      return;
+    }
+    checked.add(resolved);
+    candidates.push(resolved);
+  };
+
+  addCandidate(envOverride);
+
+  let ancestor: string | undefined = baseDirectory;
+  while (ancestor) {
+    addCandidate(path.join(ancestor, 'data'));
+
+    const parent = path.dirname(ancestor);
+    ancestor = parent === ancestor ? undefined : parent;
+  }
+
+  addCandidate(path.resolve(baseDirectory, '..', 'data'));
+  addCandidate(path.resolve(baseDirectory, '../../..', 'data'));
+  addCandidate(path.resolve(baseDirectory, '../../../..', 'data'));
+  addCandidate(path.resolve(cwd, 'data'));
+  addCandidate(path.resolve(cwd, '..', 'data'));
 
   for (const candidate of candidates) {
-    if (checked.has(candidate)) {
-      continue;
-    }
-    checked.add(candidate);
-
     if (await isValidDataDirectory(candidate)) {
       return candidate;
     }
