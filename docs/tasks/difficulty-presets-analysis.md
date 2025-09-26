@@ -1,46 +1,31 @@
-# Difficulty Presets Facade Investigation
+# Difficulty Presets Config Sync Analysis
 
 ## Overview
 
-Difficulty presets are defined in `data/configs/difficulty.json`. The backend loads this file during server startup via `loadDifficultyConfig` and exposes it through the simulation facade's config service. The frontend requests the presets via the socket bridge using the `config.getDifficultyConfig` intent.
+The UI queries the backend via `config.getDifficultyConfig` and receives the presets defined in `data/configs/difficulty.json`. The bridge logic and socket gateway handshake are working as expected, so the presets do reach the client.
 
-## Data Flow
+## Findings
 
-1. **Static configuration** – The preset values live in `data/configs/difficulty.json` and match the Zod schema enforced by `loadDifficultyConfig` in `src/backend/src/data/configs/difficulty.ts`.
-2. **Server bootstrap** – `startServer` loads the configuration and wires `facade.updateServices({ config: { getDifficultyConfig: () => ({ ok: true, data: difficultyConfig }) } })`, making the presets available to the facade's `config` domain (`src/backend/src/server/startServer.ts`).
-3. **Facade command** – `SimulationFacade` registers the `config.getDifficultyConfig` intent and exposes it through the socket gateway (`src/backend/src/facade/index.ts`).
-4. **Socket request** – The frontend bridge calls `sendIntent` with `{ domain: 'config', action: 'getDifficultyConfig' }` via `SocketSystemFacade.getDifficultyConfig` (`src/frontend/src/facade/systemFacade.ts`).
+While debugging the "difficulty presets stay in loading" report we noticed a different systemic issue: the simulation keeps several hard-coded difficulty presets that drift away from the JSON source of truth.
 
-## Observed Problem
+- The JSON file currently ships with `easy.initialCapital = 100_000_000` and `hard.initialCapital = 500_000`.
+- The initial world builder (`createInitialState`) still uses a compiled-in table with `easy.initialCapital = 2_000_000` and `hard.initialCapital = 1_000_000`.
+- The `WorldService.newGame` fallback table carries yet another copy (`easy = 100_000_000`, `hard = 500_000`).
 
-When the gateway handles a `facade.intent` payload, it resolves the command and emits the response on a **domain-specific channel**:
+Any code path that does **not** pass explicit modifiers (e.g. quick-start setups, scripts, or future CLI utilities) will ignore the JSON definition and rely on whichever in-memory table they hit. This leads to divergent cash values and rent multipliers between the save file, backend defaults, and what the UI displays.
 
-```ts
-this.emitCommandResponse(
-  socket,
-  `${command.domain}.intent.result`,
-  {
-    requestId,
-    ...result,
-  },
-  ack,
-);
-```
+## Impact
 
-_Source: `src/backend/src/server/socketGateway.ts`_
+- Designers editing `data/configs/difficulty.json` cannot rely on their changes applying everywhere: quick-start worlds, tests, or integrations that omit custom modifiers will continue to use stale numbers.
+- The compiled copies are already out of sync (2M vs 100M for Easy). Players starting a new session from the Start screen get a different balance depending on whether they go through the quick-start button (uses `createInitialState`) or the New Game workflow (which sends explicit modifiers from the JSON).
+- Keeping multiple tables raises the risk of further drift whenever we tune presets or add new difficulty levels.
 
-However, the frontend bridge only subscribes to the **generic** `facade.intent.result` channel and uses it (together with the ack handler) to settle pending promises:
+## Recommendation
 
-```ts
-socket.on('facade.intent.result', (response) => {
-  this.resolvePending('facade.intent.result', response);
-});
-```
+Make the JSON config the single source of truth:
 
-_Source: `src/frontend/src/facade/systemFacade.ts`_
+1. Load the difficulty config once during bootstrap and inject it into both the initial state factory and the world service.
+2. Remove the duplicated `DIFFICULTY_ECONOMICS` tables and derive defaults from the loaded config instead.
+3. Extend the tests to cover the easy/normal/hard presets so that future edits to `difficulty.json` must be reflected in the engine.
 
-Because the broadcast is published as `config.intent.result`, the listener never fires. The ack callback also guards on the same channel name via `resolvePending`, so a response that lacks the matching channel will leave the `getDifficultyConfig` request unresolved. In practice the hook keeps waiting, and the Difficulty Presets panel remains in the loading state.
-
-## Conclusion
-
-The backend and frontend disagree on the socket channel for facade intent responses. Align the channel names (either emit `facade.intent.result` on the backend or listen for domain-specific channels on the frontend) so that the difficulty configuration response reaches the UI.
+This change will stabilise the presets across the server lifecycle and align the UI with in-game economics.
