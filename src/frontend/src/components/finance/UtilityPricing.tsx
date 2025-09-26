@@ -3,7 +3,6 @@ import { Icon } from '@/components/common/Icon';
 import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { Card } from '@/components/primitives/Card';
-import { useSimulationStore } from '@/store/simulation';
 import type { SimulationBridge } from '@/facade/systemFacade';
 
 interface UtilityPricingProps {
@@ -31,7 +30,6 @@ const formatPercentage = (change: number): string => {
 };
 
 export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
-  const snapshot = useSimulationStore((state) => state.snapshot);
   const [pendingChanges, setPendingChanges] = useState<Record<string, number>>({});
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -45,7 +43,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
       pricePerLiterWater: 0.02,
       pricePerGramNutrients: 0.1,
     };
-  }, [snapshot]);
+  }, []); // No dependencies needed for static default values
 
   const utilityPrices: UtilityPrice[] = useMemo(
     () => [

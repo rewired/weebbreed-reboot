@@ -115,6 +115,7 @@ export class SimulationScheduler {
     this.paused = false;
     this.lastTimestamp = this.timeProvider();
     this.updateClockPausedState(false);
+    this.scheduleNextFrame();
   }
 
   setSpeed(multiplier: number): void {
