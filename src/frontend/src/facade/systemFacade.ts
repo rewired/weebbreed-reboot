@@ -9,6 +9,7 @@ import type {
   SimulationUpdateEntry,
 } from '@/types/simulation';
 import { useSimulationStore } from '@/store/simulation';
+import type { DifficultyConfig } from '@/types/difficulty';
 
 type CommandError = {
   code?: string;
@@ -54,6 +55,7 @@ export interface SimulationBridge {
   connect: () => void;
   loadQuickStart: () => Promise<CommandResponse<unknown>>;
   getStructureBlueprints: () => Promise<CommandResponse<StructureBlueprint[]>>;
+  getDifficultyConfig: () => Promise<CommandResponse<DifficultyConfig>>;
   sendControl: (
     command: SimulationControlCommand,
   ) => Promise<CommandResponse<SimulationTimeStatus | undefined>>;
@@ -244,6 +246,19 @@ class SocketSystemFacade implements SimulationBridge {
       payload: {},
     };
     return this.sendIntent<StructureBlueprint[]>(intent);
+  }
+
+  async getDifficultyConfig(): Promise<CommandResponse<DifficultyConfig>> {
+    if (!this.socket || !this.socket.connected) {
+      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
+      throw new Error(message);
+    }
+    const intent: FacadeIntentCommand = {
+      domain: 'config',
+      action: 'getDifficultyConfig',
+      payload: {},
+    };
+    return this.sendIntent<DifficultyConfig>(intent);
   }
 
   sendControl(

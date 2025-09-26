@@ -10,8 +10,8 @@ import type { ModalDescriptor } from '@/store/ui';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import { ModifierInputs } from '../modifiers/ModifierInputs';
-import { DifficultyModifiers, type DifficultyConfig } from '../../types/difficulty';
-import difficultyConfig from '../../data/difficulty.json';
+import { DifficultyModifiers } from '../../types/difficulty';
+import { useDifficultyConfig } from '@/hooks/useDifficultyConfig';
 
 interface ModalHostProps {
   bridge: SimulationBridge;
@@ -1020,28 +1020,54 @@ const NewGameModal = ({
   const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'normal' | 'hard'>(
     'normal',
   );
-  const [customModifiers, setCustomModifiers] = useState<DifficultyModifiers>(
-    (difficultyConfig as DifficultyConfig)[selectedDifficulty].modifiers,
-  );
+  const [customModifiers, setCustomModifiers] = useState<DifficultyModifiers | null>(null);
   const enterDashboard = useNavigationStore((state) => state.enterDashboard);
 
-  const difficultyOptions = Object.entries(difficultyConfig as DifficultyConfig).map(
-    ([key, config]) => ({
+  const {
+    config: difficultyConfig,
+    loading: difficultyLoading,
+    error: difficultyError,
+    refresh: reloadDifficultyConfig,
+  } = useDifficultyConfig();
+
+  const difficultyOptions = useMemo(() => {
+    if (!difficultyConfig) {
+      return [] as Array<{
+        id: 'easy' | 'normal' | 'hard';
+        name: string;
+        description: string;
+        initialCapital: string;
+        color: string;
+      }>;
+    }
+    return Object.entries(difficultyConfig).map(([key, config]) => ({
       id: key as 'easy' | 'normal' | 'hard',
       name: config.name,
       description: config.description,
-      initialCapital: `€${(config.modifiers.economics.initialCapital / 1000000).toFixed(1)}M`,
+      initialCapital: `€${(config.modifiers.economics.initialCapital / 1_000_000).toFixed(1)}M`,
       color:
         key === 'easy' ? 'text-green-600' : key === 'normal' ? 'text-yellow-600' : 'text-red-600',
-    }),
-  );
+    }));
+  }, [difficultyConfig]);
+
+  const selectedPreset = difficultyConfig?.[selectedDifficulty];
+
+  useEffect(() => {
+    if (selectedPreset) {
+      setCustomModifiers(selectedPreset.modifiers);
+    }
+  }, [selectedPreset]);
 
   const handleDifficultyChange = (difficultyId: 'easy' | 'normal' | 'hard') => {
     setSelectedDifficulty(difficultyId);
-    setCustomModifiers((difficultyConfig as DifficultyConfig)[difficultyId].modifiers);
   };
 
   const handleCreateNewGame = async () => {
+    if (!customModifiers) {
+      setFeedback('Difficulty presets are still loading. Please try again shortly.');
+      return;
+    }
+
     setBusy(true);
     setFeedback(null);
     try {
@@ -1084,32 +1110,54 @@ const NewGameModal = ({
 
       <div className="grid gap-3">
         <h4 className="text-sm font-semibold text-text">Difficulty Level</h4>
-        <div className="grid gap-3">
-          {difficultyOptions.map((option) => (
-            <label
-              key={option.id}
-              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/50 bg-surface-muted/60 p-3 transition hover:border-primary"
+        {difficultyError ? (
+          <div className="rounded-lg border border-danger/40 bg-danger/10 p-4 text-sm text-danger">
+            <p>Failed to load difficulty presets: {difficultyError}</p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-3"
+              onClick={() => reloadDifficultyConfig()}
             >
-              <input
-                type="radio"
-                className="mt-1 size-4 shrink-0 accent-primary"
-                name="difficulty"
-                value={option.id}
-                checked={selectedDifficulty === option.id}
-                onChange={() => handleDifficultyChange(option.id)}
-              />
-              <div className="flex flex-col gap-1 text-left">
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm font-semibold ${option.color}`}>{option.name}</span>
-                  <span className="text-xs text-text-muted">
-                    {option.initialCapital} starting capital
-                  </span>
+              Retry
+            </Button>
+          </div>
+        ) : difficultyLoading ? (
+          <div className="rounded-lg border border-border/40 bg-surface-muted/40 p-4 text-sm text-text-muted">
+            Loading difficulty presets…
+          </div>
+        ) : difficultyOptions.length === 0 ? (
+          <div className="rounded-lg border border-border/40 bg-surface-muted/40 p-4 text-sm text-text-muted">
+            Difficulty presets are not available yet. Please retry once the backend responds.
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {difficultyOptions.map((option) => (
+              <label
+                key={option.id}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/50 bg-surface-muted/60 p-3 transition hover:border-primary"
+              >
+                <input
+                  type="radio"
+                  className="mt-1 size-4 shrink-0 accent-primary"
+                  name="difficulty"
+                  value={option.id}
+                  checked={selectedDifficulty === option.id}
+                  onChange={() => handleDifficultyChange(option.id)}
+                />
+                <div className="flex flex-col gap-1 text-left">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-semibold ${option.color}`}>{option.name}</span>
+                    <span className="text-xs text-text-muted">
+                      {option.initialCapital} starting capital
+                    </span>
+                  </div>
+                  <span className="text-xs text-text-muted">{option.description}</span>
                 </div>
-                <span className="text-xs text-text-muted">{option.description}</span>
-              </div>
-            </label>
-          ))}
-        </div>
+              </label>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-2 rounded-lg border border-border/40 bg-surface-muted/30 p-4">
@@ -1118,7 +1166,13 @@ const NewGameModal = ({
           Adjust the game balance by modifying these values. Each difficulty preset provides a
           starting point.
         </p>
-        <ModifierInputs modifiers={customModifiers} onChange={setCustomModifiers} />
+        {customModifiers ? (
+          <ModifierInputs modifiers={customModifiers} onChange={setCustomModifiers} />
+        ) : (
+          <div className="rounded border border-border/40 bg-surface-muted/60 p-4 text-sm text-text-muted">
+            Difficulty presets are loading…
+          </div>
+        )}
       </div>
 
       {feedback ? <Feedback message={feedback} /> : null}
@@ -1126,7 +1180,7 @@ const NewGameModal = ({
         onCancel={closeModal}
         onConfirm={handleCreateNewGame}
         confirmLabel={busy ? 'Creating…' : 'Create New Game'}
-        confirmDisabled={busy}
+        confirmDisabled={busy || !customModifiers}
         cancelDisabled={busy}
       />
     </div>

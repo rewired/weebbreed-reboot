@@ -1,4 +1,5 @@
 import { loadStructureBlueprints } from '@/state/initialization/blueprints.js';
+import { loadDifficultyConfig } from '@/data/configs/difficulty.js';
 
 import { createServer, type Server } from 'node:http';
 import process from 'node:process';
@@ -222,6 +223,7 @@ export const startBackendServer = async (
     loop,
   });
   const structureBlueprints = await loadStructureBlueprints(dataDirectory);
+  const difficultyConfig = await loadDifficultyConfig(dataDirectory);
   const worldService = new WorldService({
     state,
     rng,
@@ -233,6 +235,12 @@ export const startBackendServer = async (
   const plantingPlanService = new PlantingPlanService({ state, rng });
 
   facade.updateServices({
+    config: {
+      getDifficultyConfig: () => ({
+        ok: true,
+        data: difficultyConfig,
+      }),
+    },
     world: {
       rentStructure: (intent, context) => worldService.rentStructure(intent.structureId, context),
       getStructureBlueprints: () => worldService.getStructureBlueprints(),
