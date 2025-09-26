@@ -224,7 +224,37 @@ const deleteStructureSchema = z
   .strict();
 const resetSessionSchema = z.object({}).strict();
 
-const newGameSchema = z.object({}).strict();
+const newGameSchema = z
+  .object({
+    difficulty: z.enum(['easy', 'normal', 'hard']).optional(),
+    seed: z.string().optional(),
+    modifiers: z
+      .object({
+        plantStress: z
+          .object({
+            optimalRangeMultiplier: z.number().min(0.5).max(1.5),
+            stressAccumulationMultiplier: z.number().min(0.5).max(1.5),
+          })
+          .strict(),
+        deviceFailure: z
+          .object({
+            mtbfMultiplier: z.number().min(0.5).max(1.5),
+          })
+          .strict(),
+        economics: z
+          .object({
+            initialCapital: z.number().min(50000).max(1000000000),
+            itemPriceMultiplier: z.number().min(0.5).max(1.5),
+            harvestPriceMultiplier: z.number().min(0.5).max(1.5),
+            rentPerSqmStructurePerTick: z.number().min(0.1).max(1.5),
+            rentPerSqmRoomPerTick: z.number().min(0.1).max(1.5),
+          })
+          .strict(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
 const duplicateStructureSchema = z
   .object({
     structureId: entityIdentifier,

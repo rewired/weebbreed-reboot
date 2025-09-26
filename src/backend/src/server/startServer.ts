@@ -242,7 +242,8 @@ export const startBackendServer = async (
       deleteStructure: (intent, context) =>
         worldService.deleteStructure(intent.structureId, context),
       resetSession: (intent, context) => worldService.resetSession(context),
-      newGame: (intent, context) => worldService.newGame(context),
+      newGame: (intent, context) =>
+        worldService.newGame(intent.difficulty || 'normal', intent.modifiers, intent.seed, context),
       duplicateStructure: (intent, context) =>
         worldService.duplicateStructure(intent.structureId, intent.name, context),
       duplicateRoom: (intent, context) =>

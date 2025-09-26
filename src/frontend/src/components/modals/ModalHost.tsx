@@ -10,6 +10,9 @@ import type { ModalDescriptor } from '@/store/ui';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import type { SimulationBridge } from '@/facade/systemFacade';
+import { ModifierInputs } from '../modifiers/ModifierInputs';
+import { DifficultyModifiers, type DifficultyConfig } from '../../types/difficulty';
+import difficultyConfig from '../../data/difficulty.json';
 
 interface ModalHostProps {
   bridge: SimulationBridge;
@@ -961,7 +964,29 @@ const NewGameModal = ({
 }) => {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<'easy' | 'normal' | 'hard'>(
+    'normal',
+  );
+  const [customModifiers, setCustomModifiers] = useState<DifficultyModifiers>(
+    (difficultyConfig as DifficultyConfig)[selectedDifficulty].modifiers,
+  );
   const enterDashboard = useNavigationStore((state) => state.enterDashboard);
+
+  const difficultyOptions = Object.entries(difficultyConfig as DifficultyConfig).map(
+    ([key, config]) => ({
+      id: key as 'easy' | 'normal' | 'hard',
+      name: config.name,
+      description: config.description,
+      initialCapital: `€${(config.modifiers.economics.initialCapital / 1000000).toFixed(1)}M`,
+      color:
+        key === 'easy' ? 'text-green-600' : key === 'normal' ? 'text-yellow-600' : 'text-red-600',
+    }),
+  );
+
+  const handleDifficultyChange = (difficultyId: 'easy' | 'normal' | 'hard') => {
+    setSelectedDifficulty(difficultyId);
+    setCustomModifiers((difficultyConfig as DifficultyConfig)[difficultyId].modifiers);
+  };
 
   const handleCreateNewGame = async () => {
     setBusy(true);
@@ -970,11 +995,14 @@ const NewGameModal = ({
       // Stop the simulation if it's running
       await bridge.sendControl({ action: 'pause' });
 
-      // Send the newGame intent to create an empty session
+      // Send the newGame intent with custom modifiers
       const response = await bridge.sendIntent({
         domain: 'world',
         action: 'newGame',
-        payload: {},
+        payload: {
+          difficulty: selectedDifficulty,
+          modifiers: customModifiers,
+        },
       });
 
       if (!response.ok) {
@@ -997,23 +1025,54 @@ const NewGameModal = ({
   return (
     <div className="grid gap-4">
       <p className="text-sm text-text-muted">
-        Create a completely empty simulation session with no structures or content. You'll start
-        with initial capital and resources, ready to build your cultivation operation from scratch.
+        Create a completely empty simulation session with no structures or content. Choose your
+        difficulty level to set economic conditions and game balance.
       </p>
-      <div className="grid gap-2 rounded-lg border border-border/40 bg-surface-muted/60 p-4">
-        <h4 className="text-sm font-semibold text-text">Empty Session Includes:</h4>
-        <ul className="text-xs text-text-muted space-y-1">
-          <li>• Initial capital based on difficulty setting</li>
-          <li>• Starting inventory (water, nutrients, CO₂, etc.)</li>
-          <li>• No structures - you'll need to rent them yourself</li>
-          <li>• Fresh simulation clock at tick 0</li>
-        </ul>
+
+      <div className="grid gap-3">
+        <h4 className="text-sm font-semibold text-text">Difficulty Level</h4>
+        <div className="grid gap-3">
+          {difficultyOptions.map((option) => (
+            <label
+              key={option.id}
+              className="flex cursor-pointer items-start gap-3 rounded-lg border border-border/50 bg-surface-muted/60 p-3 transition hover:border-primary"
+            >
+              <input
+                type="radio"
+                className="mt-1 size-4 shrink-0 accent-primary"
+                name="difficulty"
+                value={option.id}
+                checked={selectedDifficulty === option.id}
+                onChange={() => handleDifficultyChange(option.id)}
+              />
+              <div className="flex flex-col gap-1 text-left">
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm font-semibold ${option.color}`}>{option.name}</span>
+                  <span className="text-xs text-text-muted">
+                    {option.initialCapital} starting capital
+                  </span>
+                </div>
+                <span className="text-xs text-text-muted">{option.description}</span>
+              </div>
+            </label>
+          ))}
+        </div>
       </div>
+
+      <div className="grid gap-2 rounded-lg border border-border/40 bg-surface-muted/30 p-4">
+        <h4 className="text-sm font-semibold text-text">Game Modifiers</h4>
+        <p className="text-xs text-text-muted mb-2">
+          Adjust the game balance by modifying these values. Each difficulty preset provides a
+          starting point.
+        </p>
+        <ModifierInputs modifiers={customModifiers} onChange={setCustomModifiers} />
+      </div>
+
       {feedback ? <Feedback message={feedback} /> : null}
       <ActionFooter
         onCancel={closeModal}
         onConfirm={handleCreateNewGame}
-        confirmLabel={busy ? 'Creating…' : 'Create Empty Session'}
+        confirmLabel={busy ? 'Creating…' : 'Create New Game'}
         confirmDisabled={busy}
         cancelDisabled={busy}
       />

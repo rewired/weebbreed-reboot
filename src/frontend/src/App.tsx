@@ -1,5 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { StartScreen } from '@/views/StartScreen';
+import { NewGameView } from '@/views/NewGameView';
 import { DashboardShell } from '@/views/DashboardShell';
 import { DashboardView } from '@/views/DashboardView';
 import { StructureView } from '@/views/StructureView';
@@ -49,6 +50,15 @@ const App = () => {
     return (
       <>
         <StartScreen bridge={bridge} />
+        <ModalHost bridge={bridge} />
+      </>
+    );
+  }
+
+  if (currentView === 'newGame') {
+    return (
+      <>
+        <NewGameView bridge={bridge} />
         <ModalHost bridge={bridge} />
       </>
     );

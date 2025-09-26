@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 
-type View = 'start' | 'dashboard' | 'structure' | 'room' | 'zone' | 'personnel' | 'finance';
+type View =
+  | 'start'
+  | 'newGame'
+  | 'dashboard'
+  | 'structure'
+  | 'room'
+  | 'zone'
+  | 'personnel'
+  | 'finance';
 
 interface NavigationState {
   currentView: View;
@@ -11,6 +19,8 @@ interface NavigationState {
 }
 
 interface NavigationActions {
+  backToStart: () => void;
+  openNewGame: () => void;
   enterDashboard: () => void;
   openStructure: (structureId: string) => void;
   openRoom: (structureId: string, roomId: string) => void;
@@ -31,6 +41,22 @@ const initialState: NavigationState = {
 
 export const useNavigationStore = create<NavigationState & NavigationActions>((set, get) => ({
   ...initialState,
+  backToStart: () =>
+    set(() => ({
+      currentView: 'start',
+      selectedStructureId: undefined,
+      selectedRoomId: undefined,
+      selectedZoneId: undefined,
+      isSidebarOpen: false,
+    })),
+  openNewGame: () =>
+    set(() => ({
+      currentView: 'newGame',
+      selectedStructureId: undefined,
+      selectedRoomId: undefined,
+      selectedZoneId: undefined,
+      isSidebarOpen: false,
+    })),
   enterDashboard: () =>
     set((state) => ({
       currentView: 'dashboard',

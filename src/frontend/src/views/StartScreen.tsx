@@ -17,6 +17,7 @@ interface StartScreenProps {
 
 export const StartScreen = ({ bridge }: StartScreenProps) => {
   const enterDashboard = useNavigationStore((state) => state.enterDashboard);
+  const openNewGame = useNavigationStore((state) => state.openNewGame);
   const openModal = useUIStore((state) => state.openModal);
   const connectionStatus = useSimulationStore((state) => state.connectionStatus);
   const [loading, setLoading] = useState(false);
@@ -77,18 +78,7 @@ export const StartScreen = ({ bridge }: StartScreenProps) => {
         >
           {loading ? 'Initialising…' : 'Quick Start'}
         </Button>
-        <Button
-          variant="secondary"
-          icon={<Icon name="add" />}
-          onClick={() =>
-            openModal({
-              id: 'new-game',
-              type: 'newGame',
-              title: 'New Simulation',
-              subtitle: 'Seed a fresh deterministic run',
-            })
-          }
-        >
+        <Button variant="secondary" icon={<Icon name="add" />} onClick={openNewGame}>
           New Game
         </Button>
         <Button

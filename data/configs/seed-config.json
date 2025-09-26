@@ -1,0 +1,23 @@
+{
+  "separator": "-",
+  "minScore": 0.6,
+  "count": 30,
+  "blacklist": ["White-Widow", "Blue-Dream"],
+  "lexicon": {
+    "core": [["Kush", 1.0], ["Haze", 1.0], ["Diesel", 1.0], ["Skunk", 0.9], ["Widow", 0.8], ["Gelato", 0.9], ["OG", 1.0], ["Jack", 0.8]],
+    "legacy": [["White", 1.0], ["Northern", 0.8], ["Gorilla", 0.9], ["Ghost", 0.6], ["Train", 0.6], ["Zkittlez", 0.6], ["Chem", 0.8], ["Dawg", 0.7], ["Platinum", 0.7]],
+    "flavor": [["Sour", 1.0], ["Mint", 0.9], ["Lemon", 1.0], ["Mango", 0.9], ["Grape", 0.8], ["Cherry", 0.8], ["Banana", 0.8], ["Pineapple", 0.7], ["Strawberry", 0.7], ["Orange", 0.7], ["Cookie", 0.7], ["Sherbet", 0.6]],
+    "color": [["Purple", 1.0], ["Blue", 0.9], ["Ruby", 0.6], ["Neon", 0.5], ["Crystal", 0.5], ["Golden", 0.6], ["Silver", 0.5]],
+    "boost": [["Gold", 1.0], ["Fuel", 0.9], ["Punch", 0.9], ["Rush", 0.7], ["Prime", 0.7], ["Ultra", 0.6], ["Max", 0.6], ["Pro", 0.5], ["Queen", 0.5], ["Nova", 0.5]],
+    "people": [["Cali", 0.8], ["Marley", 0.5]]
+  },
+  "templates": [
+    { "id": "Color-Core-Boost",   "parts": ["color", "core", "boost"],   "weight": 1.0, "options": { "preferAlliteration": true,  "maxLen": 18 } },
+    { "id": "Legacy-Core-Flavor", "parts": ["legacy", "core", "flavor"], "weight": 0.9, "options": { "preferAlliteration": false, "maxLen": 20 } },
+    { "id": "Flavor-Core-Boost",  "parts": ["flavor", "core", "boost"],  "weight": 0.9, "options": { "preferAlliteration": true,  "maxLen": 18 } },
+    { "id": "Legacy-Core",        "parts": ["legacy", "core"],           "weight": 0.6, "options": { "maxLen": 16 } },
+    { "id": "Core-Boost",         "parts": ["core", "boost"],            "weight": 0.5, "options": { "maxLen": 14 } },
+    { "id": "Color-Core",         "parts": ["color", "core"],            "weight": 0.5, "options": { "maxLen": 16 } },
+    { "id": "People-Core-Boost",  "parts": ["people", "core", "boost"],  "weight": 0.2, "options": { "maxLen": 18 } }
+  ]
+}

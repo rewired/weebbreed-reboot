@@ -674,7 +674,29 @@ export class WorldService {
     return this.rentStructure(QUICKSTART_STRUCTURE_ID, context);
   }
 
-  newGame(context: CommandExecutionContext): CommandResult {
+  newGame(
+    difficulty: 'easy' | 'normal' | 'hard' = 'normal',
+    customModifiers:
+      | {
+          plantStress: {
+            optimalRangeMultiplier: number;
+            stressAccumulationMultiplier: number;
+          };
+          deviceFailure: {
+            mtbfMultiplier: number;
+          };
+          economics: {
+            initialCapital: number;
+            itemPriceMultiplier: number;
+            harvestPriceMultiplier: number;
+            rentPerSqmStructurePerTick: number;
+            rentPerSqmRoomPerTick: number;
+          };
+        }
+      | undefined,
+    seed: string | undefined,
+    context: CommandExecutionContext,
+  ): CommandResult {
     // Clear all existing structures
     this.state.structures.length = 0;
 
@@ -698,9 +720,48 @@ export class WorldService {
     this.state.personnel.trainingPrograms.length = 0;
     this.state.personnel.overallMorale = 0;
 
-    // Reset finances to initial state (preserve initial capital)
-    const initialCapital = this.state.metadata.economics.initialCapital;
-    this.state.finances.cashOnHand = initialCapital;
+    // Get economics from custom modifiers or default to difficulty preset
+    const DIFFICULTY_ECONOMICS = {
+      easy: {
+        initialCapital: 100_000_000,
+        itemPriceMultiplier: 0.9,
+        harvestPriceMultiplier: 1.1,
+        rentPerSqmStructurePerTick: 0.1,
+        rentPerSqmRoomPerTick: 0.2,
+      },
+      normal: {
+        initialCapital: 1_500_000,
+        itemPriceMultiplier: 1.0,
+        harvestPriceMultiplier: 1.0,
+        rentPerSqmStructurePerTick: 0.15,
+        rentPerSqmRoomPerTick: 0.3,
+      },
+      hard: {
+        initialCapital: 500_000,
+        itemPriceMultiplier: 1.1,
+        harvestPriceMultiplier: 0.9,
+        rentPerSqmStructurePerTick: 0.2,
+        rentPerSqmRoomPerTick: 0.4,
+      },
+    };
+
+    const economics = customModifiers?.economics || DIFFICULTY_ECONOMICS[difficulty];
+
+    // Update the game metadata with new difficulty and economics
+    this.state.metadata.difficulty = difficulty;
+    this.state.metadata.economics = economics;
+
+    // Apply other custom modifiers if provided
+    if (customModifiers) {
+      // Store plant stress modifiers (these would be used by the plant growth system)
+      this.state.metadata.plantStress = customModifiers.plantStress;
+
+      // Store device failure modifiers (these would be used by the device failure system)
+      this.state.metadata.deviceFailure = customModifiers.deviceFailure;
+    }
+
+    // Reset finances to initial state with difficulty-based capital
+    this.state.finances.cashOnHand = economics.initialCapital;
     this.state.finances.reservedCash = 0;
     this.state.finances.outstandingLoans.length = 0;
     this.state.finances.ledger.length = 0;
@@ -733,11 +794,18 @@ export class WorldService {
       labels: 500,
     };
 
+    // Store the seed if provided
+    if (seed) {
+      this.state.metadata.seed = seed;
+    }
+
     // Add a note about the new game
     this.state.notes.push({
       id: this.createId('note'),
       tick: 0,
-      message: 'New game started - empty session ready for building.',
+      message: seed
+        ? `New game started with seed '${seed}' - empty session ready for building.`
+        : 'New game started - empty session ready for building.',
       level: 'info',
     });
 
