@@ -1608,7 +1608,10 @@ export class SimulationFacade {
     registration: CommandRegistration<Payload, Result>,
     rawPayload: unknown,
   ): Promise<CommandResult<Result>> {
-    const input = registration.preprocess ? registration.preprocess(rawPayload) : rawPayload;
+    const sanitizedPayload = this.stripIntentMetadata(rawPayload);
+    const input = registration.preprocess
+      ? registration.preprocess(sanitizedPayload)
+      : sanitizedPayload;
     const parsed = registration.schema.safeParse(input);
     if (!parsed.success) {
       return this.handleValidationError(registration.name, parsed.error);
@@ -1662,6 +1665,15 @@ export class SimulationFacade {
       zone.control.setpoints = {};
     }
     return zone.control;
+  }
+
+  private stripIntentMetadata(payload: unknown): unknown {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return payload;
+    }
+    const rest = { ...(payload as Record<string, unknown>) };
+    delete rest.requestId;
+    return rest;
   }
 
   private sanitizeRelativeHumidity(value: number, warnings: string[]): number {

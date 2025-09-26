@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   difficulty presets in the New Game setup flow by deferring the fetch until
   the Socket.IO bridge reports an active connection, so presets appear without
   manual retries once the UI connects to the server.
+- **Facade difficulty config intent**: Fixed `config.getDifficultyConfig`
+  responses being rejected because the request metadata leaked into the intent
+  payload validation. The backend now strips the transport `requestId` before
+  schema validation and an integration test covers the happy path, so the New
+  Game view receives the difficulty presets reliably.
 - **Game Menu Reset Session Button**: Implemented functionality for the "Reset Session" button in the game menu modal, which previously did nothing. The button now properly stops the simulation (if running) and returns the user to the start screen, clearing the current session state and allowing them to start fresh or load a different game.
 - **Finance View Data Access**: Corrected data access in FinanceView to use `snapshot.finance` instead of `snapshot.finances` to properly display financial data
 - **ExpenseBreakdown Component**: Simplified ExpenseBreakdown to work with available snapshot data instead of relying on detailed ledger entries not present in frontend
