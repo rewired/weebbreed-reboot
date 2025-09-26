@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { EventBus } from '@/lib/eventBus.js';
+import { EventBus, createEventCollector } from '@/lib/eventBus.js';
+import type { EventCollector } from '@/lib/eventBus.js';
 import { SimulationLoop } from './loop.js';
+import { createAccountingProcessor } from './accountingProcessor.js';
 import type {
   DeviceInstanceState,
   EmployeeState,
@@ -12,7 +14,11 @@ import type {
   ZoneResourceState,
   ZoneState,
 } from '@/state/models.js';
-import { CostAccountingService } from '@/engine/economy/costAccounting.js';
+import {
+  CostAccountingService,
+  type TickAccumulator,
+  type UtilityConsumption,
+} from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
 
 const createAccountingTestState = (): GameState => {
@@ -206,6 +212,178 @@ const createEmployee = (id: string, salaryPerTick: number): EmployeeState => ({
   },
   hoursWorkedToday: 0,
   overtimeHours: 0,
+});
+
+class RecordingAccountingService extends CostAccountingService {
+  readonly calls = {
+    utility: [] as UtilityConsumption[],
+    rent: [] as string[],
+    maintenance: [] as string[],
+    purchases: [] as Array<{ blueprintId: string; quantity: number; description?: string }>,
+    payroll: 0,
+    finalize: 0,
+  };
+
+  constructor() {
+    super({
+      devicePrices: new Map(),
+      strainPrices: new Map(),
+      utilityPrices: { pricePerKwh: 0, pricePerLiterWater: 0, pricePerGramNutrients: 0 },
+    });
+  }
+
+  override applyUtilityConsumption(
+    state: GameState,
+    consumption: UtilityConsumption,
+    tick: number,
+    timestamp: string,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+  ): undefined {
+    void state;
+    void tick;
+    void timestamp;
+    void accumulator;
+    void events;
+    this.calls.utility.push({ ...consumption });
+    return undefined;
+  }
+
+  override applyStructureRent(
+    state: GameState,
+    structure: StructureState,
+    tick: number,
+    timestamp: string,
+    tickLengthHours: number,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+  ): number | undefined {
+    void state;
+    void tick;
+    void timestamp;
+    void tickLengthHours;
+    void accumulator;
+    void events;
+    this.calls.rent.push(structure.id);
+    return undefined;
+  }
+
+  override applyMaintenanceExpense(
+    state: GameState,
+    device: DeviceInstanceState,
+    tick: number,
+    timestamp: string,
+    tickLengthHours: number,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+  ): undefined {
+    void state;
+    void tick;
+    void timestamp;
+    void tickLengthHours;
+    void accumulator;
+    void events;
+    this.calls.maintenance.push(device.id);
+    return undefined;
+  }
+
+  override recordDevicePurchase(
+    state: GameState,
+    blueprintId: string,
+    quantity: number,
+    tick: number,
+    timestamp: string,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+    description?: string,
+  ): number {
+    void state;
+    void tick;
+    void timestamp;
+    void accumulator;
+    void events;
+    this.calls.purchases.push({ blueprintId, quantity, description });
+    return 0;
+  }
+
+  override applyPayroll(
+    state: GameState,
+    tick: number,
+    timestamp: string,
+    accumulator: TickAccumulator,
+    events: EventCollector,
+  ): number | undefined {
+    void state;
+    void tick;
+    void timestamp;
+    void accumulator;
+    void events;
+    this.calls.payroll += 1;
+    return undefined;
+  }
+
+  override finalizeTick(
+    state: GameState,
+    accumulator: TickAccumulator,
+    tick: number,
+    timestamp: string,
+    events: EventCollector,
+  ): void {
+    void state;
+    void accumulator;
+    void tick;
+    void timestamp;
+    void events;
+    this.calls.finalize += 1;
+  }
+}
+
+describe('AccountingProcessor', () => {
+  it('aggregates utilities and device purchases before delegating', () => {
+    const state = createAccountingTestState();
+    const service = new RecordingAccountingService();
+    const processor = createAccountingProcessor({ service });
+
+    processor.beginTick();
+    processor.tools.recordUtility({ energyKwh: 5, waterLiters: -3, nutrientsGrams: 2 });
+    processor.tools.recordUtility({ waterLiters: 1.5 });
+    processor.tools.recordDevicePurchase('Lamp-blueprint', 2, 'upgrade');
+    processor.tools.recordDevicePurchase('', 1);
+    processor.tools.recordDevicePurchase('Lamp-blueprint', -1);
+
+    processor.finalize({
+      state,
+      tick: 1,
+      tickLengthMinutes: 60,
+      events: createEventCollector([], 1),
+    });
+
+    expect(service.calls.utility).toEqual([{ energyKwh: 5, waterLiters: 1.5, nutrientsGrams: 2 }]);
+    expect(service.calls.purchases).toEqual([
+      { blueprintId: 'Lamp-blueprint', quantity: 2, description: 'upgrade' },
+    ]);
+    expect(service.calls.finalize).toBe(1);
+  });
+
+  it('clears runtime state on reset', () => {
+    const state = createAccountingTestState();
+    const service = new RecordingAccountingService();
+    const processor = createAccountingProcessor({ service });
+
+    processor.beginTick();
+    processor.tools.recordUtility({ energyKwh: 2 });
+    processor.reset();
+
+    processor.finalize({
+      state,
+      tick: 2,
+      tickLengthMinutes: 60,
+      events: createEventCollector([], 2),
+    });
+
+    expect(service.calls.utility).toHaveLength(0);
+    expect(service.calls.finalize).toBe(0);
+  });
 });
 
 describe('SimulationLoop accounting integration', () => {

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Refactored the simulation loop to delegate tick-state orchestration and accounting flows to dedicated modules with updated tests safeguarding the phase order.
+
 ### Fixed
 
 - Unified difficulty preset usage across the engine: initial state creation and world.newGame now derive economics from `data/configs/difficulty.json` via injected config. Removed duplicated hard-coded tables and added tests to prevent regressions.
