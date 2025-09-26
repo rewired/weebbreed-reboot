@@ -8,7 +8,7 @@ import {
   DataLoaderError,
   type DataIssue,
   type DataLoadResult,
-} from '../src/backend/data/dataLoader.js';
+} from '../src/backend/src/data/dataLoader.js';
 
 interface CliArguments {
   dataDir: string;
