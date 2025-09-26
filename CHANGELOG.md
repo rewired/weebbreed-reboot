@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Enhanced Seed Generation System**: Implemented sophisticated seed generation for the New Game view based on `/reports/start_new_game-changes.md`. Features include:
+  - **MULLBERRY32 PRNG**: Replaced simple LCG with high-quality MULLBERRY32 algorithm for better randomness distribution
+  - **Template-based Generation**: Configurable templates with weighted categories (color, strain, fruit, dessert, suffix)
+  - **Quality Scoring System**: Advanced scoring algorithm considering alliteration, vowel/consonant flow, length heuristics, and strong endings
+  - **Local Search Optimization**: 3-iteration mutation process to improve seed quality
+  - **Configurable Parameters**: JSON-based configuration with separator, minScore, count, blacklist, and lexicon settings
+  - **Deterministic Generation**: Microtime-based 32-bit seed conversion for reproducible results within process
+  - **Lexicon Categories**: Comprehensive word lists for colors, strains, fruits, desserts, and suffixes with weighted selection
+  - **Alliteration Support**: Optional alliteration preference with soft upweighting for cohesive naming
+  - **Quality Constraints**: Length limits, score thresholds, and blacklist enforcement for consistent output
+
 ### Fixed
 
 - **Game Menu Reset Session Button**: Implemented functionality for the "Reset Session" button in the game menu modal, which previously did nothing. The button now properly stops the simulation (if running) and returns the user to the start screen, clearing the current session state and allowing them to start fresh or load a different game.

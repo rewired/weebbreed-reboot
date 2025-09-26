@@ -15,6 +15,9 @@
 - **Economics externalized.** Prices/maintenance are outside device blueprints (separate price maps). Do **not** re‑introduce prices into device JSONs.
 - **Socket transport parity.** Keep `socket.io` and `socket.io-client` on the **same minor version** across backend and frontend packages. Update both sides together to avoid wire-protocol drift.
 - **No breaking directory churn.** Prefer additive refactors with clear commits, green CI at every step.
+- **Documentation** is crucial. Please document changes before committing (`CHANGELOG.md`). Always check against `/docs/weedbreed-final-truth.md` and `/docs/ui-building_guide.md` - change missalginments. Also take a look at the rest of `/docs/**/*.md`.
+- **Before commiting** use `pnpm run check` to satisfy `husky` rules.
+- **If unsure: ask!**
 
 ---
 
