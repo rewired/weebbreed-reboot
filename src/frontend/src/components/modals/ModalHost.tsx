@@ -952,6 +952,96 @@ const CreateZoneModal = ({
   );
 };
 
+const GameMenuModal = ({
+  bridge,
+  closeModal,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+}) => {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const handleResetSession = async () => {
+    setBusy('reset');
+    setFeedback(null);
+    try {
+      // Stop the simulation if it's running
+      await bridge.sendControl({ action: 'pause' });
+
+      // Preserve the current connection status before resetting
+      const currentConnectionStatus = useSimulationStore.getState().connectionStatus;
+
+      // Clear the simulation store and return to start screen
+      const resetSimulation = useSimulationStore.getState().reset;
+      const resetNavigation = useNavigationStore.getState().reset;
+      const setConnectionStatus = useSimulationStore.getState().setConnectionStatus;
+
+      resetSimulation();
+      resetNavigation();
+
+      // Restore the connection status so Quick Start works
+      setConnectionStatus(currentConnectionStatus);
+
+      closeModal();
+    } catch (error) {
+      console.error('Failed to reset session', error);
+      setFeedback('Connection error while resetting session.');
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-text-muted">
+        Game menu actions for the current simulation session.
+      </p>
+      <div className="grid gap-3">
+        {[
+          {
+            label: 'Save Game',
+            icon: 'save',
+            disabled: true,
+            tooltip: 'Save functionality coming soon',
+          },
+          {
+            label: 'Load Game',
+            icon: 'folder_open',
+            disabled: true,
+            tooltip: 'Load functionality coming soon',
+          },
+          {
+            label: 'Export Save',
+            icon: 'ios_share',
+            disabled: true,
+            tooltip: 'Export functionality coming soon',
+          },
+          {
+            label: 'Reset Session',
+            icon: 'restart_alt',
+            disabled: busy !== null,
+            onClick: handleResetSession,
+            tooltip: 'Start a fresh game session',
+          },
+        ].map((item) => (
+          <Button
+            key={item.label}
+            variant={item.label === 'Reset Session' ? 'primary' : 'secondary'}
+            icon={<Icon name={item.icon} />}
+            disabled={item.disabled}
+            onClick={item.onClick}
+            title={item.tooltip}
+          >
+            {busy === 'reset' && item.label === 'Reset Session' ? 'Resetting…' : item.label}
+          </Button>
+        ))}
+      </div>
+      {feedback ? <Feedback message={feedback} /> : null}
+    </div>
+  );
+};
+
 const modalRenderers: Record<
   ModalDescriptor['type'],
   (args: {
@@ -960,20 +1050,7 @@ const modalRenderers: Record<
     context?: Record<string, unknown>;
   }) => ReactElement | null
 > = {
-  gameMenu: () => (
-    <div className="grid gap-3">
-      {[
-        { label: 'Save Game', icon: 'save' },
-        { label: 'Load Game', icon: 'folder_open' },
-        { label: 'Export Save', icon: 'ios_share' },
-        { label: 'Reset Session', icon: 'restart_alt' },
-      ].map((item) => (
-        <Button key={item.label} variant="secondary" icon={<Icon name={item.icon} />}>
-          {item.label}
-        </Button>
-      ))}
-    </div>
-  ),
+  gameMenu: ({ bridge, closeModal }) => <GameMenuModal bridge={bridge} closeModal={closeModal} />,
   loadGame: () => (
     <p className="text-sm text-text-muted">
       Load slots will appear once the backend exposes deterministic save headers. Choose a slot to

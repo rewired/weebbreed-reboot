@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Game Menu Reset Session Button**: Implemented functionality for the "Reset Session" button in the game menu modal, which previously did nothing. The button now properly stops the simulation (if running) and returns the user to the start screen, clearing the current session state and allowing them to start fresh or load a different game.
 - **Finance View Data Access**: Corrected data access in FinanceView to use `snapshot.finance` instead of `snapshot.finances` to properly display financial data
 - **ExpenseBreakdown Component**: Simplified ExpenseBreakdown to work with available snapshot data instead of relying on detailed ledger entries not present in frontend
 - **Finance View Blank Page**: Resolved blank page issue - Finance view now displays correctly with financial KPIs, charts, and breakdown components
