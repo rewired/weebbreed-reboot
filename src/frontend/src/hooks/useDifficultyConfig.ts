@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSimulationBridge } from '@/facade/systemFacade';
+import { useSimulationStore } from '@/store/simulation';
 import type { DifficultyConfig } from '@/types/difficulty';
 
 interface UseDifficultyConfigResult {
@@ -43,6 +44,9 @@ export const useDifficultyConfig = (): UseDifficultyConfigResult => {
   const [loading, setLoading] = useState<boolean>(!cachedDifficultyConfig);
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
+  const connectionStatus = useSimulationStore((state) => state.connectionStatus);
+  const previousConnectionStatusRef = useRef(connectionStatus);
+  const hasRequestedRef = useRef<boolean>(Boolean(cachedDifficultyConfig));
 
   useEffect(() => {
     return () => {
@@ -78,10 +82,23 @@ export const useDifficultyConfig = (): UseDifficultyConfigResult => {
   }, []);
 
   useEffect(() => {
-    if (!cachedDifficultyConfig) {
-      void refresh();
+    const previousStatus = previousConnectionStatusRef.current;
+    previousConnectionStatusRef.current = connectionStatus;
+
+    if (cachedDifficultyConfig || config) {
+      return;
     }
-  }, [refresh]);
+
+    if (connectionStatus === 'connected') {
+      if (!hasRequestedRef.current || previousStatus !== 'connected') {
+        hasRequestedRef.current = true;
+        void refresh();
+      }
+      return;
+    }
+
+    hasRequestedRef.current = false;
+  }, [connectionStatus, config, refresh]);
 
   return { config, loading, error, refresh };
 };
