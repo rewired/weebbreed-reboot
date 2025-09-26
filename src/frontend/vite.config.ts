@@ -13,6 +13,12 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(__dirname, 'src'),
       },
     },
+    test: {
+      environment: 'jsdom',
+      clearMocks: true,
+      restoreMocks: true,
+      testTimeout: 15000,
+    },
     server: {
       port: 5173,
       strictPort: true,

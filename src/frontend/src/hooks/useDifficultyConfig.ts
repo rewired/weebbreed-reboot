@@ -49,6 +49,7 @@ export const useDifficultyConfig = (): UseDifficultyConfigResult => {
   const hasRequestedRef = useRef<boolean>(Boolean(cachedDifficultyConfig));
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
     };
