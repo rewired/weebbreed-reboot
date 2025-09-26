@@ -223,6 +223,8 @@ const deleteStructureSchema = z
   })
   .strict();
 
+const resetSessionSchema = z.object({}).strict();
+
 const duplicateStructureSchema = z
   .object({
     structureId: entityIdentifier,
@@ -425,6 +427,7 @@ export type UpdateZoneIntent = z.infer<typeof updateZoneSchema>;
 export type DeleteZoneIntent = z.infer<typeof deleteZoneSchema>;
 export type RenameStructureIntent = z.infer<typeof renameStructureSchema>;
 export type DeleteStructureIntent = z.infer<typeof deleteStructureSchema>;
+export type ResetSessionIntent = z.infer<typeof resetSessionSchema>;
 export type DuplicateStructureIntent = z.infer<typeof duplicateStructureSchema>;
 export type DuplicateRoomIntent = z.infer<typeof duplicateRoomSchema>;
 export type DuplicateZoneIntent = z.infer<typeof duplicateZoneSchema>;
@@ -467,6 +470,7 @@ export interface WorldIntentHandlers {
   deleteZone: ServiceCommandHandler<DeleteZoneIntent>;
   renameStructure: ServiceCommandHandler<RenameStructureIntent>;
   deleteStructure: ServiceCommandHandler<DeleteStructureIntent>;
+  resetSession: ServiceCommandHandler<ResetSessionIntent, DuplicateStructureResult>;
   duplicateStructure: ServiceCommandHandler<DuplicateStructureIntent, DuplicateStructureResult>;
   duplicateRoom: ServiceCommandHandler<DuplicateRoomIntent, DuplicateRoomResult>;
   duplicateZone: ServiceCommandHandler<DuplicateZoneIntent, DuplicateZoneResult>;
@@ -587,6 +591,7 @@ export interface WorldIntentAPI {
   deleteZone(intent: DeleteZoneIntent): Promise<CommandResult>;
   renameStructure(intent: RenameStructureIntent): Promise<CommandResult>;
   deleteStructure(intent: DeleteStructureIntent): Promise<CommandResult>;
+  resetSession(intent?: ResetSessionIntent): Promise<CommandResult<DuplicateStructureResult>>;
   duplicateStructure(
     intent: DuplicateStructureIntent,
   ): Promise<CommandResult<DuplicateStructureResult>>;
@@ -654,6 +659,7 @@ interface WorldCommandRegistry {
   deleteZone: CommandRegistration<DeleteZoneIntent>;
   renameStructure: CommandRegistration<RenameStructureIntent>;
   deleteStructure: CommandRegistration<DeleteStructureIntent>;
+  resetSession: CommandRegistration<ResetSessionIntent, DuplicateStructureResult>;
   duplicateStructure: CommandRegistration<DuplicateStructureIntent, DuplicateStructureResult>;
   duplicateRoom: CommandRegistration<DuplicateRoomIntent, DuplicateRoomResult>;
   duplicateZone: CommandRegistration<DuplicateZoneIntent, DuplicateZoneResult>;
@@ -1214,6 +1220,12 @@ export class SimulationFacade {
         'world.deleteStructure',
         deleteStructureSchema,
         () => this.services.world?.deleteStructure,
+      ),
+      resetSession: this.createServiceCommand<ResetSessionIntent, DuplicateStructureResult>(
+        'world.resetSession',
+        resetSessionSchema,
+        () => this.services.world?.resetSession,
+        (payload) => payload ?? {},
       ),
       duplicateStructure: this.createServiceCommand<
         DuplicateStructureIntent,

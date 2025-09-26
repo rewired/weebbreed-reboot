@@ -241,6 +241,7 @@ export const startBackendServer = async (
         worldService.renameStructure(intent.structureId, intent.name, context),
       deleteStructure: (intent, context) =>
         worldService.deleteStructure(intent.structureId, context),
+      resetSession: (intent, context) => worldService.resetSession(context),
       duplicateStructure: (intent, context) =>
         worldService.duplicateStructure(intent.structureId, intent.name, context),
       duplicateRoom: (intent, context) =>

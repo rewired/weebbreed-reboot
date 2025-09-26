@@ -969,19 +969,22 @@ const GameMenuModal = ({
       // Stop the simulation if it's running
       await bridge.sendControl({ action: 'pause' });
 
-      // Preserve the current connection status before resetting
-      const currentConnectionStatus = useSimulationStore.getState().connectionStatus;
+      // Send the resetSession intent to the backend
+      const response = await bridge.sendIntent({
+        domain: 'world',
+        action: 'resetSession',
+        payload: {},
+      });
 
-      // Clear the simulation store and return to start screen
-      const resetSimulation = useSimulationStore.getState().reset;
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Failed to reset session.');
+        return;
+      }
+
+      // Reset frontend navigation state to return to start screen
       const resetNavigation = useNavigationStore.getState().reset;
-      const setConnectionStatus = useSimulationStore.getState().setConnectionStatus;
-
-      resetSimulation();
       resetNavigation();
-
-      // Restore the connection status so Quick Start works
-      setConnectionStatus(currentConnectionStatus);
 
       closeModal();
     } catch (error) {
