@@ -409,7 +409,7 @@ export class SocketGateway {
 
     this.emitCommandResponse(
       socket,
-      `${command.domain}.intent.result`,
+      'facade.intent.result',
       {
         requestId,
         ...result,

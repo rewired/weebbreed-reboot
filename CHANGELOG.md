@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   difficulty presets in the New Game setup flow by deferring the fetch until
   the Socket.IO bridge reports an active connection, so presets appear without
   manual retries once the UI connects to the server.
+- **Facade intent channel alignment**: Socket gateway now emits all facade
+  intent responses on the shared `facade.intent.result` channel expected by the
+  frontend bridge, ensuring difficulty presets and other facade intents resolve
+  correctly.
 - **Facade difficulty config intent**: Fixed `config.getDifficultyConfig`
   responses being rejected because the request metadata leaked into the intent
   payload validation. The backend now strips the transport `requestId` before
