@@ -346,4 +346,66 @@ describe('SimulationFacade.setZoneSetpoint', () => {
     expect(result.ok).toBe(false);
     expect(result.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
   });
+
+  it('exposes difficulty configuration via the config domain', async () => {
+    const { facade } = createFacade();
+    const config = {
+      easy: {
+        name: 'Easy',
+        description: 'Relaxed mode',
+        modifiers: {
+          plantStress: { optimalRangeMultiplier: 1.2, stressAccumulationMultiplier: 0.8 },
+          deviceFailure: { mtbfMultiplier: 1.5 },
+          economics: {
+            initialCapital: 1_000_000,
+            itemPriceMultiplier: 0.9,
+            harvestPriceMultiplier: 1.1,
+            rentPerSqmStructurePerTick: 0.1,
+            rentPerSqmRoomPerTick: 0.2,
+          },
+        },
+      },
+      normal: {
+        name: 'Normal',
+        description: 'Baseline',
+        modifiers: {
+          plantStress: { optimalRangeMultiplier: 1, stressAccumulationMultiplier: 1 },
+          deviceFailure: { mtbfMultiplier: 1 },
+          economics: {
+            initialCapital: 500_000,
+            itemPriceMultiplier: 1,
+            harvestPriceMultiplier: 1,
+            rentPerSqmStructurePerTick: 0.15,
+            rentPerSqmRoomPerTick: 0.3,
+          },
+        },
+      },
+      hard: {
+        name: 'Hard',
+        description: 'Challenge',
+        modifiers: {
+          plantStress: { optimalRangeMultiplier: 0.9, stressAccumulationMultiplier: 1.2 },
+          deviceFailure: { mtbfMultiplier: 0.85 },
+          economics: {
+            initialCapital: 250_000,
+            itemPriceMultiplier: 1.1,
+            harvestPriceMultiplier: 0.9,
+            rentPerSqmStructurePerTick: 0.25,
+            rentPerSqmRoomPerTick: 0.35,
+          },
+        },
+      },
+    } as const;
+
+    facade.updateServices({
+      config: {
+        getDifficultyConfig: () => ({ ok: true, data: config }),
+      },
+    });
+
+    const response = await facade.config.getDifficultyConfig();
+
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(config);
+  });
 });

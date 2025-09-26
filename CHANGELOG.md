@@ -55,6 +55,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- New Game setup view and modal now request difficulty presets from the backend façade
+  (`config.getDifficultyConfig`), ensuring the UI reflects `/data/configs/difficulty.json`
+  without relying on bundled frontend JSON assets.
 - Updated ADR 0001 to reflect the accepted `tsx` + `tsup` ESM backend toolchain
   and documentation touchpoints.
 - Realigned workspace documentation and ADR 0001 with the `src/backend` and

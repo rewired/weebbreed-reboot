@@ -28,6 +28,7 @@ import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupServic
 import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
 import { findZone } from '@/engine/world/stateSelectors.js';
 import { saturationVaporPressure } from '@/engine/physio/vpd.js';
+import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 
 const cloneState = <T>(value: T): T => {
   if (typeof structuredClone === 'function') {
@@ -142,6 +143,7 @@ const rentStructureSchema = z
   })
   .strict();
 const getStructureBlueprintsSchema = z.object({}).strict();
+const getDifficultyConfigSchema = z.object({}).strict();
 const createRoomSchema = z
   .object({
     structureId: entityIdentifier,
@@ -451,6 +453,7 @@ export type SetSpeedIntent = z.infer<typeof setSpeedSchema>;
 
 export type RentStructureIntent = z.infer<typeof rentStructureSchema>;
 export type GetStructureBlueprintsIntent = z.infer<typeof getStructureBlueprintsSchema>;
+export type GetDifficultyConfigIntent = z.infer<typeof getDifficultyConfigSchema>;
 export type CreateRoomIntent = z.infer<typeof createRoomSchema>;
 export type UpdateRoomIntent = z.infer<typeof updateRoomSchema>;
 export type DeleteRoomIntent = z.infer<typeof deleteRoomSchema>;
@@ -549,6 +552,10 @@ export interface FinanceIntentHandlers {
   setMaintenancePolicy: ServiceCommandHandler<SetMaintenancePolicyIntent>;
 }
 
+export interface ConfigIntentHandlers {
+  getDifficultyConfig: ServiceCommandHandler<GetDifficultyConfigIntent, DifficultyConfig>;
+}
+
 export interface EngineServices {
   world?: Partial<WorldIntentHandlers>;
   devices?: Partial<DeviceIntentHandlers>;
@@ -556,6 +563,7 @@ export interface EngineServices {
   health?: Partial<HealthIntentHandlers>;
   workforce?: Partial<WorkforceIntentHandlers>;
   finance?: Partial<FinanceIntentHandlers>;
+  config?: Partial<ConfigIntentHandlers>;
 }
 
 type InternalCommandHandler<Payload, Result> = ServiceCommandHandler<Payload, Result>;
@@ -680,6 +688,10 @@ export interface FinanceIntentAPI {
   setMaintenancePolicy(intent: SetMaintenancePolicyIntent): Promise<CommandResult>;
 }
 
+export interface ConfigIntentAPI {
+  getDifficultyConfig(intent?: GetDifficultyConfigIntent): Promise<CommandResult<DifficultyConfig>>;
+}
+
 interface TimeCommandRegistry {
   start: CommandRegistration<TimeStartIntent, TimeStatus>;
   pause: CommandRegistration<z.infer<typeof emptyObjectSchema>, TimeStatus>;
@@ -744,6 +756,10 @@ interface FinanceCommandRegistry {
   setMaintenancePolicy: CommandRegistration<SetMaintenancePolicyIntent>;
 }
 
+interface ConfigCommandRegistry {
+  getDifficultyConfig: CommandRegistration<GetDifficultyConfigIntent, DifficultyConfig>;
+}
+
 interface SchedulerConfiguration {
   maxTicksPerFrame?: number;
   speed: number;
@@ -797,6 +813,8 @@ export class SimulationFacade {
 
   public readonly finance: FinanceIntentAPI;
 
+  public readonly config: ConfigIntentAPI;
+
   constructor(options: SimulationFacadeOptions) {
     this.state = options.state;
     this.eventBus = options.eventBus ?? telemetryEventBus;
@@ -815,6 +833,7 @@ export class SimulationFacade {
       health: options.services?.health ? { ...options.services.health } : {},
       workforce: options.services?.workforce ? { ...options.services.workforce } : {},
       finance: options.services?.finance ? { ...options.services.finance } : {},
+      config: options.services?.config ? { ...options.services.config } : {},
     };
 
     const schedulerOptions = options.scheduler ?? {};
@@ -839,6 +858,7 @@ export class SimulationFacade {
     const healthCommands = this.buildHealthCommands();
     const workforceCommands = this.buildWorkforceCommands();
     const financeCommands = this.buildFinanceCommands();
+    const configCommands = this.buildConfigCommands();
 
     this.time = {
       start: (intent?: TimeStartIntent) => this.executeCommand(this.timeCommands.start, intent),
@@ -854,6 +874,7 @@ export class SimulationFacade {
     this.health = this.registerDomain('health', healthCommands);
     this.workforce = this.registerDomain('workforce', workforceCommands);
     this.finance = this.registerDomain('finance', financeCommands);
+    this.config = this.registerDomain('config', configCommands);
   }
 
   getState(): Readonly<GameState> {
@@ -1139,6 +1160,9 @@ export class SimulationFacade {
     }
     if (services.finance) {
       this.services.finance = { ...this.services.finance, ...services.finance };
+    }
+    if (services.config) {
+      this.services.config = { ...this.services.config, ...services.config };
     }
   }
 
@@ -1449,6 +1473,17 @@ export class SimulationFacade {
         () => this.services.finance?.setMaintenancePolicy,
       ),
     } satisfies FinanceCommandRegistry;
+  }
+
+  private buildConfigCommands(): ConfigCommandRegistry {
+    return {
+      getDifficultyConfig: this.createServiceCommand(
+        'config.getDifficultyConfig',
+        getDifficultyConfigSchema,
+        () => this.services.config?.getDifficultyConfig,
+        (payload) => payload ?? {},
+      ),
+    } satisfies ConfigCommandRegistry;
   }
 
   private handleStart(
