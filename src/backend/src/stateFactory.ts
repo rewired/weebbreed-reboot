@@ -61,9 +61,8 @@ export {
 } from './state/initialization/personnel.js';
 export { loadTaskDefinitions } from './state/initialization/tasks.js';
 
-// Development: 0.5 minutes (30 seconds) per tick for rapid testing (divides evenly into 24 hours)
-// Production: Should be 60 minutes (1 hour) per tick for realistic gameplay
-const DEFAULT_TICK_LENGTH_MINUTES = 0.5; // 30 seconds for development
+// Default tick length is 60 minutes (1 hour) per tick for realistic gameplay and KPI parity
+const DEFAULT_TICK_LENGTH_MINUTES = 60;
 const DEFAULT_TARGET_TICK_RATE = 1;
 const DEFAULT_ZONE_RESERVOIR_LEVEL = 0.75;
 const DEFAULT_ZONE_WATER_LITERS = 800;
@@ -551,8 +550,8 @@ export const createInitialState = async (
   const finance = createFinanceState(
     createdAt,
     economics,
-    undefined,
-    [],
+    structureBlueprint,
+    result.installedDeviceBlueprints,
     context.repository,
     idStream,
   );

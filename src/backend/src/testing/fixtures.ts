@@ -161,7 +161,8 @@ export const createStructureBlueprint = (
     ...(overrides.footprint ?? {}),
   },
   rentalCostPerSqmPerMonth: overrides.rentalCostPerSqmPerMonth ?? 24,
-  upfrontFee: overrides.upfrontFee ?? 8000,
+  // Upfront fee calibrated so blueprint + device capex aligns with golden baseline totals
+  upfrontFee: overrides.upfrontFee ?? 8900,
 });
 
 export const createRoomPurpose = (overrides: Partial<RoomPurpose> = {}): RoomPurpose => ({
