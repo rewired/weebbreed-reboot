@@ -2,14 +2,13 @@ import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { ModalFrame } from '@/components/modals/ModalFrame';
-import { structureBlueprintOptions } from '@/data/structureBlueprints';
+import type { StructureBlueprint, SimulationBridge } from '@/facade/systemFacade';
 import { HireModal } from '@/components/personnel/HireModal';
 import { FireModal } from '@/components/personnel/FireModal';
 import { useUIStore } from '@/store/ui';
 import type { ModalDescriptor } from '@/store/ui';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
-import type { SimulationBridge } from '@/facade/systemFacade';
 import { ModifierInputs } from '../modifiers/ModifierInputs';
 import { DifficultyModifiers, type DifficultyConfig } from '../../types/difficulty';
 import difficultyConfig from '../../data/difficulty.json';
@@ -52,11 +51,35 @@ const RentStructureModal = ({
   bridge: SimulationBridge;
   closeModal: () => void;
 }) => {
-  const [selected, setSelected] = useState(
-    structureBlueprintOptions[1]?.id ?? structureBlueprintOptions[0]!.id,
-  );
+  const [blueprints, setBlueprints] = useState<StructureBlueprint[]>([]);
+  const [selected, setSelected] = useState<string>('');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load structure blueprints from backend
+  useEffect(() => {
+    const loadBlueprints = async () => {
+      try {
+        const response = await bridge.getStructureBlueprints();
+        if (response.ok && response.data) {
+          setBlueprints(response.data);
+          if (response.data.length > 0) {
+            setSelected(response.data[0].id);
+          }
+        } else {
+          setFeedback('Failed to load structure blueprints from backend.');
+        }
+      } catch (error) {
+        console.error('Failed to load structure blueprints:', error);
+        setFeedback('Connection error while loading structure blueprints.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBlueprints();
+  }, [bridge]);
 
   const handleRent = async () => {
     setBusy(true);
@@ -81,6 +104,30 @@ const RentStructureModal = ({
     }
   };
 
+  if (loading) {
+    return (
+      <div className="grid gap-4">
+        <p className="text-sm text-text-muted">Loading structure blueprints...</p>
+      </div>
+    );
+  }
+
+  if (blueprints.length === 0) {
+    return (
+      <div className="grid gap-4">
+        <p className="text-sm text-text-muted">No structure blueprints available.</p>
+        {feedback ? <Feedback message={feedback} /> : null}
+        <ActionFooter
+          onCancel={closeModal}
+          onConfirm={() => {}}
+          confirmLabel="Close"
+          confirmDisabled={true}
+          cancelDisabled={false}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4">
       <p className="text-sm text-text-muted">
@@ -88,36 +135,42 @@ const RentStructureModal = ({
         per tick once the command succeeds.
       </p>
       <div className="grid gap-3">
-        {structureBlueprintOptions.map((option) => (
-          <label
-            key={option.id}
-            className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border/50 bg-surface-muted/60 p-4 transition hover:border-primary"
-          >
-            <input
-              type="radio"
-              className="mt-1 size-4 shrink-0 accent-primary"
-              name="structure-blueprint"
-              value={option.id}
-              checked={selected === option.id}
-              onChange={() => setSelected(option.id)}
-            />
-            <div className="flex flex-col gap-1 text-left">
-              <span className="text-sm font-semibold text-text">{option.name}</span>
-              <span className="text-xs text-text-muted">
-                {option.area.toLocaleString()} m² · Upfront €{option.upfrontFee.toLocaleString()} ·
-                Rent €{option.rentalCostPerSqmPerMonth}/m²·month
-              </span>
-              <span className="text-xs text-text-muted/80">{option.description}</span>
-            </div>
-          </label>
-        ))}
+        {blueprints.map((blueprint) => {
+          const area = blueprint.footprint.length * blueprint.footprint.width;
+          return (
+            <label
+              key={blueprint.id}
+              className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border/50 bg-surface-muted/60 p-4 transition hover:border-primary"
+            >
+              <input
+                type="radio"
+                className="mt-1 size-4 shrink-0 accent-primary"
+                name="structure-blueprint"
+                value={blueprint.id}
+                checked={selected === blueprint.id}
+                onChange={() => setSelected(blueprint.id)}
+              />
+              <div className="flex flex-col gap-1 text-left">
+                <span className="text-sm font-semibold text-text">{blueprint.name}</span>
+                <span className="text-xs text-text-muted">
+                  {area.toLocaleString()} m² · Upfront €{blueprint.upfrontFee.toLocaleString()} ·
+                  Rent €{blueprint.rentalCostPerSqmPerMonth}/m²·month
+                </span>
+                <span className="text-xs text-text-muted/80">
+                  {blueprint.footprint.length}m × {blueprint.footprint.width}m ×{' '}
+                  {blueprint.footprint.height}m
+                </span>
+              </div>
+            </label>
+          );
+        })}
       </div>
       {feedback ? <Feedback message={feedback} /> : null}
       <ActionFooter
         onCancel={closeModal}
         onConfirm={handleRent}
         confirmLabel={busy ? 'Renting…' : 'Rent structure'}
-        confirmDisabled={busy}
+        confirmDisabled={busy || !selected}
         cancelDisabled={busy}
       />
     </div>

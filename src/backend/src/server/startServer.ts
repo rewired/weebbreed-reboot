@@ -235,6 +235,7 @@ export const startBackendServer = async (
   facade.updateServices({
     world: {
       rentStructure: (intent, context) => worldService.rentStructure(intent.structureId, context),
+      getStructureBlueprints: () => worldService.getStructureBlueprints(),
       createRoom: (intent, context) => worldService.createRoom(intent, context),
       createZone: (intent, context) => worldService.createZone(intent, context),
       renameStructure: (intent, context) =>

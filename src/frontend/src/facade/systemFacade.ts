@@ -38,9 +38,22 @@ const INITIAL_RECONNECT_DELAY = 1_000;
 const MAX_RECONNECT_DELAY = 30_000;
 const QUICKSTART_HELP_SUFFIX = ' See README.md (Getting Started) for setup steps.';
 
+export interface StructureBlueprint {
+  id: string;
+  name: string;
+  footprint: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  rentalCostPerSqmPerMonth: number;
+  upfrontFee: number;
+}
+
 export interface SimulationBridge {
   connect: () => void;
   loadQuickStart: () => Promise<CommandResponse<unknown>>;
+  getStructureBlueprints: () => Promise<CommandResponse<StructureBlueprint[]>>;
   sendControl: (
     command: SimulationControlCommand,
   ) => Promise<CommandResponse<SimulationTimeStatus | undefined>>;
@@ -218,6 +231,19 @@ class SocketSystemFacade implements SimulationBridge {
       payload: { structureId: QUICKSTART_STRUCTURE_ID },
     };
     return this.sendIntent(intent);
+  }
+
+  async getStructureBlueprints(): Promise<CommandResponse<StructureBlueprint[]>> {
+    if (!this.socket || !this.socket.connected) {
+      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
+      throw new Error(message);
+    }
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'getStructureBlueprints',
+      payload: {},
+    };
+    return this.sendIntent<StructureBlueprint[]>(intent);
   }
 
   sendControl(

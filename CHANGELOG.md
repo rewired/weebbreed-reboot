@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Dynamic Structure Blueprint Loading**: The "Rent Structure" modal now dynamically loads available structure blueprints from the backend instead of using hardcoded frontend data. The backend exposes structure blueprints from `/data/blueprints/structures/*.json` through a new `getStructureBlueprints` facade intent. This ensures the frontend always displays the most current and accurate structure options available in the game.
+
 - **Enhanced Seed Generation System**: Implemented sophisticated seed generation for the New Game view based on `/reports/start_new_game-changes.md`. Features include:
   - **MULLBERRY32 PRNG**: Replaced simple LCG with high-quality MULLBERRY32 algorithm for better randomness distribution
   - **Template-based Generation**: Configurable templates with weighted categories (color, strain, fruit, dessert, suffix)

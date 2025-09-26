@@ -141,6 +141,7 @@ const rentStructureSchema = z
     structureId: entityIdentifier,
   })
   .strict();
+const getStructureBlueprintsSchema = z.object({}).strict();
 const createRoomSchema = z
   .object({
     structureId: entityIdentifier,
@@ -449,6 +450,7 @@ export type TimeStepIntent = z.infer<typeof timeStepSchema>;
 export type SetSpeedIntent = z.infer<typeof setSpeedSchema>;
 
 export type RentStructureIntent = z.infer<typeof rentStructureSchema>;
+export type GetStructureBlueprintsIntent = z.infer<typeof getStructureBlueprintsSchema>;
 export type CreateRoomIntent = z.infer<typeof createRoomSchema>;
 export type UpdateRoomIntent = z.infer<typeof updateRoomSchema>;
 export type DeleteRoomIntent = z.infer<typeof deleteRoomSchema>;
@@ -493,6 +495,7 @@ export type SetMaintenancePolicyIntent = z.infer<typeof setMaintenancePolicySche
 
 export interface WorldIntentHandlers {
   rentStructure: ServiceCommandHandler<RentStructureIntent, DuplicateStructureResult>;
+  getStructureBlueprints: ServiceCommandHandler<GetStructureBlueprintsIntent, StructureBlueprint[]>;
   createRoom: ServiceCommandHandler<CreateRoomIntent, CreateRoomResult>;
   updateRoom: ServiceCommandHandler<UpdateRoomIntent>;
   deleteRoom: ServiceCommandHandler<DeleteRoomIntent>;
@@ -615,6 +618,9 @@ export interface TimeIntentAPI {
 
 export interface WorldIntentAPI {
   rentStructure(intent: RentStructureIntent): Promise<CommandResult<DuplicateStructureResult>>;
+  getStructureBlueprints(
+    intent?: GetStructureBlueprintsIntent,
+  ): Promise<CommandResult<StructureBlueprint[]>>;
   createRoom(intent: CreateRoomIntent): Promise<CommandResult>;
   updateRoom(intent: UpdateRoomIntent): Promise<CommandResult>;
   deleteRoom(intent: DeleteRoomIntent): Promise<CommandResult>;
@@ -684,6 +690,7 @@ interface TimeCommandRegistry {
 
 interface WorldCommandRegistry {
   rentStructure: CommandRegistration<RentStructureIntent, DuplicateStructureResult>;
+  getStructureBlueprints: CommandRegistration<GetStructureBlueprintsIntent, StructureBlueprint[]>;
   createRoom: CommandRegistration<CreateRoomIntent>;
   updateRoom: CommandRegistration<UpdateRoomIntent>;
   deleteRoom: CommandRegistration<DeleteRoomIntent>;
@@ -1214,6 +1221,11 @@ export class SimulationFacade {
         'world.rentStructure',
         rentStructureSchema,
         () => this.services.world?.rentStructure,
+      ),
+      getStructureBlueprints: this.createServiceCommand(
+        'world.getStructureBlueprints',
+        getStructureBlueprintsSchema,
+        () => this.services.world?.getStructureBlueprints,
       ),
       createRoom: this.createServiceCommand<CreateRoomIntent, CreateRoomResult>(
         'world.createRoom',

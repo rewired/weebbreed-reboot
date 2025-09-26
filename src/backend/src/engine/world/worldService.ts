@@ -141,6 +141,13 @@ export class WorldService {
     this.roomPurposeSource = options.roomPurposeSource;
   }
 
+  getStructureBlueprints(): CommandResult<StructureBlueprint[]> {
+    return {
+      ok: true,
+      data: this.structureBlueprints,
+    } satisfies CommandResult<StructureBlueprint[]>;
+  }
+
   renameStructure(
     structureId: string,
     name: string,
