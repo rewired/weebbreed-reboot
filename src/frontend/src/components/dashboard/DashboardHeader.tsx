@@ -207,14 +207,6 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
           >
             Finance
           </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<Icon name="account_balance" />}
-            onClick={openFinance}
-          >
-            Finance
-          </Button>
           <IconButton
             aria-label="Open notifications"
             onClick={() => {
