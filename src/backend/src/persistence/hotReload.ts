@@ -38,6 +38,8 @@ export class BlueprintHotReloadManager {
 
   private readonly listeners = new Set<ReloadListener>();
 
+  private pendingReload: Promise<void> | null = null;
+
   constructor(
     private readonly repository: HotReloadableRepository,
     private readonly eventBus: EventBus,
@@ -51,6 +53,9 @@ export class BlueprintHotReloadManager {
     const currentTickProvider = options.getCurrentTick ?? this.getCurrentTick;
     const disposer = await this.repository.onHotReload(
       async () => {
+        const staging = Promise.resolve();
+        this.trackPendingReload(staging);
+        await staging;
         // Stage reload; commit happens at the next tick boundary.
         return 'defer';
       },
@@ -69,12 +74,21 @@ export class BlueprintHotReloadManager {
     }
     const disposer = this.disposeWatcher;
     this.disposeWatcher = null;
+    this.pendingReload = null;
     await disposer();
     this.repository.discardStagedReload();
   }
 
   createCommitHook(): SimulationPhaseHandler {
     return async (context) => {
+      const pending = this.pendingReload;
+      if (pending) {
+        try {
+          await pending;
+        } catch {
+          // Errors during staging are surfaced through the repository hooks.
+        }
+      }
       const result = this.repository.commitReload();
       if (!result) {
         return;
@@ -142,6 +156,17 @@ export class BlueprintHotReloadManager {
         });
       }
     }
+  }
+
+  private trackPendingReload(task: Promise<unknown>): void {
+    const tracked = task.then(() => undefined);
+    this.pendingReload = tracked;
+    void tracked.catch(() => undefined);
+    tracked.finally(() => {
+      if (this.pendingReload === tracked) {
+        this.pendingReload = null;
+      }
+    });
   }
 }
 
