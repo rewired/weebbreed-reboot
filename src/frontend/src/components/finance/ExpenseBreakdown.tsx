@@ -35,7 +35,7 @@ export const ExpenseBreakdown = ({
   const snapshot = useSimulationStore((state) => state.snapshot);
 
   const expenseData = useMemo(() => {
-    if (!snapshot?.finances) {
+    if (!snapshot?.finance) {
       return {
         categories: [],
         totalExpenses: 0,
@@ -45,130 +45,34 @@ export const ExpenseBreakdown = ({
       };
     }
 
-    const finance = snapshot.finances;
-    const totalExpenses = finance.summary.totalExpenses;
+    const finance = snapshot.finance;
+    const totalExpenses = finance.totalExpenses;
 
-    // Analyze ledger entries for expense breakdown
-    const expenseEntries = finance.ledger.filter((entry) => entry.type === 'expense');
-
-    // Group expenses by category
-    const expensesByCategory = expenseEntries.reduce(
-      (acc, entry) => {
-        const category = entry.category;
-        if (!acc[category]) {
-          acc[category] = {
-            amount: 0,
-            entries: [],
-          };
-        }
-        acc[category].amount += Math.abs(entry.amount);
-        acc[category].entries.push(entry);
-        return acc;
-      },
-      {} as Record<string, { amount: number; entries: unknown[] }>,
-    );
-
+    // Since we don't have detailed ledger data in the frontend snapshot,
+    // we'll create a simplified expense breakdown based on available data
     const categories: ExpenseCategory[] = [];
 
-    // Capital Expenses
-    const deviceExpenses = expensesByCategory['device']?.amount || 0;
-    const structureExpenses = expensesByCategory['structure']?.amount || 0;
-    const capexTotal = deviceExpenses + structureExpenses;
-
-    if (capexTotal > 0) {
-      const deviceSubcategories: ExpenseSubcategory[] = [];
-      const structureSubcategories: ExpenseSubcategory[] = [];
-
-      // Analyze device purchases by type
-      if (deviceExpenses > 0) {
-        deviceSubcategories.push({
-          name: 'Equipment Purchases',
-          amount: deviceExpenses,
-          percentage: capexTotal > 0 ? (deviceExpenses / capexTotal) * 100 : 0,
-          description: 'Grow lights, HVAC, sensors, and other equipment',
-        });
-      }
-
-      if (structureExpenses > 0) {
-        structureSubcategories.push({
-          name: 'Structure Leases',
-          amount: structureExpenses,
-          percentage: capexTotal > 0 ? (structureExpenses / capexTotal) * 100 : 0,
-          description: 'Upfront fees and deposits for facilities',
-        });
-      }
-
+    if (totalExpenses > 0) {
+      // Create a simplified breakdown showing total expenses
+      // In a real implementation, this would be based on detailed accounting data
       categories.push({
-        id: 'capex',
-        name: 'Capital Expenses',
-        amount: capexTotal,
-        percentage: totalExpenses > 0 ? (capexTotal / totalExpenses) * 100 : 0,
-        type: 'CapEx',
-        trend: 'stable',
-        icon: 'account_balance',
-        color: 'text-blue-400',
-        subcategories: [...deviceSubcategories, ...structureSubcategories],
-      });
-    }
-
-    // Operating Expenses
-    const rentExpenses = expensesByCategory['rent']?.amount || 0;
-    const utilitiesExpenses = expensesByCategory['utilities']?.amount || 0;
-    const maintenanceExpenses = expensesByCategory['maintenance']?.amount || 0;
-    const payrollExpenses = expensesByCategory['payroll']?.amount || 0;
-    const otherExpenses = expensesByCategory['other']?.amount || 0;
-    const opexTotal =
-      rentExpenses + utilitiesExpenses + maintenanceExpenses + payrollExpenses + otherExpenses;
-
-    if (opexTotal > 0) {
-      const opexSubcategories: ExpenseSubcategory[] = [];
-
-      if (rentExpenses > 0) {
-        opexSubcategories.push({
-          name: 'Facility Rent',
-          amount: rentExpenses,
-          percentage: opexTotal > 0 ? (rentExpenses / opexTotal) * 100 : 0,
-          description: 'Monthly rent for structures and facilities',
-        });
-      }
-
-      if (utilitiesExpenses > 0) {
-        opexSubcategories.push({
-          name: 'Utilities',
-          amount: utilitiesExpenses,
-          percentage: opexTotal > 0 ? (utilitiesExpenses / opexTotal) * 100 : 0,
-          description: 'Electricity, water, and nutrient consumption',
-        });
-      }
-
-      if (maintenanceExpenses > 0) {
-        opexSubcategories.push({
-          name: 'Maintenance',
-          amount: maintenanceExpenses,
-          percentage: opexTotal > 0 ? (maintenanceExpenses / opexTotal) * 100 : 0,
-          description: 'Equipment servicing and repairs',
-        });
-      }
-
-      if (payrollExpenses > 0) {
-        opexSubcategories.push({
-          name: 'Payroll',
-          amount: payrollExpenses,
-          percentage: opexTotal > 0 ? (payrollExpenses / opexTotal) * 100 : 0,
-          description: 'Employee salaries and benefits',
-        });
-      }
-
-      categories.push({
-        id: 'opex',
-        name: 'Operating Expenses',
-        amount: opexTotal,
-        percentage: totalExpenses > 0 ? (opexTotal / totalExpenses) * 100 : 0,
+        id: 'total-expenses',
+        name: 'Total Expenses',
+        amount: totalExpenses,
+        percentage: 100,
         type: 'OpEx',
         trend: 'stable',
         icon: 'receipt',
         color: 'text-orange-400',
-        subcategories: opexSubcategories,
+        subcategories: [
+          {
+            name: 'All Operational Costs',
+            amount: totalExpenses,
+            percentage: 100,
+            description:
+              'Combined operational expenses including utilities, maintenance, payroll, and other costs',
+          },
+        ],
       });
     }
 

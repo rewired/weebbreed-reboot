@@ -24,7 +24,7 @@ export const FinanceView = ({ bridge }: FinanceViewProps) => {
     utilities: false,
   });
 
-  const finance = snapshot?.finances;
+  const finance = snapshot?.finance;
 
   const financialMetrics = useMemo(() => {
     if (!finance || !snapshot) {
@@ -40,20 +40,20 @@ export const FinanceView = ({ bridge }: FinanceViewProps) => {
     }
 
     const profitMargin =
-      finance.summary.totalRevenue > 0
-        ? (finance.summary.netIncome / finance.summary.totalRevenue) * 100
-        : 0;
+      finance.totalRevenue > 0 ? (finance.netIncome / finance.totalRevenue) * 100 : 0;
 
     // Estimate burn rate from recent expenses (last tick expenses * ticks per day)
-    const ticksPerDay = Math.round(24 / (snapshot.metadata.tickLengthMinutes / 60));
-    const burnRate = finance.summary.lastTickExpenses * ticksPerDay;
+    // Note: Using a default tick length since metadata.tickLengthMinutes is not in snapshot
+    const tickLengthMinutes = 15; // Default tick length
+    const ticksPerDay = Math.round(24 / (tickLengthMinutes / 60));
+    const burnRate = finance.lastTickExpenses * ticksPerDay;
     const runwayDays = burnRate > 0 ? Math.floor(finance.cashOnHand / burnRate) : Infinity;
 
     return {
       cashOnHand: finance.cashOnHand,
-      totalRevenue: finance.summary.totalRevenue,
-      totalExpenses: finance.summary.totalExpenses,
-      netIncome: finance.summary.netIncome,
+      totalRevenue: finance.totalRevenue,
+      totalExpenses: finance.totalExpenses,
+      netIncome: finance.netIncome,
       profitMargin,
       burnRate,
       runwayDays,
@@ -67,12 +67,26 @@ export const FinanceView = ({ bridge }: FinanceViewProps) => {
     }));
   };
 
-  if (!snapshot || !finance) {
+  if (!snapshot) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <Icon name="trending_down" size={48} className="mx-auto mb-4 text-text-muted" />
+          <p className="text-text-muted">Waiting for simulation data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!finance) {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
           <Icon name="trending_down" size={48} className="mx-auto mb-4 text-text-muted" />
           <p className="text-text-muted">Financial data not available</p>
+          <p className="text-xs text-text-muted mt-2">
+            Debug: snapshot exists but finance field is missing
+          </p>
         </div>
       </div>
     );

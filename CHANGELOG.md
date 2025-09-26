@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Finance View Data Access**: Corrected data access in FinanceView to use `snapshot.finance` instead of `snapshot.finances` to properly display financial data
+- **ExpenseBreakdown Component**: Simplified ExpenseBreakdown to work with available snapshot data instead of relying on detailed ledger entries not present in frontend
+- **Finance View Blank Page**: Resolved blank page issue - Finance view now displays correctly with financial KPIs, charts, and breakdown components
+
 ### Added
 
 - **Financial Dashboard Enhancement**: Implemented comprehensive Financial Dashboard system providing detailed revenue, expense, and profitability analysis. Created dedicated FinanceView with interactive time-range filters (1D, 1W, 1M, 1Y) displaying key financial metrics including cash on hand, total revenue, net income with profit margins, and burn rate calculations with runway days. Added RevenueBreakdown component showcasing detailed analysis of harvest sales and market pricing with revenue analytics. Implemented ExpenseBreakdown component featuring comprehensive expense analysis covering CapEx, OpEx, maintenance, and payroll with categorical breakdowns and cost optimization insights. Created ProfitChart component rendering interactive time-series visualizations of financial performance trends with computed growth metrics. Added UtilityPricing component enabling adjustment of electricity, water, and nutrient costs via facade intents with market context and price impact analysis. Enhanced DashboardHeader with Finance navigation button and integrated routing in App.tsx. All components leverage the facade intent system for backend integration and provide responsive UI with financial insights for business decision-making.
