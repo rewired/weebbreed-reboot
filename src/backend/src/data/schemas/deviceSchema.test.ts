@@ -83,7 +83,9 @@ describe('deviceSchema', () => {
 
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0]?.path).toEqual(['settings', 'targetCO2']);
+      // Collect all failing paths so this stays robust against issue ordering
+      const paths = result.error.issues.map((issue) => issue.path);
+      expect(paths).toContainEqual(['settings', 'targetCO2']);
     }
   });
 

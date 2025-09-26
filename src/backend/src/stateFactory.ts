@@ -52,6 +52,7 @@ import { resolveRoomPurposeId, requireRoomPurposeByName } from './engine/roomPur
 import type { RoomPurpose, RoomPurposeSlug } from './engine/roomPurposes/index.js';
 import { validateStructureGeometry } from './state/geometry.js';
 import { addDeviceToZone } from './state/devices.js';
+import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export {
@@ -75,29 +76,12 @@ const DEFAULT_EMPLOYEE_COUNTS: Record<EmployeeRole, number> = {
   Manager: 0,
 };
 
-const DIFFICULTY_ECONOMICS: Record<DifficultyLevel, EconomicsSettings> = {
-  easy: {
-    initialCapital: 2_000_000,
-    itemPriceMultiplier: 0.9,
-    harvestPriceMultiplier: 1.1,
-    rentPerSqmStructurePerTick: 0.1,
-    rentPerSqmRoomPerTick: 0.2,
-  },
-  normal: {
-    initialCapital: 1_500_000,
-    itemPriceMultiplier: 1.0,
-    harvestPriceMultiplier: 1.0,
-    rentPerSqmStructurePerTick: 0.15,
-    rentPerSqmRoomPerTick: 0.3,
-  },
-  hard: {
-    initialCapital: 1_000_000,
-    itemPriceMultiplier: 1.1,
-    harvestPriceMultiplier: 0.9,
-    rentPerSqmStructurePerTick: 0.2,
-    rentPerSqmRoomPerTick: 0.4,
-  },
-};
+const deriveEconomicsFromConfig = (
+  config: DifficultyConfig,
+  level: DifficultyLevel,
+): EconomicsSettings => ({
+  ...config[level].modifiers.economics,
+});
 
 interface StructureCreationResult {
   structure: StructureState;
@@ -139,6 +123,7 @@ export interface StateFactoryContext {
   personnelRoleBlueprints?: PersonnelRoleBlueprint[];
   taskDefinitions?: TaskDefinitionMap;
   defaultStructureHeightMeters?: number;
+  difficultyConfig?: DifficultyConfig;
 }
 
 export interface StateFactoryOptions {
@@ -431,7 +416,16 @@ export const createInitialState = async (
   options: StateFactoryOptions = {},
 ): Promise<GameState> => {
   const difficulty = options.difficulty ?? 'normal';
-  const economics = DIFFICULTY_ECONOMICS[difficulty];
+  const economics: EconomicsSettings = context.difficultyConfig
+    ? deriveEconomicsFromConfig(context.difficultyConfig, difficulty)
+    : {
+        // Fallback defaults mirror the 'normal' preset to keep tests/tools stable
+        initialCapital: 1_500_000,
+        itemPriceMultiplier: 1.0,
+        harvestPriceMultiplier: 1.0,
+        rentPerSqmStructurePerTick: 0.15,
+        rentPerSqmRoomPerTick: 0.3,
+      };
   const tickLengthMinutes = options.tickLengthMinutes ?? DEFAULT_TICK_LENGTH_MINUTES;
   const createdAt = new Date().toISOString();
   const idStream = context.rng.getStream(RNG_STREAM_IDS.ids);

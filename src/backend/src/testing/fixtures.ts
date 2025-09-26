@@ -251,6 +251,8 @@ export const createBlueprintRepositoryStub = (
     getDevicePrice: (id: string) => devicePrices.get(id),
     getStrainPrice: (id: string) => strainPrices.get(id),
     getUtilityPrices: () => ({ ...utilityPrices }),
+    listDevicePrices: () => Array.from(devicePrices.entries()),
+    listStrainPrices: () => Array.from(strainPrices.entries()),
   } satisfies Partial<BlueprintRepository>;
 
   return repo as unknown as BlueprintRepository;
@@ -273,6 +275,7 @@ export const createStateFactoryContext = (
   personnelDirectory: options.personnelDirectory,
   taskDefinitions: options.taskDefinitions,
   defaultStructureHeightMeters: options.defaultStructureHeightMeters,
+  difficultyConfig: options.difficultyConfig,
 });
 
 export const createDevicePriceMap = (

@@ -21,6 +21,7 @@ import {
 import { validateStructureGeometry } from '@/state/geometry.js';
 import { findStructure, findRoom, findZone, type ZoneLookupResult } from './stateSelectors.js';
 import { type RoomPurposeSource, resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
+import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 
 const DEFAULT_ZONE_RESERVOIR_LEVEL = 0.75;
 const DEFAULT_ZONE_WATER_LITERS = 800;
@@ -118,8 +119,9 @@ export interface WorldServiceOptions {
   state: GameState;
   rng: RngService;
   costAccounting: CostAccountingService;
-  structureBlueprints: StructureBlueprint[];
-  roomPurposeSource: RoomPurposeSource;
+  structureBlueprints?: StructureBlueprint[];
+  roomPurposeSource?: RoomPurposeSource;
+  difficultyConfig?: DifficultyConfig;
 }
 
 export class WorldService {
@@ -129,9 +131,11 @@ export class WorldService {
 
   private readonly costAccounting: CostAccountingService;
 
-  private readonly structureBlueprints: StructureBlueprint[];
+  private readonly structureBlueprints?: StructureBlueprint[];
 
-  private readonly roomPurposeSource: RoomPurposeSource;
+  private readonly roomPurposeSource?: RoomPurposeSource;
+
+  private readonly difficultyConfig?: DifficultyConfig;
 
   constructor(options: WorldServiceOptions) {
     this.state = options.state;
@@ -139,12 +143,13 @@ export class WorldService {
     this.idStream = options.rng.getStream('world.structures');
     this.structureBlueprints = options.structureBlueprints;
     this.roomPurposeSource = options.roomPurposeSource;
+    this.difficultyConfig = options.difficultyConfig;
   }
 
   getStructureBlueprints(): CommandResult<StructureBlueprint[]> {
     return {
       ok: true,
-      data: this.structureBlueprints,
+      data: this.structureBlueprints ?? [],
     } satisfies CommandResult<StructureBlueprint[]>;
   }
 
@@ -177,6 +182,11 @@ export class WorldService {
     structureId: string,
     context: CommandExecutionContext,
   ): CommandResult<DuplicateStructureResult> {
+    if (!this.structureBlueprints) {
+      return this.failure('ERR_INVALID_STATE', 'Structure blueprints are not available.', [
+        'world.rentStructure',
+      ]);
+    }
     const blueprint = this.structureBlueprints.find((s) => s.id === structureId);
     if (!blueprint) {
       return this.failure('ERR_NOT_FOUND', `Structure blueprint ${structureId} not found.`, [
@@ -295,6 +305,13 @@ export class WorldService {
     const structure = lookup.structure;
 
     // Resolve room purpose ID from name
+    if (!this.roomPurposeSource) {
+      return this.failure('ERR_INVALID_STATE', 'Room purpose registry is not configured.', [
+        'world.createRoom',
+        'room.purpose',
+      ]);
+    }
+
     let purposeId: string;
     try {
       purposeId = resolveRoomPurposeId(this.roomPurposeSource, room.purpose);
@@ -727,32 +744,19 @@ export class WorldService {
     this.state.personnel.trainingPrograms.length = 0;
     this.state.personnel.overallMorale = 0;
 
-    // Get economics from custom modifiers or default to difficulty preset
-    const DIFFICULTY_ECONOMICS = {
-      easy: {
-        initialCapital: 100_000_000,
-        itemPriceMultiplier: 0.9,
-        harvestPriceMultiplier: 1.1,
-        rentPerSqmStructurePerTick: 0.1,
-        rentPerSqmRoomPerTick: 0.2,
-      },
-      normal: {
-        initialCapital: 1_500_000,
-        itemPriceMultiplier: 1.0,
-        harvestPriceMultiplier: 1.0,
-        rentPerSqmStructurePerTick: 0.15,
-        rentPerSqmRoomPerTick: 0.3,
-      },
-      hard: {
-        initialCapital: 500_000,
-        itemPriceMultiplier: 1.1,
-        harvestPriceMultiplier: 0.9,
-        rentPerSqmStructurePerTick: 0.2,
-        rentPerSqmRoomPerTick: 0.4,
-      },
-    };
+    // Get economics from custom modifiers or default to difficulty preset from config
+    const presetEconomics = this.difficultyConfig
+      ? this.difficultyConfig[difficulty].modifiers.economics
+      : {
+          // Fallback mirrors 'normal' preset if config is unavailable
+          initialCapital: 1_500_000,
+          itemPriceMultiplier: 1.0,
+          harvestPriceMultiplier: 1.0,
+          rentPerSqmStructurePerTick: 0.15,
+          rentPerSqmRoomPerTick: 0.3,
+        };
 
-    const economics = customModifiers?.economics || DIFFICULTY_ECONOMICS[difficulty];
+    const economics = customModifiers?.economics || presetEconomics;
 
     // Update the game metadata with new difficulty and economics
     this.state.metadata.difficulty = difficulty;

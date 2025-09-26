@@ -152,10 +152,12 @@ export const startBackendServer = async (
   }
   const priceCatalog = createPriceCatalogFromRepository(repository);
   const costAccountingService = new CostAccountingService(priceCatalog);
+  const difficultyConfig = await loadDifficultyConfig(dataDirectory);
   const context: StateFactoryContext = {
     repository,
     rng,
     dataDirectory,
+    difficultyConfig,
   };
 
   const state = await createInitialState(context);
@@ -223,13 +225,13 @@ export const startBackendServer = async (
     loop,
   });
   const structureBlueprints = await loadStructureBlueprints(dataDirectory);
-  const difficultyConfig = await loadDifficultyConfig(dataDirectory);
   const worldService = new WorldService({
     state,
     rng,
     costAccounting: costAccountingService,
     structureBlueprints,
     roomPurposeSource: repository,
+    difficultyConfig,
   });
   const deviceGroupService = new DeviceGroupService({ state, rng });
   const plantingPlanService = new PlantingPlanService({ state, rng });
