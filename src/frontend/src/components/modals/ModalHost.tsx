@@ -952,6 +952,75 @@ const CreateZoneModal = ({
   );
 };
 
+const NewGameModal = ({
+  bridge,
+  closeModal,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+}) => {
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const enterDashboard = useNavigationStore((state) => state.enterDashboard);
+
+  const handleCreateNewGame = async () => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      // Stop the simulation if it's running
+      await bridge.sendControl({ action: 'pause' });
+
+      // Send the newGame intent to create an empty session
+      const response = await bridge.sendIntent({
+        domain: 'world',
+        action: 'newGame',
+        payload: {},
+      });
+
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Failed to create new game.');
+        return;
+      }
+
+      // Navigate to dashboard and close modal
+      enterDashboard();
+      closeModal();
+    } catch (error) {
+      console.error('Failed to create new game', error);
+      setFeedback('Connection error while creating new game.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-text-muted">
+        Create a completely empty simulation session with no structures or content. You'll start
+        with initial capital and resources, ready to build your cultivation operation from scratch.
+      </p>
+      <div className="grid gap-2 rounded-lg border border-border/40 bg-surface-muted/60 p-4">
+        <h4 className="text-sm font-semibold text-text">Empty Session Includes:</h4>
+        <ul className="text-xs text-text-muted space-y-1">
+          <li>• Initial capital based on difficulty setting</li>
+          <li>• Starting inventory (water, nutrients, CO₂, etc.)</li>
+          <li>• No structures - you'll need to rent them yourself</li>
+          <li>• Fresh simulation clock at tick 0</li>
+        </ul>
+      </div>
+      {feedback ? <Feedback message={feedback} /> : null}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleCreateNewGame}
+        confirmLabel={busy ? 'Creating…' : 'Create Empty Session'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
 const GameMenuModal = ({
   bridge,
   closeModal,
@@ -1066,12 +1135,7 @@ const modalRenderers: Record<
       <code>sim.restoreSnapshot</code> executes.
     </p>
   ),
-  newGame: () => (
-    <p className="text-sm text-text-muted">
-      Starting a new run clears the deterministic seed and provisions the quick start layout via{' '}
-      <code>world.createGame</code>.
-    </p>
-  ),
+  newGame: ({ bridge, closeModal }) => <NewGameModal bridge={bridge} closeModal={closeModal} />,
   notifications: () => (
     <p className="text-sm text-text-muted">
       Notification center groups events from <code>sim.*</code>, <code>world.*</code>, and{' '}

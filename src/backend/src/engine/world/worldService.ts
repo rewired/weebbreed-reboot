@@ -674,6 +674,79 @@ export class WorldService {
     return this.rentStructure(QUICKSTART_STRUCTURE_ID, context);
   }
 
+  newGame(context: CommandExecutionContext): CommandResult {
+    // Clear all existing structures
+    this.state.structures.length = 0;
+
+    // Clear all tasks as they reference structures
+    this.state.tasks.backlog.length = 0;
+    this.state.tasks.active.length = 0;
+    this.state.tasks.completed.length = 0;
+    this.state.tasks.cancelled.length = 0;
+
+    // Reset clock to initial state
+    this.state.clock.tick = 0;
+    this.state.clock.isPaused = true;
+    this.state.clock.lastUpdatedAt = new Date().toISOString();
+
+    // Clear notes
+    this.state.notes.length = 0;
+
+    // Reset personnel to initial state
+    this.state.personnel.employees.length = 0;
+    this.state.personnel.applicants.length = 0;
+    this.state.personnel.trainingPrograms.length = 0;
+    this.state.personnel.overallMorale = 0;
+
+    // Reset finances to initial state (preserve initial capital)
+    const initialCapital = this.state.metadata.economics.initialCapital;
+    this.state.finances.cashOnHand = initialCapital;
+    this.state.finances.reservedCash = 0;
+    this.state.finances.outstandingLoans.length = 0;
+    this.state.finances.ledger.length = 0;
+    this.state.finances.summary = {
+      totalRevenue: 0,
+      totalExpenses: 0,
+      totalPayroll: 0,
+      totalMaintenance: 0,
+      netIncome: 0,
+      lastTickRevenue: 0,
+      lastTickExpenses: 0,
+    };
+
+    // Reset inventory to initial levels
+    this.state.inventory.resources = {
+      waterLiters: 12_000,
+      nutrientsGrams: 8_000,
+      co2Kg: 40,
+      substrateKg: 2_000,
+      packagingUnits: 400,
+      sparePartsValue: 1_500,
+    };
+    this.state.inventory.seeds.length = 0;
+    this.state.inventory.devices.length = 0;
+    this.state.inventory.harvest.length = 0;
+    this.state.inventory.consumables = {
+      trimBins: 6,
+      gloves: 200,
+      filters: 12,
+      labels: 500,
+    };
+
+    // Add a note about the new game
+    this.state.notes.push({
+      id: this.createId('note'),
+      tick: 0,
+      message: 'New game started - empty session ready for building.',
+      level: 'info',
+    });
+
+    context.events.queue('world.newGame', {}, context.tick, 'info');
+
+    // Unlike resetSession, we DON'T rent any structures - leave it completely empty
+    return { ok: true } satisfies CommandResult;
+  }
+
   private cloneRoom(
     room: RoomState,
     structureId: string,
