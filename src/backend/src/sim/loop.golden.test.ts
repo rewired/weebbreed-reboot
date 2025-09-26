@@ -6,6 +6,7 @@ import { EventBus } from '@/lib/eventBus.js';
 import { RngService, RNG_STREAM_IDS, type RngStream } from '@/lib/rng.js';
 import { createInitialState } from '../stateFactory.js';
 import { SimulationLoop } from './loop.js';
+import { TICK_PHASES } from './tickPhases.js';
 import {
   createBlueprintRepositoryStub,
   createCultivationMethodBlueprint,
@@ -409,6 +410,9 @@ const runReferenceSimulation = async (): Promise<SimulationKpiSummary> => {
 
   for (let index = 0; index < totalTicks; index += 1) {
     const result = await loop.processTick();
+    if (index === 0) {
+      expect(Object.keys(result.phaseTimings)).toEqual([...TICK_PHASES]);
+    }
     const metrics = tickMetrics.get(result.tick);
     if (!metrics) {
       throw new Error(`Missing metrics for tick ${result.tick}`);

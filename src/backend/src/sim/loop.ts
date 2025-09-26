@@ -8,12 +8,6 @@ import {
   HarvestQualityService,
   type HarvestQualityOptions,
 } from '@/engine/harvest/harvestQualityService.js';
-import {
-  CostAccountingService,
-  type TickAccumulator,
-  type UtilityConsumption,
-} from '@/engine/economy/costAccounting.js';
-import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import type { GameState } from '@/state/models.js';
 import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
 import {
@@ -22,18 +16,20 @@ import {
   type EventCollector,
   type SimulationEvent,
 } from '@/lib/eventBus.js';
+import {
+  createAccountingProcessor,
+  type AccountingPhaseTools,
+  type AccountingProcessor,
+  type AccountingProcessorOptions,
+} from './accountingProcessor.js';
+import { defaultCommitPhase, type CommitPhaseHandler } from './commitPhase.js';
+import { TICK_PHASES, type TickPhase } from './tickPhases.js';
+import { createTickStateMachine } from './tickStateMachine.js';
 
-export const TICK_PHASES = [
-  'applyDevices',
-  'deriveEnvironment',
-  'irrigationAndNutrients',
-  'updatePlants',
-  'harvestAndInventory',
-  'accounting',
-  'commit',
-] as const;
-
-export type TickPhase = (typeof TICK_PHASES)[number];
+export type { AccountingPhaseTools } from './accountingProcessor.js';
+export type { AccountingProcessorOptions as SimulationLoopAccountingOptions } from './accountingProcessor.js';
+export { TICK_PHASES } from './tickPhases.js';
+export type { TickPhase } from './tickPhases.js';
 
 export interface PhaseTiming {
   startedAt: number;
@@ -57,11 +53,6 @@ export interface TickResult {
   phaseTimings: Record<TickPhase, PhaseTiming>;
 }
 
-export interface AccountingPhaseTools {
-  recordUtility(consumption: UtilityConsumption): void;
-  recordDevicePurchase(blueprintId: string, quantity: number, description?: string): void;
-}
-
 export interface SimulationPhaseContext {
   readonly state: GameState;
   readonly tick: number;
@@ -77,96 +68,16 @@ export type SimulationPhaseHandlers = Partial<Record<TickPhase, SimulationPhaseH
 
 type NonCommitPhase = Exclude<TickPhase, 'commit'>;
 
-type MachineState =
-  | { status: 'idle' }
-  | { status: 'running'; phaseIndex: number; tick: number }
-  | { status: 'completed'; tick: number }
-  | { status: 'failed'; tick?: number; error: unknown };
-
-const NOOP_PHASE: SimulationPhaseHandler = () => undefined;
-
-class TickStateMachine {
-  private state: MachineState = { status: 'idle' };
-
-  start(tick: number): void {
-    if (this.state.status === 'running') {
-      throw new Error('Cannot start a new tick while another tick is running.');
-    }
-    this.state = { status: 'running', phaseIndex: 0, tick };
-  }
-
-  currentPhase(): TickPhase {
-    if (this.state.status !== 'running') {
-      throw new Error('Tick state machine is not running.');
-    }
-    return TICK_PHASES[this.state.phaseIndex];
-  }
-
-  advance(): MachineState {
-    if (this.state.status !== 'running') {
-      throw new Error('Cannot advance tick state machine when it is not running.');
-    }
-    const nextIndex = this.state.phaseIndex + 1;
-    if (nextIndex >= TICK_PHASES.length) {
-      this.state = { status: 'completed', tick: this.state.tick };
-    } else {
-      this.state = { status: 'running', phaseIndex: nextIndex, tick: this.state.tick };
-    }
-    return this.state;
-  }
-
-  fail(error: unknown): void {
-    const tick =
-      this.state.status === 'running' || this.state.status === 'completed'
-        ? this.state.tick
-        : undefined;
-    this.state = { status: 'failed', tick, error };
-  }
-
-  isRunning(): boolean {
-    return this.state.status === 'running';
-  }
-
-  getState(): MachineState {
-    return this.state;
-  }
-
-  reset(): void {
-    this.state = { status: 'idle' };
-  }
-}
-
-export interface SimulationLoopAccountingOptions {
-  service?: CostAccountingService;
-  priceCatalog?: PriceCatalog;
-}
-
 export interface SimulationLoopOptions {
   state: GameState;
   eventBus?: EventBus;
   phases?: SimulationPhaseHandlers;
   environment?: ZoneEnvironmentOptions;
   harvestQuality?: HarvestQualityOptions;
-  accounting?: SimulationLoopAccountingOptions;
+  accounting?: AccountingProcessorOptions;
 }
 
-interface UtilityTotals {
-  energyKwh: number;
-  waterLiters: number;
-  nutrientsGrams: number;
-}
-
-interface PendingDevicePurchase {
-  blueprintId: string;
-  quantity: number;
-  description?: string;
-}
-
-interface AccountingRuntime {
-  accumulator: TickAccumulator;
-  utilities: UtilityTotals;
-  purchases: PendingDevicePurchase[];
-}
+const NOOP_PHASE: SimulationPhaseHandler = () => undefined;
 
 export class SimulationLoop {
   private readonly state: GameState;
@@ -179,17 +90,13 @@ export class SimulationLoop {
 
   private readonly harvestQualityService: HarvestQualityService;
 
-  private readonly costAccountingService?: CostAccountingService;
-
-  private readonly accountingTools: AccountingPhaseTools;
-
-  private accountingRuntime: AccountingRuntime | null = null;
+  private readonly accountingProcessor: AccountingProcessor;
 
   private readonly phaseHandlers: Record<NonCommitPhase, SimulationPhaseHandler>;
 
-  private readonly commitHook?: SimulationPhaseHandler;
+  private readonly commitPhase: CommitPhaseHandler;
 
-  private readonly machine = new TickStateMachine();
+  private readonly machine = createTickStateMachine();
 
   constructor(options: SimulationLoopOptions) {
     this.state = options.state;
@@ -197,26 +104,13 @@ export class SimulationLoop {
     const phases = options.phases ?? {};
     this.degradationService = new DeviceDegradationService();
     this.harvestQualityService = new HarvestQualityService(options.harvestQuality);
-    const accountingOptions = options.accounting ?? {};
-    if (accountingOptions.service) {
-      this.costAccountingService = accountingOptions.service;
-    } else if (accountingOptions.priceCatalog) {
-      this.costAccountingService = new CostAccountingService(accountingOptions.priceCatalog);
-    }
-    this.accountingTools = this.costAccountingService
-      ? {
-          recordUtility: (consumption: UtilityConsumption) =>
-            this.recordUtilityConsumption(consumption),
-          recordDevicePurchase: (blueprintId: string, quantity: number, description?: string) =>
-            this.recordDevicePurchase(blueprintId, quantity, description),
-        }
-      : {
-          recordUtility: () => undefined,
-          recordDevicePurchase: () => undefined,
-        };
+
+    this.accountingProcessor = createAccountingProcessor(options.accounting);
+
     if (!phases.applyDevices || !phases.deriveEnvironment) {
       this.environmentService = new ZoneEnvironmentService(options.environment);
     }
+
     const accountingHandler = phases.accounting ?? NOOP_PHASE;
     this.phaseHandlers = {
       applyDevices:
@@ -240,10 +134,22 @@ export class SimulationLoop {
       accounting: async (context) => {
         this.degradationService.process(context.state, context.tick, context.tickLengthMinutes);
         await accountingHandler(context);
-        this.processAccountingPhase(context);
+        this.accountingProcessor.finalize({
+          state: context.state,
+          tick: context.tick,
+          tickLengthMinutes: context.tickLengthMinutes,
+          events: context.events,
+        });
       },
     };
-    this.commitHook = phases.commit;
+
+    const commitHandler = phases.commit;
+    this.commitPhase = commitHandler
+      ? async (context, tick) => {
+          await commitHandler(context);
+          return defaultCommitPhase(context, tick);
+        }
+      : defaultCommitPhase;
   }
 
   async processTick(): Promise<TickResult> {
@@ -260,7 +166,7 @@ export class SimulationLoop {
     const timings: Partial<Record<TickPhase, PhaseTiming>> = {};
     let commitTimestamp: number | undefined;
 
-    this.accountingRuntime = this.costAccountingService ? this.createAccountingRuntime() : null;
+    this.accountingProcessor.beginTick();
     this.machine.start(tickNumber);
 
     try {
@@ -273,11 +179,11 @@ export class SimulationLoop {
           tickLengthMinutes,
           phase,
           events: collector,
-          accounting: this.accountingTools,
+          accounting: this.accountingProcessor.tools,
         };
 
         if (phase === 'commit') {
-          commitTimestamp = await this.executeCommit(context, tickNumber);
+          commitTimestamp = await this.commitPhase(context, tickNumber);
         } else {
           const handler = this.phaseHandlers[phase as NonCommitPhase];
           await handler(context);
@@ -296,7 +202,7 @@ export class SimulationLoop {
       this.machine.fail(error);
       throw error;
     } finally {
-      this.accountingRuntime = null;
+      this.accountingProcessor.reset();
     }
 
     const state = this.machine.getState();
@@ -352,153 +258,5 @@ export class SimulationLoop {
     this.eventBus.emit(tickCompletedEvent);
 
     return result;
-  }
-
-  private createAccountingRuntime(): AccountingRuntime {
-    if (!this.costAccountingService) {
-      throw new Error('Cost accounting service is not configured.');
-    }
-
-    return {
-      accumulator: this.costAccountingService.createAccumulator(),
-      utilities: {
-        energyKwh: 0,
-        waterLiters: 0,
-        nutrientsGrams: 0,
-      },
-      purchases: [],
-    };
-  }
-
-  private recordUtilityConsumption(consumption: UtilityConsumption): void {
-    if (!this.accountingRuntime || !consumption) {
-      return;
-    }
-
-    const utilities = this.accountingRuntime.utilities;
-    const addUtility = (value: number | undefined, key: keyof UtilityTotals) => {
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
-        return;
-      }
-      const sanitized = Math.max(value, 0);
-      if (sanitized <= 0) {
-        return;
-      }
-      utilities[key] += sanitized;
-    };
-
-    addUtility(consumption.energyKwh, 'energyKwh');
-    addUtility(consumption.waterLiters, 'waterLiters');
-    addUtility(consumption.nutrientsGrams, 'nutrientsGrams');
-  }
-
-  private recordDevicePurchase(blueprintId: string, quantity: number, description?: string): void {
-    if (!this.accountingRuntime || typeof blueprintId !== 'string' || blueprintId.length === 0) {
-      return;
-    }
-    if (!Number.isFinite(quantity) || quantity <= 0) {
-      return;
-    }
-
-    this.accountingRuntime.purchases.push({
-      blueprintId,
-      quantity,
-      description:
-        typeof description === 'string' && description.length > 0 ? description : undefined,
-    });
-  }
-
-  private processAccountingPhase(context: SimulationPhaseContext): void {
-    if (!this.costAccountingService || !this.accountingRuntime) {
-      return;
-    }
-
-    const timestamp = new Date().toISOString();
-    const runtime = this.accountingRuntime;
-    const tickLengthHours = Number.isFinite(context.tickLengthMinutes)
-      ? Math.max(context.tickLengthMinutes / 60, 0)
-      : 0;
-
-    const utilities = runtime.utilities;
-    if (utilities.energyKwh > 0 || utilities.waterLiters > 0 || utilities.nutrientsGrams > 0) {
-      this.costAccountingService.applyUtilityConsumption(
-        context.state,
-        utilities,
-        context.tick,
-        timestamp,
-        runtime.accumulator,
-        context.events,
-      );
-    }
-
-    for (const structure of context.state.structures) {
-      this.costAccountingService.applyStructureRent(
-        context.state,
-        structure,
-        context.tick,
-        timestamp,
-        tickLengthHours,
-        runtime.accumulator,
-        context.events,
-      );
-
-      for (const room of structure.rooms) {
-        for (const zone of room.zones) {
-          for (const device of zone.devices) {
-            this.costAccountingService.applyMaintenanceExpense(
-              context.state,
-              device,
-              context.tick,
-              timestamp,
-              tickLengthHours,
-              runtime.accumulator,
-              context.events,
-            );
-          }
-        }
-      }
-    }
-
-    for (const purchase of runtime.purchases) {
-      this.costAccountingService.recordDevicePurchase(
-        context.state,
-        purchase.blueprintId,
-        purchase.quantity,
-        context.tick,
-        timestamp,
-        runtime.accumulator,
-        context.events,
-        purchase.description,
-      );
-    }
-
-    this.costAccountingService.applyPayroll(
-      context.state,
-      context.tick,
-      timestamp,
-      runtime.accumulator,
-      context.events,
-    );
-
-    this.costAccountingService.finalizeTick(
-      context.state,
-      runtime.accumulator,
-      context.tick,
-      timestamp,
-      context.events,
-    );
-
-    this.accountingRuntime = null;
-  }
-
-  private async executeCommit(context: SimulationPhaseContext, tick: number): Promise<number> {
-    if (this.commitHook) {
-      await this.commitHook(context);
-    }
-
-    const commitTimestamp = Date.now();
-    context.state.clock.tick = tick;
-    context.state.clock.lastUpdatedAt = new Date(commitTimestamp).toISOString();
-    return commitTimestamp;
   }
 }

@@ -13,7 +13,9 @@ import type {
   ZoneResourceState,
   ZoneState,
 } from '@/state/models.js';
-import { SimulationLoop, TICK_PHASES, type SimulationPhaseContext } from './loop.js';
+import { SimulationLoop, type SimulationPhaseContext } from './loop.js';
+import { TICK_PHASES, type TickPhase } from './tickPhases.js';
+import { createTickStateMachine } from './tickStateMachine.js';
 
 const createGameState = (): GameState => {
   const createdAt = new Date().toISOString();
@@ -229,6 +231,45 @@ let repository: BlueprintRepository;
 beforeAll(async () => {
   repository = await loadTestRoomPurposes();
   growRoomPurposeId = resolveRoomPurposeId(repository, 'Grow Room');
+});
+
+describe('TickStateMachine', () => {
+  it('iterates phases in order and reports completion', () => {
+    const machine = createTickStateMachine();
+    machine.start(7);
+    const phases: TickPhase[] = [];
+
+    while (machine.isRunning()) {
+      phases.push(machine.currentPhase());
+      machine.advance();
+    }
+
+    expect(phases).toEqual(TICK_PHASES);
+    expect(machine.getState()).toEqual({ status: 'completed', tick: 7 });
+
+    machine.reset();
+    expect(machine.getState()).toEqual({ status: 'idle' });
+  });
+
+  it('guards against invalid transitions', () => {
+    const machine = createTickStateMachine();
+
+    expect(() => machine.currentPhase()).toThrow('Tick state machine is not running.');
+
+    machine.start(1);
+    expect(() => machine.start(2)).toThrow(
+      'Cannot start a new tick while another tick is running.',
+    );
+
+    while (machine.isRunning()) {
+      machine.advance();
+    }
+
+    expect(() => machine.advance()).toThrow(
+      'Cannot advance tick state machine when it is not running.',
+    );
+    machine.reset();
+  });
 });
 
 describe('SimulationLoop', () => {
