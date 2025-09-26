@@ -4,6 +4,7 @@ import { io as createClient, type Socket as ClientSocket } from 'socket.io-clien
 import { createUiStream } from '@runtime/eventBus.js';
 import { EventBus } from '@/lib/eventBus.js';
 import { SimulationFacade, type CommandResult } from '@/facade/index.js';
+import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 import type { GameState, SimulationEvent, TimeStatus } from '@/state/models.js';
 import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';
@@ -24,6 +25,69 @@ const METHOD_ID = '66666666-6666-6666-6666-666666666666';
 const STRAIN_ID = '77777777-7777-7777-7777-777777777777';
 const PLANTING_PLAN_ID = '88888888-8888-8888-8888-888888888888';
 const ROOM_PURPOSE_ID = '99999999-9999-9999-9999-999999999999';
+
+const TEST_DIFFICULTY_CONFIG: DifficultyConfig = {
+  easy: {
+    name: 'Easy',
+    description: 'Relaxed conditions for testing.',
+    modifiers: {
+      plantStress: {
+        optimalRangeMultiplier: 1.1,
+        stressAccumulationMultiplier: 0.9,
+      },
+      deviceFailure: {
+        mtbfMultiplier: 1.3,
+      },
+      economics: {
+        initialCapital: 2_000_000,
+        itemPriceMultiplier: 0.95,
+        harvestPriceMultiplier: 1.05,
+        rentPerSqmStructurePerTick: 0.12,
+        rentPerSqmRoomPerTick: 0.22,
+      },
+    },
+  },
+  normal: {
+    name: 'Normal',
+    description: 'Balanced baseline for scenarios.',
+    modifiers: {
+      plantStress: {
+        optimalRangeMultiplier: 1,
+        stressAccumulationMultiplier: 1,
+      },
+      deviceFailure: {
+        mtbfMultiplier: 1,
+      },
+      economics: {
+        initialCapital: 1_500_000,
+        itemPriceMultiplier: 1,
+        harvestPriceMultiplier: 1,
+        rentPerSqmStructurePerTick: 0.15,
+        rentPerSqmRoomPerTick: 0.3,
+      },
+    },
+  },
+  hard: {
+    name: 'Hard',
+    description: 'Challenging test conditions.',
+    modifiers: {
+      plantStress: {
+        optimalRangeMultiplier: 0.9,
+        stressAccumulationMultiplier: 1.2,
+      },
+      deviceFailure: {
+        mtbfMultiplier: 0.8,
+      },
+      economics: {
+        initialCapital: 1_000_000,
+        itemPriceMultiplier: 1.05,
+        harvestPriceMultiplier: 0.95,
+        rentPerSqmStructurePerTick: 0.18,
+        rentPerSqmRoomPerTick: 0.34,
+      },
+    },
+  },
+};
 
 const createPriceCatalog = (): PriceCatalog => ({
   devicePrices: new Map([
@@ -351,6 +415,9 @@ describe('SocketGateway facade intents integration', () => {
         togglePlantingPlan: (intent, context) =>
           plantingService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
       },
+      config: {
+        getDifficultyConfig: () => ({ ok: true, data: TEST_DIFFICULTY_CONFIG }),
+      },
     });
 
     const uiStream$ = createUiStream<{ structures: unknown } & unknown, TimeStatus>({
@@ -533,6 +600,12 @@ describe('SocketGateway facade intents integration', () => {
     expect(response.ok).toBe(true);
     expect(state.structures[0]!.rooms[0]!.zones[0]!.plantingPlan?.enabled).toBe(false);
     await expectDomainEvent('plant.plantingPlanToggled');
+  });
+
+  it('returns difficulty configuration via config intent', async () => {
+    const response = await emitIntent('config', 'getDifficultyConfig', {});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(TEST_DIFFICULTY_CONFIG);
   });
 
   it('applies zone setpoint updates via config.update', async () => {
