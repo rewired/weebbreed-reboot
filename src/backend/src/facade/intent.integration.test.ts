@@ -233,6 +233,48 @@ describe('SimulationFacade new intents', () => {
     });
   });
 
+  it('registers all intent domains with accessible handlers', async () => {
+    const domains = facade.listIntentDomains();
+    expect(domains).toEqual(
+      expect.arrayContaining([
+        'time',
+        'world',
+        'devices',
+        'plants',
+        'health',
+        'workforce',
+        'finance',
+        'config',
+      ]),
+    );
+    expect(facade.hasIntentDomain('time')).toBe(true);
+    for (const domain of [
+      'time',
+      'world',
+      'devices',
+      'plants',
+      'health',
+      'workforce',
+      'finance',
+      'config',
+    ]) {
+      const handler = facade.getIntentHandler(domain, 'listIntentDomains');
+      expect(handler).toBeUndefined();
+    }
+    const renameHandler = facade.getIntentHandler('world', 'renameStructure');
+    const deviceHandler = facade.getIntentHandler('devices', 'toggleDeviceGroup');
+    const startHandler = facade.getIntentHandler('time', 'start');
+    expect(typeof renameHandler).toBe('function');
+    expect(typeof deviceHandler).toBe('function');
+    expect(typeof startHandler).toBe('function');
+    const renameResult = await renameHandler?.({ structureId: STRUCTURE_ID, name: 'Omega' });
+    expect(renameResult?.ok).toBe(true);
+    const toggleResult = await deviceHandler?.({ zoneId: ZONE_ID, kind: 'Lamp', enabled: true });
+    expect(toggleResult?.ok).toBe(true);
+    const startResult = await startHandler?.({ gameSpeed: 1 });
+    expect(startResult?.ok).toBe(true);
+  });
+
   it('renames a structure and emits an event', async () => {
     const result = await facade.world.renameStructure({
       structureId: STRUCTURE_ID,
