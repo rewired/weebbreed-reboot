@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '../store';
+import { useAppStore, selectDeviceOptionsForZone, selectStrainOptionsForZone } from '../store';
 import type { DeviceSnapshot, PlantSnapshot, ZoneSnapshot } from '../types/simulation';
 import { BreedingStationPlaceholder } from './world-explorer/BreedingStationPlaceholder';
 import { RoomGrid, type RoomSummary } from './world-explorer/RoomGrid';
@@ -156,6 +156,20 @@ export const WorldExplorer = () => {
       plants: groupPlantsByZone(activeZone, plants),
     };
   }, [activeZone, devices, plants]);
+
+  const hasAvailableStrains = useAppStore((state) => {
+    if (!resolvedZone) {
+      return false;
+    }
+    return selectStrainOptionsForZone(resolvedZone.zone.id)(state).length > 0;
+  });
+
+  const hasCompatibleDevices = useAppStore((state) => {
+    if (!resolvedZone) {
+      return false;
+    }
+    return selectDeviceOptionsForZone(resolvedZone.zone.id)(state).length > 0;
+  });
 
   const siblingZoneIds = useMemo(() => {
     if (!activeRoom || isLabRoom) {
@@ -313,6 +327,8 @@ export const WorldExplorer = () => {
               zone={resolvedZone.zone}
               devices={resolvedZone.devices}
               plants={resolvedZone.plants}
+              hasAvailableStrains={hasAvailableStrains}
+              hasCompatibleDevices={hasCompatibleDevices}
               previousZoneId={previousZoneId}
               nextZoneId={nextZoneId}
               onSelectZone={(zoneId) => selectZone(zoneId)}

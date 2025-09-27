@@ -93,7 +93,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .navButton:hover,
@@ -173,7 +175,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .supplyButton:hover,
@@ -273,7 +277,9 @@
   align-items: center;
   gap: 0.4rem;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .harvestButton:hover,
@@ -284,6 +290,20 @@
 .deviceActionButton:focus-visible {
   background: rgba(96, 165, 250, 0.3);
   color: #bfdbfe;
+}
+
+.actionDisabled {
+  cursor: not-allowed;
+  background: rgba(148, 163, 184, 0.12);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: var(--wb-text-muted, #94a3b8);
+  opacity: 0.75;
+}
+
+.actionDisabled:hover,
+.actionDisabled:focus-visible {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--wb-text-muted, #94a3b8);
 }
 
 .toggleSwitch {
@@ -390,4 +410,12 @@
 
 .infoIcon {
   color: var(--wb-primary, #60a5fa);
+}
+
+.helperText {
+  margin: 0;
+  margin-top: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--wb-text-muted, #94a3b8);
+  line-height: 1.4;
 }
