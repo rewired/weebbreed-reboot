@@ -32,13 +32,15 @@ const loadChokidar = (): typeof import('chokidar') => {
   }
 
   try {
-    cachedChokidar = runtimeRequire('chokidar');
-    return cachedChokidar;
+    const chokidarModule = runtimeRequire('chokidar');
+    cachedChokidar = chokidarModule;
+    return chokidarModule;
   } catch (runtimeError) {
     try {
       const backendRequire = createRequire(new URL('../backend/package.json', import.meta.url));
-      cachedChokidar = backendRequire('chokidar');
-      return cachedChokidar;
+      const chokidarModule = backendRequire('chokidar');
+      cachedChokidar = chokidarModule;
+      return chokidarModule;
     } catch (backendError) {
       const cause = backendError instanceof Error ? backendError : runtimeError;
       throw new Error('Failed to load chokidar module.', { cause });
