@@ -1,5 +1,5 @@
 //import { useState } from 'react';
-import { DifficultyModifiers, MODIFIER_RANGES } from '../../types/difficulty';
+import { DifficultyModifiers, getModifierRange } from '../../types/difficulty';
 
 interface ModifierInputsProps {
   modifiers: DifficultyModifiers;
@@ -54,7 +54,7 @@ export const ModifierInputs = ({ modifiers, onChange }: ModifierInputsProps) => 
     step: number = 0.01,
   ) => {
     const value = modifiers[category][key] as number;
-    const [min, max] = MODIFIER_RANGES[category][key] as [number, number];
+    const [min, max] = getModifierRange(category, key);
 
     return (
       <div className="grid gap-1">
@@ -68,7 +68,9 @@ export const ModifierInputs = ({ modifiers, onChange }: ModifierInputsProps) => 
             max={max}
             step={step}
             value={value}
-            onChange={(e) => updateModifier(category, key, Number(e.target.value))}
+            onChange={(e) =>
+              updateModifier(category, key, Number(e.target.value) as DifficultyModifiers[T][K])
+            }
             className="flex-1 accent-primary"
           />
           <span className="text-xs font-mono text-text-muted min-w-16 text-right">

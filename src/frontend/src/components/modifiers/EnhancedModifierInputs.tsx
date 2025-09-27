@@ -1,4 +1,4 @@
-import { DifficultyModifiers, MODIFIER_RANGES } from '../../types/difficulty';
+import { DifficultyModifiers, getModifierRange } from '../../types/difficulty';
 
 interface EnhancedModifierInputsProps {
   modifiers: DifficultyModifiers;
@@ -33,13 +33,13 @@ export const EnhancedModifierInputs = ({ modifiers, onChange }: EnhancedModifier
     label: string,
   ) => {
     const value = modifiers[category][key] as number;
-    const [min, max] = MODIFIER_RANGES[category][key] as [number, number];
+    const [min, max] = getModifierRange(category, key);
 
     const handleChange = (input: string) => {
       const parsed = parseFloat(input);
       if (!isNaN(parsed)) {
         const clamped = Math.max(min, Math.min(max, parsed));
-        updateModifier(category, key, clamped);
+        updateModifier(category, key, clamped as DifficultyModifiers[T][K]);
       }
     };
 
@@ -86,7 +86,7 @@ export const EnhancedModifierInputs = ({ modifiers, onChange }: EnhancedModifier
     label: string,
   ) => {
     const value = modifiers[category][key] as number;
-    const [min, max] = MODIFIER_RANGES[category][key] as [number, number];
+    const [min, max] = getModifierRange(category, key);
 
     const handleChange = (input: string) => {
       // Remove commas and parse
@@ -94,7 +94,7 @@ export const EnhancedModifierInputs = ({ modifiers, onChange }: EnhancedModifier
       const parsed = parseFloat(cleanInput);
       if (!isNaN(parsed)) {
         const clamped = Math.max(min, Math.min(max, parsed));
-        updateModifier(category, key, clamped);
+        updateModifier(category, key, clamped as DifficultyModifiers[T][K]);
       }
     };
 
