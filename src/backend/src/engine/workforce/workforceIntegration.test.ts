@@ -265,7 +265,7 @@ describe('workforce integration', () => {
     expect(currentTask.assignment?.employeeId).toBe('emp-night');
     expect(state.personnel.employees.find((emp) => emp.id === 'emp-day')?.status).toBe('offShift');
     expect(state.personnel.employees.find((emp) => emp.id === 'emp-night')?.currentTaskId).toBe(
-      activeTask?.id,
+      currentTask.id,
     );
     expect(state.tasks.backlog).toHaveLength(0);
   });

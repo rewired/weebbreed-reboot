@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   unused config overrides, routing weighted picks through the Mulberry32 RNG,
   and enforcing blacklist lookups with `Set<string>` to keep deterministic name
   generation aligned with the shipped configuration.
+- Corrected the workforce shift handover integration test to assert the night
+  shift technician remains assigned to the active maintenance task after the
+  handover.
 - Aligned the personnel refresh button with the shared button primitive by
   removing the unsupported `lg` size option and matching the default variant
   to the primitive configuration.
