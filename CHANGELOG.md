@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Clarified simulation constant authoring guidance in `AGENTS.md` and `/docs/constants/physiology.md`, pointing to the forthcoming ADR on constant stewardship.
+- Clarified simulation constant authoring guidance in `AGENTS.md` and `/docs/constants/physiology.md`, pointing to ADR 0009 on constant stewardship.
 - Refactored the simulation loop to delegate tick-state orchestration and accounting flows to dedicated modules with updated tests safeguarding the phase order.
 - Centralized shared plant physiology coefficients (Magnus, canopy conductance, photon conversions) in `@/constants/physiology` and documented the module.
 - Consolidated plant growth defaults (light/CO₂ saturation, VPD tolerances, health alerts, yield multipliers) into `@/constants/plants` and documented the tuning guide for designers.
@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Documented simulation constant governance in [ADR 0009](docs/system/adr/0009-simulation-constants-governance.md) and cross-linked the constants catalogue.
 - **Dynamic Structure Blueprint Loading**: The "Rent Structure" modal now dynamically loads available structure blueprints from the backend instead of using hardcoded frontend data. The backend exposes structure blueprints from `/data/blueprints/structures/*.json` through a new `getStructureBlueprints` facade intent. This ensures the frontend always displays the most current and accurate structure options available in the game.
 
 - **Enhanced Seed Generation System**: Implemented sophisticated seed generation for the New Game view based on `/reports/start_new_game-changes.md`. Features include:

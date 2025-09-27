@@ -1,6 +1,9 @@
 # Plant Physiology Constants
 
-> Authoring guidance: Define these constants in the shared backend modules under `src/backend/src/constants/` with concise JSDoc and reference this catalogue when editing. All contributions follow the forthcoming ADR on simulation constant stewardship (pending publication) to keep engine and documentation aligned.
+> See [ADR 0009](../system/adr/0009-simulation-constants-governance.md) for the
+> stewardship policy that governs these constants and their documentation. Define
+> each constant in `src/backend/src/constants/` with concise JSDoc that mirrors
+> this catalogue when editing.
 
 ## Vapor Pressure & VPD
 

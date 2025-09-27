@@ -286,6 +286,14 @@
     - ## Alternatives Considered
     - ## Rollback Plan
 
+- docs/system/adr/0009-simulation-constants-governance.md
+  - # ADR 0009 — Simulation Constant Governance & Documentation Loop
+    - ## Context
+    - ## Decision
+    - ## Scope
+    - ## Consequences
+    - ## References
+
 - docs/system/audit.md
   - # Simulation Audit Runner
     - ## Running an audit

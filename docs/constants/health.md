@@ -1,5 +1,8 @@
 # Plant Health Constants
 
+> See [ADR 0009](../system/adr/0009-simulation-constants-governance.md) for the
+> stewardship policy that governs these constants and their documentation.
+
 ## Detection Thresholds
 
 `DISEASE_DETECTION_THRESHOLD = 0.18`

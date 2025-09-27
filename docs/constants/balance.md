@@ -1,5 +1,8 @@
 # Game Balance Constants
 
+> See [ADR 0009](../system/adr/0009-simulation-constants-governance.md) for the
+> stewardship policy that governs these constants and their documentation.
+
 ## Human Resources & Employee Morale
 
 `SEVERANCE_PAY_DAYS = 7`
