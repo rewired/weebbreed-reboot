@@ -20,6 +20,22 @@ const DEFAULT_DOMAIN_MAX_BATCH_SIZE = 25;
 const DEFAULT_DOMAIN_EVENT_PATTERN =
   /^(plant|device|zone|market|finance|env|pest|disease|task|hr|world|health)\./;
 
+type DomainEventNamespace =
+  | 'plant'
+  | 'device'
+  | 'zone'
+  | 'market'
+  | 'finance'
+  | 'env'
+  | 'pest'
+  | 'disease'
+  | 'task'
+  | 'hr'
+  | 'world'
+  | 'health';
+
+export type DomainEventChannel = `${DomainEventNamespace}.${string}`;
+
 export type UiDomainEvent = Pick<
   SimulationEvent,
   'id' | 'type' | 'payload' | 'tick' | 'ts' | 'level' | 'tags'
@@ -60,15 +76,48 @@ export interface UiDomainEventsMessage<Event extends UiDomainEvent = UiDomainEve
   events: Event[];
 }
 
+export type UiSimulationUpdatePacket<Snapshot extends { tick: number }, TimeStatus> = {
+  channel: 'simulationUpdate';
+  payload: UiSimulationUpdateMessage<Snapshot, TimeStatus>;
+};
+
+export type UiSimulationTickPacket<Event extends UiDomainEvent = UiDomainEvent> = {
+  channel: 'sim.tickCompleted';
+  payload: UiSimulationTickEvent<Event>;
+};
+
+export type UiDomainEventsPacket<Event extends UiDomainEvent = UiDomainEvent> = {
+  channel: 'domainEvents';
+  payload: UiDomainEventsMessage<Event>;
+};
+
+export type UiDomainFanoutPacket<Event extends UiDomainEvent = UiDomainEvent> = {
+  channel: DomainEventChannel;
+  payload: Event['payload'] | null;
+};
+
 export type UiStreamPacket<
   Snapshot extends { tick: number },
   TimeStatus,
   Event extends UiDomainEvent = UiDomainEvent,
 > =
-  | { channel: 'simulationUpdate'; payload: UiSimulationUpdateMessage<Snapshot, TimeStatus, Event> }
-  | { channel: 'sim.tickCompleted'; payload: UiSimulationTickEvent<Event> }
-  | { channel: 'domainEvents'; payload: UiDomainEventsMessage<Event> }
-  | { channel: string; payload: unknown };
+  | UiSimulationUpdatePacket<Snapshot, TimeStatus>
+  | UiSimulationTickPacket<Event>
+  | UiDomainEventsPacket<Event>
+  | UiDomainFanoutPacket<Event>;
+
+type UiStreamKnownChannel = 'simulationUpdate' | 'sim.tickCompleted' | 'domainEvents';
+
+const isUiStreamPacketOfChannel = <
+  Snapshot extends { tick: number },
+  TimeStatus,
+  Event extends UiDomainEvent,
+  Channel extends UiStreamKnownChannel,
+>(
+  packet: UiStreamPacket<Snapshot, TimeStatus, Event>,
+  channel: Channel,
+): packet is Extract<UiStreamPacket<Snapshot, TimeStatus, Event>, { channel: Channel }> =>
+  packet.channel === channel;
 
 export interface UiStreamOptions<Snapshot extends { tick: number }, TimeStatus> {
   snapshotProvider: () => Snapshot;
@@ -106,14 +155,25 @@ const logUiStreamPacket = <
 
   const context: Record<string, unknown> = { channel: packet.channel };
 
-  if (packet.channel === 'simulationUpdate') {
+  if (isUiStreamPacketOfChannel(packet, 'simulationUpdate')) {
     context.batchSize = packet.payload.updates.length;
     context.latestTick = packet.payload.updates.at(-1)?.tick;
-  } else if (packet.channel === 'sim.tickCompleted') {
+  } else if (isUiStreamPacketOfChannel(packet, 'sim.tickCompleted')) {
     context.tick = packet.payload.tick;
     context.eventCount = packet.payload.events.length;
-  } else if (packet.channel === 'domainEvents') {
+  } else if (isUiStreamPacketOfChannel(packet, 'domainEvents')) {
     context.batchSize = packet.payload.events.length;
+  } else {
+    const { payload } = packet;
+    if (payload === null) {
+      context.payload = null;
+    } else if (payload === undefined) {
+      context.payload = undefined;
+    } else if (typeof payload === 'object') {
+      context.payloadKeys = Object.keys(payload as Record<string, unknown>);
+    } else {
+      context.payload = payload;
+    }
   }
 
   telemetryLogger.debug(context, 'UI stream packet dispatched');
@@ -196,7 +256,7 @@ export const createUiStream = <Snapshot extends { tick: number }, TimeStatus>(
         ({
           channel: 'simulationUpdate',
           payload: { updates } satisfies UiSimulationUpdateMessage<Snapshot, TimeStatus>,
-        }) as const,
+        }) satisfies UiSimulationUpdatePacket<Snapshot, TimeStatus>,
     ),
   );
 
@@ -206,7 +266,7 @@ export const createUiStream = <Snapshot extends { tick: number }, TimeStatus>(
         ({
           channel: 'sim.tickCompleted',
           payload: processed.tickEvent satisfies UiSimulationTickEvent,
-        }) as const,
+        }) satisfies UiSimulationTickPacket,
     ),
   );
 
@@ -225,12 +285,18 @@ export const createUiStream = <Snapshot extends { tick: number }, TimeStatus>(
         ({
           channel: 'domainEvents',
           payload: { events } satisfies UiDomainEventsMessage,
-        }) as const,
+        }) satisfies UiDomainEventsPacket,
     ),
   );
 
   const domainFanout$ = domainEventsSource$.pipe(
-    map((event) => ({ channel: event.type, payload: event.payload ?? null }) as const),
+    map(
+      (event) =>
+        ({
+          channel: event.type as DomainEventChannel,
+          payload: event.payload ?? null,
+        }) satisfies UiDomainFanoutPacket,
+    ),
   );
 
   return merge(simulationUpdates$, tickEvents$, domainBatches$, domainFanout$).pipe(
