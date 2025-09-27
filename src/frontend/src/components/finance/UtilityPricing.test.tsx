@@ -63,9 +63,9 @@ describe('UtilityPricing component', () => {
   it('renders current utility prices from the snapshot', () => {
     render(<UtilityPricing bridge={bridge} />);
 
-    expect(screen.getByText('€0.150')).toBeInTheDocument();
-    expect(screen.getByText('€0.020')).toBeInTheDocument();
-    expect(screen.getByText('€0.100')).toBeInTheDocument();
+    expect(screen.getByText('€0.15')).toBeInTheDocument();
+    expect(screen.getByText('€0.02')).toBeInTheDocument();
+    expect(screen.getByText('€0.10')).toBeInTheDocument();
   });
 
   it('sends converted payload on save and shows success message', async () => {
