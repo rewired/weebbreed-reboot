@@ -3,6 +3,7 @@ import type {
   DeviceBlueprint,
   DeviceRoomPurposeCompatibility,
 } from '@/data/schemas/deviceSchema.js';
+import type { CultivationMethodBlueprint } from '@/data/schemas/cultivationMethodSchema.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 
 export interface BlueprintCatalogStrainDto {
@@ -37,12 +38,24 @@ export interface BlueprintCatalogDeviceDto {
   settings: DeviceSettingsSummary;
 }
 
+export interface BlueprintCatalogCultivationMethodDto {
+  id: string;
+  name: string;
+  areaPerPlant: number;
+  minimumSpacing: number;
+  strainTraitCompatibility?: CultivationMethodBlueprint['strainTraitCompatibility'];
+}
+
 export interface BlueprintCatalogDto {
   strains: BlueprintCatalogStrainDto[];
   devices: BlueprintCatalogDeviceDto[];
+  cultivationMethods: BlueprintCatalogCultivationMethodDto[];
 }
 
-export type BlueprintCatalogSource = Pick<BlueprintRepository, 'listStrains' | 'listDevices'>;
+export type BlueprintCatalogSource = Pick<
+  BlueprintRepository,
+  'listStrains' | 'listDevices' | 'listCultivationMethods'
+>;
 
 const normaliseCompatibility = (
   value: DeviceRoomPurposeCompatibility,
@@ -82,6 +95,25 @@ const mapDevice = (blueprint: DeviceBlueprint): BlueprintCatalogDeviceDto => ({
   settings: createDeviceSettingsSummary(blueprint),
 });
 
+const mapCultivationMethod = (
+  blueprint: CultivationMethodBlueprint,
+): BlueprintCatalogCultivationMethodDto => ({
+  id: blueprint.id,
+  name: blueprint.name,
+  areaPerPlant: blueprint.areaPerPlant,
+  minimumSpacing: blueprint.minimumSpacing,
+  strainTraitCompatibility: blueprint.strainTraitCompatibility
+    ? {
+        preferred: blueprint.strainTraitCompatibility.preferred
+          ? { ...blueprint.strainTraitCompatibility.preferred }
+          : undefined,
+        conflicting: blueprint.strainTraitCompatibility.conflicting
+          ? { ...blueprint.strainTraitCompatibility.conflicting }
+          : undefined,
+      }
+    : undefined,
+});
+
 const mapStrain = (blueprint: StrainBlueprint): BlueprintCatalogStrainDto => ({
   id: blueprint.id,
   slug: blueprint.slug,
@@ -106,9 +138,11 @@ const mapStrain = (blueprint: StrainBlueprint): BlueprintCatalogStrainDto => ({
 export const createBlueprintCatalog = (source: BlueprintCatalogSource): BlueprintCatalogDto => {
   const strains = source.listStrains().map(mapStrain);
   const devices = source.listDevices().map(mapDevice);
+  const cultivationMethods = source.listCultivationMethods().map(mapCultivationMethod);
   return {
     strains,
     devices,
+    cultivationMethods,
   };
 };
 

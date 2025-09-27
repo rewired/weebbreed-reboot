@@ -241,7 +241,7 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
   zones: {},
   devices: {},
   plants: {},
-  blueprintCatalog: { strains: {}, devices: {} },
+  blueprintCatalog: { strains: {}, devices: {}, cultivationMethods: {} },
   events: [],
   timeline: [],
   lastSetpoints: {},
@@ -293,6 +293,9 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
       const nextCatalog: BlueprintCatalogState = {
         strains: catalog.strains ? indexById(catalog.strains) : state.blueprintCatalog.strains,
         devices: catalog.devices ? indexById(catalog.devices) : state.blueprintCatalog.devices,
+        cultivationMethods: catalog.cultivationMethods
+          ? indexById(catalog.cultivationMethods)
+          : state.blueprintCatalog.cultivationMethods,
       };
 
       return { blueprintCatalog: nextCatalog };
@@ -321,7 +324,7 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
       zones: {},
       devices: {},
       plants: {},
-      blueprintCatalog: { strains: {}, devices: {} },
+      blueprintCatalog: { strains: {}, devices: {}, cultivationMethods: {} },
       events: [],
       timeline: [],
       lastTickCompleted: undefined,

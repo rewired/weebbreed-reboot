@@ -1,4 +1,4 @@
-import type { AppStoreState, DeviceOption } from './types';
+import type { AppStoreState, CultivationMethodOption, DeviceOption, StrainOption } from './types';
 
 export const selectFinanceSummary = (state: AppStoreState) => state.financeSummary;
 
@@ -106,6 +106,120 @@ export const selectDeviceOptionsForZone = (zoneId: string) => (state: AppStoreSt
   return devices.filter((device) => matchesRoomPurpose(purposeKind, device.compatibility));
 };
 
+const traitValueForKey = (strain: StrainOption, key: string): number | undefined => {
+  return key.split('.').reduce<unknown>((current, segment) => {
+    if (typeof current !== 'object' || current === null) {
+      return undefined;
+    }
+    return (current as Record<string, unknown>)[segment];
+  }, strain) as number | undefined;
+};
+
+const matchesPreferredTraits = (
+  strain: StrainOption,
+  compatibility: CultivationMethodOption['strainTraitCompatibility'],
+): boolean => {
+  if (!compatibility?.preferred) {
+    return true;
+  }
+
+  return Object.entries(compatibility.preferred).every(([key, threshold]) => {
+    const value = traitValueForKey(strain, key);
+    if (value === undefined) {
+      return true;
+    }
+    if (typeof threshold.min === 'number' && value < threshold.min) {
+      return false;
+    }
+    if (typeof threshold.max === 'number' && value > threshold.max) {
+      return false;
+    }
+    return true;
+  });
+};
+
+const violatesConflictingTraits = (
+  strain: StrainOption,
+  compatibility: CultivationMethodOption['strainTraitCompatibility'],
+): boolean => {
+  if (!compatibility?.conflicting) {
+    return false;
+  }
+
+  return Object.entries(compatibility.conflicting).some(([key, threshold]) => {
+    const value = traitValueForKey(strain, key);
+    if (value === undefined) {
+      return false;
+    }
+    if (typeof threshold.min === 'number' && value >= threshold.min) {
+      return true;
+    }
+    if (typeof threshold.max === 'number' && value <= threshold.max) {
+      return true;
+    }
+    return false;
+  });
+};
+
+const filterStrainsForMethod = (
+  strains: StrainOption[],
+  method: CultivationMethodOption | undefined,
+): StrainOption[] => {
+  if (!method) {
+    return strains;
+  }
+
+  return strains.filter((strain) => {
+    if (violatesConflictingTraits(strain, method.strainTraitCompatibility)) {
+      return false;
+    }
+    return matchesPreferredTraits(strain, method.strainTraitCompatibility);
+  });
+};
+
+export const selectStrainOptionsForZone = (zoneId: string) => (state: AppStoreState) => {
+  const zone = state.zones[zoneId];
+  if (!zone) {
+    return Object.values(state.blueprintCatalog.strains);
+  }
+
+  const strains = Object.values(state.blueprintCatalog.strains);
+  const method = zone.cultivationMethodId
+    ? state.blueprintCatalog.cultivationMethods[zone.cultivationMethodId]
+    : undefined;
+
+  return filterStrainsForMethod(strains, method);
+};
+
 export const selectStrainOptions = (state: AppStoreState) => {
   return Object.values(state.blueprintCatalog.strains);
+};
+
+export const selectRecommendedPlantCount = (zoneId: string) => (state: AppStoreState) => {
+  const zone = state.zones[zoneId];
+  if (!zone) {
+    return undefined;
+  }
+
+  const method = zone.cultivationMethodId
+    ? state.blueprintCatalog.cultivationMethods[zone.cultivationMethodId]
+    : undefined;
+
+  if (method && typeof zone.area === 'number' && method.areaPerPlant > 0) {
+    const recommended = Math.round(zone.area / method.areaPerPlant);
+    if (Number.isFinite(recommended) && recommended > 0) {
+      return recommended;
+    }
+  }
+
+  if (zone.plantingPlan?.count) {
+    return zone.plantingPlan.count;
+  }
+
+  const livePlantCount = zone.plants?.length;
+  if (typeof livePlantCount === 'number' && livePlantCount > 0) {
+    return livePlantCount;
+  }
+
+  return undefined;
 };

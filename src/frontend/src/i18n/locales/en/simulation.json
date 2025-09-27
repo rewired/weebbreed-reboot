@@ -307,10 +307,12 @@
     "apply": "Apply",
     "close": "Close",
     "defaultTitle": "Simulation action",
-    "deviceBlueprint": "Device blueprint ID",
+    "deviceBlueprint": "Select device",
     "deviceName": "Device name",
     "deviceSettings": "Device settings (JSON)",
+    "deviceSettingsOptional": "Optional. Leave blank to use blueprint defaults.",
     "strainId": "Strain ID",
+    "selectStrain": "Select strain",
     "plantCount": "Plant count",
     "defaultStrain": "Default strain ID",
     "planCount": "Default plant count",
@@ -347,6 +349,9 @@
     "assignStructureTitle": "Assign {{name}} to a structure",
     "terminateEmployeeTitle": "Terminate {{name}}",
     "recordSaleTitle": "Record sale",
-    "utilityPriceTitle": "Adjust utility pricing"
+    "utilityPriceTitle": "Adjust utility pricing",
+    "noCompatibleDevices": "No compatible devices for this zone.",
+    "noStrainsAvailable": "No compatible strains for this zone.",
+    "recommendedPlantCount": "Recommended: {{count}} plants"
   }
 }

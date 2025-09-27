@@ -13,6 +13,7 @@ import { useAppStore } from '../store';
 import type { ConnectionStatus } from '../store';
 import type {
   BlueprintCatalogPayload,
+  CultivationMethodOption,
   DeviceOption,
   FinanceTickEntry,
   StrainOption,
@@ -322,6 +323,10 @@ export const useSimulationBridge = (
 
       if (Array.isArray(catalog.devices)) {
         nextCatalog.devices = catalog.devices as DeviceOption[];
+      }
+
+      if (Array.isArray(catalog.cultivationMethods)) {
+        nextCatalog.cultivationMethods = catalog.cultivationMethods as CultivationMethodOption[];
       }
 
       ingestBlueprintCatalog(nextCatalog);
