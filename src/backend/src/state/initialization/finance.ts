@@ -32,6 +32,7 @@ export const createFinanceState = (
   repository: BlueprintRepository,
   idStream: RngStream,
 ): FinanceState => {
+  const utilityPrices = repository.getUtilityPrices();
   const ledgerEntries: LedgerEntry[] = [];
   const addEntry = (
     entry: Omit<LedgerEntry, 'id' | 'tick' | 'timestamp'> & { tick?: number; timestamp?: string },
@@ -94,6 +95,11 @@ export const createFinanceState = (
     outstandingLoans: [],
     ledger: ledgerEntries,
     summary,
+    utilityPrices: {
+      pricePerKwh: utilityPrices.pricePerKwh,
+      pricePerLiterWater: utilityPrices.pricePerLiterWater,
+      pricePerGramNutrients: utilityPrices.pricePerGramNutrients,
+    },
   };
 };
 

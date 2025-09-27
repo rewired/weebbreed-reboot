@@ -161,6 +161,11 @@ const createBaseState = (): GameState => {
         lastTickRevenue: 0,
         lastTickExpenses: 0,
       },
+      utilityPrices: {
+        pricePerKwh: 0.1,
+        pricePerLiterWater: 0.01,
+        pricePerGramNutrients: 0.05,
+      },
     },
     personnel: {
       employees: [],
@@ -294,7 +299,7 @@ describe('WorkforceEngine', () => {
       efficiency: 1,
       runtimeHours: 100,
       maintenance: {
-        lastServiceTick: 0,
+        lastServiceTick: -10,
         nextDueTick: 1,
         condition: 0.4,
         runtimeHoursAtLastService: 0,

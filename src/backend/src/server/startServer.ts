@@ -5,14 +5,20 @@ import { createServer, type Server } from 'node:http';
 import process from 'node:process';
 
 import { createUiStream, eventBus as telemetryEventBus } from '@runtime/eventBus.js';
-import { logger } from '@runtime/logger.js';
+import { logger, type Logger } from '@runtime/logger.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import { createPriceCatalogFromRepository } from '@/engine/economy/catalog.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { DataLoadSummary } from '@/data/dataLoader.js';
 import { buildSimulationSnapshot } from '@/lib/uiSnapshot.js';
 import { RngService, getRegisteredRngStreamIds } from '@/lib/rng.js';
-import { SimulationFacade, type TimeStatus } from '@/facade/index.js';
+import {
+  SimulationFacade,
+  type TimeStatus,
+  type SetUtilityPricesIntent,
+  type CommandResult,
+  type CommandExecutionContext,
+} from '@/facade/index.js';
 import { SocketGateway } from '@/server/socketGateway.js';
 import { SseGateway } from '@/server/sseGateway.js';
 import { bootstrap } from '@/bootstrap.js';
@@ -21,7 +27,7 @@ import {
   loadPersonnelDirectory,
   type StateFactoryContext,
 } from '@/stateFactory.js';
-import type { PersonnelNameDirectory } from '@/state/models.js';
+import type { GameState, PersonnelNameDirectory } from '@/state/models.js';
 import { provisionPersonnelDirectory } from '@/state/initialization/personnelProvisioner.js';
 import { SimulationLoop, type SimulationPhaseHandler } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
@@ -29,6 +35,7 @@ import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { JobMarketService } from '@/engine/workforce/jobMarketService.js';
+import type { UtilityPrices } from '@/data/schemas/index.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';
@@ -83,6 +90,82 @@ const formatTimeStatus = (status: TimeStatus | undefined): string => {
     return 'unknown status';
   }
   return `running=${status.running} paused=${status.paused} tick=${status.tick}`;
+};
+
+interface UtilityPriceUpdateHandlerOptions {
+  state: GameState;
+  repository: BlueprintRepository;
+  costAccounting: CostAccountingService;
+  logger: Logger;
+}
+
+const sanitizePrice = (value: number | undefined, fallback: number): number => {
+  if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value) || value < 0) {
+    return fallback;
+  }
+  return value;
+};
+
+const convertWaterCostPerLiter = (value: number | undefined, fallback: number): number => {
+  if (value === undefined) {
+    return fallback;
+  }
+  return sanitizePrice(value / 1000, fallback);
+};
+
+const convertNutrientCostPerGram = (value: number | undefined, fallback: number): number => {
+  if (value === undefined) {
+    return fallback;
+  }
+  return sanitizePrice(value / 1000, fallback);
+};
+
+export const createUtilityPriceUpdateHandler = ({
+  state,
+  repository,
+  costAccounting,
+  logger,
+}: UtilityPriceUpdateHandlerOptions) => {
+  return (
+    intent: SetUtilityPricesIntent,
+    context: CommandExecutionContext,
+  ): CommandResult<{ utilityPrices: UtilityPrices }> => {
+    const basePrices = state.finances.utilityPrices ?? repository.getUtilityPrices();
+    const updated: UtilityPrices = {
+      pricePerKwh: sanitizePrice(intent.electricityCostPerKWh, basePrices.pricePerKwh),
+      pricePerLiterWater: convertWaterCostPerLiter(
+        intent.waterCostPerM3,
+        basePrices.pricePerLiterWater,
+      ),
+      pricePerGramNutrients: convertNutrientCostPerGram(
+        intent.nutrientsCostPerKg,
+        basePrices.pricePerGramNutrients,
+      ),
+    };
+
+    state.finances.utilityPrices = { ...updated };
+
+    const catalog = createPriceCatalogFromRepository(repository);
+    catalog.utilityPrices = { ...updated };
+    costAccounting.updatePriceCatalog(catalog);
+
+    context.events.queue(
+      'finance.utilityPricesUpdated',
+      { utilityPrices: { ...updated } },
+      context.tick,
+      'info',
+    );
+
+    logger.info(
+      {
+        tick: context.tick,
+        utilityPrices: updated,
+      },
+      'Utility prices updated.',
+    );
+
+    return { ok: true, data: { utilityPrices: { ...updated } } };
+  };
 };
 
 export interface StartServerOptions {
@@ -163,6 +246,11 @@ export const startBackendServer = async (
   const state = await createInitialState(context);
   serverLogger.info('Initial game state created.');
 
+  costAccountingService.updatePriceCatalog({
+    ...priceCatalog,
+    utilityPrices: { ...state.finances.utilityPrices },
+  });
+
   let personnelDirectory: PersonnelNameDirectory | undefined;
   try {
     personnelDirectory = await loadPersonnelDirectory(dataDirectory);
@@ -190,6 +278,10 @@ export const startBackendServer = async (
     await hotReloadManager.start();
     hotReloadManager.onReloadCommitted((result) => {
       const updatedCatalog = createPriceCatalogFromRepository(repository);
+      const override = state.finances.utilityPrices;
+      if (override) {
+        updatedCatalog.utilityPrices = { ...override };
+      }
       costAccountingService.updatePriceCatalog(updatedCatalog);
       serverLogger.info(
         {
@@ -273,6 +365,14 @@ export const startBackendServer = async (
     workforce: {
       refreshCandidates: (intent, serviceContext) =>
         jobMarketService.refreshCandidates(intent, serviceContext),
+    },
+    finance: {
+      setUtilityPrices: createUtilityPriceUpdateHandler({
+        state,
+        repository,
+        costAccounting: costAccountingService,
+        logger: serverLogger,
+      }),
     },
   });
 

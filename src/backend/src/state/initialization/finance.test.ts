@@ -46,6 +46,7 @@ describe('state/initialization/finance', () => {
 
     expect(state.cashOnHand).toBeLessThan(economics.initialCapital);
     expect(state.summary.totalExpenses).toBeGreaterThan(0);
+    expect(state.utilityPrices).toEqual(repository.getUtilityPrices());
   });
 
   it('throws a missing price error when installed devices lack price entries', () => {

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { z } from 'zod';
 
 import { readJsonFile } from './initialization/common.js';
+import type { UtilityPrices } from '@/data/schemas/index.js';
 
 export type { CultivationMethodBlueprint } from '@/data/schemas/cultivationMethodSchema.js';
 export type { DeviceBlueprint } from '@/data/schemas/deviceSchema.js';
@@ -430,6 +431,7 @@ export interface FinanceState {
   outstandingLoans: LoanState[];
   ledger: LedgerEntry[];
   summary: FinancialSummary;
+  utilityPrices: UtilityPrices;
 }
 
 export type SkillName = string;

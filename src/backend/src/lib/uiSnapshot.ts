@@ -150,6 +150,11 @@ export interface FinanceSummarySnapshot {
   netIncome: number;
   lastTickRevenue: number;
   lastTickExpenses: number;
+  utilityPrices?: {
+    pricePerKwh?: number;
+    pricePerLiterWater?: number;
+    pricePerGramNutrients?: number;
+  };
 }
 
 export interface SimulationClockSnapshot {
@@ -428,6 +433,29 @@ export const buildSimulationSnapshot = (
     netIncome: state.finances.summary.netIncome,
     lastTickRevenue: state.finances.summary.lastTickRevenue,
     lastTickExpenses: state.finances.summary.lastTickExpenses,
+    utilityPrices: (() => {
+      const prices = state.finances.utilityPrices;
+      if (!prices) {
+        return undefined;
+      }
+      const pricePerKwh = toFiniteNumber(prices.pricePerKwh);
+      const pricePerLiterWater = toFiniteNumber(prices.pricePerLiterWater);
+      const pricePerGramNutrients = toFiniteNumber(prices.pricePerGramNutrients);
+      if (
+        pricePerKwh === undefined &&
+        pricePerLiterWater === undefined &&
+        pricePerGramNutrients === undefined
+      ) {
+        return undefined;
+      }
+      return {
+        pricePerKwh: pricePerKwh !== undefined ? Math.max(0, pricePerKwh) : undefined,
+        pricePerLiterWater:
+          pricePerLiterWater !== undefined ? Math.max(0, pricePerLiterWater) : undefined,
+        pricePerGramNutrients:
+          pricePerGramNutrients !== undefined ? Math.max(0, pricePerGramNutrients) : undefined,
+      };
+    })(),
   };
 
   return {
