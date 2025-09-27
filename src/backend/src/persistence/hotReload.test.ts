@@ -15,16 +15,22 @@ class FakeRepository {
     | null = null;
   public errorHandler: ((error: unknown) => void) | null = null;
   public staged: DataLoadResult | null = null;
+  public pendingNotifier: ((promise: Promise<void>) => void) | null = null;
 
   async onHotReload(
     handler: (payload: DataLoadResult) => void | Promise<void>,
-    options?: { onHotReloadError?: (error: unknown) => void },
+    options?: {
+      onHotReloadError?: (error: unknown) => void;
+      onReloadPending?: (promise: Promise<void>) => void;
+    },
   ): Promise<() => Promise<void>> {
     this.handler = handler;
     this.errorHandler = options?.onHotReloadError ?? null;
+    this.pendingNotifier = options?.onReloadPending ?? null;
     return async () => {
       this.handler = null;
       this.errorHandler = null;
+      this.pendingNotifier = null;
     };
   }
 
@@ -42,7 +48,11 @@ class FakeRepository {
   }
 
   async triggerReload(result: DataLoadResult): Promise<void> {
-    this.staged = result;
+    const staging = (async () => {
+      this.staged = result;
+    })();
+    this.pendingNotifier?.(staging);
+    await staging;
     const disposition = (await this.handler?.(result)) ?? ('commit' as HotReloadDisposition);
     if (disposition !== 'defer' && this.staged) {
       this.commitReload();

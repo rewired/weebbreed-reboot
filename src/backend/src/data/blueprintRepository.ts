@@ -12,6 +12,7 @@ export type HotReloadErrorHandler = (error: unknown) => void;
 
 export interface BlueprintRepositoryOptions {
   onHotReloadError?: HotReloadErrorHandler;
+  onReloadPending?: (promise: Promise<void>) => void;
 }
 
 export class BlueprintRepository {
@@ -129,7 +130,9 @@ export class BlueprintRepository {
       }
       reloading = true;
       try {
-        const result = await this.reload();
+        const reloadPromise = this.reload();
+        options.onReloadPending?.(reloadPromise.then(() => undefined));
+        const result = await reloadPromise;
         const disposition = await handler(result);
         if (disposition !== 'defer' && this.stagedResult) {
           this.commitReload();
