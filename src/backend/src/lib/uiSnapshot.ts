@@ -5,6 +5,7 @@ import {
   type DeviceInstanceState,
   type EmployeeState,
   type GameState,
+  type LedgerEntry,
   type PlantState,
   type StructureState,
   type ZoneControlState,
@@ -155,6 +156,15 @@ export interface FinanceSummarySnapshot {
     pricePerLiterWater?: number;
     pricePerGramNutrients?: number;
   };
+  ledger?: FinanceLedgerEntrySnapshot[];
+}
+
+export interface FinanceLedgerEntrySnapshot {
+  type: LedgerEntry['type'];
+  category: LedgerEntry['category'];
+  amount: number;
+  tick: number;
+  description: string;
 }
 
 export interface SimulationClockSnapshot {
@@ -425,6 +435,35 @@ export const buildSimulationSnapshot = (
     overallMorale: state.personnel.overallMorale,
   };
 
+  const ledger: FinanceLedgerEntrySnapshot[] | undefined = (() => {
+    const source = state.finances.ledger;
+    if (!Array.isArray(source) || source.length === 0) {
+      return undefined;
+    }
+
+    const compact = source
+      .slice(Math.max(0, source.length - 50))
+      .map((entry): FinanceLedgerEntrySnapshot | undefined => {
+        const amount = toFiniteNumber(entry.amount);
+        const tickValue = toFiniteNumber(entry.tick);
+        if (amount === undefined || tickValue === undefined) {
+          return undefined;
+        }
+        const description = typeof entry.description === 'string' ? entry.description.trim() : '';
+
+        return {
+          type: entry.type,
+          category: entry.category,
+          amount,
+          tick: Math.max(0, Math.trunc(tickValue)),
+          description: description.length > 0 ? description : entry.category,
+        } satisfies FinanceLedgerEntrySnapshot;
+      })
+      .filter((value): value is FinanceLedgerEntrySnapshot => value !== undefined);
+
+    return compact.length > 0 ? compact : undefined;
+  })();
+
   const finance: FinanceSummarySnapshot = {
     cashOnHand: state.finances.cashOnHand,
     reservedCash: state.finances.reservedCash,
@@ -456,6 +495,7 @@ export const buildSimulationSnapshot = (
           pricePerGramNutrients !== undefined ? Math.max(0, pricePerGramNutrients) : undefined,
       };
     })(),
+    ledger,
   };
 
   return {

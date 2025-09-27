@@ -190,6 +190,29 @@ export interface PersonnelSnapshot {
   overallMorale: number;
 }
 
+export type FinanceLedgerEntryType = 'income' | 'expense';
+
+export type FinanceLedgerCategory =
+  | 'capital'
+  | 'structure'
+  | 'device'
+  | 'inventory'
+  | 'rent'
+  | 'utilities'
+  | 'payroll'
+  | 'maintenance'
+  | 'sales'
+  | 'loan'
+  | 'other';
+
+export interface FinanceLedgerEntrySnapshot {
+  type: FinanceLedgerEntryType;
+  category: FinanceLedgerCategory;
+  amount: number;
+  tick: number;
+  description: string;
+}
+
 export interface FinanceSummarySnapshot {
   cashOnHand: number;
   reservedCash: number;
@@ -203,6 +226,7 @@ export interface FinanceSummarySnapshot {
     pricePerLiterWater?: number;
     pricePerGramNutrients?: number;
   };
+  ledger?: FinanceLedgerEntrySnapshot[];
 }
 
 export interface SimulationSnapshot {

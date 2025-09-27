@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Exposed a compact 50-entry finance ledger in the simulation snapshot and
+  taught the frontend store plus revenue/expense breakdowns to hydrate from the
+  live data instead of placeholder totals.
 - Shortened the default simulation tick length to 5 minutes (down from 60),
   exposing shared timekeeping constants for the scheduler/state factory and
   updating documentation to reflect the faster cadence.
