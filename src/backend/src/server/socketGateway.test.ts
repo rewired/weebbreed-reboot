@@ -20,6 +20,7 @@ import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
 import { resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { BlueprintCatalogDto } from '@/lib/blueprintCatalog.js';
 
 const waitFor = async (predicate: () => boolean, timeoutMs = 1000): Promise<void> => {
   const start = Date.now();
@@ -72,6 +73,7 @@ describe('SocketGateway uiStream integration', () => {
   let uiStream$: Subject<UiStreamPacket<SimulationSnapshot, TimeStatus>>;
   let subscribeSpy: ReturnType<typeof vi.spyOn>;
   let handshake: SimulationUpdatePayload | undefined;
+  let catalogHandshake: BlueprintCatalogDto | undefined;
 
   beforeEach(async () => {
     server = createServer();
@@ -89,6 +91,7 @@ describe('SocketGateway uiStream integration', () => {
       httpServer: server,
       facade,
       roomPurposeSource: roomPurposeRepository,
+      blueprintCatalogSource: roomPurposeRepository,
       uiStream$,
     });
     client = createClient(`http://127.0.0.1:${port}`, {
@@ -98,8 +101,12 @@ describe('SocketGateway uiStream integration', () => {
     const handshakePromise = new Promise<SimulationUpdatePayload>((resolve) => {
       client.once('simulationUpdate', (payload) => resolve(payload));
     });
+    const catalogPromise = new Promise<BlueprintCatalogDto>((resolve) => {
+      client.once('catalog.blueprints', (payload) => resolve(payload));
+    });
     await new Promise<void>((resolve) => client.on('connect', () => resolve()));
     handshake = await handshakePromise;
+    catalogHandshake = await catalogPromise;
   });
 
   afterEach(async () => {
@@ -112,6 +119,7 @@ describe('SocketGateway uiStream integration', () => {
 
   it('subscribes to uiStream$ and forwards batched packets', async () => {
     expect(handshake).toBeDefined();
+    expect(catalogHandshake).toBeDefined();
     expect(subscribeSpy).toHaveBeenCalledTimes(1);
 
     const baseSnapshot: SimulationSnapshot = {
@@ -182,6 +190,20 @@ describe('SocketGateway uiStream integration', () => {
     const receivedDomain = await domainPromise;
     expect(receivedDomain).toHaveLength(2);
     expect(receivedDomain[0]).toMatchObject({ type: 'device.degraded' });
+  });
+
+  it('broadcasts blueprint catalog on demand', async () => {
+    expect(catalogHandshake).toBeDefined();
+
+    const catalogUpdate = new Promise<BlueprintCatalogDto>((resolve) => {
+      client.once('catalog.blueprints', (payload) => resolve(payload));
+    });
+
+    gateway.broadcastBlueprintCatalog();
+
+    const payload = await catalogUpdate;
+    expect(payload.devices.length).toBeGreaterThan(0);
+    expect(payload.strains.length).toBeGreaterThan(0);
   });
 });
 
@@ -571,6 +593,7 @@ describe('SocketGateway', () => {
       simulationBatchIntervalMs: 30,
       domainBatchIntervalMs: 30,
       roomPurposeSource: roomPurposeRepository,
+      blueprintCatalogSource: roomPurposeRepository,
       eventBus: facadeStub.eventBus,
     });
     client = createClient(`http://127.0.0.1:${port}`, {

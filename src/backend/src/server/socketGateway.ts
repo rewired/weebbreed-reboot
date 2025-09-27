@@ -21,6 +21,11 @@ import {
 } from '@runtime/eventBus.js';
 import { buildSimulationSnapshot, type SimulationSnapshot } from '@/lib/uiSnapshot.js';
 import { logger } from '@runtime/logger.js';
+import {
+  createBlueprintCatalog,
+  type BlueprintCatalogDto,
+  type BlueprintCatalogSource,
+} from '@/lib/blueprintCatalog.js';
 
 export type { SimulationSnapshot } from '@/lib/uiSnapshot.js';
 
@@ -164,6 +169,7 @@ export interface SocketGatewayOptions {
   domainBatchIntervalMs?: number;
   domainBatchMaxSize?: number;
   roomPurposeSource: RoomPurposeSource;
+  blueprintCatalogSource: BlueprintCatalogSource;
   eventBus?: EventBus;
   uiStream$?: Observable<UiStreamPacket<SimulationSnapshot, TimeStatus>>;
 }
@@ -177,6 +183,8 @@ export class SocketGateway {
 
   private readonly roomPurposeSource: RoomPurposeSource;
 
+  private readonly blueprintCatalogSource: BlueprintCatalogSource;
+
   private readonly uiSubscription: Subscription;
 
   private disposed = false;
@@ -184,6 +192,7 @@ export class SocketGateway {
   constructor(options: SocketGatewayOptions) {
     this.facade = options.facade;
     this.roomPurposeSource = options.roomPurposeSource;
+    this.blueprintCatalogSource = options.blueprintCatalogSource;
 
     const simulationBatchInterval =
       options.simulationBatchIntervalMs ?? DEFAULT_SIMULATION_BATCH_INTERVAL_MS;
@@ -253,6 +262,7 @@ export class SocketGateway {
         } satisfies SimulationUpdateEntry,
       ],
     } satisfies SimulationUpdateMessage);
+    socket.emit('catalog.blueprints', this.buildBlueprintCatalog());
 
     socket.on('simulationControl', (payload, ack) =>
       this.handleSimulationControl(socket, payload, ack as AckCallback<TimeStatus> | undefined),
@@ -263,6 +273,14 @@ export class SocketGateway {
     socket.on('facade.intent', (payload, ack) =>
       this.handleFacadeIntent(socket, payload, ack as AckCallback<unknown> | undefined),
     );
+  }
+
+  broadcastBlueprintCatalog(): void {
+    if (this.disposed) {
+      return;
+    }
+    const catalog = this.buildBlueprintCatalog();
+    this.io.emit('catalog.blueprints', catalog);
   }
 
   private forwardUiPacket(packet: UiStreamPacket<SimulationSnapshot, TimeStatus>): void {
@@ -565,5 +583,9 @@ export class SocketGateway {
     }
     const candidate = (payload as { requestId?: unknown }).requestId;
     return typeof candidate === 'string' ? candidate : undefined;
+  }
+
+  private buildBlueprintCatalog(): BlueprintCatalogDto {
+    return createBlueprintCatalog(this.blueprintCatalogSource);
   }
 }

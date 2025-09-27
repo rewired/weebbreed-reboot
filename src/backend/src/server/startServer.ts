@@ -129,20 +129,6 @@ export const startBackendServer = async (
   const enableHotReload = process.env.NODE_ENV !== 'production';
   if (enableHotReload) {
     await hotReloadManager.start();
-    hotReloadManager.onReloadCommitted((result) => {
-      const updatedCatalog = createPriceCatalogFromRepository(repository);
-      costAccountingService.updatePriceCatalog(updatedCatalog);
-      serverLogger.info(
-        {
-          tick: state.clock.tick,
-          dataReload: {
-            loadedFiles: result.summary.loadedFiles,
-            issues: result.summary.issues.length,
-          },
-        },
-        'Blueprint repository hot-reload committed.',
-      );
-    });
   } else {
     serverLogger.info('Blueprint hot-reload disabled in production mode.');
   }
@@ -168,6 +154,7 @@ export const startBackendServer = async (
     httpServer,
     facade,
     roomPurposeSource: repository,
+    blueprintCatalogSource: repository,
     uiStream$,
   });
   const sseGateway = new SseGateway({
@@ -176,6 +163,26 @@ export const startBackendServer = async (
     roomPurposeSource: repository,
     uiStream$,
   });
+
+  socketGateway.broadcastBlueprintCatalog();
+
+  if (enableHotReload) {
+    hotReloadManager.onReloadCommitted((result) => {
+      const updatedCatalog = createPriceCatalogFromRepository(repository);
+      costAccountingService.updatePriceCatalog(updatedCatalog);
+      socketGateway.broadcastBlueprintCatalog();
+      serverLogger.info(
+        {
+          tick: state.clock.tick,
+          dataReload: {
+            loadedFiles: result.summary.loadedFiles,
+            issues: result.summary.issues.length,
+          },
+        },
+        'Blueprint repository hot-reload committed.',
+      );
+    });
+  }
 
   const port = resolvePort(options.port ?? process.env.WEEBBREED_BACKEND_PORT);
   await startHttpServer(httpServer, port);
