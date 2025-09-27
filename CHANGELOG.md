@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Extended cultivation method labor modelling by accepting optional
+  `laborProfile.hoursPerPlantPerWeek` in blueprints and teaching the
+  compatibility service to honor the value while retaining safe defaults.
 - Clarified simulation constant authoring guidance in `AGENTS.md` and `/docs/constants/physiology.md`, pointing to ADR 0009 on constant stewardship.
 - Refactored the simulation loop to delegate tick-state orchestration and accounting flows to dedicated modules with updated tests safeguarding the phase order.
 - Centralized shared plant physiology coefficients (Magnus, canopy conductance, photon conversions) in `@/constants/physiology` and documented the module.

@@ -143,7 +143,7 @@ export class MethodCompatibilityService {
     strain: EnhancedStrainBlueprint,
     method: CultivationMethodBlueprint,
   ): { score: number; details: { methodHours: number; strainTolerance: number } } {
-    const methodHours = method.laborProfile?.hoursPerPlantPerWeek || 0.5;
+    const methodHours = this.resolveMethodLaborHours(method);
 
     // Estimate strain labor tolerance based on resilience and method affinity
     const strainResilience = strain.generalResilience || 0.7;
@@ -172,6 +172,20 @@ export class MethodCompatibilityService {
         strainTolerance,
       },
     };
+  }
+
+  private resolveMethodLaborHours(method: CultivationMethodBlueprint): number {
+    const profileHours = method.laborProfile?.hoursPerPlantPerWeek;
+    if (typeof profileHours === 'number' && Number.isFinite(profileHours)) {
+      return Math.max(0, profileHours);
+    }
+
+    const intensity = method.laborIntensity;
+    if (typeof intensity === 'number' && Number.isFinite(intensity)) {
+      return Math.max(0.5, intensity);
+    }
+
+    return 0.5;
   }
 
   /**

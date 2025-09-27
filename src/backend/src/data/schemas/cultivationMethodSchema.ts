@@ -61,6 +61,12 @@ export const cultivationMethodSchema = z
         canopyHeight_m: z.number().positive(),
       })
       .optional(),
+    laborProfile: z
+      .object({
+        hoursPerPlantPerWeek: z.number().nonnegative(),
+      })
+      .passthrough()
+      .optional(),
     idealConditions: z
       .object({
         idealTemperature: rangeTuple.optional(),
