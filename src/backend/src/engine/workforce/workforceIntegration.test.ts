@@ -257,10 +257,19 @@ describe('workforce integration', () => {
 
     expect(state.tasks.active).toHaveLength(1);
     const activeTask = state.tasks.active[0];
-    expect(activeTask?.assignment?.employeeId).toBe('emp-night');
+    expect(activeTask).toBeDefined();
+    if (!activeTask) {
+      throw new Error('Expected active task to be defined');
+    }
+    expect(activeTask.assignment?.employeeId).toBe('emp-night');
     expect(state.personnel.employees.find((emp) => emp.id === 'emp-day')?.status).toBe('offShift');
+    const activeTaskForCurrentTaskCheck = state.tasks.active[0];
+    expect(activeTaskForCurrentTaskCheck).toBeDefined();
+    if (!activeTaskForCurrentTaskCheck) {
+      throw new Error('Expected active task for current task check to be defined');
+    }
     expect(state.personnel.employees.find((emp) => emp.id === 'emp-night')?.currentTaskId).toBe(
-      activeTask?.id,
+      activeTaskForCurrentTaskCheck.id,
     );
     expect(state.tasks.backlog).toHaveLength(0);
   });
