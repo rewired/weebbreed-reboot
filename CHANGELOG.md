@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Typed strain growth model harvest index and temperature metadata, wiring the
+  schema defaults into the plant model and refreshing strain blueprints with
+  curated coefficients for Q10, reference temperature, and flowering harvest
+  targets.
 - Extended cultivation method labor modelling by accepting optional
   `laborProfile.hoursPerPlantPerWeek` in blueprints and teaching the
   compatibility service to honor the value while retaining safe defaults.

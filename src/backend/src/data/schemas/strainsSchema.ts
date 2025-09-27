@@ -76,6 +76,24 @@ const yieldModelSchema = z
   })
   .passthrough();
 
+const harvestIndexSchema = z
+  .object({
+    targetFlowering: z.number().min(0).max(1).optional(),
+    targetVegetation: z.number().min(0).max(1).optional(),
+    targetRipening: z.number().min(0).max(1).optional(),
+    targetHarvestReady: z.number().min(0).max(1).optional(),
+  })
+  .passthrough();
+
+const temperatureResponseSchema = z
+  .object({
+    Q10: z.number().positive().optional(),
+    T_ref_C: z.number().optional(),
+    min_C: z.number().optional(),
+    max_C: z.number().optional(),
+  })
+  .passthrough();
+
 export const strainSchema = z
   .object({
     id: z.string().uuid(),
@@ -120,6 +138,8 @@ export const strainSchema = z
         maxBiomassDry: z.number(),
         baseLightUseEfficiency: z.number(),
         maintenanceFracPerDay: z.number(),
+        harvestIndex: harvestIndexSchema.optional(),
+        temperature: temperatureResponseSchema.optional(),
       })
       .passthrough(),
     noise: z

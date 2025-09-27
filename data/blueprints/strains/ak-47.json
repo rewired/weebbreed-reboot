@@ -78,15 +78,17 @@
       "flowering": 0.2
     },
     "harvestIndex": {
-      "targetFlowering": 0.7
+      "targetFlowering": 0.69
     },
     "phaseCapMultiplier": {
       "vegetation": 0.5,
       "flowering": 1.0
     },
     "temperature": {
-      "Q10": 2.0,
-      "T_ref_C": 25
+      "Q10": 2.05,
+      "T_ref_C": 26,
+      "min_C": 23,
+      "max_C": 27
     }
   },
   "noise": {
