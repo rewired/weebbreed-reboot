@@ -253,13 +253,16 @@ describe('workforce integration', () => {
 
     advanceTicks(engine, state, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17], collector);
     expect(state.tasks.active).toHaveLength(1);
-    expect(state.tasks.active[0]?.assignment?.employeeId).toBe('emp-day');
+    let [currentTask] = state.tasks.active;
+    if (!currentTask) throw new Error('Expected maintenance task to be active');
+    expect(currentTask.assignment?.employeeId).toBe('emp-day');
 
     engine.processTick(state, 18, 60, collector);
 
     expect(state.tasks.active).toHaveLength(1);
-    const activeTask = state.tasks.active[0];
-    expect(activeTask?.assignment?.employeeId).toBe('emp-night');
+    [currentTask] = state.tasks.active;
+    if (!currentTask) throw new Error('Expected maintenance task to remain active');
+    expect(currentTask.assignment?.employeeId).toBe('emp-night');
     expect(state.personnel.employees.find((emp) => emp.id === 'emp-day')?.status).toBe('offShift');
     expect(state.personnel.employees.find((emp) => emp.id === 'emp-night')?.currentTaskId).toBe(
       activeTask?.id,
@@ -299,7 +302,8 @@ describe('workforce integration', () => {
 
     advanceTicks(engine, state, [6, 7, 8, 9, 10, 11, 12, 13, 14, 15], collector);
 
-    const updatedTech = state.personnel.employees[0];
+    const [updatedTech] = state.personnel.employees;
+    if (!updatedTech) throw new Error('Expected technician to remain in personnel roster');
     expect(updatedTech.currentTaskId).toBe('task-maintain_device');
     expect(updatedTech.hoursWorkedToday).toBeCloseTo(10, 5);
     expect(updatedTech.overtimeHours).toBeCloseTo(2, 5);
@@ -345,10 +349,13 @@ describe('workforce integration', () => {
     engine.processTick(state, 19, 60, collector);
 
     expect(state.tasks.active).toHaveLength(1);
-    const harvestTask = state.tasks.active[0];
+    const [harvestTask] = state.tasks.active;
+    if (!harvestTask) throw new Error('Expected harvest task to be active');
     expect(harvestTask.assignment?.employeeId).toBe('emp-harvest');
-    expect(state.personnel.employees[0].status).toBe('assigned');
-    expect(state.personnel.employees[0].currentTaskId).toBe(harvestTask.id);
+    const [harvestEmployee] = state.personnel.employees;
+    if (!harvestEmployee) throw new Error('Expected harvester to remain employed');
+    expect(harvestEmployee.status).toBe('assigned');
+    expect(harvestEmployee.currentTaskId).toBe(harvestTask.id);
     expect(state.tasks.backlog).toHaveLength(0);
   });
 });

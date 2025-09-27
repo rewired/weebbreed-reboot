@@ -261,7 +261,9 @@ describe('AssignmentService', () => {
     });
 
     expect(state.tasks.active).toHaveLength(1);
-    expect(state.tasks.active[0]?.assignment?.employeeId).toBe('skilled');
+    const [activeTask] = state.tasks.active;
+    if (!activeTask) throw new Error('Expected active task to be assigned');
+    expect(activeTask.assignment?.employeeId).toBe('skilled');
     expect(skilled.status).toBe('assigned');
     expect(novice.status).toBe('idle');
   });

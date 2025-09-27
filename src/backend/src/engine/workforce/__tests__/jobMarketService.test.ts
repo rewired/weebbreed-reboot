@@ -204,10 +204,14 @@ describe('JobMarketService', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain('seed=test-seed-0');
     expect(state.personnel.applicants).toHaveLength(2);
-    expect(state.personnel.applicants[0].name).toBe('Jamie Hammond');
-    expect(state.personnel.applicants[0].personalSeed).toBe('alpha');
-    expect(state.personnel.applicants[0].gender).toBe('male');
-    expect(state.personnel.applicants[1]?.gender).toBe('female');
+    const [firstApplicant, secondApplicant] = state.personnel.applicants;
+    if (!firstApplicant || !secondApplicant) {
+      throw new Error('Expected two applicants to be generated');
+    }
+    expect(firstApplicant.name).toBe('Jamie Hammond');
+    expect(firstApplicant.personalSeed).toBe('alpha');
+    expect(firstApplicant.gender).toBe('male');
+    expect(secondApplicant.gender).toBe('female');
     expect(result.data?.source).toBe('remote');
     expect(context.events.size).toBe(1);
   });
@@ -238,9 +242,13 @@ describe('JobMarketService', () => {
     expect(result.ok).toBe(true);
     expect(result.data?.source).toBe('local');
     expect(state.personnel.applicants).toHaveLength(3);
-    expect(state.personnel.applicants[0]?.personalSeed).toBe('alpha');
-    expect(state.personnel.applicants[1]?.personalSeed).toBe('beta');
-    expect(state.personnel.applicants[2]?.personalSeed?.startsWith('offline-')).toBe(true);
+    const [firstOffline, secondOffline, thirdOffline] = state.personnel.applicants;
+    if (!firstOffline || !secondOffline || !thirdOffline) {
+      throw new Error('Expected three offline-generated applicants');
+    }
+    expect(firstOffline.personalSeed).toBe('alpha');
+    expect(secondOffline.personalSeed).toBe('beta');
+    expect(thirdOffline.personalSeed?.startsWith('offline-')).toBe(true);
     const expectedGenders = state.personnel.applicants.map((applicant) => {
       expect(applicant.personalSeed).toBeDefined();
       return deriveGender(applicant.personalSeed!, diversityProbability);
@@ -288,7 +296,8 @@ describe('JobMarketService', () => {
 
       expect(result.ok).toBe(true);
       expect(state.personnel.applicants).not.toHaveLength(0);
-      const applicant = state.personnel.applicants[0];
+      const [applicant] = state.personnel.applicants;
+      if (!applicant) throw new Error('Expected at least one applicant from fallback generation');
       const skillNames = getEmployeeSkillNames();
       expect(skillNames).toEqual(
         expect.arrayContaining([
@@ -548,7 +557,9 @@ describe('JobMarketService', () => {
     await commitHook(firstContext);
     state.clock.tick = 1;
     expect(state.personnel.applicants).toHaveLength(1);
-    expect(state.personnel.applicants[0].gender).toBe('other');
+    const [firstRefreshApplicant] = state.personnel.applicants;
+    if (!firstRefreshApplicant) throw new Error('Expected applicant after first refresh');
+    expect(firstRefreshApplicant.gender).toBe('other');
     expect(firstBuffer).toHaveLength(1);
 
     const secondBuffer: unknown[] = [];
@@ -580,14 +591,22 @@ describe('JobMarketService', () => {
     const firstContext = createCommandContext(state);
     const firstResult = await service.refreshCandidates({}, firstContext);
     expect(firstResult.ok).toBe(true);
-    expect(state.personnel.applicants[0]?.personalSeed).toBe('alpha');
-    expect(state.personnel.applicants[1]?.personalSeed).toBe('beta');
+    const [firstSeed, secondSeed] = state.personnel.applicants;
+    if (!firstSeed || !secondSeed) {
+      throw new Error('Expected two applicants after first offline refresh');
+    }
+    expect(firstSeed.personalSeed).toBe('alpha');
+    expect(secondSeed.personalSeed).toBe('beta');
 
     const secondContext = createCommandContext(state);
     const secondResult = await service.refreshCandidates({}, secondContext);
     expect(secondResult.ok).toBe(true);
-    expect(state.personnel.applicants[0]?.personalSeed).toBe('gamma');
-    expect(state.personnel.applicants[1]?.personalSeed).toBe('delta');
+    const [thirdSeed, fourthSeed] = state.personnel.applicants;
+    if (!thirdSeed || !fourthSeed) {
+      throw new Error('Expected two applicants after second offline refresh');
+    }
+    expect(thirdSeed.personalSeed).toBe('gamma');
+    expect(fourthSeed.personalSeed).toBe('delta');
   });
 
   it('respects blueprint salary and skill configuration when tertiary data is missing', async () => {
@@ -632,7 +651,8 @@ describe('JobMarketService', () => {
     await service.refreshCandidates({}, context);
 
     expect(state.personnel.applicants).toHaveLength(1);
-    const applicant = state.personnel.applicants[0]!;
+    const [applicant] = state.personnel.applicants;
+    if (!applicant) throw new Error('Expected applicant generated from custom role');
     expect(applicant.desiredRole).toBe('Specialist');
     expect(applicant.skills).toEqual({ Gardening: 3, Maintenance: 2 });
     expect(applicant.traits).toEqual([]);

@@ -83,6 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ExpenseBreakdown Component**: Simplified ExpenseBreakdown to work with available snapshot data instead of relying on detailed ledger entries not present in frontend
 - **Finance View Blank Page**: Resolved blank page issue - Finance view now displays correctly with financial KPIs, charts, and breakdown components
 - **Simulation Play Button**: Fixed play button not advancing simulation by reducing default tick length from 60 minutes to 30 seconds for development - simulation now visibly advances every 30 seconds instead of requiring hour-long waits
+- Hardened backend test suites by adding length assertions and safe destructuring before indexed reads so strict null checks catch missing event batches or workforce assignments early.
 
 ### Added
 

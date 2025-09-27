@@ -211,6 +211,13 @@ const createEmployee = (overrides: Partial<EmployeeState>): EmployeeState => ({
 describe('WorkforceEngine', () => {
   it('assigns treatment tasks only to certified employees', () => {
     const state = createBaseState();
+    const [structure] = state.structures;
+    if (!structure) throw new Error('Expected structure in base state');
+    const [room] = structure.rooms;
+    if (!room) throw new Error('Expected room in structure');
+    const [zone] = room.zones;
+    if (!zone) throw new Error('Expected zone in room');
+
     const treatment: PendingTreatmentApplication = {
       optionId: 'treatment-chem',
       target: 'disease',
@@ -218,7 +225,7 @@ describe('WorkforceEngine', () => {
       scheduledTick: 1,
       category: 'chemical' as TreatmentCategory,
     };
-    state.structures[0].rooms[0].zones[0].health.pendingTreatments.push(treatment);
+    zone.health.pendingTreatments.push(treatment);
 
     const certified = createEmployee({
       id: 'employee-certified',
@@ -253,8 +260,8 @@ describe('WorkforceEngine', () => {
     const createdEvent = events.find((event) => event.type === 'task.created');
     expect(createdEvent).toBeDefined();
 
-    const completedTask = state.tasks.completed[0];
-    const activeTask = state.tasks.active[0];
+    const [completedTask] = state.tasks.completed;
+    const [activeTask] = state.tasks.active;
     const task = completedTask ?? activeTask;
     expect(task).toBeDefined();
     expect(task?.definitionId).toBe('apply_treatment');
@@ -271,7 +278,12 @@ describe('WorkforceEngine', () => {
 
   it('accrues overtime and emits hr events when limits are exceeded', () => {
     const state = createBaseState();
-    const zone = state.structures[0].rooms[0].zones[0];
+    const [structureForOvertime] = state.structures;
+    if (!structureForOvertime) throw new Error('Expected structure for overtime scenario');
+    const [roomForOvertime] = structureForOvertime.rooms;
+    if (!roomForOvertime) throw new Error('Expected room for overtime scenario');
+    const [zone] = roomForOvertime.zones;
+    if (!zone) throw new Error('Expected zone for overtime scenario');
     addDeviceToZone(zone, {
       id: 'device-1',
       blueprintId: 'device-blueprint',
@@ -335,7 +347,8 @@ describe('WorkforceEngine', () => {
     expect(overtimeEvent.payload.employeeId).toBe('employee-tech');
     expect(overtimeEvent.payload.hours).toBeCloseTo(1.5, 5);
 
-    const updatedTech = state.personnel.employees[0];
+    const [updatedTech] = state.personnel.employees;
+    if (!updatedTech) throw new Error('Expected technician in personnel roster');
     expect(updatedTech.overtimeHours).toBeCloseTo(1.5, 5);
     expect(updatedTech.hoursWorkedToday).toBeCloseTo(2, 5);
     expect(updatedTech.energy).toBeCloseTo(0.725, 3);
@@ -405,9 +418,9 @@ describe('WorkforceEngine', () => {
     limitedEngine.processTick(limitedState, 1, 240, limitedCollector);
     normalEngine.processTick(normalState, 1, 240, normalCollector);
 
-    const limitedFirstAssignment = limitedState.tasks.active[0];
-    expect(limitedFirstAssignment).toBeDefined();
-    expect(limitedFirstAssignment?.assignment?.etaTick).toBeGreaterThan(2);
+    const [limitedFirstAssignment] = limitedState.tasks.active;
+    if (!limitedFirstAssignment) throw new Error('Expected limited employee to receive assignment');
+    expect(limitedFirstAssignment.assignment?.etaTick).toBeGreaterThan(2);
     expect(normalState.tasks.completed).toHaveLength(1);
 
     for (let tick = 2; tick <= 5; tick += 1) {
@@ -417,8 +430,11 @@ describe('WorkforceEngine', () => {
       normalEngine.processTick(normalState, tick, 240, normalCollector);
     }
 
-    const limitedEmployeeAfter = limitedState.personnel.employees[0];
-    const normalEmployeeAfter = normalState.personnel.employees[0];
+    const [limitedEmployeeAfter] = limitedState.personnel.employees;
+    const [normalEmployeeAfter] = normalState.personnel.employees;
+    if (!limitedEmployeeAfter || !normalEmployeeAfter) {
+      throw new Error('Expected employees to remain in workforce after processing');
+    }
 
     expect(limitedEmployeeAfter.hoursWorkedToday).toBeCloseTo(2.5, 5);
     expect(normalEmployeeAfter.hoursWorkedToday).toBeCloseTo(16, 5);
@@ -431,8 +447,12 @@ describe('WorkforceEngine', () => {
 
   it('applies dynamic priority boosts in 10-point increments', () => {
     const state = createBaseState();
-    const room = state.structures[0].rooms[0];
-    const zone = room.zones[0];
+    const [structureForPriority] = state.structures;
+    if (!structureForPriority) throw new Error('Expected structure for priority test');
+    const [room] = structureForPriority.rooms;
+    if (!room) throw new Error('Expected room for priority test');
+    const [zone] = room.zones;
+    if (!zone) throw new Error('Expected zone for priority test');
     zone.resources.reservoirLevel = 0.2;
     room.cleanliness = 0.55;
 
@@ -473,9 +493,12 @@ describe('WorkforceEngine', () => {
 
   it('rotates equal-priority tasks in a round-robin order', () => {
     const state = createBaseState();
-    const structure = state.structures[0];
-    const room = structure.rooms[0];
-    const zone = room.zones[0];
+    const [structure] = state.structures;
+    if (!structure) throw new Error('Expected structure for round-robin test');
+    const [room] = structure.rooms;
+    if (!room) throw new Error('Expected room for round-robin test');
+    const [zone] = room.zones;
+    if (!zone) throw new Error('Expected zone for round-robin test');
 
     const createTask = (id: string, createdAt: number): TaskState => ({
       id,
@@ -529,7 +552,9 @@ describe('WorkforceEngine', () => {
     processedEvents = events.length;
     const completedTick2 = tick2Events.filter((event) => event.type === 'task.completed');
     expect(completedTick2).toHaveLength(1);
-    expect(completedTick2[0]?.payload.taskId).toBe('task-b');
+    const [completedEventTick2] = completedTick2;
+    if (!completedEventTick2) throw new Error('Expected completion event on second tick');
+    expect(completedEventTick2.payload.taskId).toBe('task-b');
 
     janitor.energy = 1;
     janitor.status = 'idle';
@@ -539,10 +564,14 @@ describe('WorkforceEngine', () => {
     processedEvents = events.length;
     const completedTick3 = tick3Events.filter((event) => event.type === 'task.completed');
     expect(completedTick3).toHaveLength(1);
-    expect(completedTick3[0]?.payload.taskId).toBe('task-c');
+    const [completedEventTick3] = completedTick3;
+    if (!completedEventTick3) throw new Error('Expected completion event on third tick');
+    expect(completedEventTick3.payload.taskId).toBe('task-c');
 
     const remainingPending = state.tasks.backlog.filter((task) => task.status === 'pending');
     expect(remainingPending).toHaveLength(1);
-    expect(remainingPending[0]?.id).toBe('task-a');
+    const [remainingTask] = remainingPending;
+    if (!remainingTask) throw new Error('Expected one pending task remaining');
+    expect(remainingTask.id).toBe('task-a');
   });
 });
