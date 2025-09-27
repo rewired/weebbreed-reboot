@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unified difficulty preset usage across the engine: initial state creation and world.newGame now derive economics from `data/configs/difficulty.json` via injected config. Removed duplicated hard-coded tables and added tests to prevent regressions.
 - Accepted prefixed zone identifiers when toggling planting plans and added façade/socket gateway integration coverage to prevent regressions.
 - Prevented undefined CapEx/OpEx totals in the finance expense breakdown and aligned badge tones with the supported palette.
+- Extended game metadata and save envelopes with difficulty plant stress and device failure modifiers, ensuring state resets and saves load them consistently.
 
 ### Added
 

@@ -444,6 +444,19 @@ const economicsSettingsSchema = z.object({
   rentPerSqmRoomPerTick: z.number(),
 });
 
+const plantStressModifiersSchema = z
+  .object({
+    optimalRangeMultiplier: z.number(),
+    stressAccumulationMultiplier: z.number(),
+  })
+  .strict();
+
+const deviceFailureModifiersSchema = z
+  .object({
+    mtbfMultiplier: z.number(),
+  })
+  .strict();
+
 const gameMetadataSchema = z.object({
   gameId: nonEmptyString,
   createdAt: isoDateString,
@@ -452,6 +465,8 @@ const gameMetadataSchema = z.object({
   simulationVersion: nonEmptyString,
   tickLengthMinutes: z.number(),
   economics: economicsSettingsSchema,
+  plantStress: plantStressModifiersSchema.optional(),
+  deviceFailure: deviceFailureModifiersSchema.optional(),
 });
 
 const simulationClockSchema = z.object({
@@ -496,6 +511,8 @@ export const saveGameHeaderSchema = z.object({
 export const saveGameMetadataSchema = z.object({
   tickLengthMinutes: positiveNumber,
   rngSeed: nonEmptyString,
+  plantStress: plantStressModifiersSchema.optional(),
+  deviceFailure: deviceFailureModifiersSchema.optional(),
 });
 
 export const saveGameEnvelopeSchema = z

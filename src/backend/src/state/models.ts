@@ -21,6 +21,15 @@ export interface EconomicsSettings {
   rentPerSqmRoomPerTick: number;
 }
 
+export interface PlantStressModifiers {
+  optimalRangeMultiplier: number;
+  stressAccumulationMultiplier: number;
+}
+
+export interface DeviceFailureModifiers {
+  mtbfMultiplier: number;
+}
+
 export interface GameMetadata {
   gameId: string;
   createdAt: string;
@@ -29,6 +38,8 @@ export interface GameMetadata {
   simulationVersion: string;
   tickLengthMinutes: number;
   economics: EconomicsSettings;
+  plantStress?: PlantStressModifiers;
+  deviceFailure?: DeviceFailureModifiers;
 }
 
 export interface SimulationClockState {

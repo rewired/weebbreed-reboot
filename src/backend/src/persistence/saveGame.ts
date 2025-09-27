@@ -7,7 +7,7 @@ import {
 } from './schemas.js';
 
 export { SAVEGAME_KIND } from './schemas.js';
-import type { GameState } from '@/state/models.js';
+import type { GameMetadata, GameState } from '@/state/models.js';
 import { RngService, type SerializedRngState } from '@/lib/rng.js';
 
 export interface SaveGameHeader {
@@ -19,6 +19,8 @@ export interface SaveGameHeader {
 export interface SaveGameMetadata {
   tickLengthMinutes: number;
   rngSeed: string;
+  plantStress?: NonNullable<GameMetadata['plantStress']>;
+  deviceFailure?: NonNullable<GameMetadata['deviceFailure']>;
 }
 
 export interface SaveGameEnvelope {
@@ -178,16 +180,31 @@ export const serializeGameState = (
   const version = options.version ?? DEFAULT_SAVEGAME_VERSION;
   const createdAt = options.createdAt ?? new Date().toISOString();
 
+  const metadata: SaveGameMetadata = {
+    tickLengthMinutes: state.metadata.tickLengthMinutes,
+    rngSeed: snapshot.seed,
+  };
+
+  if (state.metadata.plantStress) {
+    metadata.plantStress = {
+      optimalRangeMultiplier: state.metadata.plantStress.optimalRangeMultiplier,
+      stressAccumulationMultiplier: state.metadata.plantStress.stressAccumulationMultiplier,
+    };
+  }
+
+  if (state.metadata.deviceFailure) {
+    metadata.deviceFailure = {
+      mtbfMultiplier: state.metadata.deviceFailure.mtbfMultiplier,
+    };
+  }
+
   return {
     header: {
       kind: SAVEGAME_KIND,
       version,
       createdAt,
     },
-    metadata: {
-      tickLengthMinutes: state.metadata.tickLengthMinutes,
-      rngSeed: snapshot.seed,
-    },
+    metadata,
     rng: snapshot,
     state,
   };
@@ -218,6 +235,23 @@ export const deserializeGameState = (
 
   if (parsed.state.metadata.tickLengthMinutes !== parsed.metadata.tickLengthMinutes) {
     parsed.state.metadata.tickLengthMinutes = parsed.metadata.tickLengthMinutes;
+  }
+
+  if (parsed.metadata.plantStress) {
+    parsed.state.metadata.plantStress = {
+      optimalRangeMultiplier: parsed.metadata.plantStress.optimalRangeMultiplier,
+      stressAccumulationMultiplier: parsed.metadata.plantStress.stressAccumulationMultiplier,
+    };
+  } else if (parsed.state.metadata.plantStress) {
+    parsed.state.metadata.plantStress = undefined;
+  }
+
+  if (parsed.metadata.deviceFailure) {
+    parsed.state.metadata.deviceFailure = {
+      mtbfMultiplier: parsed.metadata.deviceFailure.mtbfMultiplier,
+    };
+  } else if (parsed.state.metadata.deviceFailure) {
+    parsed.state.metadata.deviceFailure = undefined;
   }
 
   const rng = new RngService(parsed.metadata.rngSeed, parsed.rng);

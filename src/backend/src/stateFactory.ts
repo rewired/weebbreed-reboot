@@ -15,6 +15,7 @@ import type {
   CultivationMethodBlueprint,
   DeviceBlueprint,
   DeviceInstanceState,
+  DeviceFailureModifiers,
   DifficultyLevel,
   EconomicsSettings,
   EmployeeRole,
@@ -26,6 +27,7 @@ import type {
   PersonnelNameDirectory,
   PersonnelRoleBlueprint,
   PlantState,
+  PlantStressModifiers,
   ResourceInventory,
   SeedStockEntry,
   SimulationNote,
@@ -78,12 +80,45 @@ const DEFAULT_EMPLOYEE_COUNTS: Record<EmployeeRole, number> = {
   Manager: 0,
 };
 
-const deriveEconomicsFromConfig = (
-  config: DifficultyConfig,
+const DEFAULT_ECONOMICS: EconomicsSettings = {
+  initialCapital: 1_500_000,
+  itemPriceMultiplier: 1.0,
+  harvestPriceMultiplier: 1.0,
+  rentPerSqmStructurePerTick: 0.15,
+  rentPerSqmRoomPerTick: 0.3,
+};
+
+const DEFAULT_PLANT_STRESS_MODIFIERS: PlantStressModifiers = {
+  optimalRangeMultiplier: 1,
+  stressAccumulationMultiplier: 1,
+};
+
+const DEFAULT_DEVICE_FAILURE_MODIFIERS: DeviceFailureModifiers = {
+  mtbfMultiplier: 1,
+};
+
+const deriveDifficultyModifiers = (
+  config: DifficultyConfig | undefined,
   level: DifficultyLevel,
-): EconomicsSettings => ({
-  ...config[level].modifiers.economics,
-});
+): {
+  economics: EconomicsSettings;
+  plantStress: PlantStressModifiers;
+  deviceFailure: DeviceFailureModifiers;
+} => {
+  const preset = config?.[level]?.modifiers;
+  const economicsSource = preset?.economics ?? DEFAULT_ECONOMICS;
+  const plantStressSource = preset?.plantStress ?? DEFAULT_PLANT_STRESS_MODIFIERS;
+  const deviceFailureSource = preset?.deviceFailure ?? DEFAULT_DEVICE_FAILURE_MODIFIERS;
+
+  return {
+    economics: { ...economicsSource },
+    plantStress: {
+      optimalRangeMultiplier: plantStressSource.optimalRangeMultiplier,
+      stressAccumulationMultiplier: plantStressSource.stressAccumulationMultiplier,
+    },
+    deviceFailure: { mtbfMultiplier: deviceFailureSource.mtbfMultiplier },
+  };
+};
 
 interface StructureCreationResult {
   structure: StructureState;
@@ -418,16 +453,10 @@ export const createInitialState = async (
   options: StateFactoryOptions = {},
 ): Promise<GameState> => {
   const difficulty = options.difficulty ?? 'normal';
-  const economics: EconomicsSettings = context.difficultyConfig
-    ? deriveEconomicsFromConfig(context.difficultyConfig, difficulty)
-    : {
-        // Fallback defaults mirror the 'normal' preset to keep tests/tools stable
-        initialCapital: 1_500_000,
-        itemPriceMultiplier: 1.0,
-        harvestPriceMultiplier: 1.0,
-        rentPerSqmStructurePerTick: 0.15,
-        rentPerSqmRoomPerTick: 0.3,
-      };
+  const difficultyModifiers = deriveDifficultyModifiers(context.difficultyConfig, difficulty);
+  const economics: EconomicsSettings = difficultyModifiers.economics;
+  const plantStressModifiers = difficultyModifiers.plantStress;
+  const deviceFailureModifiers = difficultyModifiers.deviceFailure;
   const tickLengthMinutes = options.tickLengthMinutes ?? DEFAULT_TICK_LENGTH_MINUTES;
   const createdAt = new Date().toISOString();
   const idStream = context.rng.getStream(RNG_STREAM_IDS.ids);
@@ -580,6 +609,8 @@ export const createInitialState = async (
     simulationVersion: DEFAULT_SAVEGAME_VERSION,
     tickLengthMinutes,
     economics,
+    plantStress: plantStressModifiers,
+    deviceFailure: deviceFailureModifiers,
   };
 
   const clock = {
