@@ -99,12 +99,17 @@ describe('BlueprintHotReloadManager', () => {
     const commitHook = manager.createCommitHook();
     const buffered: SimulationEvent[] = [];
     const collector = createEventCollector(buffered, 12);
+    const accountingStub: SimulationPhaseContext['accounting'] = {
+      recordUtility: () => undefined,
+      recordDevicePurchase: () => undefined,
+    };
     const context: SimulationPhaseContext = {
       state: {} as GameState,
       tick: 12,
       tickLengthMinutes: 60,
       phase: 'commit',
       events: collector,
+      accounting: accountingStub,
     };
 
     await commitHook(context);
