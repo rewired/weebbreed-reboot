@@ -44,6 +44,22 @@ interface SimulationActions {
 const MAX_EVENT_ENTRIES = 200;
 const MAX_ZONE_HISTORY_POINTS = 5000;
 
+const preserveFinanceLedger = (
+  nextSnapshot: SimulationSnapshot,
+  previousSnapshot: SimulationSnapshot | null,
+): SimulationSnapshot => {
+  if (!previousSnapshot?.finance?.ledger || nextSnapshot.finance.ledger !== undefined) {
+    return nextSnapshot;
+  }
+  return {
+    ...nextSnapshot,
+    finance: {
+      ...nextSnapshot.finance,
+      ledger: [...previousSnapshot.finance.ledger],
+    },
+  };
+};
+
 const normaliseEventBatch = (
   events: SimulationEvent[],
   { includeSequence }: { includeSequence?: boolean } = {},
@@ -131,28 +147,30 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
   zoneHistory: {},
   lastTick: 0,
   hydrate: ({ snapshot, updates = [], events = [], time }) => {
+    const previousSnapshot = get().snapshot;
+    const snapshotWithLedger = preserveFinanceLedger(snapshot, previousSnapshot);
     const history = updates.reduce<Record<string, ZoneHistoryPoint[]>>((acc, entry) => {
       return appendZoneHistory(acc, entry);
     }, {});
     const finalHistory = appendZoneHistory(history, {
-      tick: snapshot.clock.tick,
+      tick: snapshotWithLedger.clock.tick,
       ts: Date.now(),
       events: [],
-      snapshot,
+      snapshot: snapshotWithLedger,
       time: time ?? {
-        running: !snapshot.clock.isPaused,
-        paused: snapshot.clock.isPaused,
-        speed: snapshot.clock.targetTickRate,
-        tick: snapshot.clock.tick,
-        targetTickRate: snapshot.clock.targetTickRate,
+        running: !snapshotWithLedger.clock.isPaused,
+        paused: snapshotWithLedger.clock.isPaused,
+        speed: snapshotWithLedger.clock.targetTickRate,
+        tick: snapshotWithLedger.clock.tick,
+        targetTickRate: snapshotWithLedger.clock.targetTickRate,
       },
     });
     set({
-      snapshot,
+      snapshot: snapshotWithLedger,
       events: mergeEvents([], events),
       timeStatus: time ?? null,
       zoneHistory: finalHistory,
-      lastTick: snapshot.clock.tick,
+      lastTick: snapshotWithLedger.clock.tick,
     });
   },
   applyUpdate: (update) => {
@@ -162,9 +180,14 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       'structures:',
       update.snapshot?.structures?.length,
     );
-    const nextHistory = appendZoneHistory(get().zoneHistory, update);
+    const previousSnapshot = get().snapshot;
+    const snapshotWithLedger = preserveFinanceLedger(update.snapshot, previousSnapshot);
+    const nextHistory = appendZoneHistory(get().zoneHistory, {
+      ...update,
+      snapshot: snapshotWithLedger,
+    });
     set((state) => ({
-      snapshot: update.snapshot,
+      snapshot: snapshotWithLedger,
       timeStatus: update.time,
       events: mergeEvents(state.events, update.events),
       zoneHistory: nextHistory,

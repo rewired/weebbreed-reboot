@@ -3,6 +3,7 @@ import { Icon } from '@/components/common/Icon';
 import { Badge } from '@/components/primitives/Badge';
 import { useSimulationStore } from '@/store/simulation';
 import type { SimulationBridge } from '@/facade/systemFacade';
+import type { FinanceLedgerCategory, FinanceLedgerEntrySnapshot } from '@/types/simulation';
 
 interface RevenueBreakdownProps {
   bridge: SimulationBridge;
@@ -12,6 +13,7 @@ interface RevenueBreakdownProps {
 interface RevenueSource {
   id: string;
   category: string;
+  categoryKey: FinanceLedgerCategory;
   description: string;
   amount: number;
   percentage: number;
@@ -23,14 +25,6 @@ interface RevenueBySourceEntry {
   amount: number;
   count: number;
   lastTick: number;
-}
-
-interface RevenueLedgerEntry {
-  type?: string;
-  category?: string;
-  description?: string;
-  amount?: number;
-  tick?: number;
 }
 
 interface RevenueAnalysis {
@@ -45,15 +39,50 @@ const createPlaceholderSource = (
   description: string,
   amount: number,
   totalRevenue: number,
+  categoryKey: FinanceLedgerCategory,
 ): RevenueSource => ({
   id: `placeholder-${description.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'revenue'}`,
   category: 'Revenue',
+  categoryKey,
   description,
   amount,
   percentage: totalRevenue > 0 ? (amount / totalRevenue) * 100 : 0,
   trend: 'stable',
   trendValue: 0,
 });
+
+const categoryLabels: Record<FinanceLedgerCategory, string> = {
+  sales: 'Sales',
+  capital: 'Capital',
+  structure: 'Structure',
+  device: 'Devices',
+  inventory: 'Inventory',
+  rent: 'Rent',
+  utilities: 'Utilities',
+  payroll: 'Payroll',
+  maintenance: 'Maintenance',
+  loan: 'Loans',
+  other: 'Other',
+};
+
+const normaliseLedgerEntry = (
+  entry: FinanceLedgerEntrySnapshot,
+): FinanceLedgerEntrySnapshot | null => {
+  if (!entry || entry.type !== 'income') {
+    return null;
+  }
+  const amount = Number.isFinite(entry.amount) ? entry.amount : 0;
+  if (amount <= 0) {
+    return null;
+  }
+  const description = entry.description?.trim() ?? '';
+  return {
+    ...entry,
+    amount,
+    description:
+      description.length > 0 ? description : (categoryLabels[entry.category] ?? entry.category),
+  };
+};
 
 export const RevenueBreakdown = ({
   bridge: _bridge, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -63,7 +92,12 @@ export const RevenueBreakdown = ({
 
   const revenueData = useMemo<RevenueAnalysis>(() => {
     if (!snapshot?.finance) {
-      const placeholderTopPerformer = createPlaceholderSource('No revenue recorded yet', 0, 0);
+      const placeholderTopPerformer = createPlaceholderSource(
+        'No revenue recorded yet',
+        0,
+        0,
+        'other',
+      );
       return {
         sources: [],
         totalRevenue: 0,
@@ -74,67 +108,72 @@ export const RevenueBreakdown = ({
     }
 
     const finance = snapshot.finance;
-    const totalRevenue = finance.totalRevenue ?? 0;
+    const ledgerEntries = Array.isArray(finance.ledger) ? finance.ledger : [];
+    const normalisedEntries = ledgerEntries
+      .map(normaliseLedgerEntry)
+      .filter((entry): entry is FinanceLedgerEntrySnapshot => entry !== null);
+
+    const totalRevenue = Math.max(finance.totalRevenue ?? 0, 0);
+    const ledgerRevenue = normalisedEntries.reduce((total, entry) => total + entry.amount, 0);
+    const effectiveTotalRevenue = ledgerRevenue > 0 ? ledgerRevenue : totalRevenue;
     const ticksElapsed = snapshot.clock.tick;
-    const avgRevenuePerTick = ticksElapsed > 0 ? totalRevenue / ticksElapsed : 0;
+    const avgRevenuePerTick = ticksElapsed > 0 ? effectiveTotalRevenue / ticksElapsed : 0;
 
-    const ledgerCandidate = (finance as { ledger?: unknown }).ledger;
-    const ledgerEntries: RevenueLedgerEntry[] = Array.isArray(ledgerCandidate)
-      ? ledgerCandidate.filter(
-          (entry): entry is RevenueLedgerEntry => typeof entry === 'object' && entry !== null,
-        )
-      : [];
-
-    const revenueEntries = ledgerEntries.filter(
-      (entry) => entry.type === 'income' && entry.category === 'sales',
-    );
-
-    const revenueBySource = revenueEntries.reduce<Record<string, RevenueBySourceEntry>>(
-      (acc, entry) => {
-        if (!entry || typeof entry.amount !== 'number') {
-          return acc;
+    const revenueBySource = normalisedEntries.reduce<
+      Record<
+        string,
+        RevenueBySourceEntry & {
+          category: FinanceLedgerCategory;
+          description: string;
         }
-        const key = entry.description?.trim() || 'Uncategorised sales';
-        if (!acc[key]) {
-          acc[key] = {
-            amount: 0,
-            count: 0,
-            lastTick: 0,
-          };
-        }
-        acc[key].amount += entry.amount;
-        acc[key].count += 1;
-        if (typeof entry.tick === 'number') {
-          acc[key].lastTick = Math.max(acc[key].lastTick, entry.tick);
-        }
-        return acc;
-      },
-      {},
-    );
-
-    const sources: RevenueSource[] = [];
-
-    for (const [description, data] of Object.entries(revenueBySource) as Array<
-      [string, RevenueBySourceEntry]
-    >) {
-      if (data.amount <= 0) {
-        continue;
+      >
+    >((acc, entry) => {
+      const key = `${entry.category}::${entry.description}`;
+      if (!acc[key]) {
+        acc[key] = {
+          amount: 0,
+          count: 0,
+          lastTick: 0,
+          category: entry.category,
+          description: entry.description,
+        };
       }
+      acc[key].amount += entry.amount;
+      acc[key].count += 1;
+      if (entry.tick >= 0) {
+        acc[key].lastTick = Math.max(acc[key].lastTick, entry.tick);
+      }
+      return acc;
+    }, {});
+
+    const sources: RevenueSource[] = Object.entries(revenueBySource).map(([key, data]) => {
       const slug =
-        description
+        key
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '') || 'revenue-source';
-      sources.push({
+      const lastTickAmount = normalisedEntries
+        .filter(
+          (entry) =>
+            entry.category === data.category &&
+            entry.description === data.description &&
+            entry.tick === snapshot.clock.tick,
+        )
+        .reduce((total, entry) => total + entry.amount, 0);
+      const denominator = ledgerRevenue > 0 ? ledgerRevenue : effectiveTotalRevenue;
+      const trendValue = denominator > 0 ? (lastTickAmount / denominator) * 100 : 0;
+      const trend: RevenueSource['trend'] = lastTickAmount > 0 ? 'up' : 'stable';
+      return {
         id: `revenue-${slug}`,
-        category: 'Sales',
-        description,
+        category: categoryLabels[data.category] ?? data.category,
+        categoryKey: data.category,
+        description: data.description,
         amount: data.amount,
-        percentage: totalRevenue > 0 ? (data.amount / totalRevenue) * 100 : 0,
-        trend: 'stable',
-        trendValue: 0,
-      });
-    }
+        percentage: denominator > 0 ? (data.amount / denominator) * 100 : 0,
+        trend,
+        trendValue,
+      } satisfies RevenueSource;
+    });
 
     const hasLedgerDetails = sources.length > 0;
 
@@ -148,12 +187,15 @@ export const RevenueBreakdown = ({
             'Last tick revenue',
             lastTickRevenue,
             totalRevenue || lastTickRevenue,
+            'sales',
           ),
         );
       }
 
       if (priorRevenue > 0) {
-        sources.push(createPlaceholderSource('Cumulative revenue', priorRevenue, totalRevenue));
+        sources.push(
+          createPlaceholderSource('Cumulative revenue', priorRevenue, totalRevenue, 'other'),
+        );
       }
     }
 
@@ -165,11 +207,12 @@ export const RevenueBreakdown = ({
           totalRevenue > 0 ? 'Revenue recognised' : 'No revenue recorded yet',
           totalRevenue,
           totalRevenue,
+          'other',
         );
 
     return {
       sources,
-      totalRevenue,
+      totalRevenue: effectiveTotalRevenue,
       avgRevenuePerTick,
       topPerformer,
       hasLedgerDetails,
@@ -248,7 +291,7 @@ export const RevenueBreakdown = ({
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex-shrink-0">
                   <Icon
-                    name={source.category === 'Sales' ? 'inventory_2' : 'account_balance'}
+                    name={source.categoryKey === 'sales' ? 'inventory_2' : 'account_balance'}
                     size={20}
                     className="text-text-muted"
                   />
@@ -257,7 +300,7 @@ export const RevenueBreakdown = ({
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-text truncate">{source.description}</span>
                     <Badge
-                      tone={source.category === 'Sales' ? 'success' : 'default'}
+                      tone={source.categoryKey === 'sales' ? 'success' : 'default'}
                       className="text-xs"
                     >
                       {source.category}

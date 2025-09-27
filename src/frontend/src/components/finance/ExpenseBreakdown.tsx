@@ -3,6 +3,7 @@ import { Icon } from '@/components/common/Icon';
 import { Badge } from '@/components/primitives/Badge';
 import { useSimulationStore } from '@/store/simulation';
 import type { SimulationBridge } from '@/facade/systemFacade';
+import type { FinanceLedgerCategory, FinanceLedgerEntrySnapshot } from '@/types/simulation';
 
 interface ExpenseBreakdownProps {
   bridge: SimulationBridge;
@@ -18,6 +19,7 @@ interface ExpenseCategory {
   trend: 'up' | 'down' | 'stable';
   icon: string;
   color: string;
+  categoryKey: FinanceLedgerCategory;
   subcategories?: ExpenseSubcategory[];
 }
 
@@ -27,6 +29,64 @@ interface ExpenseSubcategory {
   percentage: number;
   description: string;
 }
+
+const CATEGORY_META: Record<
+  FinanceLedgerCategory,
+  { label: string; icon: string; color: string; type: 'CapEx' | 'OpEx' }
+> = {
+  capital: {
+    label: 'Capital Investments',
+    icon: 'payments',
+    color: 'text-emerald-400',
+    type: 'CapEx',
+  },
+  structure: {
+    label: 'Structures & Facilities',
+    icon: 'warehouse',
+    color: 'text-blue-400',
+    type: 'CapEx',
+  },
+  device: {
+    label: 'Equipment Purchases',
+    icon: 'precision_manufacturing',
+    color: 'text-purple-400',
+    type: 'CapEx',
+  },
+  inventory: {
+    label: 'Inventory Stock',
+    icon: 'inventory_2',
+    color: 'text-teal-400',
+    type: 'CapEx',
+  },
+  rent: { label: 'Rent & Leasing', icon: 'home_work', color: 'text-orange-400', type: 'OpEx' },
+  utilities: { label: 'Utilities', icon: 'bolt', color: 'text-yellow-400', type: 'OpEx' },
+  payroll: { label: 'Payroll', icon: 'groups', color: 'text-rose-400', type: 'OpEx' },
+  maintenance: { label: 'Maintenance', icon: 'build', color: 'text-indigo-400', type: 'OpEx' },
+  sales: { label: 'Sales Adjustments', icon: 'sell', color: 'text-sky-400', type: 'OpEx' },
+  loan: { label: 'Loan Servicing', icon: 'receipt_long', color: 'text-amber-500', type: 'OpEx' },
+  other: { label: 'Other Expenses', icon: 'category', color: 'text-gray-400', type: 'OpEx' },
+};
+
+const normaliseExpenseEntry = (
+  entry: FinanceLedgerEntrySnapshot,
+): FinanceLedgerEntrySnapshot | null => {
+  if (!entry || entry.type !== 'expense') {
+    return null;
+  }
+  const amount = Number.isFinite(entry.amount) ? Math.abs(entry.amount) : 0;
+  if (amount <= 0) {
+    return null;
+  }
+  const description = entry.description?.trim() ?? '';
+  return {
+    ...entry,
+    amount,
+    description:
+      description.length > 0
+        ? description
+        : (CATEGORY_META[entry.category]?.label ?? entry.category),
+  };
+};
 
 export const ExpenseBreakdown = ({
   bridge: _bridge, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -46,45 +106,118 @@ export const ExpenseBreakdown = ({
     }
 
     const finance = snapshot.finance;
-    const totalExpenses = finance.totalExpenses;
+    const ledgerEntries = Array.isArray(finance.ledger) ? finance.ledger : [];
+    const normalisedEntries = ledgerEntries
+      .map(normaliseExpenseEntry)
+      .filter((entry): entry is FinanceLedgerEntrySnapshot => entry !== null);
 
-    // Since we don't have detailed ledger data in the frontend snapshot,
-    // we'll create a simplified expense breakdown based on available data
-    const categories: ExpenseCategory[] = [];
-    const capexTotal = 0;
-    let opexTotal = 0;
+    const ledgerTotal = normalisedEntries.reduce((total, entry) => total + entry.amount, 0);
+    const totalExpenses = Math.max(finance.totalExpenses ?? 0, ledgerTotal);
+    const denominator = ledgerTotal > 0 ? ledgerTotal : totalExpenses;
 
-    if (totalExpenses > 0) {
-      // Create a simplified breakdown showing total expenses
-      // In a real implementation, this would be based on detailed accounting data
-      categories.push({
-        id: 'total-expenses',
-        name: 'Total Expenses',
-        amount: totalExpenses,
-        percentage: 100,
-        type: 'OpEx',
-        trend: 'stable',
-        icon: 'receipt',
-        color: 'text-orange-400',
-        subcategories: [
+    if (normalisedEntries.length === 0) {
+      if (totalExpenses <= 0) {
+        return {
+          categories: [],
+          totalExpenses: 0,
+          capexTotal: 0,
+          opexTotal: 0,
+          avgExpensePerTick: 0,
+        };
+      }
+
+      return {
+        categories: [
           {
-            name: 'All Operational Costs',
+            id: 'total-expenses',
+            name: 'Total Expenses',
             amount: totalExpenses,
             percentage: 100,
-            description:
-              'Combined operational expenses including utilities, maintenance, payroll, and other costs',
+            type: 'OpEx',
+            trend: 'stable',
+            icon: 'receipt',
+            color: 'text-orange-400',
+            categoryKey: 'other',
+            subcategories: [
+              {
+                name: 'Operational spending',
+                amount: totalExpenses,
+                percentage: 100,
+                description: 'Aggregated expenses (ledger data unavailable)',
+              },
+            ],
           },
         ],
-      });
-
-      opexTotal = totalExpenses;
+        totalExpenses,
+        capexTotal: 0,
+        opexTotal: totalExpenses,
+        avgExpensePerTick: snapshot.clock.tick > 0 ? totalExpenses / snapshot.clock.tick : 0,
+      };
     }
 
-    // Calculate averages
-    const avgExpensePerTick = snapshot.clock.tick > 0 ? totalExpenses / snapshot.clock.tick : 0;
+    const byCategory = normalisedEntries.reduce<
+      Map<FinanceLedgerCategory, { amount: number; entries: FinanceLedgerEntrySnapshot[] }>
+    >((acc, entry) => {
+      const bucket = acc.get(entry.category) ?? { amount: 0, entries: [] };
+      bucket.amount += entry.amount;
+      bucket.entries.push(entry);
+      acc.set(entry.category, bucket);
+      return acc;
+    }, new Map());
 
-    // Sort categories by amount descending
+    const categories: ExpenseCategory[] = Array.from(byCategory.entries()).map(
+      ([category, data]) => {
+        const meta = CATEGORY_META[category] ?? CATEGORY_META.other;
+        const lastTickAmount = data.entries
+          .filter((entry) => entry.tick === snapshot.clock.tick)
+          .reduce((total, entry) => total + entry.amount, 0);
+        const trend: ExpenseCategory['trend'] = lastTickAmount > 0 ? 'up' : 'stable';
+        const trendValue = denominator > 0 ? (lastTickAmount / denominator) * 100 : 0;
+        const subcategoryTotals = data.entries.reduce<Map<string, number>>((acc, entry) => {
+          const key = entry.description;
+          acc.set(key, (acc.get(key) ?? 0) + entry.amount);
+          return acc;
+        }, new Map());
+        const subcategories: ExpenseSubcategory[] = Array.from(subcategoryTotals.entries())
+          .map(([name, amount]) => ({
+            name,
+            amount,
+            percentage: data.amount > 0 ? (amount / data.amount) * 100 : 0,
+            description: name,
+          }))
+          .sort((a, b) => b.amount - a.amount)
+          .slice(0, 5);
+
+        return {
+          id: `expense-${category}`,
+          name: meta.label,
+          amount: data.amount,
+          percentage: denominator > 0 ? (data.amount / denominator) * 100 : 0,
+          type: meta.type,
+          trend,
+          icon: meta.icon,
+          color: meta.color,
+          categoryKey: category,
+          subcategories,
+          trendValue,
+        } satisfies ExpenseCategory & { trendValue: number };
+      },
+    );
+
     categories.sort((a, b) => b.amount - a.amount);
+
+    let capexTotal = 0;
+    let opexTotal = 0;
+    for (const category of categories) {
+      const meta = CATEGORY_META[category.categoryKey] ?? CATEGORY_META.other;
+      if (meta.type === 'CapEx') {
+        capexTotal += category.amount;
+      } else {
+        opexTotal += category.amount;
+      }
+    }
+
+    const avgExpensePerTick = snapshot.clock.tick > 0 ? totalExpenses / snapshot.clock.tick : 0;
 
     return {
       categories,
