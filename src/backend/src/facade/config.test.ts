@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SimulationFacade } from './index.js';
-import type { GameState, SimulationEvent } from '@/state/models.js';
+import type { GameState } from '@/state/models.js';
+import type { SimulationEvent } from '@/lib/eventBus.js';
 import { EventBus } from '@/lib/eventBus.js';
 import type { SimulationLoop } from '@/sim/loop.js';
 import { saturationVaporPressure } from '@/engine/physio/vpd.js';
