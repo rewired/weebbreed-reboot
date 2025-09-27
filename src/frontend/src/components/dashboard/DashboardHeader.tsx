@@ -7,7 +7,7 @@ import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
 import type { SimulationBridge } from '@/facade/systemFacade';
 
-const speedPresets = [0.5, 1, 2, 5, 10];
+const speedPresets = [0.5, 1, 10, 25, 50, 100, 250];
 
 interface DashboardHeaderProps {
   bridge: SimulationBridge;
@@ -157,13 +157,14 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
           >
             <Icon name="skip_next" />
           </IconButton>
-          <div className="flex items-center gap-1 rounded-2xl border border-border/40 bg-surface-muted/60 p-1">
+          <div className="flex flex-wrap items-center gap-1 rounded-2xl border border-border/40 bg-surface-muted/60 p-1">
             {speedPresets.map((preset) => (
               <IconButton
                 key={preset}
                 size="sm"
                 active={Math.abs(currentSpeed - preset) < 0.01}
                 disabled={Boolean(speedPending) || controlPending}
+                className="!w-auto min-w-[3rem] px-2"
                 onClick={async () => {
                   if (speedPending || controlPending) {
                     return;

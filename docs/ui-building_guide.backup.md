@@ -72,7 +72,7 @@ The application follows a structure → room → zone drill-down supported by pe
 ```
 
 - The left cluster surfaces Capital, Cumulative Yield, planned plant capacity (hidden when zero), and an animated tick progress ring tied to in-game time.【F:docs/ui/ui-implementation-spec.md†L37-L120】【F:docs/ui/ui_elements.md†L24-L84】
-- The right cluster offers play/pause, multiple speed presets (0.5×–100×), quick links to Finances (`monitoring`) and Personnel (`groups`), notifications, and the game menu (`settings`).【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui_elements.md†L62-L116】
+- The right cluster offers play/pause, multiple speed presets (0.5×–250×), quick links to Finances (`monitoring`) and Personnel (`groups`), notifications, and the game menu (`settings`).【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui_elements.md†L62-L116】
 - Notifications display an unread badge, and the game menu opens the shared modal to reach Save/Load/Export/Reset actions.【F:docs/ui/ui-implementation-spec.md†L37-L142】【F:docs/ui/ui-components-desciption.md†L323-L337】 The notification popover contains tabs for _All_, _Warnings_, and _Errors_ with 20-item lazy-loaded pages, renders items shaped as `{ id, ts, severity, title, message, entityId?, entityType?, actions?[] }`, and raises the header badge with the count of unopened warning/error events sourced from `sim.*`, `world.*`, `hr.*`, and `finance.*` streams.
 
 ### Breadcrumbs & States
