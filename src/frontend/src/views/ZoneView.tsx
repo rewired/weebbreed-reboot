@@ -25,6 +25,7 @@ import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
 import type { PlantSnapshot } from '@/types/simulation';
 import type { ZoneHistoryPoint } from '@/store/simulation';
+import { formatNumber } from '@/utils/formatNumber';
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
@@ -42,15 +43,16 @@ const plantColumns = [
   }),
   columnHelper.accessor('health', {
     header: 'Health',
-    cell: (info) => `${Math.round(info.getValue() * 100)}%`,
+    cell: (info) => `${formatNumber(info.getValue() * 100, { maximumFractionDigits: 0 })}%`,
   }),
   columnHelper.accessor('stress', {
     header: 'Stress',
-    cell: (info) => `${Math.round(info.getValue() * 100)}%`,
+    cell: (info) => `${formatNumber(info.getValue() * 100, { maximumFractionDigits: 0 })}%`,
   }),
   columnHelper.accessor('biomassDryGrams', {
     header: 'Biomass (g)',
-    cell: (info) => info.getValue().toFixed(1),
+    cell: (info) =>
+      formatNumber(info.getValue(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
   }),
 ];
 
@@ -170,13 +172,19 @@ export const ZoneView = () => {
         <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
         <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
         <p className="text-sm text-text-muted">
-          {zone.area} m² · volume {zone.volume} m³ · cultivation method{' '}
+          {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation method{' '}
           {zone.cultivationMethodId ?? '—'}
         </p>
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Badge tone="success">VPD {zone.environment.vpd.toFixed(2)}</Badge>
-          <Badge tone="default">PPFD {zone.environment.ppfd} µmol</Badge>
-          <Badge tone="default">CO₂ {zone.environment.co2} ppm</Badge>
+          <Badge tone="success">
+            VPD{' '}
+            {formatNumber(zone.environment.vpd, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </Badge>
+          <Badge tone="default">PPFD {formatNumber(zone.environment.ppfd)} µmol</Badge>
+          <Badge tone="default">CO₂ {formatNumber(zone.environment.co2)} ppm</Badge>
         </div>
       </header>
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
@@ -186,25 +194,32 @@ export const ZoneView = () => {
               <div className="flex flex-col gap-1 text-sm text-text-muted">
                 <span className="text-xs uppercase text-text-muted">Temperature</span>
                 <span className="text-lg font-semibold text-text">
-                  {zone.environment.temperature.toFixed(1)}°C
+                  {formatNumber(zone.environment.temperature, {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })}
+                  °C
                 </span>
               </div>
               <div className="flex flex-col gap-1 text-sm text-text-muted">
                 <span className="text-xs uppercase text-text-muted">Relative Humidity</span>
                 <span className="text-lg font-semibold text-text">
-                  {(zone.environment.relativeHumidity * 100).toFixed(0)}%
+                  {formatNumber(zone.environment.relativeHumidity * 100, {
+                    maximumFractionDigits: 0,
+                  })}
+                  %
                 </span>
               </div>
               <div className="flex flex-col gap-1 text-sm text-text-muted">
                 <span className="text-xs uppercase text-text-muted">Transpiration</span>
                 <span className="text-lg font-semibold text-text">
-                  {zone.resources.lastTranspirationLiters} L
+                  {formatNumber(zone.resources.lastTranspirationLiters)} L
                 </span>
               </div>
               <div className="flex flex-col gap-1 text-sm text-text-muted">
                 <span className="text-xs uppercase text-text-muted">Stress</span>
                 <span className="text-lg font-semibold text-text">
-                  {Math.round(zone.metrics.stressLevel * 100)}%
+                  {formatNumber(zone.metrics.stressLevel * 100, { maximumFractionDigits: 0 })}%
                 </span>
               </div>
             </div>
@@ -280,8 +295,12 @@ export const ZoneView = () => {
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold text-text">{device.name}</span>
                       <span className="text-xs text-text-muted">
-                        Runtime {device.runtimeHours} h · Condition{' '}
-                        {Math.round(device.maintenance.condition * 100)}%
+                        Runtime {formatNumber(device.runtimeHours, { maximumFractionDigits: 0 })} h
+                        · Condition{' '}
+                        {formatNumber(device.maintenance.condition * 100, {
+                          maximumFractionDigits: 0,
+                        })}
+                        %
                       </span>
                     </div>
                   </div>
@@ -310,23 +329,29 @@ export const ZoneView = () => {
             <div className="grid gap-3 text-sm text-text-muted">
               <div className="flex items-center justify-between">
                 <span>Water reserve</span>
-                <Badge tone="default">{zone.resources.waterLiters.toLocaleString()} L</Badge>
+                <Badge tone="default">{formatNumber(zone.resources.waterLiters)} L</Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span>Nutrient solution</span>
                 <Badge tone="default">
-                  {zone.resources.nutrientSolutionLiters.toLocaleString()} L
+                  {formatNumber(zone.resources.nutrientSolutionLiters)} L
                 </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span>Nutrient strength</span>
-                <Badge tone="default">{zone.resources.nutrientStrength.toFixed(2)} EC</Badge>
+                <Badge tone="default">
+                  {formatNumber(zone.resources.nutrientStrength, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  EC
+                </Badge>
               </div>
               <div className="flex items-center justify-between">
                 <span>Daily consumption</span>
                 <Badge tone="default">
-                  {zone.supplyStatus?.dailyWaterConsumptionLiters ?? 0} L /{' '}
-                  {zone.supplyStatus?.dailyNutrientConsumptionLiters ?? 0} L
+                  {formatNumber(zone.supplyStatus?.dailyWaterConsumptionLiters ?? 0)} L /{' '}
+                  {formatNumber(zone.supplyStatus?.dailyNutrientConsumptionLiters ?? 0)} L
                 </Badge>
               </div>
             </div>
