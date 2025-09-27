@@ -1,4 +1,38 @@
-import seedConfig from '../data/configs/seed-config.json';
+import seedConfigJson from '../data/configs/seed-config.json';
+
+type WeightedLexiconEntry = readonly [word: string, weight: number];
+
+interface SeedLexicon {
+  color: WeightedLexiconEntry[];
+  strain: WeightedLexiconEntry[];
+  fruit: WeightedLexiconEntry[];
+  dessert: WeightedLexiconEntry[];
+  suffix: WeightedLexiconEntry[];
+}
+
+type TemplatePart = keyof SeedLexicon;
+
+interface TemplateOptions {
+  preferAlliteration: boolean;
+  maxLen?: number;
+}
+
+interface Template {
+  parts: TemplatePart[];
+  weight: number;
+  options: TemplateOptions;
+}
+
+interface SeedConfig {
+  separator: string;
+  minScore: number;
+  count: number;
+  blacklist: string[];
+  lexicon: SeedLexicon;
+  templates: Template[];
+}
+
+const seedConfig = seedConfigJson as unknown as SeedConfig;
 
 // MULLBERRY32 PRNG implementation
 class Mulberry32 {
@@ -83,20 +117,27 @@ function hardClusterEndStart(wordA: string, wordB: string): boolean {
   return hasHardCluster(endA) && hasHardCluster(startB);
 }
 
-function pickWeighted(items: [string, number][], preferAlliterationWith?: string): string {
-  let pool = [...items];
-
-  // Softly upweight items starting with the same letter if alliteration is preferred
-  if (preferAlliterationWith) {
-    const preferredLetter = preferAlliterationWith.toLowerCase()[0];
-    pool = pool.map(([word, weight]) => {
-      const bonus = word.toLowerCase()[0] === preferredLetter ? 0.3 : 0;
-      return [word, weight + bonus];
-    });
+function pickWeighted(
+  items: readonly WeightedLexiconEntry[],
+  rng: Mulberry32,
+  preferAlliterationWith?: string,
+): string {
+  if (items.length === 0) {
+    throw new Error('Cannot pick from an empty lexicon.');
   }
 
+  const preferredLetter = preferAlliterationWith?.toLowerCase()[0];
+  const pool = items.map(([word, weight]) => {
+    const bonus = preferredLetter && word.toLowerCase()[0] === preferredLetter ? 0.3 : 0;
+    return [word, weight + bonus] as [string, number];
+  });
+
   const totalWeight = pool.reduce((sum, [, weight]) => sum + weight, 0);
-  const r = Math.random() * totalWeight;
+  if (totalWeight <= 0) {
+    return pool[0][0];
+  }
+
+  const r = rng.next() * totalWeight;
 
   let cumulativeWeight = 0;
   for (const [word, weight] of pool) {
@@ -174,17 +215,16 @@ function score(tokens: string[]): number {
   return score;
 }
 
-interface Template {
-  parts: string[];
-  weight: number;
-  options: {
-    preferAlliteration: boolean;
-    maxLen?: number;
-  };
-}
+function chooseTemplate(templates: readonly Template[], rng: Mulberry32): Template {
+  if (templates.length === 0) {
+    throw new Error('Cannot choose a template from an empty list.');
+  }
 
-function chooseTemplate(templates: Template[], rng: Mulberry32): Template {
   const totalWeight = templates.reduce((sum, template) => sum + template.weight, 0);
+  if (totalWeight <= 0) {
+    return templates[0];
+  }
+
   const r = rng.next() * totalWeight;
 
   let cumulativeWeight = 0;
@@ -202,20 +242,12 @@ function chooseTemplate(templates: Template[], rng: Mulberry32): Template {
 export function generateSeed(): string {
   const cfg = seedConfig;
 
-  // Seed handling
-  let seed: number;
-  if (cfg.generatedSeed) {
-    seed = cfg.generatedSeed;
-  } else {
-    seed = microtimeTo32BitSeed();
-  }
-
-  const rng = new Mulberry32(seed);
+  const rng = new Mulberry32(microtimeTo32BitSeed());
 
   const separator = cfg.separator || '-';
   const minScore = cfg.minScore || 0.6;
   const target = cfg.count || 1;
-  const blacklist = new Set(cfg.blacklist || []);
+  const blacklist = new Set<string>(cfg.blacklist);
   const maxTries = target * 40;
 
   let tries = 0;
@@ -225,16 +257,13 @@ export function generateSeed(): string {
     tries++;
     const template = chooseTemplate(cfg.templates, rng);
 
-    // Pick first token
-    const firstCategory = template.parts[0];
-    const firstToken = pickWeighted(cfg.lexicon[firstCategory]);
+    const [firstCategory, ...remainingParts] = template.parts;
+    const firstToken = pickWeighted(cfg.lexicon[firstCategory], rng);
     const tokens = [firstToken];
 
-    // Pick remaining tokens
-    for (let i = 1; i < template.parts.length; i++) {
-      const category = template.parts[i];
+    for (const category of remainingParts) {
       const prefer = template.options.preferAlliteration ? firstToken : undefined;
-      const token = pickWeighted(cfg.lexicon[category], prefer);
+      const token = pickWeighted(cfg.lexicon[category], rng, prefer);
       tokens.push(token);
     }
 
@@ -246,7 +275,7 @@ export function generateSeed(): string {
       const idx = rng.nextInt(bestTokens.length);
       const category = template.parts[idx];
       const prefer = template.options.preferAlliteration ? bestTokens[0] : undefined;
-      const alternative = pickWeighted(cfg.lexicon[category], prefer);
+      const alternative = pickWeighted(cfg.lexicon[category], rng, prefer);
 
       const mutated = [...bestTokens];
       mutated[idx] = alternative;
