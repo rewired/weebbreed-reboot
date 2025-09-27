@@ -16,6 +16,7 @@
 - **Socket transport parity.** Keep `socket.io` and `socket.io-client` on the **same minor version** across backend and frontend packages. Update both sides together to avoid wire-protocol drift.
 - **No breaking directory churn.** Prefer additive refactors with clear commits, green CI at every step.
 - **Documentation** is crucial. Please document changes before committing (`CHANGELOG.md`). Always check against `/docs/weedbreed-final-truth.md` and `/docs/ui-building_guide.md` - change missalginments. Also take a look at the rest of `/docs/**/*.md`.
+- **Centralize simulation constants.** Author new or updated constants in the shared backend modules under `src/backend/src/constants/`, include a short JSDoc description, and mirror every change in `/docs/constants/**`. This policy will be anchored in the forthcoming ADR on simulation constant stewardship so plan updates accordingly.
 - **Before commiting** use `pnpm run check` to satisfy `husky` rules.
 - **If unsure: ask!**
 
