@@ -5,6 +5,12 @@ import { createEventCollector, type SimulationEvent } from '@/lib/eventBus.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import {
+  DISEASE_DETECTION_THRESHOLD,
+  DISEASE_SPREAD_THRESHOLD,
+  PEST_DETECTION_THRESHOLD,
+  PEST_SPREAD_THRESHOLD,
+} from '@/constants/health.js';
 import type {
   DiseaseState,
   GameState,
@@ -312,11 +318,15 @@ describe('PlantHealthEngine', () => {
     const zone = state.structures[0].rooms[0].zones[0];
     const plant = zone.plants[0];
     const secondaryPlant = zone.plants[1];
+    const initialDiseaseSeverity = DISEASE_DETECTION_THRESHOLD + 0.02;
+    const initialDiseaseInfection = Math.max(DISEASE_SPREAD_THRESHOLD - 0.2, 0.1);
+    const initialPestPopulation = Math.max(PEST_SPREAD_THRESHOLD, PEST_DETECTION_THRESHOLD + 0.38);
+
     const disease: DiseaseState = {
       id: 'disease-1',
       pathogenId: 'powdery-mildew',
-      severity: 0.2,
-      infection: 0.4,
+      severity: initialDiseaseSeverity,
+      infection: initialDiseaseInfection,
       detected: false,
       symptomTimerTicks: 0,
       spreadCooldownTicks: 1,
@@ -329,7 +339,7 @@ describe('PlantHealthEngine', () => {
     const pest: PestState = {
       id: 'pest-1',
       pestId: 'spider-mites',
-      population: 0.6,
+      population: initialPestPopulation,
       damage: 0.2,
       detected: false,
       symptomTimerTicks: 0,
@@ -359,9 +369,9 @@ describe('PlantHealthEngine', () => {
     const infectionAfterTick1 = disease.infection;
     const severityAfterTick1 = disease.severity;
     const pestPopulationAfterTick1 = pest.population;
-    expect(infectionAfterTick1).toBeGreaterThan(0.4);
-    expect(severityAfterTick1).toBeGreaterThan(0.2);
-    expect(pestPopulationAfterTick1).toBeGreaterThan(0.6);
+    expect(infectionAfterTick1).toBeGreaterThan(initialDiseaseInfection);
+    expect(severityAfterTick1).toBeGreaterThan(initialDiseaseSeverity);
+    expect(pestPopulationAfterTick1).toBeGreaterThan(initialPestPopulation);
 
     zone.health.pendingTreatments.push({
       optionId: 'bio-boost',
@@ -404,9 +414,9 @@ describe('PlantHealthEngine', () => {
     const pestDeltaAfter = pestAfterTreatment - pestBeforeTreatment;
     expect(pestDeltaAfter).toBeLessThan(pestDeltaBefore);
 
-    disease.infection = 0.8;
+    disease.infection = DISEASE_SPREAD_THRESHOLD + 0.2;
     disease.lastSpreadTick = 0;
-    pest.population = 0.8;
+    pest.population = PEST_SPREAD_THRESHOLD + 0.2;
     pest.lastSpreadTick = 0;
 
     engine.runSpread(context3);
