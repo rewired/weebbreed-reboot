@@ -1378,11 +1378,19 @@ export const ModalHost = ({ bridge }: ModalHostProps) => {
     }
     const snapshot = useSimulationStore.getState().snapshot;
     const timeStatus = useSimulationStore.getState().timeStatus;
-    const resumable = timeStatus
-      ? timeStatus.paused === false
-      : snapshot
-        ? !snapshot.clock.isPaused
-        : false;
+    const timeStatusPaused = typeof timeStatus?.paused === 'boolean' ? timeStatus.paused : null;
+    const snapshotPaused = snapshot ? snapshot.clock.isPaused : null;
+    let isPaused = true;
+
+    if (timeStatusPaused !== null && snapshotPaused !== null) {
+      isPaused = timeStatusPaused === snapshotPaused ? timeStatusPaused : true;
+    } else if (timeStatusPaused !== null) {
+      isPaused = timeStatusPaused;
+    } else if (snapshotPaused !== null) {
+      isPaused = snapshotPaused;
+    }
+
+    const resumable = !isPaused;
     const speed = timeStatus?.speed ?? snapshot?.clock.targetTickRate ?? 1;
     pauseContext.current = { resumable, speed };
     if (resumable) {

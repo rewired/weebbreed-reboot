@@ -101,4 +101,45 @@ describe('ModalHost', () => {
 
     expect(sendControlMock).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'play' }));
   });
+
+  it('treats conflicting pause states as paused and avoids pause/resume commands', async () => {
+    act(() => {
+      useSimulationStore.setState({
+        snapshot: {
+          ...structuredClone(baseSnapshot),
+          clock: {
+            ...structuredClone(baseSnapshot.clock),
+            isPaused: true,
+          },
+        },
+        timeStatus: {
+          ...pausedStatus,
+          paused: false,
+          running: true,
+        },
+      });
+    });
+
+    render(<ModalHost bridge={bridge} />);
+
+    act(() => {
+      useUIStore
+        .getState()
+        .openModal({ id: 'test', type: 'notifications', title: 'Notifications' });
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      useUIStore.getState().closeModal();
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(sendControlMock).not.toHaveBeenCalled();
+  });
 });
