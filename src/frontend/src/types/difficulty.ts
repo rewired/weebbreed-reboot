@@ -25,24 +25,13 @@ export interface DifficultyConfig {
   [key: string]: DifficultyPreset;
 }
 
-export interface ModifierRanges {
-  plantStress: {
-    optimalRangeMultiplier: [number, number];
-    stressAccumulationMultiplier: [number, number];
+export type ModifierRanges = {
+  [T in keyof DifficultyModifiers]: {
+    [K in keyof DifficultyModifiers[T]]: readonly [number, number];
   };
-  deviceFailure: {
-    mtbfMultiplier: [number, number];
-  };
-  economics: {
-    initialCapital: [number, number];
-    itemPriceMultiplier: [number, number];
-    harvestPriceMultiplier: [number, number];
-    rentPerSqmStructurePerTick: [number, number];
-    rentPerSqmRoomPerTick: [number, number];
-  };
-}
+};
 
-export const MODIFIER_RANGES: ModifierRanges = {
+export const MODIFIER_RANGES = {
   plantStress: {
     optimalRangeMultiplier: [0.5, 1.5],
     stressAccumulationMultiplier: [0.5, 1.5],
@@ -57,4 +46,9 @@ export const MODIFIER_RANGES: ModifierRanges = {
     rentPerSqmStructurePerTick: [0.1, 1.5],
     rentPerSqmRoomPerTick: [0.1, 1.5],
   },
-};
+} as const satisfies ModifierRanges;
+
+export const getModifierRange = <T extends keyof ModifierRanges, K extends keyof ModifierRanges[T]>(
+  category: T,
+  key: K,
+): ModifierRanges[T][K] => MODIFIER_RANGES[category][key];
