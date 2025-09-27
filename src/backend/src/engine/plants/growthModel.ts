@@ -7,6 +7,42 @@ import {
   PLANT_STRESS_IMPACT_FACTOR,
 } from '@/constants/balance.js';
 import {
+  PLANT_CANOPY_AREA_MIN,
+  PLANT_CANOPY_LIGHT_EXTINCTION_COEFFICIENT,
+  PLANT_DEFAULT_CANOPY_COVER,
+  PLANT_DEFAULT_CO2_HALF_SATURATION,
+  PLANT_DEFAULT_GROWTH_RATE,
+  PLANT_DEFAULT_HARVEST_INDEX,
+  PLANT_DEFAULT_LEAF_AREA_INDEX,
+  PLANT_DEFAULT_LIGHT_HALF_SATURATION,
+  PLANT_DEFAULT_RESILIENCE,
+  PLANT_DEFAULT_TEMPERATURE_GAUSSIAN_MEAN_C,
+  PLANT_DEFAULT_TEMPERATURE_GAUSSIAN_SIGMA_C,
+  PLANT_DEFAULT_VPD_GAUSSIAN_MEAN_KPA,
+  PLANT_DEFAULT_VPD_GAUSSIAN_SIGMA_KPA,
+  PLANT_HEALTH_ALERT_THRESHOLDS,
+  PLANT_HEALTH_BASE_RECOVERY_RATE,
+  PLANT_HEALTH_RESILIENCE_RECOVERY_BONUS,
+  PLANT_HEIGHT_PER_GRAM_MULTIPLIER,
+  PLANT_LEAF_AREA_INDEX_MAX,
+  PLANT_LEAF_AREA_INDEX_MIN,
+  PLANT_LIGHT_HALF_SATURATION_MAX,
+  PLANT_LIGHT_HALF_SATURATION_MIN,
+  PLANT_MAX_GROWTH_RATE,
+  PLANT_MIN_GROWTH_RATE,
+  PLANT_MIN_TEMPERATURE_GAUSSIAN_SIGMA_C,
+  PLANT_QUALITY_BASE_ADJUSTMENT_RATE,
+  PLANT_QUALITY_STRESS_FACTOR,
+  PLANT_RESILIENCE_STRESS_RELIEF_FACTOR,
+  PLANT_VPD_RELATIVE_HUMIDITY_LOW_MAX,
+  PLANT_VPD_RELATIVE_HUMIDITY_MAX,
+  PLANT_VPD_RELATIVE_HUMIDITY_MIN,
+  PLANT_VPD_RELATIVE_HUMIDITY_MIN_SPAN,
+  PLANT_VPD_TOLERANCE_FACTOR,
+  PLANT_CO2_HALF_SATURATION_MAX,
+  PLANT_CO2_HALF_SATURATION_MIN,
+} from '@/constants/plants.js';
+import {
   advancePhenology,
   createInitialPhenologyState,
   createPhenologyConfig,
@@ -30,26 +66,19 @@ const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
 };
 
-const DEFAULT_LIGHT_HALF_SAT = 350;
-const DEFAULT_CO2_HALF_SAT = 600;
-const HEALTH_ALERT_THRESHOLDS = [
-  { threshold: 0.5, severity: 'warning' as const },
-  { threshold: 0.3, severity: 'critical' as const },
-];
-
 const computeVpd = vaporPressureDeficit;
 
 const resolveLightHalfSaturation = (strain: StrainBlueprint, stage: PlantStage): number => {
   const phase = mapStageToGrowthPhase(stage);
   const range = strain.environmentalPreferences?.lightIntensity?.[phase];
   if (!range) {
-    return DEFAULT_LIGHT_HALF_SAT;
+    return PLANT_DEFAULT_LIGHT_HALF_SATURATION;
   }
   const [low, high] = range;
   if (!Number.isFinite(low) || !Number.isFinite(high) || low <= 0 || high <= 0) {
-    return DEFAULT_LIGHT_HALF_SAT;
+    return PLANT_DEFAULT_LIGHT_HALF_SATURATION;
   }
-  return clamp((low + high) / 2, 50, 1200);
+  return clamp((low + high) / 2, PLANT_LIGHT_HALF_SATURATION_MIN, PLANT_LIGHT_HALF_SATURATION_MAX);
 };
 
 const resolveTemperatureResponse = (
@@ -60,11 +89,15 @@ const resolveTemperatureResponse = (
   const phase = mapStageToGrowthPhase(stage);
   const range = strain.environmentalPreferences?.idealTemperature?.[phase];
   if (!range) {
-    return gaussianResponse(temperature, 25, 6);
+    return gaussianResponse(
+      temperature,
+      PLANT_DEFAULT_TEMPERATURE_GAUSSIAN_MEAN_C,
+      PLANT_DEFAULT_TEMPERATURE_GAUSSIAN_SIGMA_C,
+    );
   }
   const [low, high] = range;
   const mean = (low + high) / 2;
-  const sigma = Math.max((high - low) / 2, 3);
+  const sigma = Math.max((high - low) / 2, PLANT_MIN_TEMPERATURE_GAUSSIAN_SIGMA_C);
   return gaussianResponse(temperature, mean, sigma);
 };
 
@@ -77,27 +110,51 @@ const resolveVpdResponse = (
   const phase = mapStageToGrowthPhase(stage);
   const humidityRange = strain.environmentalPreferences?.idealHumidity?.[phase];
   if (!humidityRange) {
-    return gaussianResponse(vpd, 1.1, 0.6);
+    return gaussianResponse(
+      vpd,
+      PLANT_DEFAULT_VPD_GAUSSIAN_MEAN_KPA,
+      PLANT_DEFAULT_VPD_GAUSSIAN_SIGMA_KPA,
+    );
   }
-  const lowRh = clamp(humidityRange[0], 0.2, 0.95);
-  const highRh = clamp(humidityRange[1], lowRh + 0.05, 0.98);
+  const lowRh = clamp(
+    humidityRange[0],
+    PLANT_VPD_RELATIVE_HUMIDITY_MIN,
+    PLANT_VPD_RELATIVE_HUMIDITY_LOW_MAX,
+  );
+  const highRh = clamp(
+    humidityRange[1],
+    lowRh + PLANT_VPD_RELATIVE_HUMIDITY_MIN_SPAN,
+    PLANT_VPD_RELATIVE_HUMIDITY_MAX,
+  );
   const midRh = (lowRh + highRh) / 2;
   const vpdOpt = computeVpd(temperature, midRh);
   const vpdLow = computeVpd(temperature, highRh);
   const vpdHigh = computeVpd(temperature, lowRh);
   const tolerance = Math.max(Math.abs(vpdHigh - vpdOpt), Math.abs(vpdOpt - vpdLow));
-  return gaussianResponse(vpd, vpdOpt, Math.max(tolerance / 2, GAUSSIAN_MIN_SIGMA));
+  return gaussianResponse(
+    vpd,
+    vpdOpt,
+    Math.max(tolerance * PLANT_VPD_TOLERANCE_FACTOR, GAUSSIAN_MIN_SIGMA),
+  );
 };
 
 const resolveCo2HalfSaturation = (strain: StrainBlueprint): number => {
-  const growthRate = clamp(strain.morphology?.growthRate ?? 1, 0.3, 2);
-  return clamp(DEFAULT_CO2_HALF_SAT / growthRate, 350, 900);
+  const growthRate = clamp(
+    strain.morphology?.growthRate ?? PLANT_DEFAULT_GROWTH_RATE,
+    PLANT_MIN_GROWTH_RATE,
+    PLANT_MAX_GROWTH_RATE,
+  );
+  return clamp(
+    PLANT_DEFAULT_CO2_HALF_SATURATION / growthRate,
+    PLANT_CO2_HALF_SATURATION_MIN,
+    PLANT_CO2_HALF_SATURATION_MAX,
+  );
 };
 
 const computeCanopyInterception = (leafAreaIndex: number, canopyArea: number): number => {
-  const lai = clamp(leafAreaIndex, 0.2, 6);
-  const referenceArea = Math.max(canopyArea, 0.05);
-  const extinctionCoefficient = 0.7;
+  const lai = clamp(leafAreaIndex, PLANT_LEAF_AREA_INDEX_MIN, PLANT_LEAF_AREA_INDEX_MAX);
+  const referenceArea = Math.max(canopyArea, PLANT_CANOPY_AREA_MIN);
+  const extinctionCoefficient = PLANT_CANOPY_LIGHT_EXTINCTION_COEFFICIENT;
   return clamp(1 - Math.exp(-extinctionCoefficient * lai * referenceArea), 0, 1);
 };
 
@@ -173,8 +230,8 @@ const updateQuality = (
   stress: number,
   tickHours: number,
 ): { value: number; delta: number } => {
-  const qualityTarget = clamp(newHealth - stress * 0.4, 0, 1);
-  const adjustmentRate = clamp(tickHours / 24, 0, 1) * 0.5;
+  const qualityTarget = clamp(newHealth - stress * PLANT_QUALITY_STRESS_FACTOR, 0, 1);
+  const adjustmentRate = clamp(tickHours / 24, 0, 1) * PLANT_QUALITY_BASE_ADJUSTMENT_RATE;
   const delta = (qualityTarget - currentQuality) * adjustmentRate;
   const value = clamp(currentQuality + delta, 0, 1);
   return { value, delta };
@@ -196,7 +253,7 @@ const resolveHarvestIndex = (strain: StrainBlueprint): number => {
   if (typeof harvestIndex === 'number' && Number.isFinite(harvestIndex)) {
     return clamp(harvestIndex, 0, 1);
   }
-  return 0.65;
+  return PLANT_DEFAULT_HARVEST_INDEX;
 };
 
 const shouldAccumulateYield = (stage: PlantStage): boolean => {
@@ -210,7 +267,7 @@ const buildHealthEvents = (
   tick?: number,
 ): SimulationEvent[] => {
   const events: SimulationEvent[] = [];
-  for (const threshold of HEALTH_ALERT_THRESHOLDS) {
+  for (const threshold of PLANT_HEALTH_ALERT_THRESHOLDS) {
     const previouslyHealthy = plant.health >= threshold.threshold;
     const nowBelow = newHealth < threshold.threshold;
     if (previouslyHealthy && nowBelow) {
@@ -251,8 +308,15 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
   const { plant, strain, environment, tickHours, tick } = context;
   const phenologyConfig = context.phenologyConfig ?? createPhenologyConfig(strain);
   const phenologyState = ensurePhenologyState(plant.stage, context.phenology);
-  const canopyArea = Math.max(context.canopyAreaOverride ?? plant.canopyCover ?? 0.1, 0.05);
-  const leafAreaIndex = clamp(strain.morphology?.leafAreaIndex ?? 2.5, 0.2, 6);
+  const canopyArea = Math.max(
+    context.canopyAreaOverride ?? plant.canopyCover ?? PLANT_DEFAULT_CANOPY_COVER,
+    PLANT_CANOPY_AREA_MIN,
+  );
+  const leafAreaIndex = clamp(
+    strain.morphology?.leafAreaIndex ?? PLANT_DEFAULT_LEAF_AREA_INDEX,
+    PLANT_LEAF_AREA_INDEX_MIN,
+    PLANT_LEAF_AREA_INDEX_MAX,
+  );
 
   const resources = calculateResourceDemand({
     strain,
@@ -299,15 +363,21 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
     stomatalFactor: combinedResponse,
   });
 
-  const resilience = clamp(strain.generalResilience ?? 0.5, 0, 1);
+  const resilience = clamp(strain.generalResilience ?? PLANT_DEFAULT_RESILIENCE, 0, 1);
   const overallStress = clamp(1 - combinedResponse, 0, 1);
-  const effectiveStress = clamp(overallStress - (resilience - 0.5) * 0.3, 0, 1);
+  const effectiveStress = clamp(
+    overallStress - (resilience - PLANT_DEFAULT_RESILIENCE) * PLANT_RESILIENCE_STRESS_RELIEF_FACTOR,
+    0,
+    1,
+  );
 
   const stressPenalty = effectiveStress * PLANT_STRESS_IMPACT_FACTOR * Math.max(tickHours, 0);
   const recoveryBonus = (1 - effectiveStress) * PLANT_RECOVERY_FACTOR * Math.max(tickHours, 0);
 
   const healthTarget = clamp(1 - effectiveStress, 0, 1);
-  const adjustmentRate = clamp(tickHours / 24, 0, 1) * (0.6 + resilience * 0.4);
+  const adjustmentRate =
+    clamp(tickHours / 24, 0, 1) *
+    (PLANT_HEALTH_BASE_RECOVERY_RATE + resilience * PLANT_HEALTH_RESILIENCE_RECOVERY_BONUS);
   const baselineHealthDelta = (healthTarget - plant.health) * adjustmentRate;
   const healthDelta = baselineHealthDelta - stressPenalty + recoveryBonus;
   const newHealth = clamp(plant.health + healthDelta, 0, 1);
@@ -394,7 +464,7 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
     stress: effectiveStress,
     quality: newQuality,
     heightMeters: Math.max(
-      plant.heightMeters + Math.max(0, biomassDelta) * 0.002,
+      plant.heightMeters + Math.max(0, biomassDelta) * PLANT_HEIGHT_PER_GRAM_MULTIPLIER,
       plant.heightMeters,
     ),
     lastMeasurementTick: tick ?? plant.lastMeasurementTick,
