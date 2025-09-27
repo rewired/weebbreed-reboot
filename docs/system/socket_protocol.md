@@ -399,11 +399,12 @@ object:
 
 #### Supported actions per domain
 
-- **world** — `rentStructure`, `createRoom`, `updateRoom`, `deleteRoom`,
-  `createZone`, `updateZone`, `deleteZone`, `renameStructure`, `deleteStructure`,
-  `duplicateStructure`, `duplicateRoom`, `duplicateZone`. Duplication commands
-  accept an optional `name` override and return `{ structureId | roomId | zoneId
-}` for the newly created copy.
+- **world** — `getStructureBlueprints`, `getStrainBlueprints`,
+  `getDeviceBlueprints`, `rentStructure`, `createRoom`, `updateRoom`,
+  `deleteRoom`, `createZone`, `updateZone`, `deleteZone`, `renameStructure`,
+  `deleteStructure`, `duplicateStructure`, `duplicateRoom`, `duplicateZone`.
+  Duplication commands accept an optional `name` override and return
+  `{ structureId | roomId | zoneId }` for the newly created copy.
 - **devices** — `installDevice`, `updateDevice`, `moveDevice`, `removeDevice`,
   `toggleDeviceGroup`. The toggle action returns `{ deviceIds: string[] }` with
   every instance that changed status.
@@ -415,6 +416,77 @@ object:
 - **workforce** — `refreshCandidates`, `hire`, `fire`, `setOvertimePolicy`,
   `assignStructure`, `enqueueTask` (payload defaults to `{}` when omitted).
 - **finance** — `sellInventory`, `setUtilityPrices`, `setMaintenancePolicy`.
+
+##### Blueprint catalog commands
+
+- `getStructureBlueprints` returns the raw `StructureBlueprint[]` catalog
+  (geometry, rent, upfront fee). Payload defaults to `{}`.
+- `getStrainBlueprints` returns an alphabetised strain catalog with compatibility
+  and defaults. Example entry:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000401",
+  "slug": "helios",
+  "name": "Helios",
+  "lineage": { "parents": [] },
+  "genotype": { "sativa": 0.6, "indica": 0.4, "ruderalis": 0 },
+  "chemotype": { "thcContent": 0.22, "cbdContent": 0.01 },
+  "generalResilience": 0.8,
+  "germinationRate": 0.95,
+  "compatibility": {
+    "methodAffinity": { "85cc0916-0e8a-495e-af8f-50291abe6855": 0.85 },
+    "stressTolerance": { "temp_C": 1, "vpd_kPa": 0.15 }
+  },
+  "defaults": {
+    "envBands": { "default": { "temp_C": { "green": [23, 27] } } },
+    "phaseDurations": { "vegDays": 21, "flowerDays": 63 },
+    "photoperiod": { "vegetationTime": 2419200, "floweringTime": 5443200 },
+    "nutrientDemand": { "dailyNutrientDemand": { "flowering": { "nitrogen": 0.07 } } },
+    "waterDemand": { "dailyWaterUsagePerSquareMeter": { "flowering": 0.54 } },
+    "growthModel": { "maxBiomassDry": 0.18 },
+    "yieldModel": { "baseGmPerPlant": 45 }
+  },
+  "traits": {
+    "morphology": { "growthRate": 1, "yieldFactor": 1 },
+    "noise": { "enabled": true, "pct": 0.02 }
+  },
+  "metadata": { "description": "Hybrid strain tuned for balanced growth." },
+  "price": { "seedPrice": 1.1, "harvestPricePerGram": 4.4 }
+}
+```
+
+- `getDeviceBlueprints` returns device catalog entries with compatibility and
+  default settings:
+
+```json
+{
+  "id": "00000000-0000-0000-0000-000000000501",
+  "kind": "Lamp",
+  "name": "Orion Lamp",
+  "quality": 0.95,
+  "complexity": 0.5,
+  "lifetimeHours": 72000,
+  "capexEur": 1350,
+  "efficiencyDegeneration": 0.01,
+  "compatibility": { "roomPurposes": ["growroom"] },
+  "defaults": {
+    "settings": { "power": 0.68, "ppfd": 810, "coverageArea": 8 },
+    "coverage": { "maxArea_m2": 12 },
+    "limits": { "maxPPFD": 1000 }
+  },
+  "maintenance": { "intervalDays": 90, "costPerService_eur": 80, "hoursPerService": 2 },
+  "metadata": { "description": "Balanced flowering lamp" },
+  "price": {
+    "capitalExpenditure": 1350,
+    "baseMaintenanceCostPerTick": 0.0023,
+    "costIncreasePer1000Ticks": 0.0005
+  }
+}
+```
+
+Each response is regenerated from the active blueprint repository on demand to
+avoid stale caches.
 
 Clients may optimistically update UI state after receiving a successful
 `*.intent.result` packet but must still observe follow-up telemetry for the

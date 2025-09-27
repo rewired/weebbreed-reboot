@@ -11,6 +11,18 @@ import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import { RngService } from '@/lib/rng.js';
+import {
+  buildDeviceBlueprintCatalog,
+  buildStrainBlueprintCatalog,
+} from '@/facade/blueprintCatalog.js';
+import {
+  createBlueprintRepositoryStub,
+  createDeviceBlueprint,
+  createDevicePriceMap,
+  createStrainBlueprint,
+  createStrainPriceMap,
+  createStructureBlueprint,
+} from '@/testing/fixtures.js';
 
 const STRUCTURE_ID = '11111111-1111-1111-1111-111111111111';
 const ROOM_ID = '22222222-2222-2222-2222-222222222222';
@@ -21,6 +33,11 @@ const METHOD_ID = '66666666-6666-6666-6666-666666666666';
 const STRAIN_ID = '77777777-7777-7777-7777-777777777777';
 const PLANTING_PLAN_ID = '88888888-8888-8888-8888-888888888888';
 const ROOM_PURPOSE_ID = '99999999-9999-9999-9999-999999999999';
+const STRAIN_BLUEPRINT_ALPHA_ID = '00000000-0000-0000-0000-000000000101';
+const STRAIN_BLUEPRINT_BETA_ID = '00000000-0000-0000-0000-000000000102';
+const DEVICE_BLUEPRINT_LAMP_ID = '00000000-0000-0000-0000-000000000201';
+const DEVICE_BLUEPRINT_CLIMATE_ID = '00000000-0000-0000-0000-000000000202';
+const STRUCTURE_BLUEPRINT_ID = '00000000-0000-0000-0000-000000000301';
 
 const createPriceCatalog = (): PriceCatalog => ({
   devicePrices: new Map([
@@ -194,6 +211,10 @@ describe('SimulationFacade new intents', () => {
   let state: GameState;
   let facade: SimulationFacade;
   let events: SimulationEvent[];
+  let repository: ReturnType<typeof createBlueprintRepositoryStub>;
+  let expectedStrainCatalog: ReturnType<typeof buildStrainBlueprintCatalog>;
+  let expectedDeviceCatalog: ReturnType<typeof buildDeviceBlueprintCatalog>;
+  let structureBlueprints: ReturnType<typeof createStructureBlueprint>[];
 
   beforeEach(() => {
     state = createTestState();
@@ -201,6 +222,69 @@ describe('SimulationFacade new intents', () => {
     const eventBus = new EventBus();
     const rng = new RngService('intent-tests');
     const costAccounting = new CostAccountingService(createPriceCatalog());
+    const strainBlueprints = [
+      createStrainBlueprint({
+        id: STRAIN_BLUEPRINT_ALPHA_ID,
+        name: 'Aurora Prime',
+        slug: 'aurora-prime',
+        methodAffinity: { [METHOD_ID]: 0.85 },
+      }),
+      createStrainBlueprint({
+        id: STRAIN_BLUEPRINT_BETA_ID,
+        name: 'Borealis',
+        slug: 'borealis',
+        methodAffinity: { [METHOD_ID]: 0.6 },
+      }),
+    ];
+    const deviceBlueprints = [
+      createDeviceBlueprint({
+        kind: 'Lamp',
+        id: DEVICE_BLUEPRINT_LAMP_ID,
+        name: 'Astra Lamp',
+        roomPurposes: ['growroom'],
+        settings: { power: 0.7, ppfd: 820, coverageArea: 9 },
+      }),
+      createDeviceBlueprint({
+        kind: 'ClimateUnit',
+        id: DEVICE_BLUEPRINT_CLIMATE_ID,
+        name: 'Boreal Climate',
+        roomPurposes: '*',
+        settings: { airflow: 360, targetTemperature: 24, coolingCapacity: 3.2 },
+      }),
+    ];
+    const strainPrices = createStrainPriceMap([
+      [STRAIN_BLUEPRINT_ALPHA_ID, { seedPrice: 1.2, harvestPricePerGram: 4.5 }],
+      [STRAIN_BLUEPRINT_BETA_ID, { seedPrice: 0.95, harvestPricePerGram: 3.8 }],
+    ]);
+    const devicePrices = createDevicePriceMap([
+      [
+        DEVICE_BLUEPRINT_LAMP_ID,
+        {
+          capitalExpenditure: 1400,
+          baseMaintenanceCostPerTick: 0.0025,
+          costIncreasePer1000Ticks: 0.0005,
+        },
+      ],
+      [
+        DEVICE_BLUEPRINT_CLIMATE_ID,
+        {
+          capitalExpenditure: 4200,
+          baseMaintenanceCostPerTick: 0.0035,
+          costIncreasePer1000Ticks: 0.0007,
+        },
+      ],
+    ]);
+    repository = createBlueprintRepositoryStub({
+      strains: strainBlueprints,
+      devices: deviceBlueprints,
+      strainPrices,
+      devicePrices,
+    });
+    expectedStrainCatalog = buildStrainBlueprintCatalog(repository);
+    expectedDeviceCatalog = buildDeviceBlueprintCatalog(repository);
+    structureBlueprints = [
+      createStructureBlueprint({ id: STRUCTURE_BLUEPRINT_ID, name: 'Catalog Test Campus' }),
+    ];
     const loopStub = { processTick: () => Promise.resolve() } as unknown as SimulationLoop;
     facade = new SimulationFacade({
       state,
@@ -208,12 +292,20 @@ describe('SimulationFacade new intents', () => {
       loop: loopStub,
     });
 
-    const worldService = new WorldService({ state, rng, costAccounting });
+    const worldService = new WorldService({
+      state,
+      rng,
+      costAccounting,
+      structureBlueprints,
+    });
     const deviceService = new DeviceGroupService({ state, rng });
     const plantingPlanService = new PlantingPlanService({ state, rng });
 
     facade.updateServices({
       world: {
+        getStructureBlueprints: () => ({ ok: true, data: structureBlueprints }),
+        getStrainBlueprints: () => ({ ok: true, data: buildStrainBlueprintCatalog(repository) }),
+        getDeviceBlueprints: () => ({ ok: true, data: buildDeviceBlueprintCatalog(repository) }),
         renameStructure: (intent, context) =>
           worldService.renameStructure(intent.structureId, intent.name, context),
         deleteStructure: (intent, context) =>
@@ -280,6 +372,33 @@ describe('SimulationFacade new intents', () => {
     expect(toggleResult?.ok).toBe(true);
     const startResult = await startHandler?.({ gameSpeed: 1 });
     expect(startResult?.ok).toBe(true);
+  });
+
+  it('returns deterministic strain blueprint catalogs', async () => {
+    const response = await facade.world.getStrainBlueprints({});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedStrainCatalog);
+    if (response.data && response.data.length > 0) {
+      const entry = response.data[0];
+      if (entry?.defaults.phaseDurations) {
+        entry.defaults.phaseDurations.vegDays = 999;
+      }
+    }
+    const second = await facade.world.getStrainBlueprints({});
+    expect(second.ok).toBe(true);
+    expect(second.data).toEqual(expectedStrainCatalog);
+  });
+
+  it('returns deterministic device blueprint catalogs', async () => {
+    const response = await facade.world.getDeviceBlueprints({});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedDeviceCatalog);
+    if (response.data && response.data.length > 0) {
+      response.data[0]!.defaults.settings.power = 0;
+    }
+    const second = await facade.world.getDeviceBlueprints({});
+    expect(second.ok).toBe(true);
+    expect(second.data).toEqual(expectedDeviceCatalog);
   });
 
   it('renames a structure and emits an event', async () => {

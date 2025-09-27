@@ -7,6 +7,10 @@ import type {
   DuplicateZoneResult,
 } from '@/engine/world/worldService.js';
 import type { StructureBlueprint } from '@/state/models.js';
+import type {
+  DeviceBlueprintCatalogEntry,
+  StrainBlueprintCatalogEntry,
+} from '@/facade/blueprintCatalog.js';
 import {
   emptyObjectSchema,
   entityIdentifier,
@@ -29,6 +33,8 @@ const rentStructureSchema = z
   .strict();
 
 const getStructureBlueprintsSchema = emptyObjectSchema;
+const getStrainBlueprintsSchema = emptyObjectSchema;
+const getDeviceBlueprintsSchema = emptyObjectSchema;
 const createRoomSchema = z
   .object({
     structureId: entityIdentifier,
@@ -173,6 +179,8 @@ const duplicateZoneSchema = z
 
 export type RentStructureIntent = z.infer<typeof rentStructureSchema>;
 export type GetStructureBlueprintsIntent = z.infer<typeof getStructureBlueprintsSchema>;
+export type GetStrainBlueprintsIntent = z.infer<typeof getStrainBlueprintsSchema>;
+export type GetDeviceBlueprintsIntent = z.infer<typeof getDeviceBlueprintsSchema>;
 export type CreateRoomIntent = z.infer<typeof createRoomSchema>;
 export type UpdateRoomIntent = z.infer<typeof updateRoomSchema>;
 export type DeleteRoomIntent = z.infer<typeof deleteRoomSchema>;
@@ -190,6 +198,14 @@ export type DuplicateZoneIntent = z.infer<typeof duplicateZoneSchema>;
 export interface WorldIntentHandlers {
   rentStructure: ServiceCommandHandler<RentStructureIntent, DuplicateStructureResult>;
   getStructureBlueprints: ServiceCommandHandler<GetStructureBlueprintsIntent, StructureBlueprint[]>;
+  getStrainBlueprints: ServiceCommandHandler<
+    GetStrainBlueprintsIntent,
+    StrainBlueprintCatalogEntry[]
+  >;
+  getDeviceBlueprints: ServiceCommandHandler<
+    GetDeviceBlueprintsIntent,
+    DeviceBlueprintCatalogEntry[]
+  >;
   createRoom: ServiceCommandHandler<CreateRoomIntent, CreateRoomResult>;
   updateRoom: ServiceCommandHandler<UpdateRoomIntent>;
   deleteRoom: ServiceCommandHandler<DeleteRoomIntent>;
@@ -208,6 +224,14 @@ export interface WorldIntentHandlers {
 export interface WorldCommandRegistry {
   rentStructure: CommandRegistration<RentStructureIntent, DuplicateStructureResult>;
   getStructureBlueprints: CommandRegistration<GetStructureBlueprintsIntent, StructureBlueprint[]>;
+  getStrainBlueprints: CommandRegistration<
+    GetStrainBlueprintsIntent,
+    StrainBlueprintCatalogEntry[]
+  >;
+  getDeviceBlueprints: CommandRegistration<
+    GetDeviceBlueprintsIntent,
+    DeviceBlueprintCatalogEntry[]
+  >;
   createRoom: CommandRegistration<CreateRoomIntent>;
   updateRoom: CommandRegistration<UpdateRoomIntent>;
   deleteRoom: CommandRegistration<DeleteRoomIntent>;
@@ -242,6 +266,18 @@ export const buildWorldCommands = ({
     'world.getStructureBlueprints',
     getStructureBlueprintsSchema,
     () => services().getStructureBlueprints,
+    onMissingHandler,
+  ),
+  getStrainBlueprints: createServiceCommand(
+    'world.getStrainBlueprints',
+    getStrainBlueprintsSchema,
+    () => services().getStrainBlueprints,
+    onMissingHandler,
+  ),
+  getDeviceBlueprints: createServiceCommand(
+    'world.getDeviceBlueprints',
+    getDeviceBlueprintsSchema,
+    () => services().getDeviceBlueprints,
     onMissingHandler,
   ),
   createRoom: createServiceCommand<CreateRoomIntent, CreateRoomResult>(
@@ -329,6 +365,8 @@ export const buildWorldCommands = ({
 export const schemas = {
   rentStructureSchema,
   getStructureBlueprintsSchema,
+  getStrainBlueprintsSchema,
+  getDeviceBlueprintsSchema,
   createRoomSchema,
   updateRoomSchema,
   deleteRoomSchema,

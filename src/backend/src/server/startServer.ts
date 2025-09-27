@@ -19,6 +19,10 @@ import {
   type CommandResult,
   type CommandExecutionContext,
 } from '@/facade/index.js';
+import {
+  buildDeviceBlueprintCatalog,
+  buildStrainBlueprintCatalog,
+} from '@/facade/blueprintCatalog.js';
 import { SocketGateway } from '@/server/socketGateway.js';
 import { SseGateway } from '@/server/sseGateway.js';
 import { bootstrap } from '@/bootstrap.js';
@@ -338,6 +342,16 @@ export const startBackendServer = async (
     world: {
       rentStructure: (intent, context) => worldService.rentStructure(intent.structureId, context),
       getStructureBlueprints: () => worldService.getStructureBlueprints(),
+      getStrainBlueprints: () =>
+        ({
+          ok: true,
+          data: buildStrainBlueprintCatalog(repository),
+        }) satisfies CommandResult<ReturnType<typeof buildStrainBlueprintCatalog>>,
+      getDeviceBlueprints: () =>
+        ({
+          ok: true,
+          data: buildDeviceBlueprintCatalog(repository),
+        }) satisfies CommandResult<ReturnType<typeof buildDeviceBlueprintCatalog>>,
       createRoom: (intent, context) => worldService.createRoom(intent, context),
       createZone: (intent, context) => worldService.createZone(intent, context),
       renameStructure: (intent, context) =>

@@ -63,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Documented simulation constant governance in [ADR 0009](docs/system/adr/0009-simulation-constants-governance.md) and cross-linked the constants catalogue.
 - **Dynamic Structure Blueprint Loading**: The "Rent Structure" modal now dynamically loads available structure blueprints from the backend instead of using hardcoded frontend data. The backend exposes structure blueprints from `/data/blueprints/structures/*.json` through a new `getStructureBlueprints` facade intent. This ensures the frontend always displays the most current and accurate structure options available in the game.
+- Added world facade intents `getStrainBlueprints` and `getDeviceBlueprints` with deterministic catalog payloads (IDs, names, compatibility hints, default settings, and price hints), wired through the simulation facade/socket gateway and documented in the protocol guide.
 
 - **Enhanced Seed Generation System**: Implemented sophisticated seed generation for the New Game view based on `/reports/start_new_game-changes.md`. Features include:
   - **MULLBERRY32 PRNG**: Replaced simple LCG with high-quality MULLBERRY32 algorithm for better randomness distribution
