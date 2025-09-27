@@ -1010,7 +1010,7 @@ export class WorldService {
     return generateId(this.idStream, prefix);
   }
 
-  private failure(code: ErrorCode, message: string, path: string[]): CommandResult {
+  private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
       errors: [
@@ -1020,7 +1020,7 @@ export class WorldService {
           path,
         },
       ],
-    } satisfies CommandResult;
+    };
   }
 }
 
