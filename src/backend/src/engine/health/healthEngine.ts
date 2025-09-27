@@ -23,11 +23,15 @@ import {
   type TreatmentOptionIndex,
 } from './models.js';
 import { PLANT_DISEASE_IMPACT } from '@/constants/balance.js';
-
-const DISEASE_DETECTION_THRESHOLD = 0.18;
-const PEST_DETECTION_THRESHOLD = 0.22;
-const DISEASE_SPREAD_THRESHOLD = 0.6;
-const PEST_SPREAD_THRESHOLD = 0.6;
+import {
+  DEFAULT_TREATMENT_DURATION_DAYS,
+  DISEASE_DETECTION_THRESHOLD,
+  DISEASE_SPREAD_THRESHOLD,
+  MAX_EFFECTIVE_RATE,
+  MIN_EFFECTIVE_RATE,
+  PEST_DETECTION_THRESHOLD,
+  PEST_SPREAD_THRESHOLD,
+} from '@/constants/health.js';
 
 interface CombinedDiseaseTreatmentEffect {
   infection: number;
@@ -68,10 +72,6 @@ const DEFAULT_PEST_PHASE: Record<
   lateFlower: { reproduction: 1, mortality: 1, damage: 1 },
   ripening: { reproduction: 1, mortality: 1, damage: 1 },
 };
-
-const DEFAULT_TREATMENT_DURATION_DAYS = 1;
-const MIN_EFFECTIVE_RATE = 0;
-const MAX_EFFECTIVE_RATE = 10;
 
 const ensureOptionsIndex = (
   options: TreatmentOption[] | TreatmentOptionIndex,

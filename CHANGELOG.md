@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Centralized shared plant physiology coefficients (Magnus, canopy conductance, photon conversions) in `@/constants/physiology` and documented the module.
 - Consolidated plant growth defaults (light/CO₂ saturation, VPD tolerances, health alerts, yield multipliers) into `@/constants/plants` and documented the tuning guide for designers.
 - Promoted environment device coefficients, climate controller gains, and transpiration feedback defaults into `@/constants/environment` with updated references and documentation.
+- Extracted disease/pest detection and spread thresholds plus treatment defaults into `@/constants/health` with supporting documentation.
 
 ### Fixed
 
