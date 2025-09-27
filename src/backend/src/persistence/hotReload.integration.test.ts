@@ -107,4 +107,77 @@ describe('Blueprint hot reload integration', () => {
       ),
     ).toBe(true);
   });
+
+  it('commits staged data on the first tick even when staging is slow', async () => {
+    const repository = await BlueprintRepository.loadFrom(tempDataDirectory);
+    const rng = new RngService('hot-reload-slow-reload');
+    const state = await createInitialState({ repository, rng, dataDirectory: tempDataDirectory });
+    const bus = new EventBus();
+    const manager = new BlueprintHotReloadManager(repository, bus, () => state.clock.tick);
+    await manager.start();
+
+    const commitHook = manager.createCommitHook();
+    const buffered: SimulationEvent[] = [];
+    const collector = createEventCollector(buffered, state.clock.tick + 1);
+    const accountingStub: SimulationPhaseContext['accounting'] = {
+      recordUtility: () => {},
+      recordDevicePurchase: () => {},
+    };
+    const context: SimulationPhaseContext = {
+      state,
+      tick: state.clock.tick + 1,
+      tickLengthMinutes: state.metadata.tickLengthMinutes,
+      phase: 'commit',
+      events: collector,
+      accounting: accountingStub,
+    };
+
+    const originalReload = repository.reload.bind(repository);
+    const delayMs = 250;
+    let reloadStarted = false;
+    let reloadCompleted = false;
+    const repositoryWithOverride = repository as unknown as {
+      reload: () => Promise<DataLoadResult>;
+    };
+    repositoryWithOverride.reload = async () => {
+      reloadStarted = true;
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      const result = await originalReload();
+      reloadCompleted = true;
+      return result;
+    };
+
+    const growRoomPath = path.join(
+      tempDataDirectory,
+      'blueprints',
+      'roomPurposes',
+      'growroom.json',
+    );
+    const raw = await readFile(growRoomPath, 'utf-8');
+    const payload = JSON.parse(raw) as { name: string; [key: string]: unknown };
+    const updatedName = `${payload.name as string} slow`; // unique name for the scenario
+    payload.name = updatedName;
+    await writeFile(growRoomPath, `${JSON.stringify(payload, null, 2)}\n`, 'utf-8');
+
+    const waitStart = Date.now();
+    while (!reloadStarted && Date.now() - waitStart < 2000) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    expect(reloadStarted).toBe(true);
+
+    const commitStart = Date.now();
+    try {
+      await commitHook(context);
+    } finally {
+      repositoryWithOverride.reload = originalReload;
+      await manager.stop();
+    }
+    const elapsed = Date.now() - commitStart;
+
+    const committedEvent = buffered.find((event) => event.type === 'sim.hotReloaded');
+    expect(committedEvent).toBeDefined();
+    expect(repository.getRoomPurpose(GROW_ROOM_ID)?.name).toBe(updatedName);
+    expect(reloadCompleted).toBe(true);
+    expect(elapsed).toBeGreaterThanOrEqual(delayMs - 50);
+  });
 });

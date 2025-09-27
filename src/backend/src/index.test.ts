@@ -15,7 +15,10 @@ vi.mock('@/data/index.js', () => ({
 
 const createRepositoryStub = () => ({
   getSummary: () => ({ loadedFiles: 0, versions: {}, issues: [] }),
-  onHotReload: vi.fn(() => vi.fn(async () => {})),
+  onHotReload: vi.fn(async (_handler, options = {}) => {
+    void options;
+    return vi.fn(async () => {});
+  }),
 });
 
 describe('resolveDataDirectory', () => {

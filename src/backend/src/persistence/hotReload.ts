@@ -53,15 +53,15 @@ export class BlueprintHotReloadManager {
     const currentTickProvider = options.getCurrentTick ?? this.getCurrentTick;
     const disposer = await this.repository.onHotReload(
       async () => {
-        const staging = Promise.resolve();
-        this.trackPendingReload(staging);
-        await staging;
         // Stage reload; commit happens at the next tick boundary.
         return 'defer';
       },
       {
         onHotReloadError: (error) => {
           this.emitReloadFailed(error, currentTickProvider());
+        },
+        onReloadPending: (promise) => {
+          this.trackPendingReload(promise);
         },
       },
     );
@@ -81,14 +81,7 @@ export class BlueprintHotReloadManager {
 
   createCommitHook(): SimulationPhaseHandler {
     return async (context) => {
-      const pending = this.pendingReload;
-      if (pending) {
-        try {
-          await pending;
-        } catch {
-          // Errors during staging are surfaced through the repository hooks.
-        }
-      }
+      await this.awaitPendingReload();
       const result = this.repository.commitReload();
       if (!result) {
         return;
@@ -167,6 +160,21 @@ export class BlueprintHotReloadManager {
         this.pendingReload = null;
       }
     });
+  }
+
+  private async awaitPendingReload(): Promise<void> {
+    let pending: Promise<void> | null;
+    // Loop until there is no pending reload after the most recent staging completes.
+    while ((pending = this.pendingReload) !== null) {
+      try {
+        await pending;
+      } catch {
+        // Errors during staging are surfaced via the repository hooks.
+      }
+      if (this.pendingReload === pending) {
+        return;
+      }
+    }
   }
 }
 
