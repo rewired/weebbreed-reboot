@@ -15,7 +15,9 @@ import {
   type CreateZoneIntent,
 } from '@/facade/index.js';
 import {
+  type DeviceFailureModifiers,
   type GameState,
+  type PlantStressModifiers,
   type StructureBlueprint,
   type StructureState,
   type RoomState,
@@ -23,6 +25,8 @@ import {
   type ZoneResourceState,
   type ZoneMetricState,
   type ZoneHealthState,
+  type DifficultyLevel,
+  type EconomicsSettings,
 } from '@/state/models.js';
 import { validateStructureGeometry } from '@/state/geometry.js';
 import { findStructure, findRoom, findZone, type ZoneLookupResult } from './stateSelectors.js';
@@ -90,6 +94,32 @@ const cloneControl = (control: ZoneState['control'] | undefined): ZoneState['con
   } satisfies ZoneState['control'];
 };
 
+const DEFAULT_ECONOMICS: EconomicsSettings = {
+  initialCapital: 1_500_000,
+  itemPriceMultiplier: 1.0,
+  harvestPriceMultiplier: 1.0,
+  rentPerSqmStructurePerTick: 0.15,
+  rentPerSqmRoomPerTick: 0.3,
+};
+
+const DEFAULT_PLANT_STRESS_MODIFIERS: PlantStressModifiers = {
+  optimalRangeMultiplier: 1,
+  stressAccumulationMultiplier: 1,
+};
+
+const DEFAULT_DEVICE_FAILURE_MODIFIERS: DeviceFailureModifiers = {
+  mtbfMultiplier: 1,
+};
+
+const clonePlantStressModifiers = (source: PlantStressModifiers): PlantStressModifiers => ({
+  optimalRangeMultiplier: source.optimalRangeMultiplier,
+  stressAccumulationMultiplier: source.stressAccumulationMultiplier,
+});
+
+const cloneDeviceFailureModifiers = (source: DeviceFailureModifiers): DeviceFailureModifiers => ({
+  mtbfMultiplier: source.mtbfMultiplier,
+});
+
 const deepCloneSettings = (settings: Record<string, unknown>): Record<string, unknown> => {
   return JSON.parse(JSON.stringify(settings));
 };
@@ -145,6 +175,32 @@ export class WorldService {
     this.structureBlueprints = options.structureBlueprints;
     this.roomPurposeSource = options.roomPurposeSource;
     this.difficultyConfig = options.difficultyConfig;
+  }
+
+  private resolveEconomicsPreset(level: DifficultyLevel): EconomicsSettings {
+    const preset = this.difficultyConfig?.[level]?.modifiers.economics;
+    return preset ? { ...preset } : { ...DEFAULT_ECONOMICS };
+  }
+
+  private resolvePlantStressPreset(level: DifficultyLevel): PlantStressModifiers {
+    const preset = this.difficultyConfig?.[level]?.modifiers.plantStress;
+    return clonePlantStressModifiers(preset ?? DEFAULT_PLANT_STRESS_MODIFIERS);
+  }
+
+  private resolveDeviceFailurePreset(level: DifficultyLevel): DeviceFailureModifiers {
+    const preset = this.difficultyConfig?.[level]?.modifiers.deviceFailure;
+    return cloneDeviceFailureModifiers(preset ?? DEFAULT_DEVICE_FAILURE_MODIFIERS);
+  }
+
+  private ensureDifficultyMetadata(): void {
+    const difficulty = this.state.metadata.difficulty;
+    const plantStressSource =
+      this.state.metadata.plantStress ?? this.resolvePlantStressPreset(difficulty);
+    const deviceFailureSource =
+      this.state.metadata.deviceFailure ?? this.resolveDeviceFailurePreset(difficulty);
+
+    this.state.metadata.plantStress = clonePlantStressModifiers(plantStressSource);
+    this.state.metadata.deviceFailure = cloneDeviceFailureModifiers(deviceFailureSource);
   }
 
   getStructureBlueprints(): CommandResult<StructureBlueprint[]> {
@@ -643,6 +699,8 @@ export class WorldService {
     // Clear notes
     this.state.notes.length = 0;
 
+    this.ensureDifficultyMetadata();
+
     // Reset personnel to initial state
     this.state.personnel.employees.length = 0;
     this.state.personnel.applicants.length = 0;
@@ -700,23 +758,12 @@ export class WorldService {
   }
 
   newGame(
-    difficulty: 'easy' | 'normal' | 'hard' = 'normal',
+    difficulty: DifficultyLevel = 'normal',
     customModifiers:
       | {
-          plantStress: {
-            optimalRangeMultiplier: number;
-            stressAccumulationMultiplier: number;
-          };
-          deviceFailure: {
-            mtbfMultiplier: number;
-          };
-          economics: {
-            initialCapital: number;
-            itemPriceMultiplier: number;
-            harvestPriceMultiplier: number;
-            rentPerSqmStructurePerTick: number;
-            rentPerSqmRoomPerTick: number;
-          };
+          plantStress: PlantStressModifiers;
+          deviceFailure: DeviceFailureModifiers;
+          economics: EconomicsSettings;
         }
       | undefined,
     seed: string | undefined,
@@ -746,31 +793,19 @@ export class WorldService {
     this.state.personnel.overallMorale = 0;
 
     // Get economics from custom modifiers or default to difficulty preset from config
-    const presetEconomics = this.difficultyConfig
-      ? this.difficultyConfig[difficulty].modifiers.economics
-      : {
-          // Fallback mirrors 'normal' preset if config is unavailable
-          initialCapital: 1_500_000,
-          itemPriceMultiplier: 1.0,
-          harvestPriceMultiplier: 1.0,
-          rentPerSqmStructurePerTick: 0.15,
-          rentPerSqmRoomPerTick: 0.3,
-        };
+    const economicsPreset = this.resolveEconomicsPreset(difficulty);
+    const plantStressPreset = this.resolvePlantStressPreset(difficulty);
+    const deviceFailurePreset = this.resolveDeviceFailurePreset(difficulty);
 
-    const economics = customModifiers?.economics || presetEconomics;
+    const economics = customModifiers?.economics ?? economicsPreset;
+    const plantStress = customModifiers?.plantStress ?? plantStressPreset;
+    const deviceFailure = customModifiers?.deviceFailure ?? deviceFailurePreset;
 
-    // Update the game metadata with new difficulty and economics
+    // Update the game metadata with new difficulty and modifiers
     this.state.metadata.difficulty = difficulty;
-    this.state.metadata.economics = economics;
-
-    // Apply other custom modifiers if provided
-    if (customModifiers) {
-      // Store plant stress modifiers (these would be used by the plant growth system)
-      this.state.metadata.plantStress = customModifiers.plantStress;
-
-      // Store device failure modifiers (these would be used by the device failure system)
-      this.state.metadata.deviceFailure = customModifiers.deviceFailure;
-    }
+    this.state.metadata.economics = { ...economics };
+    this.state.metadata.plantStress = clonePlantStressModifiers(plantStress);
+    this.state.metadata.deviceFailure = cloneDeviceFailureModifiers(deviceFailure);
 
     // Reset finances to initial state with difficulty-based capital
     this.state.finances.cashOnHand = economics.initialCapital;

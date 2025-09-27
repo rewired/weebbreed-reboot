@@ -14,6 +14,8 @@ describe('saveGameEnvelopeSchema', () => {
       metadata: {
         tickLengthMinutes: state.metadata.tickLengthMinutes,
         rngSeed: context.rng.getSeed(),
+        plantStress: state.metadata.plantStress,
+        deviceFailure: state.metadata.deviceFailure,
       },
       rng: context.rng.serialize(),
       state,

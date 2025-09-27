@@ -66,6 +66,8 @@ describe('Difficulty presets sync with JSON config', () => {
 
     expect(state.metadata.difficulty).toBe('easy');
     expect(state.metadata.economics).toEqual(TEST_CONFIG.easy.modifiers.economics);
+    expect(state.metadata.plantStress).toEqual(TEST_CONFIG.easy.modifiers.plantStress);
+    expect(state.metadata.deviceFailure).toEqual(TEST_CONFIG.easy.modifiers.deviceFailure);
     // Finance ledger starts with initial capital income matching economics
     expect(state.finances.summary.totalRevenue).toBe(
       TEST_CONFIG.easy.modifiers.economics.initialCapital,
@@ -105,6 +107,8 @@ describe('Difficulty presets sync with JSON config', () => {
     expect(result.ok).toBe(true);
     expect(initialState.metadata.difficulty).toBe('hard');
     expect(initialState.metadata.economics).toEqual(TEST_CONFIG.hard.modifiers.economics);
+    expect(initialState.metadata.plantStress).toEqual(TEST_CONFIG.hard.modifiers.plantStress);
+    expect(initialState.metadata.deviceFailure).toEqual(TEST_CONFIG.hard.modifiers.deviceFailure);
     expect(initialState.finances.cashOnHand).toBe(
       TEST_CONFIG.hard.modifiers.economics.initialCapital,
     );
@@ -160,6 +164,8 @@ describe('Difficulty presets sync with JSON config', () => {
     expect(result.ok).toBe(true);
     expect(initialState.metadata.difficulty).toBe('hard');
     expect(initialState.metadata.economics).toEqual(custom.economics);
+    expect(initialState.metadata.plantStress).toEqual(custom.plantStress);
+    expect(initialState.metadata.deviceFailure).toEqual(custom.deviceFailure);
     expect(initialState.finances.cashOnHand).toBe(custom.economics.initialCapital);
   });
 });

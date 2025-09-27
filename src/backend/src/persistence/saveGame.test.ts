@@ -136,4 +136,27 @@ describe('saveGame persistence', () => {
 
     expect(() => deserializeGameState(invalid)).toThrow();
   });
+
+  it('persists difficulty modifier metadata alongside the envelope', () => {
+    const state = createMinimalState();
+    state.metadata.plantStress = {
+      optimalRangeMultiplier: 1.15,
+      stressAccumulationMultiplier: 0.85,
+    };
+    state.metadata.deviceFailure = { mtbfMultiplier: 1.25 };
+
+    const rng = new RngService(state.metadata.seed);
+
+    const serialized = serializeGameState(state, rng, {
+      version: DEFAULT_SAVEGAME_VERSION,
+      createdAt: '2024-01-02T00:00:00.000Z',
+    });
+
+    expect(serialized.metadata.plantStress).toEqual(state.metadata.plantStress);
+    expect(serialized.metadata.deviceFailure).toEqual(state.metadata.deviceFailure);
+
+    const roundTrip = deserializeGameState(JSON.parse(JSON.stringify(serialized)));
+    expect(roundTrip.state.metadata.plantStress).toEqual(state.metadata.plantStress);
+    expect(roundTrip.state.metadata.deviceFailure).toEqual(state.metadata.deviceFailure);
+  });
 });
