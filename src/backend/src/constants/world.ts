@@ -1,3 +1,5 @@
+import { DEFAULT_TICKS_PER_MONTH } from './time.js';
+
 /**
  * Fractional fill level (0–1) applied to freshly provisioned zone reservoirs.
  * Keeps irrigation controllers within their nominal operating range while
@@ -19,6 +21,7 @@ export const DEFAULT_ZONE_NUTRIENT_LITERS = 400;
 
 /**
  * Number of simulation ticks between routine device maintenance windows.
- * Based on one tick per hour, giving a monthly service cadence.
+ * Derives a monthly cadence (30 days) using the default tick length (5 minutes
+ * per tick ⇒ 288 ticks per day, 8,640 per 30-day month).
  */
-export const DEFAULT_MAINTENANCE_INTERVAL_TICKS = 24 * 30;
+export const DEFAULT_MAINTENANCE_INTERVAL_TICKS = DEFAULT_TICKS_PER_MONTH;

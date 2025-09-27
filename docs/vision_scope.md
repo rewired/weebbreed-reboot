@@ -58,7 +58,7 @@
 
 **Quality Goals/SLOs.**
 
-- **Performance:** Reference scenario (see below) runs at **1× speed** with **≥ 1 tick/s** (1 in-game day in ≤ 24 s). Per-tick CPU budget ≤ **50 ms**.
+- **Performance:** Reference scenario (see below) runs at **1× speed** with **≥ 1 tick/s** (1 in-game day in ≤ 4.8 min at the 5 min tick default). Per-tick CPU budget ≤ **50 ms**.
 - **Stability:** No sim deadlocks; crash recovery without data loss (< 1 tick).
 - **Memory Target:** Reference scenario uses < **1.0 GB RAM**. _(OPEN: finalize)_
 
@@ -92,7 +92,7 @@
 - **Plant:** Seed → Vegetative → Flowering → Harvest → Post-harvest (drying/curing).
 - **Device:** Efficiency degradation, maintenance, replacement triggers (OpEx vs CapEx tipping points).
 
-**Time Scale.** Tick-based with fixed tick duration: **1 tick = 1 in-game hour**; **24 ticks = 1 in-game day**, **7×24 ticks = 1 in-game week**. Ticks are aggregated into day/week summaries; replays/logs reference tick IDs. _(OPEN: standard wall-clock tick duration, e.g., 1 min)_
+**Time Scale.** Tick-based with fixed tick duration: **default tick length = 5 in-game minutes**; **12 ticks = 1 in-game hour**, **288 ticks = 1 in-game day**, **7×288 ticks = 1 in-game week**. Ticks are aggregated into day/week summaries; replays/logs reference tick IDs. _(OPEN: standard wall-clock tick duration, e.g., 1 min)_
 
 **Glossary (Excerpt).**
 

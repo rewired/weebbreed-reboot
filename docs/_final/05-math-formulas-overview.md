@@ -42,7 +42,7 @@
 
 ## Scheduler & Seeding
 
-- `Math.floor(tick / 168)`【F:docs/\_extraction/formulas.md†L168-L177】
+- `Math.floor(tick / 2016)`【F:docs/\_extraction/formulas.md†L168-L177】
 - `apiSeed = override ?? "<gameSeed>-<weekIndex>"`【F:docs/\_extraction/formulas.md†L179-L188】
 - `accumulatedMs += now - lastNow`【F:docs/\_extraction/formulas.md†L212-L221】
 - `accumulatedMs ≥ tickIntervalMs / gameSpeed`【F:docs/\_extraction/formulas.md†L223-L232】

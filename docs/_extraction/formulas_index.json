@@ -182,13 +182,13 @@
   {
     "id": "F-0016",
     "topic": "Scheduler",
-    "formula": "Math.floor(tick / 168)",
+    "formula": "Math.floor(tick / 2016)",
     "sourcePath": "docs/system/job_market_population.md",
     "heading": "Weekly Refresh Lifecycle",
     "anchor": "weekly-refresh-lifecycle",
     "startLine": 16,
     "endLine": 16,
-    "context": "`Math.floor(tick / 168)` (168 ticks ≈ 1 simulated week when 1 tick = 1 hour).",
+    "context": "`Math.floor(tick / 2016)` (2\u202f016 ticks \u2248 1 simulated week at the 5-minute default cadence).",
     "glossary": []
   },
   {

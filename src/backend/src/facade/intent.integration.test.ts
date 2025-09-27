@@ -5,6 +5,7 @@ import type { GameState } from '@/state/models.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';
+import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
@@ -116,7 +117,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,

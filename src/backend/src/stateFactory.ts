@@ -10,6 +10,7 @@ import {
   DEFAULT_ZONE_RESERVOIR_LEVEL,
   DEFAULT_ZONE_WATER_LITERS,
 } from '@/constants/world.js';
+import { DEFAULT_TICK_LENGTH_MINUTES } from '@/constants/time.js';
 import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
 import type {
   CultivationMethodBlueprint,
@@ -69,8 +70,6 @@ export {
 } from './state/initialization/personnel.js';
 export { loadTaskDefinitions } from './state/initialization/tasks.js';
 
-// Default tick length is 60 minutes (1 hour) per tick for realistic gameplay and KPI parity
-const DEFAULT_TICK_LENGTH_MINUTES = 60;
 const DEFAULT_TARGET_TICK_RATE = 1;
 const DEFAULT_EMPLOYEE_COUNTS: Record<EmployeeRole, number> = {
   Gardener: 4,

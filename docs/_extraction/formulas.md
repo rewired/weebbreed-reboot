@@ -170,10 +170,10 @@ revenue = harvestBasePricePerGram × modifiers
 - Source: docs/system/job_market_population.md#weekly-refresh-lifecycle (L16)
 - Heading: Weekly Refresh Lifecycle
 
-> `Math.floor(tick / 168)` (168 ticks ≈ 1 simulated week when 1 tick = 1 hour).
+> `Math.floor(tick / 2016)` (2 016 ticks ≈ 1 simulated week at the 5-minute default cadence).
 
 ```math
-Math.floor(tick / 168)
+Math.floor(tick / 2016)
 ```
 
 ## F-0017 — Seeding
