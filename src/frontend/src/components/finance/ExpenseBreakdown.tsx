@@ -51,6 +51,8 @@ export const ExpenseBreakdown = ({
     // Since we don't have detailed ledger data in the frontend snapshot,
     // we'll create a simplified expense breakdown based on available data
     const categories: ExpenseCategory[] = [];
+    const capexTotal = 0;
+    let opexTotal = 0;
 
     if (totalExpenses > 0) {
       // Create a simplified breakdown showing total expenses
@@ -74,6 +76,8 @@ export const ExpenseBreakdown = ({
           },
         ],
       });
+
+      opexTotal = totalExpenses;
     }
 
     // Calculate averages
@@ -172,7 +176,7 @@ export const ExpenseBreakdown = ({
                   <div className="flex items-center gap-3">
                     <span className="font-semibold text-text">{category.name}</span>
                     <Badge
-                      tone={category.type === 'CapEx' ? 'primary' : 'warning'}
+                      tone={category.type === 'CapEx' ? 'danger' : 'warning'}
                       className="text-xs"
                     >
                       {category.type}
