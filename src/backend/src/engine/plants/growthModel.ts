@@ -66,6 +66,13 @@ const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
 };
 
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return undefined;
+  }
+  return value;
+};
+
 const computeVpd = vaporPressureDeficit;
 
 const resolveLightHalfSaturation = (strain: StrainBlueprint, stage: PlantStage): number => {
@@ -243,14 +250,14 @@ const resolveStageCap = (
   stage: PlantStage,
 ): number => {
   const capFraction = config.stageCaps[stage] ?? 1;
-  const maxBiomassKg = Math.max(strain.growthModel?.maxBiomassDry ?? 0, 0);
+  const maxBiomassKg = Math.max(toFiniteNumber(strain.growthModel?.maxBiomassDry) ?? 0, 0);
   const maxBiomass = maxBiomassKg * 1_000;
   return Math.max(maxBiomass * capFraction, 0);
 };
 
 const resolveHarvestIndex = (strain: StrainBlueprint): number => {
-  const harvestIndex = strain.growthModel?.harvestIndex?.targetFlowering;
-  if (typeof harvestIndex === 'number' && Number.isFinite(harvestIndex)) {
+  const harvestIndex = toFiniteNumber(strain.growthModel?.harvestIndex?.targetFlowering);
+  if (typeof harvestIndex === 'number') {
     return clamp(harvestIndex, 0, 1);
   }
   return PLANT_DEFAULT_HARVEST_INDEX;
@@ -392,16 +399,20 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
   const canopyInterception = computeCanopyInterception(leafAreaIndex, canopyArea);
   const incidentMol = ppfdToMoles(environment.ppfd, tickHours);
   const absorbedMol = incidentMol * canopyInterception * lightResponse;
-  const q10 = strain.growthModel?.temperature?.Q10;
-  const tref = strain.growthModel?.temperature?.T_ref_C ?? 25;
-  const q10Factor = q10 ? Math.pow(q10, (environment.temperature - tref) / 10) : 1;
-  const baseLueKgPerMol = strain.growthModel?.baseLightUseEfficiency ?? 0.0009;
+  const q10Value = toFiniteNumber(strain.growthModel?.temperature?.Q10);
+  const tref = toFiniteNumber(strain.growthModel?.temperature?.T_ref_C) ?? 25;
+  const q10Factor =
+    q10Value && q10Value > 0 ? Math.pow(q10Value, (environment.temperature - tref) / 10) : 1;
+  const baseLueKgPerMol = toFiniteNumber(strain.growthModel?.baseLightUseEfficiency) ?? 0.0009;
   const lue = baseLueKgPerMol * 1_000 * q10Factor;
   const baseBiomass =
     Math.max(tickHours, 0) * PLANT_BASE_GROWTH_PER_TICK * clamp(combinedResponse, 0, 1);
   const grossBiomass = baseBiomass + absorbedMol * lue * combinedResponse;
-  const maintenance =
-    plant.biomassDryGrams * (strain.growthModel?.maintenanceFracPerDay ?? 0) * (tickHours / 24);
+  const maintenanceFrac = Math.max(
+    toFiniteNumber(strain.growthModel?.maintenanceFracPerDay) ?? 0,
+    0,
+  );
+  const maintenance = plant.biomassDryGrams * maintenanceFrac * (tickHours / 24);
   const netBiomassDelta = grossBiomass - maintenance;
 
   const stageCap = resolveStageCap(phenologyConfig, strain, phenologyState.stage);
