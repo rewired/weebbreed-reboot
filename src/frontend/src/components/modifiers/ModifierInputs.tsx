@@ -1,4 +1,5 @@
 //import { useState } from 'react';
+import { formatNumber } from '@/utils/formatNumber';
 import { DifficultyModifiers, getModifierRange } from '../../types/difficulty';
 
 interface ModifierInputsProps {
@@ -12,7 +13,7 @@ const formatCurrency = (value: number): string => {
   } else if (value >= 1000) {
     return `€${(value / 1000).toFixed(0)}K`;
   } else {
-    return `€${value}`;
+    return `€${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
 };
 
