@@ -5,6 +5,7 @@ import { Badge } from '@/components/primitives/Badge';
 import { Card } from '@/components/primitives/Card';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import { useSimulationStore } from '@/store/simulation';
+import { formatNumber } from '@/utils/formatNumber';
 
 interface UtilityPricingProps {
   bridge: SimulationBridge;
@@ -21,13 +22,19 @@ interface UtilityPrice {
   color: string;
 }
 
+const roundToTwoDecimals = (value: number): number =>
+  Math.round((value + Number.EPSILON) * 100) / 100;
+
 const formatCurrency = (value: number): string => {
-  return `€${value.toFixed(3)}`;
+  return `€${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
-const formatPercentage = (change: number): string => {
-  const sign = change >= 0 ? '+' : '';
-  return `${sign}${change.toFixed(1)}%`;
+const formatPercentage = (change: number, options?: Intl.NumberFormatOptions): string => {
+  const sign = change >= 0 ? '+' : '-';
+  return `${sign}${formatNumber(Math.abs(change), {
+    maximumFractionDigits: 2,
+    ...options,
+  })}%`;
 };
 
 export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
@@ -62,7 +69,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
     const water = currentPrices.pricePerLiterWater;
     const nutrients = currentPrices.pricePerGramNutrients;
     const adjusted = <T extends number>(value: T, factor: number) =>
-      value > 0 ? value * factor : value;
+      value > 0 ? roundToTwoDecimals(value * factor) : roundToTwoDecimals(value);
     return [
       {
         id: 'electricity',
@@ -100,7 +107,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
   const handlePriceChange = (utilityId: string, value: number) => {
     setPendingChanges((prev) => ({
       ...prev,
-      [utilityId]: value,
+      [utilityId]: roundToTwoDecimals(value),
     }));
     setStatusMessage(null);
   };
@@ -267,7 +274,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                             tone={changePercent >= 0 ? 'warning' : 'success'}
                             className="px-2 py-0.5 text-[10px]"
                           >
-                            {formatPercentage(changePercent)}
+                            {formatPercentage(changePercent, { maximumFractionDigits: 2 })}
                           </Badge>
                         )}
                       </div>
@@ -285,9 +292,16 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                         <input
                           id={inputId}
                           type="number"
-                          step="0.001"
+                          step="0.01"
                           min="0"
-                          value={effectivePrice.toFixed(3)}
+                          value={formatNumber(
+                            effectivePrice,
+                            {
+                              useGrouping: false,
+                              maximumFractionDigits: 2,
+                            },
+                            'en-US',
+                          )}
                           onChange={(e) => {
                             const value = parseFloat(e.target.value);
                             if (!isNaN(value) && value >= 0) {
@@ -311,7 +325,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                     >
                       <Icon name="lightbulb" size={14} />
                       Apply Suggested ({formatCurrency(utility.suggested)},{' '}
-                      {formatPercentage(suggestedChange)})
+                      {formatPercentage(suggestedChange, { maximumFractionDigits: 2 })})
                     </Button>
                     {hasChange && (
                       <Button
@@ -343,7 +357,8 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                   {Object.keys(pendingChanges).length} price change(s) pending
                 </p>
                 <p className="text-sm text-text-muted">
-                  Total impact: {getTotalImpact().toFixed(1)}% average change
+                  Total impact: {formatNumber(getTotalImpact(), { maximumFractionDigits: 1 })}%
+                  average change
                 </p>
               </div>
             </div>
