@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Hardened the frontend seed generator by typing `seed-config.json`, dropping
+  unused config overrides, routing weighted picks through the Mulberry32 RNG,
+  and enforcing blacklist lookups with `Set<string>` to keep deterministic name
+  generation aligned with the shipped configuration.
 - Aligned the personnel refresh button with the shared button primitive by
   removing the unsupported `lg` size option and matching the default variant
   to the primitive configuration.
