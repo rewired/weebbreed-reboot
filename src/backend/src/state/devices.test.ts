@@ -92,8 +92,10 @@ describe('addDeviceToZone', () => {
     expect(result.added).toBe(true);
     expect(result.warnings).toHaveLength(0);
     expect(zone.devices).toHaveLength(1);
-    expect(zone.devices[0]?.settings.coverageArea).toBe(8);
-    expect(zone.devices[0]?.settings.airflow).toBe(80);
+    const [createdDevice] = zone.devices;
+    if (!createdDevice) throw new Error('Expected device to be added to zone');
+    expect(createdDevice.settings.coverageArea).toBe(8);
+    expect(createdDevice.settings.airflow).toBe(80);
   });
 
   it('rejects devices with invalid coverage area definitions', () => {

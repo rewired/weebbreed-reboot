@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { EventBus, SimulationEvent } from './eventBus.js';
+import { EventBus } from './eventBus.js';
+import type { SimulationEvent } from './eventBus.js';
 
 describe('EventBus', () => {
   let bus: EventBus;
@@ -24,8 +25,10 @@ describe('EventBus', () => {
 
     expect(receivedA).toHaveLength(1);
     expect(receivedB).toHaveLength(1);
-    expect(receivedA[0].tick).toBe(1);
-    expect(typeof receivedA[0].ts).toBe('number');
+    const [firstA] = receivedA;
+    if (!firstA) throw new Error('Expected at least one event for subscriber A');
+    expect(firstA.tick).toBe(1);
+    expect(typeof firstA.ts).toBe('number');
 
     subscriptionA.unsubscribe();
     subscriptionB.unsubscribe();
@@ -39,7 +42,9 @@ describe('EventBus', () => {
     bus.emit('sim.tickCompleted', undefined, 2);
 
     expect(received).toHaveLength(1);
-    expect(received[0].type).toBe('plant.stageChanged');
+    const [first] = received;
+    if (!first) throw new Error('Expected at least one filtered event');
+    expect(first.type).toBe('plant.stageChanged');
 
     subscription.unsubscribe();
   });
@@ -55,9 +60,15 @@ describe('EventBus', () => {
     await vi.advanceTimersByTimeAsync(100);
 
     expect(batches).toHaveLength(1);
-    expect(batches[0]).toHaveLength(2);
-    expect(batches[0][0].type).toBe('plant.stageChanged');
-    expect(batches[0][1].type).toBe('plant.harvested');
+    const [firstBatch] = batches;
+    if (!firstBatch) throw new Error('Expected at least one buffered batch');
+    expect(firstBatch).toHaveLength(2);
+    const [firstBufferedEvent, secondBufferedEvent] = firstBatch;
+    if (!firstBufferedEvent || !secondBufferedEvent) {
+      throw new Error('Expected two buffered events in the batch');
+    }
+    expect(firstBufferedEvent.type).toBe('plant.stageChanged');
+    expect(secondBufferedEvent.type).toBe('plant.harvested');
 
     subscription.unsubscribe();
   });
@@ -74,8 +85,12 @@ describe('EventBus', () => {
     bus.emit('plant.alert', { plantId: 'plant-2' }, 4, 'error');
 
     expect(received).toHaveLength(2);
-    expect(received[0]).toMatchObject({ type: 'device.degraded', level: 'warning' });
-    expect(received[1]).toMatchObject({ type: 'plant.alert', level: 'error' });
+    const [firstMatch, secondMatch] = received;
+    if (!firstMatch || !secondMatch) {
+      throw new Error('Expected two filtered events');
+    }
+    expect(firstMatch).toMatchObject({ type: 'device.degraded', level: 'warning' });
+    expect(secondMatch).toMatchObject({ type: 'plant.alert', level: 'error' });
 
     subscription.unsubscribe();
   });
@@ -93,13 +108,17 @@ describe('EventBus', () => {
     await Promise.resolve();
 
     expect(batches).toHaveLength(1);
-    expect(batches[0]).toHaveLength(2);
+    const [initialBatch] = batches;
+    if (!initialBatch) throw new Error('Expected buffered batch when max size reached');
+    expect(initialBatch).toHaveLength(2);
 
     bus.emit('plant.pruned', undefined, 5);
     await vi.advanceTimersByTimeAsync(100);
 
     expect(batches).toHaveLength(2);
-    expect(batches[1]).toHaveLength(1);
+    const secondBatch = batches[1];
+    if (!secondBatch) throw new Error('Expected buffered batch after timer flush');
+    expect(secondBatch).toHaveLength(1);
 
     subscription.unsubscribe();
   });
@@ -119,12 +138,16 @@ describe('EventBus', () => {
 
     await Promise.resolve();
     expect(batches).toHaveLength(1);
-    expect(batches[0]).toHaveLength(3);
+    const [firstBufferedBatch] = batches;
+    if (!firstBufferedBatch) throw new Error('Expected buffered batch under backpressure');
+    expect(firstBufferedBatch).toHaveLength(3);
 
     await vi.advanceTimersByTimeAsync(250);
 
     expect(batches).toHaveLength(2);
-    expect(batches[1]).toHaveLength(2);
+    const queuedBatch = batches[1];
+    if (!queuedBatch) throw new Error('Expected queued buffered batch');
+    expect(queuedBatch).toHaveLength(2);
 
     subscription.unsubscribe();
   });
@@ -136,7 +159,9 @@ describe('EventBus', () => {
     bus.emit('system.failure', { component: 'pump-1' }, 7, 'error');
 
     expect(received).toHaveLength(1);
-    expect(received[0]).toMatchObject({
+    const [errorEvent] = received;
+    if (!errorEvent) throw new Error('Expected at least one delivered error event');
+    expect(errorEvent).toMatchObject({
       type: 'system.failure',
       level: 'error',
       payload: { component: 'pump-1' },

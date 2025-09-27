@@ -315,9 +315,14 @@ const createContext = (
 describe('PlantHealthEngine', () => {
   it('runs detection → progression → treatment → recovery and enforces restrictions', () => {
     const state = createGameState();
-    const zone = state.structures[0].rooms[0].zones[0];
-    const plant = zone.plants[0];
-    const secondaryPlant = zone.plants[1];
+    const [structure] = state.structures;
+    if (!structure) throw new Error('Expected structure in game state');
+    const [room] = structure.rooms;
+    if (!room) throw new Error('Expected room in structure');
+    const [zone] = room.zones;
+    if (!zone) throw new Error('Expected zone in room');
+    const [plant, secondaryPlant] = zone.plants;
+    if (!plant || !secondaryPlant) throw new Error('Expected at least two plants in zone');
     const initialDiseaseSeverity = DISEASE_DETECTION_THRESHOLD + 0.02;
     const initialDiseaseInfection = Math.max(DISEASE_SPREAD_THRESHOLD - 0.2, 0.1);
     const initialPestPopulation = Math.max(PEST_SPREAD_THRESHOLD, PEST_DETECTION_THRESHOLD + 0.38);
@@ -424,7 +429,11 @@ describe('PlantHealthEngine', () => {
     const secondaryHealth = zone.health.plantHealth[secondaryPlant.id];
     expect(secondaryHealth.diseases.length).toBeGreaterThan(0);
     expect(secondaryHealth.pests.length).toBeGreaterThan(0);
-    expect(secondaryHealth.diseases[0].detected).toBe(false);
-    expect(secondaryHealth.pests[0].detected).toBe(false);
+    const [secondaryDisease] = secondaryHealth.diseases;
+    if (!secondaryDisease) throw new Error('Expected secondary disease entry');
+    const [secondaryPest] = secondaryHealth.pests;
+    if (!secondaryPest) throw new Error('Expected secondary pest entry');
+    expect(secondaryDisease.detected).toBe(false);
+    expect(secondaryPest.detected).toBe(false);
   });
 });

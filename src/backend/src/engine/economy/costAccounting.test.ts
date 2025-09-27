@@ -224,10 +224,14 @@ describe('CostAccountingService', () => {
     const eventTypes = events.map((event) => event.type);
     expect(eventTypes).toEqual(['finance.opex', 'finance.tick']);
 
-    const opexPayload = events[0].payload as { utilities: { totalCost: number } };
+    const [opexEvent, tickEvent] = events;
+    if (!opexEvent || !tickEvent) {
+      throw new Error('Expected finance events to be recorded');
+    }
+    const opexPayload = opexEvent.payload as { utilities: { totalCost: number } };
     expect(opexPayload.utilities.totalCost).toBeCloseTo(record?.totalCost ?? 0, 6);
 
-    const tickPayload = events[1].payload as { utilities: { totalCost: number }; expenses: number };
+    const tickPayload = tickEvent.payload as { utilities: { totalCost: number }; expenses: number };
     expect(tickPayload.expenses).toBeCloseTo(record?.totalCost ?? 0, 6);
     expect(tickPayload.utilities.totalCost).toBeCloseTo(record?.totalCost ?? 0, 6);
   });
@@ -254,7 +258,9 @@ describe('CostAccountingService', () => {
     expect(accumulator.payroll).toBeCloseTo(19.75, 6);
     expect(state.finances.cashOnHand).toBeCloseTo(1000 - 19.75, 6);
     expect(state.finances.ledger).toHaveLength(1);
-    expect(state.finances.ledger[0]).toMatchObject({ category: 'payroll', amount: -19.75 });
+    const [payrollEntry] = state.finances.ledger;
+    if (!payrollEntry) throw new Error('Expected payroll ledger entry to be recorded');
+    expect(payrollEntry).toMatchObject({ category: 'payroll', amount: -19.75 });
 
     const opexEvent = events.find((event) => event.type === 'finance.opex');
     expect(opexEvent).toBeDefined();
@@ -322,7 +328,9 @@ describe('CostAccountingService', () => {
 
     service.finalizeTick(state, accumulator1, 500, timestamp1, collector1);
 
-    const maintenancePayload1 = events1[0].payload as { maintenance: { totalCost: number } };
+    const [maintenanceEvent1] = events1;
+    if (!maintenanceEvent1) throw new Error('Expected maintenance event at initial tick');
+    const maintenancePayload1 = maintenanceEvent1.payload as { maintenance: { totalCost: number } };
     expect(maintenancePayload1.maintenance.totalCost).toBeCloseTo(record1?.totalCost ?? 0, 6);
 
     const timestamp2 = '2025-01-02T05:00:00.000Z';
@@ -344,7 +352,9 @@ describe('CostAccountingService', () => {
 
     service.finalizeTick(state, accumulator2, 1500, timestamp2, collector2);
 
-    const maintenancePayload2 = events2[0].payload as { maintenance: { totalCost: number } };
+    const [maintenanceEvent2] = events2;
+    if (!maintenanceEvent2) throw new Error('Expected maintenance event at later tick');
+    const maintenancePayload2 = maintenanceEvent2.payload as { maintenance: { totalCost: number } };
     expect(maintenancePayload2.maintenance.totalCost).toBeCloseTo(record2?.totalCost ?? 0, 6);
 
     const totalMaintenance = (record1?.totalCost ?? 0) + (record2?.totalCost ?? 0);
@@ -375,7 +385,9 @@ describe('CostAccountingService', () => {
     expect(cost).toBeGreaterThan(0);
     expect(state.finances.cashOnHand).toBeCloseTo(1000 - cost, 6);
     expect(state.finances.ledger).toHaveLength(1);
-    expect(state.finances.ledger[0].category).toBe('device');
+    const [deviceEntry] = state.finances.ledger;
+    if (!deviceEntry) throw new Error('Expected device purchase ledger entry');
+    expect(deviceEntry.category).toBe('device');
     expect(accumulator.capex).toBeCloseTo(cost, 6);
     expect(accumulator.expenses).toBeCloseTo(cost, 6);
 
@@ -528,7 +540,8 @@ describe('CostAccountingService', () => {
       } satisfies DeviceInstanceState;
 
       attachDeviceToState(state, device);
-      const structure = state.structures[0];
+      const [structure] = state.structures;
+      if (!structure) throw new Error('Expected structure in state');
       structure.rentPerTick = rentPerHour;
 
       const tickLengthHours = tickLengthMinutes / 60;
@@ -550,9 +563,16 @@ describe('CostAccountingService', () => {
           collector,
         );
 
+        const [firstRoom] = structure.rooms;
+        if (!firstRoom) throw new Error('Expected room in structure');
+        const [firstZone] = firstRoom.zones;
+        if (!firstZone) throw new Error('Expected zone in room');
+        const [firstDevice] = firstZone.devices;
+        if (!firstDevice) throw new Error('Expected device in zone');
+
         service.applyMaintenanceExpense(
           state,
-          structure.rooms[0].zones[0].devices[0],
+          firstDevice,
           tick,
           timestamp,
           tickLengthHours,
