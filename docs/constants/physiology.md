@@ -1,5 +1,7 @@
 # Plant Physiology Constants
 
+> Authoring guidance: Define these constants in the shared backend modules under `src/backend/src/constants/` with concise JSDoc and reference this catalogue when editing. All contributions follow the forthcoming ADR on simulation constant stewardship (pending publication) to keep engine and documentation aligned.
+
 ## Vapor Pressure & VPD
 
 `MAGNUS_COEFFICIENT_A = 17.27`
