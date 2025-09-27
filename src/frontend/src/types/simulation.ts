@@ -278,7 +278,7 @@ export type SimulationConfigUpdate =
     };
 
 export interface FacadeIntentCommand {
-  domain: 'world' | 'devices' | 'plants' | 'health' | 'workforce' | 'finance';
+  domain: 'world' | 'devices' | 'plants' | 'health' | 'workforce' | 'finance' | 'config';
   action: string;
   payload?: Record<string, unknown>;
   requestId?: string;

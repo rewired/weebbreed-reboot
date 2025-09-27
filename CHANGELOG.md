@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Promoted environment device coefficients, climate controller gains, and transpiration feedback defaults into `@/constants/environment` with updated references and documentation.
 - Extracted disease/pest detection and spread thresholds plus treatment defaults into `@/constants/health` with supporting documentation.
 - Shared world-state resource and maintenance defaults through `@/constants/world` and extended the constants documentation with rationale for each value.
+- Extended the frontend `FacadeIntentCommand` domain union with the `config` channel so facade hooks mirror the backend contract for configuration updates.
 
 ### Fixed
 
