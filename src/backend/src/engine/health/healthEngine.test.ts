@@ -24,7 +24,7 @@ import type {
   ZoneResourceState,
   ZoneState,
 } from '@/state/models.js';
-import type { SimulationPhaseContext } from '@/sim/loop.js';
+import type { AccountingPhaseTools, SimulationPhaseContext } from '@/sim/loop.js';
 
 const diseaseBalancing: DiseaseBalancingConfig = {
   global: {
@@ -300,6 +300,11 @@ const createGameState = (): GameState => {
   } satisfies GameState;
 };
 
+const accountingTools: AccountingPhaseTools = {
+  recordUtility: () => undefined,
+  recordDevicePurchase: () => undefined,
+};
+
 const createContext = (
   state: GameState,
   tick: number,
@@ -310,6 +315,7 @@ const createContext = (
   tickLengthMinutes: state.metadata.tickLengthMinutes,
   phase: 'updatePlants',
   events: createEventCollector(events, tick),
+  accounting: accountingTools,
 });
 
 describe('PlantHealthEngine', () => {
