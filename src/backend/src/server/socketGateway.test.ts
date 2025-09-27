@@ -120,6 +120,7 @@ describe('SocketGateway uiStream integration', () => {
   it('subscribes to uiStream$ and forwards batched packets', async () => {
     expect(handshake).toBeDefined();
     expect(catalogHandshake).toBeDefined();
+    expect(catalogHandshake!.cultivationMethods.length).toBeGreaterThan(0);
     expect(subscribeSpy).toHaveBeenCalledTimes(1);
 
     const baseSnapshot: SimulationSnapshot = {
@@ -204,6 +205,7 @@ describe('SocketGateway uiStream integration', () => {
     const payload = await catalogUpdate;
     expect(payload.devices.length).toBeGreaterThan(0);
     expect(payload.strains.length).toBeGreaterThan(0);
+    expect(payload.cultivationMethods.length).toBeGreaterThan(0);
   });
 });
 

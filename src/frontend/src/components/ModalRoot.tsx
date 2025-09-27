@@ -1,7 +1,13 @@
-import { FormEvent, useEffect, useRef } from 'react';
+import { FormEvent, useEffect, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppStore } from '../store';
-import type { ModalDescriptor } from '../store';
+import {
+  useAppStore,
+  selectDeviceOptionsForZone,
+  selectRecommendedPlantCount,
+  selectStrainOptions,
+  selectStrainOptionsForZone,
+} from '../store';
+import type { AppStoreState, DeviceOption, ModalDescriptor, StrainOption } from '../store';
 import type { FacadeIntentCommand } from '../types/simulation';
 import styles from './ModalRoot.module.css';
 
@@ -17,6 +23,10 @@ type ModalRenderer = (
 
 interface ModalRenderState {
   defaultZoneId?: string;
+  zoneId?: string;
+  deviceOptions: DeviceOption[];
+  strainOptions: StrainOption[];
+  recommendedPlantCount?: number;
 }
 
 const parseNumber = (value: FormDataEntryValue | null | undefined): number | undefined => {
@@ -27,22 +37,46 @@ const parseNumber = (value: FormDataEntryValue | null | undefined): number | und
   return undefined;
 };
 
+const selectAllDeviceOptions = (state: AppStoreState): DeviceOption[] => {
+  return Object.values(state.blueprintCatalog.devices);
+};
+
+const selectNoRecommendation: (state: AppStoreState) => number | undefined = () => {
+  return undefined;
+};
+
 const createIntent = (intent: FacadeIntentCommand, send: (intent: FacadeIntentCommand) => void) => {
   send(intent);
 };
 
 const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
-  const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
+  const zoneId = state.zoneId ?? (payload?.zoneId as string) ?? state.defaultZoneId;
+  const options = state.deviceOptions;
+  const hasOptions = options.length > 0;
+  const defaultDeviceId = hasOptions ? (options[0]?.id ?? '') : '';
+
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <label htmlFor="device-blueprint">{t('modals.deviceBlueprint')}</label>
-      <input id="device-blueprint" name="blueprintId" required />
-
-      <label htmlFor="device-name">{t('modals.deviceName')}</label>
-      <input id="device-name" name="name" required />
+      {hasOptions ? (
+        <select
+          id="device-blueprint"
+          name="deviceId"
+          defaultValue={defaultDeviceId}
+          className={styles.select}
+          required
+        >
+          {options.map((device) => (
+            <option key={device.id} value={device.id}>{`${device.name} (${device.kind})`}</option>
+          ))}
+        </select>
+      ) : (
+        <div className={styles.emptyState}>{t('modals.noCompatibleDevices')}</div>
+      )}
 
       <label htmlFor="device-settings">{t('modals.deviceSettings')}</label>
       <textarea id="device-settings" name="settings" rows={3} placeholder='{ "power": 0.8 }' />
+      <p className={styles.helperText}>{t('modals.deviceSettingsOptional')}</p>
 
       <input type="hidden" name="zoneId" value={zoneId ?? ''} />
 
@@ -50,7 +84,7 @@ const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state, onCancel
         <button type="button" className={styles.cancel} onClick={onCancel}>
           {t('modals.cancel')}
         </button>
-        <button type="submit" className={styles.confirm}>
+        <button type="submit" className={styles.confirm} disabled={!hasOptions}>
           {t('modals.apply')}
         </button>
       </footer>
@@ -59,14 +93,46 @@ const installDeviceModal: ModalRenderer = (t, payload, onSubmit, state, onCancel
 };
 
 const plantingModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
-  const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
+  const zoneId = state.zoneId ?? (payload?.zoneId as string) ?? state.defaultZoneId;
+  const options = state.strainOptions;
+  const hasOptions = options.length > 0;
+  const defaultStrainId = hasOptions ? (options[0]?.id ?? '') : '';
+  const recommendedCount = state.recommendedPlantCount;
+  const defaultCount = recommendedCount ?? 4;
+
   return (
     <form className={styles.form} onSubmit={onSubmit}>
-      <label htmlFor="planting-strain">{t('modals.strainId')}</label>
-      <input id="planting-strain" name="strainId" required />
+      <label htmlFor="planting-strain">{t('modals.selectStrain')}</label>
+      {hasOptions ? (
+        <select
+          id="planting-strain"
+          name="strainId"
+          defaultValue={defaultStrainId}
+          className={styles.select}
+          required
+        >
+          {options.map((strain) => (
+            <option key={strain.id} value={strain.id}>{`${strain.name} (${strain.slug})`}</option>
+          ))}
+        </select>
+      ) : (
+        <div className={styles.emptyState}>{t('modals.noStrainsAvailable')}</div>
+      )}
 
       <label htmlFor="planting-count">{t('modals.plantCount')}</label>
-      <input id="planting-count" name="count" type="number" min={1} defaultValue={4} required />
+      <input
+        id="planting-count"
+        name="count"
+        type="number"
+        min={1}
+        defaultValue={defaultCount}
+        required
+      />
+      {typeof recommendedCount === 'number' ? (
+        <p className={styles.helperText}>
+          {t('modals.recommendedPlantCount', { count: recommendedCount })}
+        </p>
+      ) : null}
 
       <input type="hidden" name="zoneId" value={zoneId ?? ''} />
 
@@ -74,7 +140,7 @@ const plantingModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => 
         <button type="button" className={styles.cancel} onClick={onCancel}>
           {t('modals.cancel')}
         </button>
-        <button type="submit" className={styles.confirm}>
+        <button type="submit" className={styles.confirm} disabled={!hasOptions}>
           {t('modals.apply')}
         </button>
       </footer>
@@ -83,14 +149,46 @@ const plantingModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => 
 };
 
 const automationPlanModal: ModalRenderer = (t, payload, onSubmit, state, onCancel) => {
-  const zoneId = (payload?.zoneId as string) ?? state.defaultZoneId;
+  const zoneId = state.zoneId ?? (payload?.zoneId as string) ?? state.defaultZoneId;
+  const options = state.strainOptions;
+  const hasOptions = options.length > 0;
+  const defaultStrainId = hasOptions ? (options[0]?.id ?? '') : '';
+  const recommendedCount = state.recommendedPlantCount;
+  const defaultCount = recommendedCount ?? 4;
+
   return (
     <form className={styles.form} onSubmit={onSubmit}>
       <label htmlFor="plan-strain">{t('modals.defaultStrain')}</label>
-      <input id="plan-strain" name="strainId" required />
+      {hasOptions ? (
+        <select
+          id="plan-strain"
+          name="strainId"
+          defaultValue={defaultStrainId}
+          className={styles.select}
+          required
+        >
+          {options.map((strain) => (
+            <option key={strain.id} value={strain.id}>{`${strain.name} (${strain.slug})`}</option>
+          ))}
+        </select>
+      ) : (
+        <div className={styles.emptyState}>{t('modals.noStrainsAvailable')}</div>
+      )}
 
       <label htmlFor="plan-count">{t('modals.planCount')}</label>
-      <input id="plan-count" name="count" type="number" min={1} defaultValue={4} required />
+      <input
+        id="plan-count"
+        name="count"
+        type="number"
+        min={1}
+        defaultValue={defaultCount}
+        required
+      />
+      {typeof recommendedCount === 'number' ? (
+        <p className={styles.helperText}>
+          {t('modals.recommendedPlantCount', { count: recommendedCount })}
+        </p>
+      ) : null}
 
       <label className={styles.checkbox}>
         <input type="checkbox" name="autoReplant" defaultChecked />
@@ -103,7 +201,7 @@ const automationPlanModal: ModalRenderer = (t, payload, onSubmit, state, onCance
         <button type="button" className={styles.cancel} onClick={onCancel}>
           {t('modals.cancel')}
         </button>
-        <button type="submit" className={styles.confirm}>
+        <button type="submit" className={styles.confirm} disabled={!hasOptions}>
           {t('modals.apply')}
         </button>
       </footer>
@@ -433,7 +531,7 @@ export const ModalRoot = () => {
   const timeStatus = useAppStore((state) => state.timeStatus);
   const wasRunningBeforeModal = useAppStore((state) => state.wasRunningBeforeModal);
   const setWasRunningBeforeModal = useAppStore((state) => state.setWasRunningBeforeModal);
-  const stateRef = useRef<ModalRenderState>({});
+  const defaultZoneIdRef = useRef<string | undefined>(undefined);
   const previousModalRef = useRef<ModalDescriptor | null>(null);
 
   const renderer = activeModal ? MODAL_RENDERERS[activeModal.kind] : undefined;
@@ -475,13 +573,46 @@ export const ModalRoot = () => {
 
   useEffect(() => {
     if (activeModal?.payload?.zoneId && typeof activeModal.payload.zoneId === 'string') {
-      stateRef.current.defaultZoneId = activeModal.payload.zoneId as string;
+      defaultZoneIdRef.current = activeModal.payload.zoneId as string;
     }
   }, [activeModal]);
+
+  const payloadZoneId =
+    activeModal?.payload?.zoneId && typeof activeModal.payload.zoneId === 'string'
+      ? (activeModal.payload.zoneId as string)
+      : undefined;
+
+  const effectiveZoneId = payloadZoneId ?? defaultZoneIdRef.current;
+
+  const deviceSelector = useMemo(
+    () => (effectiveZoneId ? selectDeviceOptionsForZone(effectiveZoneId) : selectAllDeviceOptions),
+    [effectiveZoneId],
+  );
+  const deviceOptions = useAppStore(deviceSelector);
+
+  const strainSelector = useMemo(
+    () => (effectiveZoneId ? selectStrainOptionsForZone(effectiveZoneId) : selectStrainOptions),
+    [effectiveZoneId],
+  );
+  const strainOptions = useAppStore(strainSelector);
+
+  const recommendedSelector = useMemo(
+    () => (effectiveZoneId ? selectRecommendedPlantCount(effectiveZoneId) : selectNoRecommendation),
+    [effectiveZoneId],
+  );
+  const recommendedPlantCount = useAppStore(recommendedSelector);
 
   if (!activeModal || !renderer) {
     return null;
   }
+
+  const modalState: ModalRenderState = {
+    defaultZoneId: defaultZoneIdRef.current,
+    zoneId: effectiveZoneId,
+    deviceOptions,
+    strainOptions,
+    recommendedPlantCount,
+  };
 
   const handleCancel = () => {
     closeModal();
@@ -494,15 +625,23 @@ export const ModalRoot = () => {
 
     switch (activeModal.kind) {
       case 'installDevice': {
-        const zoneId = formData.get('zoneId') as string;
+        const zoneId = formData.get('zoneId');
+        const deviceId = formData.get('deviceId');
+        if (
+          typeof zoneId !== 'string' ||
+          !zoneId.trim().length ||
+          typeof deviceId !== 'string' ||
+          !deviceId.trim().length
+        ) {
+          break;
+        }
         createIntent(
           {
             domain: 'devices',
             action: 'installDevice',
             payload: {
               targetId: zoneId,
-              deviceId: formData.get('blueprintId'),
-              name: formData.get('name'),
+              deviceId,
               settings: (() => {
                 const raw = formData.get('settings');
                 if (typeof raw === 'string' && raw.trim().length) {
@@ -521,14 +660,23 @@ export const ModalRoot = () => {
         break;
       }
       case 'planting': {
-        const zoneId = formData.get('zoneId') as string;
+        const zoneId = formData.get('zoneId');
+        const strainId = formData.get('strainId');
+        if (
+          typeof zoneId !== 'string' ||
+          !zoneId.trim().length ||
+          typeof strainId !== 'string' ||
+          !strainId.trim().length
+        ) {
+          break;
+        }
         createIntent(
           {
             domain: 'plants',
             action: 'addPlanting',
             payload: {
               zoneId,
-              strainId: formData.get('strainId'),
+              strainId,
               count: parseNumber(formData.get('count')) ?? 1,
             },
           },
@@ -537,14 +685,23 @@ export const ModalRoot = () => {
         break;
       }
       case 'automationPlan': {
-        const zoneId = formData.get('zoneId') as string;
+        const zoneId = formData.get('zoneId');
+        const strainId = formData.get('strainId');
+        if (
+          typeof zoneId !== 'string' ||
+          !zoneId.trim().length ||
+          typeof strainId !== 'string' ||
+          !strainId.trim().length
+        ) {
+          break;
+        }
         createIntent(
           {
             domain: 'plants',
             action: 'addPlanting',
             payload: {
               zoneId,
-              strainId: formData.get('strainId'),
+              strainId,
               count: parseNumber(formData.get('count')) ?? 1,
               autoReplant: formData.get('autoReplant') === 'on',
             },
@@ -749,7 +906,7 @@ export const ModalRoot = () => {
         {activeModal.description ? (
           <p className={styles.description}>{activeModal.description}</p>
         ) : null}
-        {renderer(t, activeModal.payload, handleSubmit, stateRef.current, handleCancel)}
+        {renderer(t, activeModal.payload, handleSubmit, modalState, handleCancel)}
       </div>
     </div>
   );

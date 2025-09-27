@@ -31,6 +31,17 @@ export interface DeviceOption {
   settings: Record<string, number | readonly number[]>;
 }
 
+export interface CultivationMethodOption {
+  id: string;
+  name: string;
+  areaPerPlant: number;
+  minimumSpacing: number;
+  strainTraitCompatibility?: {
+    preferred?: Record<string, { min?: number; max?: number }>;
+    conflicting?: Record<string, { min?: number; max?: number }>;
+  };
+}
+
 export interface StrainOption {
   id: string;
   slug: string;
@@ -56,11 +67,13 @@ export interface StrainOption {
 export interface BlueprintCatalogPayload {
   strains?: StrainOption[];
   devices?: DeviceOption[];
+  cultivationMethods?: CultivationMethodOption[];
 }
 
 export interface BlueprintCatalogState {
   strains: Record<string, StrainOption>;
   devices: Record<string, DeviceOption>;
+  cultivationMethods: Record<string, CultivationMethodOption>;
 }
 
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
