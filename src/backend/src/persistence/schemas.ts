@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { utilityPricesSchema } from '@/data/schemas/priceSchemas.js';
 import {
   DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
   getEmployeeSkillNames,
@@ -324,6 +325,11 @@ const financeStateSchema = z.object({
   outstandingLoans: z.array(loanStateSchema),
   ledger: z.array(ledgerEntrySchema),
   summary: financialSummarySchema,
+  utilityPrices: utilityPricesSchema.pick({
+    pricePerKwh: true,
+    pricePerLiterWater: true,
+    pricePerGramNutrients: true,
+  }),
 });
 
 const employeeSkillsSchema = z.record(z.number()).superRefine((value, ctx) => {

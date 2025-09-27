@@ -173,6 +173,11 @@ const createAccountingTestState = (): GameState => {
         lastTickRevenue: 0,
         lastTickExpenses: 0,
       },
+      utilityPrices: {
+        pricePerKwh: 0,
+        pricePerLiterWater: 0,
+        pricePerGramNutrients: 0,
+      },
     },
     personnel: {
       employees: [],

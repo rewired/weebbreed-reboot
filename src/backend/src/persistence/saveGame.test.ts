@@ -62,6 +62,11 @@ const createMinimalState = (): GameState => {
         lastTickRevenue: 0,
         lastTickExpenses: 0,
       },
+      utilityPrices: {
+        pricePerKwh: 0.12,
+        pricePerLiterWater: 0.015,
+        pricePerGramNutrients: 0.045,
+      },
     },
     personnel: {
       employees: [],

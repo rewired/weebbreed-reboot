@@ -4,6 +4,7 @@ import { Button } from '@/components/primitives/Button';
 import { Badge } from '@/components/primitives/Badge';
 import { Card } from '@/components/primitives/Card';
 import type { SimulationBridge } from '@/facade/systemFacade';
+import { useSimulationStore } from '@/store/simulation';
 
 interface UtilityPricingProps {
   bridge: SimulationBridge;
@@ -32,28 +33,44 @@ const formatPercentage = (change: number): string => {
 export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
   const [pendingChanges, setPendingChanges] = useState<Record<string, number>>({});
   const [isUpdating, setIsUpdating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
-  // Get current utility prices from the simulation snapshot
-  // Note: This data might be in the pricing catalog or finance state
+  const financeSnapshot = useSimulationStore((state) => state.snapshot?.finance);
+
   const currentPrices = useMemo(() => {
-    // For now, we'll use default values since the exact location in state is not clear
-    // In a real implementation, you would access this from snapshot.pricing or similar
-    return {
-      pricePerKwh: 0.15,
-      pricePerLiterWater: 0.02,
-      pricePerGramNutrients: 0.1,
+    const fallback = {
+      pricePerKwh: 0,
+      pricePerLiterWater: 0,
+      pricePerGramNutrients: 0,
     };
-  }, []); // No dependencies needed for static default values
+    const prices = financeSnapshot?.utilityPrices;
+    const normalise = (value?: number) =>
+      typeof value === 'number' && Number.isFinite(value) && value >= 0 ? value : undefined;
+    return {
+      pricePerKwh: normalise(prices?.pricePerKwh) ?? fallback.pricePerKwh,
+      pricePerLiterWater: normalise(prices?.pricePerLiterWater) ?? fallback.pricePerLiterWater,
+      pricePerGramNutrients:
+        normalise(prices?.pricePerGramNutrients) ?? fallback.pricePerGramNutrients,
+    };
+  }, [financeSnapshot]);
 
-  const utilityPrices: UtilityPrice[] = useMemo(
-    () => [
+  const utilityPrices: UtilityPrice[] = useMemo(() => {
+    const electricity = currentPrices.pricePerKwh;
+    const water = currentPrices.pricePerLiterWater;
+    const nutrients = currentPrices.pricePerGramNutrients;
+    const adjusted = <T extends number>(value: T, factor: number) =>
+      value > 0 ? value * factor : value;
+    return [
       {
         id: 'electricity',
         name: 'Electricity',
         icon: 'electrical_services',
         unit: '/kWh',
-        current: currentPrices.pricePerKwh,
-        suggested: currentPrices.pricePerKwh * 1.05, // 5% increase suggestion
+        current: electricity,
+        suggested: adjusted(electricity, 1.05),
         description: 'Cost per kilowatt-hour for lighting, HVAC, and equipment',
         color: 'text-yellow-400',
       },
@@ -62,8 +79,8 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
         name: 'Water',
         icon: 'water_drop',
         unit: '/L',
-        current: currentPrices.pricePerLiterWater,
-        suggested: currentPrices.pricePerLiterWater * 0.95, // 5% decrease suggestion
+        current: water,
+        suggested: adjusted(water, 0.95),
         description: 'Cost per liter for irrigation and hydroponic systems',
         color: 'text-blue-400',
       },
@@ -72,20 +89,20 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
         name: 'Nutrients',
         icon: 'science',
         unit: '/g',
-        current: currentPrices.pricePerGramNutrients,
-        suggested: currentPrices.pricePerGramNutrients * 1.02, // 2% increase suggestion
+        current: nutrients,
+        suggested: adjusted(nutrients, 1.02),
         description: 'Cost per gram of NPK and other nutrient solutions',
         color: 'text-green-400',
       },
-    ],
-    [currentPrices],
-  );
+    ];
+  }, [currentPrices]);
 
   const handlePriceChange = (utilityId: string, value: number) => {
     setPendingChanges((prev) => ({
       ...prev,
       [utilityId]: value,
     }));
+    setStatusMessage(null);
   };
 
   const handleResetPrice = (utilityId: string) => {
@@ -94,6 +111,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
       delete newChanges[utilityId];
       return newChanges;
     });
+    setStatusMessage(null);
   };
 
   const handleApplySuggested = (utilityId: string) => {
@@ -104,28 +122,38 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
   };
 
   const handleSaveChanges = async () => {
-    if (Object.keys(pendingChanges).length === 0) return;
+    if (Object.keys(pendingChanges).length === 0) {
+      return;
+    }
 
     setIsUpdating(true);
     try {
-      // Map frontend utility IDs to the expected facade payload format
       const utilityPriceUpdates: Record<string, number> = {};
 
       for (const [utilityId, newPrice] of Object.entries(pendingChanges)) {
+        if (!Number.isFinite(newPrice) || newPrice < 0) {
+          continue;
+        }
         switch (utilityId) {
           case 'electricity':
-            utilityPriceUpdates.pricePerKwh = newPrice;
+            utilityPriceUpdates.electricityCostPerKWh = newPrice;
             break;
           case 'water':
-            utilityPriceUpdates.pricePerLiterWater = newPrice;
+            utilityPriceUpdates.waterCostPerM3 = newPrice * 1000;
             break;
           case 'nutrients':
-            utilityPriceUpdates.pricePerGramNutrients = newPrice;
+            utilityPriceUpdates.nutrientsCostPerKg = newPrice * 1000;
+            break;
+          default:
             break;
         }
       }
 
-      // Send the facade intent to update utility prices
+      if (Object.keys(utilityPriceUpdates).length === 0) {
+        setIsUpdating(false);
+        return;
+      }
+
       const result = await bridge.sendIntent({
         domain: 'finance',
         action: 'setUtilityPrices',
@@ -133,15 +161,25 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
       });
 
       if (result.ok) {
-        // Clear pending changes on success
         setPendingChanges({});
-        console.log('✅ Utility prices updated successfully');
+        const warningMessage = result.warnings?.length ? ` ${result.warnings.join(' ')}` : '';
+        setStatusMessage({ tone: 'success', text: `Utility prices updated.${warningMessage}` });
       } else {
-        console.error('❌ Failed to update utility prices:', result.errors);
-        // In a real app, you might show a toast notification here
+        const details =
+          result.errors
+            ?.map((error) => error.message)
+            .filter(Boolean)
+            .join(', ') ?? 'Unknown error';
+        setStatusMessage({
+          tone: 'error',
+          text: `Failed to update utility prices: ${details}`,
+        });
       }
     } catch (error) {
-      console.error('❌ Error updating utility prices:', error);
+      setStatusMessage({
+        tone: 'error',
+        text: `Failed to update utility prices: ${error instanceof Error ? error.message : String(error)}`,
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -149,6 +187,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
 
   const handleDiscardChanges = () => {
     setPendingChanges({});
+    setStatusMessage(null);
   };
 
   const hasChanges = Object.keys(pendingChanges).length > 0;
@@ -157,7 +196,9 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
     return utilityPrices.reduce((total, utility) => {
       const pendingPrice = pendingChanges[utility.id];
       if (pendingPrice !== undefined) {
-        const change = ((pendingPrice - utility.current) / utility.current) * 100;
+        const baseline = utility.current;
+        const change =
+          baseline > 0 ? ((pendingPrice - baseline) / baseline) * 100 : pendingPrice > 0 ? 100 : 0;
         return total + Math.abs(change);
       }
       return total;
@@ -169,13 +210,21 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
       {/* Utilities Grid */}
       <div className="grid gap-4">
         {utilityPrices.map((utility) => {
+          const inputId = `${utility.id}-new-price`;
           const pendingPrice = pendingChanges[utility.id];
           const effectivePrice = pendingPrice !== undefined ? pendingPrice : utility.current;
           const hasChange = pendingPrice !== undefined;
           const changePercent = hasChange
-            ? ((pendingPrice - utility.current) / utility.current) * 100
+            ? utility.current > 0
+              ? ((pendingPrice - utility.current) / utility.current) * 100
+              : pendingPrice > 0
+                ? 100
+                : 0
             : 0;
-          const suggestedChange = ((utility.suggested - utility.current) / utility.current) * 100;
+          const suggestedChange =
+            utility.current > 0
+              ? ((utility.suggested - utility.current) / utility.current) * 100
+              : 0;
 
           return (
             <Card key={utility.id} className="bg-surface-muted/40">
@@ -226,11 +275,15 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
 
                     {/* Price Input */}
                     <div>
-                      <label className="text-xs font-medium text-text-muted uppercase tracking-wide">
+                      <label
+                        className="text-xs font-medium text-text-muted uppercase tracking-wide"
+                        htmlFor={inputId}
+                      >
                         New Price
                       </label>
                       <div className="flex items-center gap-2 mt-1">
                         <input
+                          id={inputId}
                           type="number"
                           step="0.001"
                           min="0"
@@ -319,6 +372,24 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                 Save Changes
               </Button>
             </div>
+          </div>
+        </Card>
+      )}
+
+      {statusMessage && (
+        <Card
+          className={
+            statusMessage.tone === 'success'
+              ? 'border-success/40 bg-success/5'
+              : 'border-danger/40 bg-danger/5'
+          }
+        >
+          <div
+            className={
+              statusMessage.tone === 'success' ? 'text-success text-sm' : 'text-danger text-sm'
+            }
+          >
+            {statusMessage.text}
           </div>
         </Card>
       )}

@@ -198,6 +198,11 @@ export interface FinanceSummarySnapshot {
   netIncome: number;
   lastTickRevenue: number;
   lastTickExpenses: number;
+  utilityPrices?: {
+    pricePerKwh?: number;
+    pricePerLiterWater?: number;
+    pricePerGramNutrients?: number;
+  };
 }
 
 export interface SimulationSnapshot {

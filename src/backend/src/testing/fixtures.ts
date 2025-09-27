@@ -186,7 +186,7 @@ interface RepositoryStubOptions {
   roomPurposes?: RoomPurpose[];
 }
 
-const defaultUtilityPrices: UtilityPrices = {
+export const DEFAULT_UTILITY_PRICES: UtilityPrices = {
   pricePerKwh: 0.15,
   pricePerLiterWater: 0.02,
   pricePerGramNutrients: 0.1,
@@ -238,7 +238,7 @@ export const createBlueprintRepositoryStub = (
       [strains[0].id, { seedPrice: 0.6, harvestPricePerGram: 4.2 }],
     ]);
 
-  const utilityPrices = options.utilityPrices ?? defaultUtilityPrices;
+  const utilityPrices = options.utilityPrices ?? DEFAULT_UTILITY_PRICES;
 
   const repo = {
     getStrain: (id: string) => strains.find((strain) => strain.id === id),

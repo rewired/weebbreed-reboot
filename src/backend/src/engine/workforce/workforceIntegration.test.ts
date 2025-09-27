@@ -141,6 +141,11 @@ const createBaseState = (): GameState => {
         lastTickRevenue: 0,
         lastTickExpenses: 0,
       },
+      utilityPrices: {
+        pricePerKwh: 0.1,
+        pricePerLiterWater: 0.01,
+        pricePerGramNutrients: 0.05,
+      },
     },
     personnel: {
       employees: [],
