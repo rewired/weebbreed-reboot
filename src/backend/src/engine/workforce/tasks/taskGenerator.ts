@@ -152,9 +152,7 @@ export class TaskGenerator {
       });
     }
 
-    const dueForHarvest = zone.plants.some(
-      (plant) => plant.harvestReadiness >= this.generationPolicy.harvestReadinessThreshold,
-    );
+    const dueForHarvest = zone.plants.some((plant) => plant.stage === 'harvestReady');
     if (dueForHarvest && !this.hasOpenTask(taskSystem, zone.id, 'harvest_plants')) {
       this.queueTask({
         structure,
@@ -179,12 +177,15 @@ export class TaskGenerator {
         continue;
       }
       const maintenanceKey = `maintain_${device.id}`;
-      if (device.maintenance.dueTick && tick < device.maintenance.dueTick) {
+      if (
+        Number.isFinite(device.maintenance.nextDueTick) &&
+        tick < device.maintenance.nextDueTick
+      ) {
         continue;
       }
       if (
-        device.maintenance.lastCompletedTick &&
-        tick - device.maintenance.lastCompletedTick < this.generationPolicy.maintenanceGraceTicks
+        Number.isFinite(device.maintenance.lastServiceTick) &&
+        tick - device.maintenance.lastServiceTick < this.generationPolicy.maintenanceGraceTicks
       ) {
         continue;
       }
