@@ -13,7 +13,7 @@ interface DashboardShellProps {
 export const DashboardShell = ({ children, bridge }: DashboardShellProps) => (
   <div className="flex min-h-screen w-full bg-surface text-text">
     <Sidebar />
-    <div className="content-area flex min-h-screen w-full flex-col gap-6 px-6 pb-10 pt-6 lg:ml-[var(--sidebar-width)] lg:pl-8">
+    <div className="content-area flex min-h-screen w-full flex-col gap-6 px-6 pb-10 pt-6 lg:pl-8">
       <DashboardHeader bridge={bridge} />
       <Breadcrumbs />
       <main className="grid flex-1 gap-6 pb-20">{children}</main>
