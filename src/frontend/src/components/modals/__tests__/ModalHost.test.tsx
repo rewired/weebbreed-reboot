@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-// eslint-disable-next-line import/no-unresolved
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ModalHost } from '@/components/modals/ModalHost';
 import { useUIStore } from '@/store/ui';
