@@ -2,6 +2,12 @@ import { generateId } from '@/state/initialization/common.js';
 import type { RngService, RngStream } from '@/lib/rng.js';
 import { CostAccountingService, type TickAccumulator } from '@/engine/economy/costAccounting.js';
 import {
+  DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+  DEFAULT_ZONE_NUTRIENT_LITERS,
+  DEFAULT_ZONE_RESERVOIR_LEVEL,
+  DEFAULT_ZONE_WATER_LITERS,
+} from '@/constants/world.js';
+import {
   type CommandExecutionContext,
   type CommandResult,
   type ErrorCode,
@@ -22,11 +28,6 @@ import { validateStructureGeometry } from '@/state/geometry.js';
 import { findStructure, findRoom, findZone, type ZoneLookupResult } from './stateSelectors.js';
 import { type RoomPurposeSource, resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
-
-const DEFAULT_ZONE_RESERVOIR_LEVEL = 0.75;
-const DEFAULT_ZONE_WATER_LITERS = 800;
-const DEFAULT_ZONE_NUTRIENT_LITERS = 400;
-const DEFAULT_MAINTENANCE_INTERVAL_TICKS = 24 * 30;
 
 const deriveDuplicateName = (original: string, fallbackSuffix: string): string => {
   const trimmed = original.trim();

@@ -4,6 +4,12 @@ import type {
   // DeviceBlueprint,
   StrainBlueprint,
 } from '@/data/schemas/index.js';
+import {
+  DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+  DEFAULT_ZONE_NUTRIENT_LITERS,
+  DEFAULT_ZONE_RESERVOIR_LEVEL,
+  DEFAULT_ZONE_WATER_LITERS,
+} from '@/constants/world.js';
 import { DEFAULT_SAVEGAME_VERSION } from './persistence/saveGame.js';
 import type {
   CultivationMethodBlueprint,
@@ -64,9 +70,6 @@ export { loadTaskDefinitions } from './state/initialization/tasks.js';
 // Default tick length is 60 minutes (1 hour) per tick for realistic gameplay and KPI parity
 const DEFAULT_TICK_LENGTH_MINUTES = 60;
 const DEFAULT_TARGET_TICK_RATE = 1;
-const DEFAULT_ZONE_RESERVOIR_LEVEL = 0.75;
-const DEFAULT_ZONE_WATER_LITERS = 800;
-const DEFAULT_ZONE_NUTRIENT_LITERS = 400;
 const DEFAULT_EMPLOYEE_COUNTS: Record<EmployeeRole, number> = {
   Gardener: 4,
   Technician: 2,
@@ -166,7 +169,7 @@ const createDeviceInstance = (
     runtimeHours: 0,
     maintenance: {
       lastServiceTick: 0,
-      nextDueTick: 24 * 30,
+      nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
       condition: Math.min(1, Math.max(0, blueprint.quality ?? 1)),
       runtimeHoursAtLastService: 0,
       degradation: 0,
