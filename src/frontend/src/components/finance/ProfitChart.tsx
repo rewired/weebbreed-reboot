@@ -17,6 +17,13 @@ interface ChartDataPoint {
   label: string;
 }
 
+const RANGE_LABELS: Record<ProfitChartProps['timeRange'], string> = {
+  '1D': 'day',
+  '1W': 'week',
+  '1M': 'month',
+  '1Y': 'year',
+};
+
 export const ProfitChart = ({
   bridge: _bridge, // eslint-disable-line @typescript-eslint/no-unused-vars
   timeRange,
@@ -24,7 +31,7 @@ export const ProfitChart = ({
   const snapshot = useSimulationStore((state) => state.snapshot);
 
   const chartData = useMemo(() => {
-    if (!snapshot?.finances) {
+    if (!snapshot?.finance) {
       return {
         dataPoints: [],
         maxProfit: 0,
@@ -35,119 +42,55 @@ export const ProfitChart = ({
       };
     }
 
-    const finance = snapshot.finances;
+    const finance = snapshot.finance;
     const currentTick = snapshot.clock.tick;
 
-    // Calculate tick range based on timeRange
-    let tickRange = 0;
-    const ticksPerHour = Math.round(60 / snapshot.metadata.tickLengthMinutes);
-    const ticksPerDay = ticksPerHour * 24;
+    const previousRevenue = Math.max(finance.totalRevenue - finance.lastTickRevenue, 0);
+    const previousExpenses = Math.max(finance.totalExpenses - finance.lastTickExpenses, 0);
+    const previousProfit = previousRevenue - previousExpenses;
+    const lastTickProfit = finance.lastTickRevenue - finance.lastTickExpenses;
+    const dataPoints: ChartDataPoint[] = [
+      {
+        tick: Math.max(currentTick - 1, 0),
+        revenue: previousRevenue,
+        expenses: previousExpenses,
+        profit: previousProfit,
+        cumulativeProfit: previousProfit,
+        label: `Previous ${RANGE_LABELS[timeRange]}`,
+      },
+    ];
 
-    switch (timeRange) {
-      case '1D':
-        tickRange = ticksPerDay;
-        break;
-      case '1W':
-        tickRange = ticksPerDay * 7;
-        break;
-      case '1M':
-        tickRange = ticksPerDay * 30;
-        break;
-      case '1Y':
-        tickRange = ticksPerDay * 365;
-        break;
-    }
+    const netIncome = finance.netIncome;
 
-    const startTick = Math.max(0, currentTick - tickRange);
+    dataPoints.push({
+      tick: currentTick,
+      revenue: finance.totalRevenue,
+      expenses: finance.totalExpenses,
+      profit: netIncome,
+      cumulativeProfit: netIncome,
+      label: 'All Time',
+    });
 
-    // Filter ledger entries within the time range
-    const relevantEntries = finance.ledger.filter(
-      (entry) => entry.tick >= startTick && entry.tick <= currentTick,
-    );
-
-    // Group entries by tick intervals for aggregation
-    const intervalSize = Math.max(1, Math.floor(tickRange / 50)); // Limit to ~50 data points
-    const dataPoints: ChartDataPoint[] = [];
-
-    // Initialize running totals
-    // Track cumulative values for trend analysis
-    // let cumulativeRevenue = 0;
-    // let cumulativeExpenses = 0;
-    let cumulativeProfit = 0;
-
-    // Aggregate data in intervals
-    for (let tick = startTick; tick <= currentTick; tick += intervalSize) {
-      const intervalEnd = Math.min(tick + intervalSize - 1, currentTick);
-      const intervalEntries = relevantEntries.filter(
-        (entry) => entry.tick >= tick && entry.tick <= intervalEnd,
-      );
-
-      const intervalRevenue = intervalEntries
-        .filter((entry) => entry.type === 'income')
-        .reduce((sum, entry) => sum + entry.amount, 0);
-
-      const intervalExpenses = intervalEntries
-        .filter((entry) => entry.type === 'expense')
-        .reduce((sum, entry) => sum + Math.abs(entry.amount), 0);
-
-      const intervalProfit = intervalRevenue - intervalExpenses;
-
-      // cumulativeRevenue += intervalRevenue;
-      // cumulativeExpenses += intervalExpenses;
-      cumulativeProfit += intervalProfit;
-
-      // Create readable label based on timeRange
-      let label = '';
-      if (timeRange === '1D') {
-        const hour = Math.floor((tick - startTick) / ticksPerHour) % 24;
-        label = `${hour.toString().padStart(2, '0')}:00`;
-      } else if (timeRange === '1W') {
-        const day = Math.floor((tick - startTick) / ticksPerDay);
-        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        label = dayNames[day % 7] || `Day ${day + 1}`;
-      } else if (timeRange === '1M') {
-        const day = Math.floor((tick - startTick) / ticksPerDay) + 1;
-        label = `Day ${day}`;
-      } else {
-        const month = Math.floor((tick - startTick) / (ticksPerDay * 30)) + 1;
-        label = `Month ${month}`;
-      }
-
-      dataPoints.push({
-        tick: intervalEnd,
-        revenue: intervalRevenue,
-        expenses: intervalExpenses,
-        profit: intervalProfit,
-        cumulativeProfit,
-        label,
-      });
-    }
-
-    // Calculate metrics
     const profits = dataPoints.map((dp) => dp.profit);
     const maxProfit = Math.max(...profits, 0);
     const minProfit = Math.min(...profits, 0);
 
-    // Determine trend
-    let profitTrend: 'up' | 'down' | 'stable' = 'stable';
-    if (dataPoints.length >= 2) {
-      const recentProfit = dataPoints.slice(-3).reduce((sum, dp) => sum + dp.profit, 0);
-      const earlierProfit = dataPoints.slice(0, 3).reduce((sum, dp) => sum + dp.profit, 0);
-      if (recentProfit > earlierProfit * 1.1) profitTrend = 'up';
-      else if (recentProfit < earlierProfit * 0.9) profitTrend = 'down';
-    }
+    const profitTrend: 'up' | 'down' | 'stable' =
+      lastTickProfit > 0 ? 'up' : lastTickProfit < 0 ? 'down' : 'stable';
 
-    // Calculate growth rates
     const revenueGrowth =
-      dataPoints.length >= 2
-        ? (dataPoints[dataPoints.length - 1].revenue / Math.max(dataPoints[0].revenue, 1) - 1) * 100
-        : 0;
+      previousRevenue > 0
+        ? (finance.lastTickRevenue / previousRevenue) * 100
+        : finance.lastTickRevenue > 0
+          ? 100
+          : 0;
 
     const expenseGrowth =
-      dataPoints.length >= 2
-        ? (dataPoints[dataPoints.length - 1].expenses / Math.max(dataPoints[0].expenses, 1) - 1) *
-          100
-        : 0;
+      previousExpenses > 0
+        ? (finance.lastTickExpenses / previousExpenses) * 100
+        : finance.lastTickExpenses > 0
+          ? 100
+          : 0;
 
     return {
       dataPoints,
