@@ -10,6 +10,7 @@ import {
   formatSkillLevel,
   getRoleDisplayName,
   getGenderIcon,
+  normaliseSkillEntries,
 } from './utils';
 
 interface CandidateCardProps {
@@ -20,7 +21,11 @@ interface CandidateCardProps {
 export const CandidateCard = ({ applicant, className }: CandidateCardProps) => {
   const openModal = useUIStore((state) => state.openModal);
 
-  const skillEntries = Object.entries(applicant.skills).filter(([, level]) => level && level > 0);
+  const skillEntries = normaliseSkillEntries(applicant.skills);
+  const averageSkillLevel =
+    skillEntries.length > 0
+      ? skillEntries.reduce((sum, [, level]) => sum + level, 0) / skillEntries.length
+      : 0;
 
   return (
     <Card
@@ -136,14 +141,8 @@ export const CandidateCard = ({ applicant, className }: CandidateCardProps) => {
           {skillEntries.length > 0 && (
             <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-text-muted">Avg. Level</span>
-              <Badge
-                tone={getSkillColor(
-                  skillEntries.reduce((sum, [, level]) => sum + level, 0) / skillEntries.length,
-                )}
-              >
-                {formatSkillLevel(
-                  skillEntries.reduce((sum, [, level]) => sum + level, 0) / skillEntries.length,
-                )}
+              <Badge tone={getSkillColor(averageSkillLevel)}>
+                {formatSkillLevel(averageSkillLevel)}
               </Badge>
             </div>
           )}
