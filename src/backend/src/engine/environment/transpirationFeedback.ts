@@ -1,4 +1,8 @@
-import { SATURATION_VAPOR_DENSITY_KG_PER_M3 } from '@/constants/environment.js';
+import {
+  DEFAULT_NUTRIENT_GRAMS_PER_LITER_AT_STRENGTH_1,
+  MIN_ZONE_VOLUME_M3,
+  SATURATION_VAPOR_DENSITY_KG_PER_M3,
+} from '@/constants/environment.js';
 import { computeVpd } from '@/engine/physio/vpd.js';
 import type { AccountingPhaseTools } from '@/sim/loop.js';
 import type { ZoneState } from '@/state/models.js';
@@ -9,9 +13,6 @@ const clamp = (value: number, min: number, max: number): number => {
   }
   return Math.min(Math.max(value, min), max);
 };
-
-const MIN_VOLUME_M3 = 0.001;
-const DEFAULT_NUTRIENT_GRAMS_PER_LITER_AT_STRENGTH_1 = 0.8;
 
 export interface TranspirationFeedbackOptions {
   /**
@@ -46,7 +47,7 @@ export class TranspirationFeedbackService {
       return { waterConsumedLiters: 0, nutrientsConsumedGrams: 0, humidityDelta: 0 };
     }
 
-    const volume = Math.max(zone.volume, MIN_VOLUME_M3);
+    const volume = Math.max(zone.volume, MIN_ZONE_VOLUME_M3);
     const saturationMassKg = SATURATION_VAPOR_DENSITY_KG_PER_M3 * volume;
     const humidityDelta = saturationMassKg > 0 ? clamp(liters / saturationMassKg, 0, 1) : 0;
 
@@ -67,7 +68,7 @@ export class TranspirationFeedbackService {
         : previousWater > 0
           ? previousWater
           : liters;
-    const capacity = Math.max(estimatedCapacity, liters, MIN_VOLUME_M3);
+    const capacity = Math.max(estimatedCapacity, liters, MIN_ZONE_VOLUME_M3);
 
     const newWater = Math.max(previousWater - waterConsumed, 0);
     const newSolution = Math.max(previousSolution - nutrientSolutionConsumed, 0);

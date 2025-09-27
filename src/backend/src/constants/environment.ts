@@ -51,3 +51,75 @@ export const BASE_DURABILITY_DECAY_PER_TICK = 0.00002;
 
 /** The underlying random probability that any given plant might contract a disease each hour. */
 export const BASE_DISEASE_CHANCE_PER_TICK = 0.0001;
+
+/**
+ * Specific heat capacity proxy for air in kWh·m⁻³·K⁻¹ used to translate device energy draw into
+ * temperature deltas for a zone volume.
+ */
+export const SPECIFIC_HEAT_AIR_KWH_PER_M3K = 0.000336;
+
+/** Minimum fallback heat capacity (kWh·K⁻¹) applied when a zone volume is extremely small. */
+export const MIN_HEAT_CAPACITY_KWH_PER_K = 0.0001;
+
+/** Fraction of a light's electrical power that is assumed to convert into heat inside the zone. */
+export const DEFAULT_LIGHT_HEAT_FRACTION = 0.4;
+
+/** Default area coverage in square metres for lights lacking an explicit `coverageArea` setting. */
+export const DEFAULT_LIGHT_COVERAGE_M2 = 1;
+
+/** Temperature error (°C) assumed for full-power HVAC response when no modulation is provided. */
+export const DEFAULT_FULL_POWER_DELTA_K = 1;
+
+/** Default temperature hysteresis band (°C) applied when controllers omit explicit settings. */
+export const DEFAULT_HYSTERESIS_K = 0.5;
+
+/** Relative humidity hysteresis (0–1) assumed for humidifiers/dehumidifiers by default. */
+export const DEFAULT_HUMIDITY_HYSTERESIS = 0.05;
+
+/** Relative humidity delta (0–1) that maps to full humidity device power when modulation is absent. */
+export const DEFAULT_FULL_POWER_DELTA_RH = 0.1;
+
+/** Length of the default CO₂ injector pulse in minutes for scaling per-tick dosing. */
+export const DEFAULT_CO2_PULSE_MINUTES = 1;
+
+/** Maximum safe CO₂ concentration (ppm) enforced when a device omits its own upper bound. */
+export const DEFAULT_MAX_CO2_PPM = 1800;
+
+/** Minimum zone volume (m³) used when converting transpiration to humidity deltas. */
+export const MIN_ZONE_VOLUME_M3 = 0.001;
+
+/**
+ * Mass of nutrients (grams) consumed per litre of solution at full strength for transpiration feedback.
+ */
+export const DEFAULT_NUTRIENT_GRAMS_PER_LITER_AT_STRENGTH_1 = 0.8;
+
+/**
+ * Default PI gains and bounds for temperature control output (expressed in % heater/cooler demand).
+ */
+export const CLIMATE_CONTROLLER_DEFAULT_TEMPERATURE_CONFIG = {
+  kp: 20,
+  ki: 1,
+  min: -100,
+  max: 100,
+} as const;
+
+/**
+ * Default PI gains and bounds for humidity control (humidify/dehumidify demand in %).
+ */
+export const CLIMATE_CONTROLLER_DEFAULT_HUMIDITY_CONFIG = {
+  kp: 400,
+  ki: 40,
+  min: -100,
+  max: 100,
+} as const;
+
+/** Default PI gains and bounds for CO₂ injection demand (0–100 % output). */
+export const CLIMATE_CONTROLLER_DEFAULT_CO2_CONFIG = {
+  kp: 0.1,
+  ki: 0.02,
+  min: 0,
+  max: 100,
+} as const;
+
+/** Smallest controller output quantum applied when discretising PI controller results. */
+export const CLIMATE_CONTROLLER_DEFAULT_OUTPUT_STEP = 1;

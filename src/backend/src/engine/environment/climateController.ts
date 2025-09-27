@@ -1,3 +1,10 @@
+import {
+  CLIMATE_CONTROLLER_DEFAULT_CO2_CONFIG,
+  CLIMATE_CONTROLLER_DEFAULT_HUMIDITY_CONFIG,
+  CLIMATE_CONTROLLER_DEFAULT_OUTPUT_STEP,
+  CLIMATE_CONTROLLER_DEFAULT_TEMPERATURE_CONFIG,
+} from '@/constants/environment.js';
+
 export interface SinglePIControllerConfig {
   kp: number;
   ki: number;
@@ -31,29 +38,6 @@ export interface ClimateControlOutput {
   humidityDehumidify: number;
   co2Injection: number;
 }
-
-const DEFAULT_TEMPERATURE_CONFIG: Required<SinglePIControllerConfig> = {
-  kp: 20,
-  ki: 1,
-  min: -100,
-  max: 100,
-};
-
-const DEFAULT_HUMIDITY_CONFIG: Required<SinglePIControllerConfig> = {
-  kp: 400,
-  ki: 40,
-  min: -100,
-  max: 100,
-};
-
-const DEFAULT_CO2_CONFIG: Required<SinglePIControllerConfig> = {
-  kp: 0.1,
-  ki: 0.02,
-  min: 0,
-  max: 100,
-};
-
-const DEFAULT_OUTPUT_STEP = 1;
 
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) {
@@ -114,30 +98,30 @@ export class ClimateController {
 
   constructor(options: ClimateControllerOptions = {}) {
     const temperatureConfig: Required<SinglePIControllerConfig> = {
-      ...DEFAULT_TEMPERATURE_CONFIG,
+      ...CLIMATE_CONTROLLER_DEFAULT_TEMPERATURE_CONFIG,
       ...options.temperature,
-      min: options.temperature?.min ?? DEFAULT_TEMPERATURE_CONFIG.min,
-      max: options.temperature?.max ?? DEFAULT_TEMPERATURE_CONFIG.max,
+      min: options.temperature?.min ?? CLIMATE_CONTROLLER_DEFAULT_TEMPERATURE_CONFIG.min,
+      max: options.temperature?.max ?? CLIMATE_CONTROLLER_DEFAULT_TEMPERATURE_CONFIG.max,
     };
 
     const humidityConfig: Required<SinglePIControllerConfig> = {
-      ...DEFAULT_HUMIDITY_CONFIG,
+      ...CLIMATE_CONTROLLER_DEFAULT_HUMIDITY_CONFIG,
       ...options.humidity,
-      min: options.humidity?.min ?? DEFAULT_HUMIDITY_CONFIG.min,
-      max: options.humidity?.max ?? DEFAULT_HUMIDITY_CONFIG.max,
+      min: options.humidity?.min ?? CLIMATE_CONTROLLER_DEFAULT_HUMIDITY_CONFIG.min,
+      max: options.humidity?.max ?? CLIMATE_CONTROLLER_DEFAULT_HUMIDITY_CONFIG.max,
     };
 
     const co2Config: Required<SinglePIControllerConfig> = {
-      ...DEFAULT_CO2_CONFIG,
+      ...CLIMATE_CONTROLLER_DEFAULT_CO2_CONFIG,
       ...options.co2,
-      min: options.co2?.min ?? DEFAULT_CO2_CONFIG.min,
-      max: options.co2?.max ?? DEFAULT_CO2_CONFIG.max,
+      min: options.co2?.min ?? CLIMATE_CONTROLLER_DEFAULT_CO2_CONFIG.min,
+      max: options.co2?.max ?? CLIMATE_CONTROLLER_DEFAULT_CO2_CONFIG.max,
     };
 
     this.temperature = new SinglePIController(temperatureConfig);
     this.humidity = new SinglePIController(humidityConfig);
     this.co2 = new SinglePIController(co2Config);
-    this.outputStep = options.outputStep ?? DEFAULT_OUTPUT_STEP;
+    this.outputStep = options.outputStep ?? CLIMATE_CONTROLLER_DEFAULT_OUTPUT_STEP;
   }
 
   update(
