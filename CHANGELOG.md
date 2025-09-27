@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Updated the finance ProfitChart to read the finance summary snapshot safely
+  and derive chart metrics from available totals instead of missing ledger
+  entries.
 - Ensured blueprint hot reload waits for the underlying staging promise so the
   first commit after a file change applies the updated data even when reloads
   take longer than a tick interval.
