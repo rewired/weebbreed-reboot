@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { DeviceSnapshot, PlantSnapshot, PlantingGroupSnapshot, ZoneSnapshot } from '../../types/simulation';
+import { useAppStore, selectDeviceOptionsForZone, selectStrainOptionsForZone } from '../../store';
+import type {
+  DeviceSnapshot,
+  PlantSnapshot,
+  PlantingGroupSnapshot,
+  ZoneSnapshot,
+} from '../../types/simulation';
 import styles from './ZoneDetailView.module.css';
 
 interface DerivedPlantGroup {
@@ -60,10 +66,7 @@ const resolveGroupStatus = (devices: DeviceSnapshot[]): 'on' | 'off' | 'mixed' |
   return 'mixed';
 };
 
-const toDeviceGroups = (
-  zone: ZoneSnapshot,
-  devices: DeviceSnapshot[],
-): DeviceGroupModel[] => {
+const toDeviceGroups = (zone: ZoneSnapshot, devices: DeviceSnapshot[]): DeviceGroupModel[] => {
   if (Array.isArray(zone.deviceGroups) && zone.deviceGroups.length) {
     const byId = new Map(devices.map((device) => [device.id, device] as const));
     return zone.deviceGroups.map((group) => {
@@ -117,7 +120,9 @@ const toDerivedPlantGroups = (
       const resolvedPlants = groupPlants.length ? groupPlants : fallback;
       return {
         id: group.id,
-        name: group.name ?? t('labels.strainName', { defaultValue: 'Strain {{id}}', id: group.strainId }),
+        name:
+          group.name ??
+          t('labels.strainName', { defaultValue: 'Strain {{id}}', id: group.strainId }),
         strainId: group.strainId,
         stage: group.stage,
         plants: resolvedPlants,
@@ -180,6 +185,8 @@ interface ZoneDetailViewProps {
   onTogglePlan: (enabled: boolean) => void;
   onTuneDeviceGroup?: (kind: string) => void;
   onScheduleDeviceGroup?: (kind: string) => void;
+  hasAvailableStrains?: boolean;
+  hasCompatibleDevices?: boolean;
 }
 
 export const ZoneDetailView = ({
@@ -203,11 +210,27 @@ export const ZoneDetailView = ({
   onTogglePlan,
   onTuneDeviceGroup,
   onScheduleDeviceGroup,
+  hasAvailableStrains: hasAvailableStrainsProp,
+  hasCompatibleDevices: hasCompatibleDevicesProp,
 }: ZoneDetailViewProps) => {
   const { t } = useTranslation('simulation');
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(zone.name);
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+  const hasAvailableStrains = useAppStore((state) => {
+    if (typeof hasAvailableStrainsProp === 'boolean') {
+      return hasAvailableStrainsProp;
+    }
+    return selectStrainOptionsForZone(zone.id)(state).length > 0;
+  });
+
+  const hasCompatibleDevices = useAppStore((state) => {
+    if (typeof hasCompatibleDevicesProp === 'boolean') {
+      return hasCompatibleDevicesProp;
+    }
+    return selectDeviceOptionsForZone(zone.id)(state).length > 0;
+  });
 
   const plantGroups = useMemo(() => toDerivedPlantGroups(zone, plants, t), [zone, plants, t]);
   const deviceGroups = useMemo(() => toDeviceGroups(zone, devices), [zone, devices]);
@@ -218,7 +241,8 @@ export const ZoneDetailView = ({
     setExpandedGroups([]);
   }, [zone.id, zone.name]);
 
-  const lightingCoverage = zone.lighting?.coverageRatio ?? zone.environment.ppfd / (ENVIRONMENT_RANGES.ppfd.max || 900);
+  const lightingCoverage =
+    zone.lighting?.coverageRatio ?? zone.environment.ppfd / (ENVIRONMENT_RANGES.ppfd.max || 900);
   const lightingClass = lightingCoverage >= 1 ? styles.lightingOk : styles.lightingInsufficient;
 
   const commitRename = () => {
@@ -245,6 +269,13 @@ export const ZoneDetailView = ({
       onHarvestAll(plantIds);
     }
   };
+
+  const noStrainOptionsTooltip = t('tooltips.noStrainBlueprints', {
+    defaultValue: 'No compatible strains available. Ask your designers to add strain blueprints.',
+  });
+  const noDeviceOptionsTooltip = t('tooltips.noDeviceBlueprints', {
+    defaultValue: 'No compatible devices available. Ask your designers to add device blueprints.',
+  });
 
   return (
     <div>
@@ -326,7 +357,11 @@ export const ZoneDetailView = ({
                 type="button"
                 className={`${styles.zoneAction} ${styles.zoneActionDanger}`}
                 onClick={() => {
-                  if (window.confirm(t('labels.confirmDeleteZone', { defaultValue: 'Delete this zone?' }))) {
+                  if (
+                    window.confirm(
+                      t('labels.confirmDeleteZone', { defaultValue: 'Delete this zone?' }),
+                    )
+                  ) {
                     onDelete();
                   }
                 }}
@@ -364,19 +399,27 @@ export const ZoneDetailView = ({
             <div className={styles.metricGrid}>
               <div className={styles.metricRow}>
                 <span>{t('labels.water')}</span>
-                <span className={styles.metricValue}>{zone.resources.waterLiters.toFixed(1)} L</span>
+                <span className={styles.metricValue}>
+                  {zone.resources.waterLiters.toFixed(1)} L
+                </span>
               </div>
               <div className={styles.metricRow}>
                 <span>{t('labels.nutrientSolution')}</span>
-                <span className={styles.metricValue}>{zone.resources.nutrientSolutionLiters.toFixed(1)} L</span>
+                <span className={styles.metricValue}>
+                  {zone.resources.nutrientSolutionLiters.toFixed(1)} L
+                </span>
               </div>
               <div className={styles.metricRow}>
                 <span>{t('labels.nutrientStrength')}</span>
-                <span className={styles.metricValue}>{zone.resources.nutrientStrength.toFixed(2)}</span>
+                <span className={styles.metricValue}>
+                  {zone.resources.nutrientStrength.toFixed(2)}
+                </span>
               </div>
               <div className={styles.metricRow}>
                 <span>{t('labels.substrateHealth')}</span>
-                <span className={styles.metricValue}>{(zone.resources.substrateHealth * 100).toFixed(1)}%</span>
+                <span className={styles.metricValue}>
+                  {(zone.resources.substrateHealth * 100).toFixed(1)}%
+                </span>
               </div>
             </div>
             <div className={styles.suppliesFooter}>
@@ -482,9 +525,14 @@ export const ZoneDetailView = ({
           <section className={styles.card}>
             <header className={styles.cardHeader}>
               <div>
-                <h4 className={styles.cardTitle}>{t('labels.plantingGroups', { defaultValue: 'Planting groups' })}</h4>
+                <h4 className={styles.cardTitle}>
+                  {t('labels.plantingGroups', { defaultValue: 'Planting groups' })}
+                </h4>
                 <p className={styles.cardSubtitle}>
-                  {t('labels.groupCount', { defaultValue: '{{count}} groups', count: plantGroups.length })}
+                  {t('labels.groupCount', {
+                    defaultValue: '{{count}} groups',
+                    count: plantGroups.length,
+                  })}
                 </p>
               </div>
               <button type="button" className={styles.harvestButton} onClick={handleHarvestAll}>
@@ -548,15 +596,16 @@ export const ZoneDetailView = ({
                           {group.plants.map((plant) => (
                             <div key={plant.id} className={styles.plantRow}>
                               <span>
-                                {plant.id}{' '}
-                                {plant.stage ? `• ${plant.stage}` : ''}
+                                {plant.id} {plant.stage ? `• ${plant.stage}` : ''}
                               </span>
                               <div className={styles.plantActions}>
                                 <button
                                   type="button"
                                   className={styles.zoneAction}
                                   onClick={() => onHarvestPlant(plant.id)}
-                                  aria-label={t('labels.harvestPlant', { defaultValue: 'Harvest plant' })}
+                                  aria-label={t('labels.harvestPlant', {
+                                    defaultValue: 'Harvest plant',
+                                  })}
                                 >
                                   <span className="material-symbols-outlined" aria-hidden>
                                     content_cut
@@ -572,17 +621,33 @@ export const ZoneDetailView = ({
                 })}
               </div>
             )}
-            <button type="button" className={styles.planAction} onClick={onOpenPlantingModal}>
+            <button
+              type="button"
+              className={`${styles.planAction} ${!hasAvailableStrains ? styles.actionDisabled : ''}`}
+              onClick={hasAvailableStrains ? onOpenPlantingModal : undefined}
+              disabled={!hasAvailableStrains}
+              aria-disabled={!hasAvailableStrains}
+              title={!hasAvailableStrains ? noStrainOptionsTooltip : undefined}
+            >
               <span className="material-symbols-outlined" aria-hidden>
                 add_circle
               </span>
               {t('actions.addPlanting')}
             </button>
+            {!hasAvailableStrains ? (
+              <p className={styles.helperText}>
+                {t('labels.noStrainBlueprintsHelper', {
+                  defaultValue: 'Designers: add strain blueprints to enable planting.',
+                })}
+              </p>
+            ) : null}
           </section>
 
           <section className={styles.card}>
             <header className={styles.cardHeader}>
-              <h4 className={styles.cardTitle}>{t('labels.plantingPlan', { defaultValue: 'Planting plan' })}</h4>
+              <h4 className={styles.cardTitle}>
+                {t('labels.plantingPlan', { defaultValue: 'Planting plan' })}
+              </h4>
             </header>
             {zone.plantingPlan ? (
               <div className={styles.metricGrid}>
@@ -604,13 +669,21 @@ export const ZoneDetailView = ({
                   <span>{t('labels.autoReplantToggle', { defaultValue: 'Auto replant' })}</span>
                 </label>
                 <div className={styles.deviceActions}>
-                  <button type="button" className={styles.deviceActionButton} onClick={onOpenAutomationPlanModal}>
+                  <button
+                    type="button"
+                    className={styles.deviceActionButton}
+                    onClick={onOpenAutomationPlanModal}
+                  >
                     <span className="material-symbols-outlined" aria-hidden>
                       edit
                     </span>
                     {t('labels.editPlan', { defaultValue: 'Edit plan' })}
                   </button>
-                  <button type="button" className={styles.deviceActionButton} onClick={() => onTogglePlan(false)}>
+                  <button
+                    type="button"
+                    className={styles.deviceActionButton}
+                    onClick={() => onTogglePlan(false)}
+                  >
                     <span className="material-symbols-outlined" aria-hidden>
                       delete
                     </span>
@@ -620,8 +693,14 @@ export const ZoneDetailView = ({
               </div>
             ) : (
               <div className={styles.metricGrid}>
-                <p className={styles.emptyState}>{t('labels.noPlantingPlan', { defaultValue: 'No plan configured.' })}</p>
-                <button type="button" className={styles.planAction} onClick={onOpenAutomationPlanModal}>
+                <p className={styles.emptyState}>
+                  {t('labels.noPlantingPlan', { defaultValue: 'No plan configured.' })}
+                </p>
+                <button
+                  type="button"
+                  className={styles.planAction}
+                  onClick={onOpenAutomationPlanModal}
+                >
                   <span className="material-symbols-outlined" aria-hidden>
                     add_circle
                   </span>
@@ -634,18 +713,37 @@ export const ZoneDetailView = ({
           <section className={styles.card}>
             <header className={styles.cardHeader}>
               <div>
-                <h4 className={styles.cardTitle}>{t('labels.deviceGroups', { defaultValue: 'Device groups' })}</h4>
+                <h4 className={styles.cardTitle}>
+                  {t('labels.deviceGroups', { defaultValue: 'Device groups' })}
+                </h4>
                 <p className={styles.cardSubtitle}>
-                  {t('labels.deviceCount', { defaultValue: '{{count}} devices', count: devices.length })}
+                  {t('labels.deviceCount', {
+                    defaultValue: '{{count}} devices',
+                    count: devices.length,
+                  })}
                 </p>
               </div>
-              <button type="button" className={styles.planAction} onClick={onOpenDeviceModal}>
+              <button
+                type="button"
+                className={`${styles.planAction} ${!hasCompatibleDevices ? styles.actionDisabled : ''}`}
+                onClick={hasCompatibleDevices ? onOpenDeviceModal : undefined}
+                disabled={!hasCompatibleDevices}
+                aria-disabled={!hasCompatibleDevices}
+                title={!hasCompatibleDevices ? noDeviceOptionsTooltip : undefined}
+              >
                 <span className="material-symbols-outlined" aria-hidden>
                   add_circle
                 </span>
                 {t('actions.installDevice')}
               </button>
             </header>
+            {!hasCompatibleDevices ? (
+              <p className={styles.helperText}>
+                {t('labels.noDeviceBlueprintsHelper', {
+                  defaultValue: 'Designers: add device blueprints to enable installations.',
+                })}
+              </p>
+            ) : null}
             {deviceGroups.length === 0 ? (
               <p className={styles.emptyState}>{t('labels.noDevices')}</p>
             ) : (
@@ -672,7 +770,9 @@ export const ZoneDetailView = ({
                             type="button"
                             className={styles.zoneAction}
                             onClick={() => onToggleDeviceGroup(group.kind, !isEnabled)}
-                            title={t('tooltips.toggleDeviceGroup', { defaultValue: 'Toggle group power' })}
+                            title={t('tooltips.toggleDeviceGroup', {
+                              defaultValue: 'Toggle group power',
+                            })}
                           >
                             <span className="material-symbols-outlined" aria-hidden>
                               power_settings_new
@@ -690,7 +790,9 @@ export const ZoneDetailView = ({
                               </span>
                             </button>
                           ) : null}
-                          {onScheduleDeviceGroup && (group.supportsScheduling || group.kind.toLowerCase().includes('light')) ? (
+                          {onScheduleDeviceGroup &&
+                          (group.supportsScheduling ||
+                            group.kind.toLowerCase().includes('light')) ? (
                             <button
                               type="button"
                               className={styles.zoneAction}
