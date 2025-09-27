@@ -1,5 +1,8 @@
 # World Defaults
 
+> See [ADR 0009](../system/adr/0009-simulation-constants-governance.md) for the
+> stewardship policy that governs these constants and their documentation.
+
 The world module exposes shared defaults for the resources stocked into a new
 zone and the recurring maintenance cadence. These values align engine behaviours
 (`stateFactory`, `WorldService`) and prevent drift between initialization and

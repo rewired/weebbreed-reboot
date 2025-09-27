@@ -1,5 +1,8 @@
 # Plant Growth Defaults
 
+> See [ADR 0009](../system/adr/0009-simulation-constants-governance.md) for the
+> stewardship policy that governs these constants and their documentation.
+
 ## Light & CO₂ Response
 
 `PLANT_DEFAULT_LIGHT_HALF_SATURATION = 350`

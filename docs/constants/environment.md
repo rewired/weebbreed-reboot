@@ -1,5 +1,8 @@
 # Environmental Simulation Constants
 
+> See [ADR 0009](../system/adr/0009-simulation-constants-governance.md) for the
+> stewardship policy that governs these constants and their documentation.
+
 ## Zone Sufficiency & Climate Control
 
 `RECOMMENDED_ACH = 5`
