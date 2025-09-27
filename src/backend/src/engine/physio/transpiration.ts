@@ -1,13 +1,15 @@
+import {
+  BASE_CANOPY_CONDUCTANCE,
+  SECONDS_PER_HOUR,
+  WATER_MOLAR_VOLUME_LITERS,
+} from '@/constants/physiology.js';
+
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) {
     return min;
   }
   return Math.min(Math.max(value, min), max);
 };
-
-const BASE_CANOPY_CONDUCTANCE = 0.008; // mol·m⁻²·s⁻¹·kPa⁻¹
-const WATER_MOLAR_VOLUME_LITERS = 0.018; // L per mol of water
-const SECONDS_PER_HOUR = 3600;
 
 export interface TranspirationInput {
   /** Vapour pressure deficit in kilopascals (kPa). */

@@ -24,6 +24,7 @@ import { gaussianResponse } from '@/engine/physio/temp.js';
 import { co2HalfSaturationResponse } from '@/engine/physio/co2.js';
 import { vaporPressureDeficit } from '@/engine/physio/vpd.js';
 import { estimateTranspirationLiters } from '@/engine/physio/transpiration.js';
+import { GAUSSIAN_MIN_SIGMA } from '@/constants/physiology.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);
@@ -31,8 +32,6 @@ const clamp = (value: number, min: number, max: number): number => {
 
 const DEFAULT_LIGHT_HALF_SAT = 350;
 const DEFAULT_CO2_HALF_SAT = 600;
-const MIN_SIGMA = 0.05;
-
 const HEALTH_ALERT_THRESHOLDS = [
   { threshold: 0.5, severity: 'warning' as const },
   { threshold: 0.3, severity: 'critical' as const },
@@ -87,7 +86,7 @@ const resolveVpdResponse = (
   const vpdLow = computeVpd(temperature, highRh);
   const vpdHigh = computeVpd(temperature, lowRh);
   const tolerance = Math.max(Math.abs(vpdHigh - vpdOpt), Math.abs(vpdOpt - vpdLow));
-  return gaussianResponse(vpd, vpdOpt, Math.max(tolerance / 2, MIN_SIGMA));
+  return gaussianResponse(vpd, vpdOpt, Math.max(tolerance / 2, GAUSSIAN_MIN_SIGMA));
 };
 
 const resolveCo2HalfSaturation = (strain: StrainBlueprint): number => {

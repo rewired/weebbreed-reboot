@@ -1,13 +1,15 @@
+import {
+  MAGNUS_COEFFICIENT_A,
+  MAGNUS_COEFFICIENT_B,
+  MAGNUS_PRESSURE_COEFFICIENT,
+} from '@/constants/physiology.js';
+
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) {
     return min;
   }
   return Math.min(Math.max(value, min), max);
 };
-
-const SATURATION_CONSTANT_A = 17.27;
-const SATURATION_CONSTANT_B = 237.3;
-const SATURATION_PRESSURE_COEFFICIENT = 0.6108;
 
 /**
  * Computes the saturation vapour pressure of air at a given temperature.
@@ -17,8 +19,8 @@ const SATURATION_PRESSURE_COEFFICIENT = 0.6108;
  */
 export const saturationVaporPressure = (temperatureC: number): number => {
   const temperature = clamp(temperatureC, -50, 60);
-  const exponent = (SATURATION_CONSTANT_A * temperature) / (temperature + SATURATION_CONSTANT_B);
-  return SATURATION_PRESSURE_COEFFICIENT * Math.exp(exponent);
+  const exponent = (MAGNUS_COEFFICIENT_A * temperature) / (temperature + MAGNUS_COEFFICIENT_B);
+  return MAGNUS_PRESSURE_COEFFICIENT * Math.exp(exponent);
 };
 
 /**
