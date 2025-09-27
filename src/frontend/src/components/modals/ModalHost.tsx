@@ -12,6 +12,7 @@ import { useNavigationStore } from '@/store/navigation';
 import { ModifierInputs } from '../modifiers/ModifierInputs';
 import { DifficultyModifiers } from '../../types/difficulty';
 import { useDifficultyConfig } from '@/hooks/useDifficultyConfig';
+import { formatNumber } from '@/utils/formatNumber';
 
 interface ModalHostProps {
   bridge: SimulationBridge;
@@ -153,12 +154,14 @@ const RentStructureModal = ({
               <div className="flex flex-col gap-1 text-left">
                 <span className="text-sm font-semibold text-text">{blueprint.name}</span>
                 <span className="text-xs text-text-muted">
-                  {area.toLocaleString()} m² · Upfront €{blueprint.upfrontFee.toLocaleString()} ·
-                  Rent €{blueprint.rentalCostPerSqmPerMonth}/m²·month
+                  {formatNumber(area)} m² · Upfront €
+                  {formatNumber(blueprint.upfrontFee, { maximumFractionDigits: 0 })} · Rent €
+                  {formatNumber(blueprint.rentalCostPerSqmPerMonth)}/m²·month
                 </span>
                 <span className="text-xs text-text-muted/80">
-                  {blueprint.footprint.length}m × {blueprint.footprint.width}m ×{' '}
-                  {blueprint.footprint.height}m
+                  {formatNumber(blueprint.footprint.length)}m ×{' '}
+                  {formatNumber(blueprint.footprint.width)}m ×{' '}
+                  {formatNumber(blueprint.footprint.height)}m
                 </span>
               </div>
             </label>
@@ -252,7 +255,7 @@ const DuplicateStructureModal = ({
         <span className="font-medium text-text">{structure.name}</span>
         <span>
           {rooms.length} rooms · {zones.length} zones · Rent €
-          {structure.rentPerTick.toLocaleString()} per tick
+          {formatNumber(structure.rentPerTick, { maximumFractionDigits: 0 })} per tick
         </span>
       </div>
       <label className="grid gap-1 text-sm">
@@ -475,7 +478,9 @@ const CreateRoomModal = ({
       return;
     }
     if (area > availableArea) {
-      setFeedback(`Room area (${area} m²) exceeds available space (${availableArea} m²).`);
+      setFeedback(
+        `Room area (${formatNumber(area)} m²) exceeds available space (${formatNumber(availableArea)} m²).`,
+      );
       return;
     }
     setBusy(true);
@@ -566,8 +571,8 @@ const CreateRoomModal = ({
             }`}
           />
           <span className={`text-xs ${area > availableArea ? 'text-red-600' : 'text-text-muted'}`}>
-            Available: {availableArea.toFixed(0)} m² (structure footprint:{' '}
-            {structure.footprint.area} m²)
+            Available: {formatNumber(availableArea, { maximumFractionDigits: 0 })} m² (structure
+            footprint: {formatNumber(structure.footprint.area)} m²)
           </span>
         </label>
       </div>
@@ -646,7 +651,7 @@ const DuplicateRoomModal = ({
       <div className="grid gap-1 text-sm text-text-muted">
         <span className="font-medium text-text">{room.name}</span>
         <span>
-          {zones.length} zones · {room.area} m² · Purpose {room.purposeName}
+          {zones.length} zones · {formatNumber(room.area)} m² · Purpose {room.purposeName}
         </span>
       </div>
       <label className="grid gap-1 text-sm">
@@ -834,19 +839,27 @@ const EmployeeDetailsModal = ({
         </div>
         <div className="flex justify-between">
           <span className="text-text-muted">Salary</span>
-          <span className="font-medium text-text">€{employee.salaryPerTick}/tick</span>
+          <span className="font-medium text-text">
+            €{formatNumber(employee.salaryPerTick, { maximumFractionDigits: 0 })}/tick
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-text-muted">Morale</span>
-          <span className="font-medium text-text">{Math.round(employee.morale * 100)}%</span>
+          <span className="font-medium text-text">
+            {formatNumber(employee.morale * 100, { maximumFractionDigits: 0 })}%
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-text-muted">Energy</span>
-          <span className="font-medium text-text">{Math.round(employee.energy * 100)}%</span>
+          <span className="font-medium text-text">
+            {formatNumber(employee.energy * 100, { maximumFractionDigits: 0 })}%
+          </span>
         </div>
         <div className="flex justify-between">
           <span className="text-text-muted">Max Work Time</span>
-          <span className="font-medium text-text">{employee.maxMinutesPerTick} min/tick</span>
+          <span className="font-medium text-text">
+            {formatNumber(employee.maxMinutesPerTick, { maximumFractionDigits: 0 })} min/tick
+          </span>
         </div>
         {employee.assignedStructureId && (
           <div className="flex justify-between">
@@ -992,7 +1005,8 @@ const CreateZoneModal = ({
             className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           />
           <span className="text-xs text-text-muted">
-            Available: {availableArea.toFixed(1)} m² (room area: {room.area} m²)
+            Available: {formatNumber(availableArea, { maximumFractionDigits: 1 })} m² (room area:{' '}
+            {formatNumber(room.area)} m²)
           </span>
         </label>
       </div>
@@ -1044,7 +1058,10 @@ const NewGameModal = ({
       id: key as 'easy' | 'normal' | 'hard',
       name: config.name,
       description: config.description,
-      initialCapital: `€${(config.modifiers.economics.initialCapital / 1_000_000).toFixed(1)}M`,
+      initialCapital: `€${formatNumber(config.modifiers.economics.initialCapital / 1_000_000, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      })}M`,
       color:
         key === 'easy' ? 'text-green-600' : key === 'normal' ? 'text-yellow-600' : 'text-red-600',
     }));

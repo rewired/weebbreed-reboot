@@ -5,6 +5,7 @@ import { Badge } from '@/components/primitives/Badge';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
+import { formatNumber } from '@/utils/formatNumber';
 
 export const RoomView = () => {
   const snapshot = useSimulationStore((state) => state.snapshot);
@@ -83,7 +84,7 @@ export const RoomView = () => {
         <span className="text-xs uppercase tracking-wide text-text-muted">Room</span>
         <h2 className="text-2xl font-semibold text-text">{room.name}</h2>
         <p className="text-sm text-text-muted">
-          {room.area} m² · {zones.length} zones · method {room.purposeName}
+          {formatNumber(room.area)} m² · {zones.length} zones · method {room.purposeName}
         </p>
       </header>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -91,7 +92,7 @@ export const RoomView = () => {
           <Card
             key={zone.id}
             title={zone.name}
-            subtitle={`${zone.area} m² · PPFD ${zone.environment.ppfd} µmol`}
+            subtitle={`${formatNumber(zone.area)} m² · PPFD ${formatNumber(zone.environment.ppfd)} µmol`}
             action={
               <Button
                 variant="ghost"
@@ -114,23 +115,36 @@ export const RoomView = () => {
               <div className="flex items-center gap-2 text-text">
                 <Icon name="device_thermostat" size={20} />
                 <span>
-                  {zone.environment.temperature.toFixed(1)}°C · RH{' '}
-                  {(zone.environment.relativeHumidity * 100).toFixed(0)}%
+                  {formatNumber(zone.environment.temperature, {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })}
+                  °C · RH{' '}
+                  {formatNumber(zone.environment.relativeHumidity * 100, {
+                    maximumFractionDigits: 0,
+                  })}
+                  %
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Icon name="water_drop" size={20} />
-                <span>Reservoir {(zone.resources.reservoirLevel * 100).toFixed(0)}%</span>
+                <span>
+                  Reservoir{' '}
+                  {formatNumber(zone.resources.reservoirLevel * 100, { maximumFractionDigits: 0 })}%
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Icon name="park" size={20} />
                 <span>
-                  {zone.plants.length} plants · Stress {Math.round(zone.metrics.stressLevel * 100)}%
+                  {zone.plants.length} plants · Stress{' '}
+                  {formatNumber(zone.metrics.stressLevel * 100, { maximumFractionDigits: 0 })}%
                 </span>
               </div>
             </div>
             <div className="mt-4 flex items-center justify-between">
-              <Badge tone="default">DLI {zone.lighting?.dli ?? 0} mol</Badge>
+              <Badge tone="default">
+                DLI {formatNumber(zone.lighting?.dli ?? 0, { maximumFractionDigits: 2 })} mol
+              </Badge>
               <Button
                 variant="primary"
                 size="sm"

@@ -5,6 +5,7 @@ import { Badge } from '@/components/primitives/Badge';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
+import { formatNumber } from '@/utils/formatNumber';
 
 export const StructureView = () => {
   const snapshot = useSimulationStore((state) => state.snapshot);
@@ -33,8 +34,8 @@ export const StructureView = () => {
             <span className="text-xs uppercase tracking-wide text-text-muted">Structure</span>
             <h2 className="text-2xl font-semibold text-text">{structure.name}</h2>
             <p className="text-sm text-text-muted">
-              {structure.footprint.area} m² · {rooms.length} rooms · {structure.footprint.volume} m³
-              volume
+              {formatNumber(structure.footprint.area)} m² · {rooms.length} rooms ·{' '}
+              {formatNumber(structure.footprint.volume)} m³ volume
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -74,7 +75,9 @@ export const StructureView = () => {
         </div>
         <div className="flex items-center gap-3">
           <Badge tone="success">Operational</Badge>
-          <Badge tone="default">Rent €{structure.rentPerTick.toLocaleString()} / tick</Badge>
+          <Badge tone="default">
+            Rent €{formatNumber(structure.rentPerTick, { maximumFractionDigits: 0 })} / tick
+          </Badge>
         </div>
       </header>
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -84,7 +87,7 @@ export const StructureView = () => {
             <Card
               key={room.id}
               title={room.name}
-              subtitle={`${zones.length} zones · ${room.area} m²`}
+              subtitle={`${zones.length} zones · ${formatNumber(room.area)} m²`}
               action={
                 <div className="flex gap-2">
                   <Button
@@ -117,11 +120,16 @@ export const StructureView = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <Icon name="science" size={20} />
-                  <span>Maintenance {Math.round(room.maintenanceLevel * 100)}%</span>
+                  <span>
+                    Maintenance{' '}
+                    {formatNumber(room.maintenanceLevel * 100, { maximumFractionDigits: 0 })}%
+                  </span>
                 </div>
               </div>
               <div className="mt-4 flex items-center justify-between">
-                <Badge tone="default">Cleanliness {Math.round(room.cleanliness * 100)}%</Badge>
+                <Badge tone="default">
+                  Cleanliness {formatNumber(room.cleanliness * 100, { maximumFractionDigits: 0 })}%
+                </Badge>
                 <Button
                   variant="primary"
                   size="sm"
