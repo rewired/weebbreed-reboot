@@ -12,6 +12,8 @@ import type {
 } from '../../types/simulation';
 import type {
   AppStoreState,
+  BlueprintCatalogPayload,
+  BlueprintCatalogState,
   FinanceTickEntry,
   MaintenanceExpenseEntry,
   SimulationSlice,
@@ -239,6 +241,7 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
   zones: {},
   devices: {},
   plants: {},
+  blueprintCatalog: { strains: {}, devices: {} },
   events: [],
   timeline: [],
   lastSetpoints: {},
@@ -285,6 +288,15 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
         hrEvents: nextHrEvents,
       };
     }),
+  ingestBlueprintCatalog: (catalog: BlueprintCatalogPayload) =>
+    set((state) => {
+      const nextCatalog: BlueprintCatalogState = {
+        strains: catalog.strains ? indexById(catalog.strains) : state.blueprintCatalog.strains,
+        devices: catalog.devices ? indexById(catalog.devices) : state.blueprintCatalog.devices,
+      };
+
+      return { blueprintCatalog: nextCatalog };
+    }),
   appendEvents: (events) =>
     set((state) => {
       return events.length ? { events: mergeEvents(state.events, events) } : {};
@@ -309,6 +321,7 @@ export const createSimulationSlice: StateCreator<AppStoreState, [], [], Simulati
       zones: {},
       devices: {},
       plants: {},
+      blueprintCatalog: { strains: {}, devices: {} },
       events: [],
       timeline: [],
       lastTickCompleted: undefined,

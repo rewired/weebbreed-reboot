@@ -1,4 +1,4 @@
-import type { AppStoreState } from './types';
+import type { AppStoreState, DeviceOption } from './types';
 
 export const selectFinanceSummary = (state: AppStoreState) => state.financeSummary;
 
@@ -81,4 +81,31 @@ export const selectSelectedRoom = (state: AppStoreState) => {
 export const selectSelectedZone = (state: AppStoreState) => {
   const zoneId = state.selectedZoneId;
   return zoneId ? state.zones[zoneId] : undefined;
+};
+
+const matchesRoomPurpose = (
+  purposeKind: string | undefined,
+  compatibility: DeviceOption['compatibility'],
+): boolean => {
+  if (!purposeKind || compatibility.mode === 'all') {
+    return true;
+  }
+
+  return compatibility.roomPurposes?.includes(purposeKind) ?? false;
+};
+
+export const selectDeviceOptionsForZone = (zoneId: string) => (state: AppStoreState) => {
+  const zone = state.zones[zoneId];
+  if (!zone) {
+    return [];
+  }
+
+  const purposeKind = state.rooms[zone.roomId]?.purposeKind;
+  const devices = Object.values(state.blueprintCatalog.devices);
+
+  return devices.filter((device) => matchesRoomPurpose(purposeKind, device.compatibility));
+};
+
+export const selectStrainOptions = (state: AppStoreState) => {
+  return Object.values(state.blueprintCatalog.strains);
 };

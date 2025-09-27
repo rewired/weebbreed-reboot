@@ -16,6 +16,53 @@ import type {
   ZoneSnapshot,
 } from '../types/simulation';
 
+export type RoomPurposeCompatibilityOption =
+  | { mode: 'all' }
+  | { mode: 'restricted'; roomPurposes: string[] };
+
+export interface DeviceOption {
+  id: string;
+  name: string;
+  kind: string;
+  quality: number;
+  complexity: number;
+  lifespan: number;
+  compatibility: RoomPurposeCompatibilityOption;
+  settings: Record<string, number | readonly number[]>;
+}
+
+export interface StrainOption {
+  id: string;
+  slug: string;
+  name: string;
+  genotype: Record<string, number>;
+  chemotype: Record<string, number>;
+  morphology: {
+    growthRate: number;
+    yieldFactor: number;
+    leafAreaIndex: number;
+  };
+  photoperiod: {
+    vegetationTime: number;
+    floweringTime: number;
+    transitionTrigger: number;
+    [key: string]: unknown;
+  };
+  harvestWindow: readonly [number, number];
+  generalResilience: number;
+  germinationRate: number;
+}
+
+export interface BlueprintCatalogPayload {
+  strains?: StrainOption[];
+  devices?: DeviceOption[];
+}
+
+export interface BlueprintCatalogState {
+  strains: Record<string, StrainOption>;
+  devices: Record<string, DeviceOption>;
+}
+
 export type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'error';
 
 export type NavigationView = 'overview' | 'world' | 'personnel' | 'finance' | 'settings';
@@ -66,6 +113,7 @@ export interface SimulationSlice {
   zones: Record<string, ZoneSnapshot>;
   devices: Record<string, DeviceSnapshot>;
   plants: Record<string, PlantSnapshot>;
+  blueprintCatalog: BlueprintCatalogState;
   events: SimulationEvent[];
   timeline: SimulationTimelineEntry[];
   lastTickCompleted?: SimulationTickEvent;
@@ -78,6 +126,7 @@ export interface SimulationSlice {
   hrEvents: SimulationEvent[];
   setConnectionStatus: (status: ConnectionStatus, errorMessage?: string) => void;
   ingestUpdate: (update: SimulationUpdateEntry) => void;
+  ingestBlueprintCatalog: (catalog: BlueprintCatalogPayload) => void;
   appendEvents: (events: SimulationEvent[]) => void;
   recordFinanceTick: (entry: FinanceTickEntry) => void;
   recordHREvent: (event: SimulationEvent) => void;

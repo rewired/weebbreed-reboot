@@ -11,7 +11,12 @@ import type {
 } from '../types/simulation';
 import { useAppStore } from '../store';
 import type { ConnectionStatus } from '../store';
-import type { FinanceTickEntry } from '../store/types';
+import type {
+  BlueprintCatalogPayload,
+  DeviceOption,
+  FinanceTickEntry,
+  StrainOption,
+} from '../store/types';
 
 type AnyHandler = (...args: unknown[]) => void;
 
@@ -172,6 +177,7 @@ export const useSimulationBridge = (
   const { url = '/socket.io', autoConnect = true, debug = false } = options;
   const setConnectionStatus = useAppStore((state) => state.setConnectionStatus);
   const ingestUpdate = useAppStore((state) => state.ingestUpdate);
+  const ingestBlueprintCatalog = useAppStore((state) => state.ingestBlueprintCatalog);
   const appendEvents = useAppStore((state) => state.appendEvents);
   const registerTickCompleted = useAppStore((state) => state.registerTickCompleted);
   const recordFinanceTick = useAppStore((state) => state.recordFinanceTick);
@@ -302,6 +308,25 @@ export const useSimulationBridge = (
       appendEvents([toSimulationEvent(payload)]);
     };
 
+    const handleBlueprintCatalog = (payload: unknown) => {
+      if (!payload || typeof payload !== 'object') {
+        return;
+      }
+
+      const catalog = payload as BlueprintCatalogPayload;
+      const nextCatalog: BlueprintCatalogPayload = {};
+
+      if (Array.isArray(catalog.strains)) {
+        nextCatalog.strains = catalog.strains as StrainOption[];
+      }
+
+      if (Array.isArray(catalog.devices)) {
+        nextCatalog.devices = catalog.devices as DeviceOption[];
+      }
+
+      ingestBlueprintCatalog(nextCatalog);
+    };
+
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('connect_error', handleConnectError);
@@ -312,6 +337,7 @@ export const useSimulationBridge = (
     socket.on('finance.tick', handleFinanceTick);
     socket.on('domain.event', handleDomainEvent);
     socket.on('simulation.event', handleDomainEvent);
+    socket.on('catalog.blueprints', handleBlueprintCatalog);
 
     if (debug) {
       socket.onAny((event, payload) => {
@@ -334,6 +360,7 @@ export const useSimulationBridge = (
     }
 
     return () => {
+      socket.off('catalog.blueprints', handleBlueprintCatalog);
       socket.removeAllListeners();
       socket.disconnect();
       socketRef.current = null;
@@ -343,6 +370,7 @@ export const useSimulationBridge = (
   }, [
     appendEvents,
     autoConnect,
+    ingestBlueprintCatalog,
     debug,
     ingestUpdate,
     recordFinanceTick,
