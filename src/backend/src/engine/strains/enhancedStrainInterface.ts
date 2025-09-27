@@ -7,74 +7,37 @@ export type EnvMetric = 'temp_C' | 'rh_frac' | 'co2_ppm' | 'ppfd_umol_m2s' | 'vp
 // Growth phase keys for environmental band phase overrides
 export type GrowthPhase = 'seedling' | 'veg' | 'flower' | 'ripening';
 
-// Environmental band definition with green zone and yellow limits
-export interface EnvBand {
-  green: [number, number]; // Optimal range [min, max]
-  yellowLow: number; // Warning threshold below optimal
-  yellowHigh: number; // Warning threshold above optimal
-}
+type EnvBandsFromSchema = NonNullable<StrainBlueprint['envBands']>;
+type StressToleranceFromSchema = NonNullable<StrainBlueprint['stressTolerance']>;
+type MethodAffinityFromSchema = NonNullable<StrainBlueprint['methodAffinity']>;
+type PhaseDurationsFromSchema = NonNullable<StrainBlueprint['phaseDurations']>;
+type YieldModelFromSchema = NonNullable<StrainBlueprint['yieldModel']>;
 
-// Phase-specific environmental bands (can override default)
-export interface PhaseEnvBands {
-  temp_C?: EnvBand;
-  rh_frac?: EnvBand;
-  co2_ppm?: EnvBand;
-  ppfd_umol_m2s?: EnvBand;
-  vpd_kPa?: EnvBand;
-}
-
-// Complete environmental bands with default and phase overrides
-export interface EnvBands {
-  default: PhaseEnvBands;
-  veg?: PhaseEnvBands;
-  flower?: PhaseEnvBands;
-  seedling?: PhaseEnvBands;
-  ripening?: PhaseEnvBands;
-}
-
-// Stress tolerance multipliers (widening of bands when flagged)
-export interface StressTolerance {
-  vpd_kPa?: number;
-  temp_C?: number;
-  rh_frac?: number;
-  co2_ppm?: number;
-  ppfd_umol_m2s?: number;
-}
-
-// Method affinity mapping (cultivation method UUID -> affinity 0..1)
-export type MethodAffinity = Record<string, number>;
-
-// Phase duration specifications in days
-export interface PhaseDurations {
-  seedlingDays?: number;
-  vegDays?: number;
-  flowerDays?: number;
-  ripeningDays?: number;
-}
-
-// Yield model with quality factor weights and CO2 response
-export interface YieldModel {
-  baseGmPerPlant: number;
-  qualityFactors: {
-    vpd?: number;
-    ppfd?: number;
-    temp?: number;
-    rh?: number;
-  };
-  co2Response?: {
-    saturation_ppm: number;
-    halfMax_ppm: number;
-  };
-}
+export type EnvBands = EnvBandsFromSchema;
+export type PhaseEnvBands = EnvBands['default'];
+export type EnvBand = NonNullable<PhaseEnvBands['temp_C']>;
+export type StressTolerance = StressToleranceFromSchema;
+export type MethodAffinity = MethodAffinityFromSchema;
+export type PhaseDurations = PhaseDurationsFromSchema;
+export type YieldModel = YieldModelFromSchema;
 
 // Enhanced strain blueprint with new fields
-export interface EnhancedStrainBlueprint extends StrainBlueprint {
-  envBands?: EnvBands;
-  stressTolerance?: StressTolerance;
-  methodAffinity?: MethodAffinity;
-  phaseDurations?: PhaseDurations;
-  yieldModel?: YieldModel;
-}
+export type EnhancedStrainBlueprint = StrainBlueprint;
+
+const isEnvBand = (value: unknown): value is EnvBand => {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const candidate = value as Partial<EnvBand>;
+  return (
+    Array.isArray(candidate.green) &&
+    candidate.green.length === 2 &&
+    candidate.green.every((entry) => typeof entry === 'number') &&
+    typeof candidate.yellowLow === 'number' &&
+    typeof candidate.yellowHigh === 'number'
+  );
+};
 
 /**
  * Maps plant stage to growth phase for environmental band lookup
@@ -107,12 +70,16 @@ export const getEnvBand = (
 
   // Try phase-specific override first
   const phaseOverride = strain.envBands[phase];
-  if (phaseOverride && phaseOverride[metric]) {
-    return phaseOverride[metric];
+  if (phaseOverride) {
+    const overrideBand = phaseOverride[metric];
+    if (isEnvBand(overrideBand)) {
+      return overrideBand;
+    }
   }
 
   // Fall back to default
-  return strain.envBands.default[metric];
+  const defaultBand = strain.envBands.default[metric];
+  return isEnvBand(defaultBand) ? defaultBand : undefined;
 };
 
 /**
@@ -123,9 +90,10 @@ export const applyStressTolerance = (
   metric: EnvMetric,
   tolerance?: StressTolerance,
 ): EnvBand => {
-  if (!tolerance || !tolerance[metric]) return band;
-
-  const widening = tolerance[metric]!;
+  const widening = tolerance?.[metric];
+  if (typeof widening !== 'number') {
+    return band;
+  }
 
   return {
     green: band.green, // Keep optimal range unchanged
@@ -196,8 +164,8 @@ export const evaluateEnvironment = (
  * Gets method affinity for a cultivation method
  */
 export const getMethodAffinity = (strain: EnhancedStrainBlueprint, methodId: string): number => {
-  if (!strain.methodAffinity) return 1.0; // Default neutral affinity
-  return strain.methodAffinity[methodId] ?? 1.0;
+  const affinity = strain.methodAffinity?.[methodId];
+  return typeof affinity === 'number' ? affinity : 1.0;
 };
 
 /**
@@ -207,5 +175,6 @@ export const getPhaseDuration = (
   strain: EnhancedStrainBlueprint,
   phase: keyof PhaseDurations,
 ): number | undefined => {
-  return strain.phaseDurations?.[phase];
+  const duration = strain.phaseDurations?.[phase];
+  return typeof duration === 'number' ? duration : undefined;
 };
