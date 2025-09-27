@@ -192,7 +192,7 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                       <h4 className="font-medium text-text flex items-center gap-2">
                         {utility.name}
                         {hasChange && (
-                          <Badge variant="warning" size="sm">
+                          <Badge tone="warning" className="px-2 py-0.5 text-[10px]">
                             Modified
                           </Badge>
                         )}
@@ -214,7 +214,10 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                         </span>
                         <span className="text-sm text-text-muted">{utility.unit}</span>
                         {hasChange && (
-                          <Badge variant={changePercent >= 0 ? 'warning' : 'success'} size="sm">
+                          <Badge
+                            tone={changePercent >= 0 ? 'warning' : 'success'}
+                            className="px-2 py-0.5 text-[10px]"
+                          >
                             {formatPercentage(changePercent)}
                           </Badge>
                         )}
@@ -304,8 +307,14 @@ export const UtilityPricing = ({ bridge }: UtilityPricingProps) => {
                 size="sm"
                 variant="primary"
                 onClick={handleSaveChanges}
-                loading={isUpdating}
-                icon={<Icon name="save" />}
+                disabled={isUpdating}
+                icon={
+                  isUpdating ? (
+                    <Icon name="autorenew" className="animate-spin text-primary-strong" size={18} />
+                  ) : (
+                    <Icon name="save" />
+                  )
+                }
               >
                 Save Changes
               </Button>
