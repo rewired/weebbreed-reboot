@@ -4,6 +4,11 @@ import { z } from 'zod';
 
 import { readJsonFile } from './initialization/common.js';
 
+export type { CultivationMethodBlueprint } from '@/data/schemas/cultivationMethodSchema.js';
+export type { DeviceBlueprint } from '@/data/schemas/deviceSchema.js';
+export type { SimulationEvent } from '@runtime/eventBusCore.js';
+export type { TimeStatus } from '@/facade/commands/time.js';
+
 /**
  * Core TypeScript interfaces for the simulation game state.
  * These structures intentionally mirror the blueprint driven domain model
