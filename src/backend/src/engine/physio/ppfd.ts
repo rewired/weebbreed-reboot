@@ -1,12 +1,11 @@
+import { MICROMOL_TO_MOL, SECONDS_PER_HOUR } from '@/constants/physiology.js';
+
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) {
     return min;
   }
   return Math.min(Math.max(value, min), max);
 };
-
-const SECONDS_PER_HOUR = 3600;
-const MICROMOL_TO_MOL = 1e-6;
 
 /**
  * Rectangular hyperbola response of photosynthesis to PPFD (µmol·m⁻²·s⁻¹).

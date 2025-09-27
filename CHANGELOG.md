@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refactored the simulation loop to delegate tick-state orchestration and accounting flows to dedicated modules with updated tests safeguarding the phase order.
+- Centralized shared plant physiology coefficients (Magnus, canopy conductance, photon conversions) in `@/constants/physiology` and documented the module.
 
 ### Fixed
 

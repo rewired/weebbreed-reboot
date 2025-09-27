@@ -1,11 +1,11 @@
+import { GAUSSIAN_MIN_SIGMA } from '@/constants/physiology.js';
+
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) {
     return min;
   }
   return Math.min(Math.max(value, min), max);
 };
-
-const MIN_SIGMA = 0.05;
 
 /**
  * Exponential relaxation towards a target value.
@@ -61,7 +61,7 @@ export const gaussianResponse = (value: number, mean: number, sigma: number): nu
   if (!Number.isFinite(value) || !Number.isFinite(mean)) {
     return 0;
   }
-  const spread = Math.max(Math.abs(sigma), MIN_SIGMA);
+  const spread = Math.max(Math.abs(sigma), GAUSSIAN_MIN_SIGMA);
   const exponent = -0.5 * ((value - mean) / spread) ** 2;
   return clamp(Math.exp(exponent), 0, 1);
 };
