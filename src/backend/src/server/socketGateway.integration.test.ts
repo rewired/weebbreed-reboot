@@ -18,6 +18,18 @@ import { RngService } from '@/lib/rng.js';
 import type { RoomPurpose, RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import { SocketGateway } from '@/server/socketGateway.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
+import {
+  buildDeviceBlueprintCatalog,
+  buildStrainBlueprintCatalog,
+} from '@/facade/blueprintCatalog.js';
+import {
+  createBlueprintRepositoryStub,
+  createDeviceBlueprint,
+  createDevicePriceMap,
+  createStrainBlueprint,
+  createStrainPriceMap,
+  createStructureBlueprint,
+} from '@/testing/fixtures.js';
 
 const STRUCTURE_ID = '11111111-1111-1111-1111-111111111111';
 const ROOM_ID = '22222222-2222-2222-2222-222222222222';
@@ -28,6 +40,11 @@ const METHOD_ID = '66666666-6666-6666-6666-666666666666';
 const STRAIN_ID = '77777777-7777-7777-7777-777777777777';
 const PLANTING_PLAN_ID = '88888888-8888-8888-8888-888888888888';
 const ROOM_PURPOSE_ID = '99999999-9999-9999-9999-999999999999';
+const STRAIN_BLUEPRINT_ALPHA_ID = '00000000-0000-0000-0000-000000000401';
+const STRAIN_BLUEPRINT_BETA_ID = '00000000-0000-0000-0000-000000000402';
+const DEVICE_BLUEPRINT_LAMP_ID = '00000000-0000-0000-0000-000000000501';
+const DEVICE_BLUEPRINT_CLIMATE_ID = '00000000-0000-0000-0000-000000000502';
+const STRUCTURE_BLUEPRINT_ID = '00000000-0000-0000-0000-000000000503';
 
 const TEST_DIFFICULTY_CONFIG: DifficultyConfig = {
   easy: {
@@ -383,6 +400,10 @@ describe('SocketGateway facade intents integration', () => {
   let client: ClientSocket;
   let state: GameState;
   let domainEvents: SimulationEvent[][];
+  let repository: ReturnType<typeof createBlueprintRepositoryStub>;
+  let expectedStrainCatalog: ReturnType<typeof buildStrainBlueprintCatalog>;
+  let expectedDeviceCatalog: ReturnType<typeof buildDeviceBlueprintCatalog>;
+  let structureBlueprints: ReturnType<typeof createStructureBlueprint>[];
 
   beforeEach(async () => {
     server = createServer();
@@ -394,16 +415,87 @@ describe('SocketGateway facade intents integration', () => {
     const eventBus = new EventBus();
     const rng = new RngService('socket-intents');
     const costAccounting = new CostAccountingService(createPriceCatalog());
+    const strainBlueprints = [
+      createStrainBlueprint({
+        id: STRAIN_BLUEPRINT_ALPHA_ID,
+        name: 'Helios',
+        slug: 'helios',
+        methodAffinity: { [METHOD_ID]: 0.8 },
+      }),
+      createStrainBlueprint({
+        id: STRAIN_BLUEPRINT_BETA_ID,
+        name: 'Lunaris',
+        slug: 'lunaris',
+        methodAffinity: { [METHOD_ID]: 0.55 },
+      }),
+    ];
+    const deviceBlueprints = [
+      createDeviceBlueprint({
+        kind: 'Lamp',
+        id: DEVICE_BLUEPRINT_LAMP_ID,
+        name: 'Orion Lamp',
+        roomPurposes: ['growroom'],
+        settings: { power: 0.68, ppfd: 810, coverageArea: 8 },
+      }),
+      createDeviceBlueprint({
+        kind: 'ClimateUnit',
+        id: DEVICE_BLUEPRINT_CLIMATE_ID,
+        name: 'Zephyr Climate',
+        roomPurposes: '*',
+        settings: { airflow: 340, targetTemperature: 24, coolingCapacity: 3 },
+      }),
+    ];
+    const strainPrices = createStrainPriceMap([
+      [STRAIN_BLUEPRINT_ALPHA_ID, { seedPrice: 1.1, harvestPricePerGram: 4.4 }],
+      [STRAIN_BLUEPRINT_BETA_ID, { seedPrice: 0.9, harvestPricePerGram: 3.7 }],
+    ]);
+    const devicePrices = createDevicePriceMap([
+      [
+        DEVICE_BLUEPRINT_LAMP_ID,
+        {
+          capitalExpenditure: 1350,
+          baseMaintenanceCostPerTick: 0.0023,
+          costIncreasePer1000Ticks: 0.0005,
+        },
+      ],
+      [
+        DEVICE_BLUEPRINT_CLIMATE_ID,
+        {
+          capitalExpenditure: 4100,
+          baseMaintenanceCostPerTick: 0.0033,
+          costIncreasePer1000Ticks: 0.0006,
+        },
+      ],
+    ]);
+    repository = createBlueprintRepositoryStub({
+      strains: strainBlueprints,
+      devices: deviceBlueprints,
+      strainPrices,
+      devicePrices,
+    });
+    expectedStrainCatalog = buildStrainBlueprintCatalog(repository);
+    expectedDeviceCatalog = buildDeviceBlueprintCatalog(repository);
+    structureBlueprints = [
+      createStructureBlueprint({ id: STRUCTURE_BLUEPRINT_ID, name: 'Gateway Test Campus' }),
+    ];
     const loopStub = { processTick: () => Promise.resolve() } as unknown as SimulationLoop;
 
     facade = new SimulationFacade({ state, eventBus, loop: loopStub });
 
-    const worldService = new WorldService({ state, rng, costAccounting });
+    const worldService = new WorldService({
+      state,
+      rng,
+      costAccounting,
+      structureBlueprints,
+    });
     const deviceService = new DeviceGroupService({ state, rng });
     const plantingService = new PlantingPlanService({ state, rng });
 
     facade.updateServices({
       world: {
+        getStructureBlueprints: () => ({ ok: true, data: structureBlueprints }),
+        getStrainBlueprints: () => ({ ok: true, data: buildStrainBlueprintCatalog(repository) }),
+        getDeviceBlueprints: () => ({ ok: true, data: buildDeviceBlueprintCatalog(repository) }),
         renameStructure: (intent, context) =>
           worldService.renameStructure(intent.structureId, intent.name, context),
         deleteStructure: (intent, context) =>
@@ -543,6 +635,18 @@ describe('SocketGateway facade intents integration', () => {
     expect(response.ok).toBe(true);
     expect(state.structures[0]!.name).toBe('Gamma');
     await expectDomainEvent('world.structureRenamed');
+  });
+
+  it('handles getStrainBlueprints intent', async () => {
+    const response = await emitIntent('world', 'getStrainBlueprints', {});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedStrainCatalog);
+  });
+
+  it('handles getDeviceBlueprints intent', async () => {
+    const response = await emitIntent('world', 'getDeviceBlueprints', {});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedDeviceCatalog);
   });
 
   it('handles duplicateStructure intent', async () => {

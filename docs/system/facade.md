@@ -71,6 +71,10 @@ Common categories are below.
 
 ### 4.3 World Building (Structures → Rooms → Zones)
 
+- `getStructureBlueprints()` / `getStrainBlueprints()` /
+  `getDeviceBlueprints()` — read-only catalogs with IDs, names,
+  compatibility hints (room purposes or method affinity), default settings, and
+  price hints sourced from the active blueprint repository.
 - `rentStructure(structureId: UUID)` — validates availability; applies CapEx/Fixed cost rules.
 - `renameStructure({ structureId, name })` — trims whitespace, preserves determinism, emits rename events.
 - `deleteStructure(structureId)` — enforces empty structure + accounting clean-up.

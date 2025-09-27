@@ -74,6 +74,8 @@ import {
   type WorldIntentHandlers,
   type RentStructureIntent,
   type GetStructureBlueprintsIntent,
+  type GetStrainBlueprintsIntent,
+  type GetDeviceBlueprintsIntent,
   type CreateRoomIntent,
   type UpdateRoomIntent,
   type DeleteRoomIntent,
@@ -103,6 +105,10 @@ import {
   type MissingCommandHandler,
 } from './commands/commandRegistry.js';
 import type { GameState, StructureBlueprint } from '@/state/models.js';
+import type {
+  DeviceBlueprintCatalogEntry,
+  StrainBlueprintCatalogEntry,
+} from './blueprintCatalog.js';
 import { SimulationLoop, type SimulationLoopAccountingOptions } from '@/sim/loop.js';
 import { SimulationScheduler } from '@/sim/simScheduler.js';
 import type { SimulationSchedulerOptions } from '@/sim/simScheduler.js';
@@ -141,6 +147,8 @@ export type {
 export type {
   RentStructureIntent,
   GetStructureBlueprintsIntent,
+  GetStrainBlueprintsIntent,
+  GetDeviceBlueprintsIntent,
   CreateRoomIntent,
   UpdateRoomIntent,
   DeleteRoomIntent,
@@ -156,6 +164,10 @@ export type {
   DuplicateZoneIntent,
   WorldIntentHandlers,
 } from './commands/world.js';
+export type {
+  StrainBlueprintCatalogEntry,
+  DeviceBlueprintCatalogEntry,
+} from './blueprintCatalog.js';
 export type {
   InstallDeviceIntent,
   UpdateDeviceIntent,
@@ -248,6 +260,12 @@ export interface WorldIntentAPI {
   getStructureBlueprints(
     intent?: GetStructureBlueprintsIntent,
   ): Promise<CommandResult<StructureBlueprint[]>>;
+  getStrainBlueprints(
+    intent?: GetStrainBlueprintsIntent,
+  ): Promise<CommandResult<StrainBlueprintCatalogEntry[]>>;
+  getDeviceBlueprints(
+    intent?: GetDeviceBlueprintsIntent,
+  ): Promise<CommandResult<DeviceBlueprintCatalogEntry[]>>;
   createRoom(intent: CreateRoomIntent): Promise<CommandResult>;
   updateRoom(intent: UpdateRoomIntent): Promise<CommandResult>;
   deleteRoom(intent: DeleteRoomIntent): Promise<CommandResult>;
