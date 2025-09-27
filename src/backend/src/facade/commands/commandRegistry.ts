@@ -91,14 +91,16 @@ export const createError = (code: ErrorCode, message: string, path?: string[]): 
   path,
 });
 
-export const createFailure = (
+export const createFailure = <T = never>(
   code: ErrorCode,
   message: string,
   command: string,
-): CommandResult => ({
-  ok: false,
-  errors: [createError(code, message, [command])],
-});
+): CommandResult<T> => {
+  return {
+    ok: false,
+    errors: [createError(code, message, [command])],
+  };
+};
 
 export const normalizeWarnings = (warnings?: string[]): string[] | undefined => {
   if (!warnings || warnings.length === 0) {
@@ -144,10 +146,13 @@ export const normalizeResult = <T>(result?: CommandResult<T>): CommandResult<T> 
   };
 };
 
-export const handleValidationError = (command: string, error: ZodError): CommandResult => {
+export const handleValidationError = <T = never>(
+  command: string,
+  error: ZodError,
+): CommandResult<T> => {
   const issues = error.issues;
   if (issues.length === 0) {
-    return createFailure('ERR_VALIDATION', 'Invalid payload.', command);
+    return createFailure<T>('ERR_VALIDATION', 'Invalid payload.', command);
   }
   const errors = issues.map((issue) =>
     createError('ERR_VALIDATION', issue.message, [
@@ -158,7 +163,10 @@ export const handleValidationError = (command: string, error: ZodError): Command
   return { ok: false, errors };
 };
 
-export const handleCommandError = (command: string, error: unknown): CommandResult => {
+export const handleCommandError = <T = never>(
+  command: string,
+  error: unknown,
+): CommandResult<T> => {
   if (error instanceof CommandExecutionError) {
     return {
       ok: false,
@@ -172,10 +180,10 @@ export const handleCommandError = (command: string, error: unknown): CommandResu
     };
   }
   if (error instanceof ZodError) {
-    return handleValidationError(command, error);
+    return handleValidationError<T>(command, error);
   }
   const message = error instanceof Error ? error.message : String(error);
-  return createFailure('ERR_INTERNAL', message, command);
+  return createFailure<T>('ERR_INTERNAL', message, command);
 };
 
 export const createCommandContextFactory = (

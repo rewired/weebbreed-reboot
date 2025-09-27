@@ -111,7 +111,7 @@ export class DeviceGroupService {
     return generateId(this.taskStream, 'task');
   }
 
-  private failure(code: ErrorCode, message: string, path: string[]): CommandResult {
+  private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
       errors: [
@@ -121,7 +121,7 @@ export class DeviceGroupService {
           path,
         },
       ],
-    } satisfies CommandResult;
+    };
   }
 }
 
