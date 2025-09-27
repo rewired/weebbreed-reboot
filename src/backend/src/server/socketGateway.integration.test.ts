@@ -17,6 +17,7 @@ import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import { RngService } from '@/lib/rng.js';
 import type { RoomPurpose, RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import { SocketGateway } from '@/server/socketGateway.js';
+import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 
 const STRUCTURE_ID = '11111111-1111-1111-1111-111111111111';
 const ROOM_ID = '22222222-2222-2222-2222-222222222222';
@@ -213,7 +214,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
@@ -231,7 +232,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
@@ -255,7 +256,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
@@ -277,7 +278,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,

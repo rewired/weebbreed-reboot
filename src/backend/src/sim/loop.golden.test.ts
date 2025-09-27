@@ -363,7 +363,8 @@ const runReferenceSimulation = async (): Promise<SimulationKpiSummary> => {
   const rng = new RngService(seed);
   const sampleStream = rng.getStream(RNG_STREAM_IDS.simulationTest);
   const context = createStateFactoryContext(seed, { repository, rng });
-  const state = await createInitialState(context);
+  const tickLengthMinutes = 60;
+  const state = await createInitialState(context, { tickLengthMinutes });
 
   const ticksPerDayRaw = (24 * 60) / state.metadata.tickLengthMinutes;
   if (!Number.isInteger(ticksPerDayRaw)) {

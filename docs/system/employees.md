@@ -15,8 +15,8 @@ directory populated.
 
 To keep the labor market dynamic and credible, the game continuously injects new, unique candidates. Rather than relying only on a fixed local name list, the game **optionally** queries a **seedable external name provider** (e.g., an API that returns first/last names) and falls back to local data if unavailable. An free and open provider is https://randomuser.me/. For detailed information about the API, check the providers documentation.
 
-- **Periodic refresh**  
-   Once per in-game week (e.g., every **168 ticks** if 1 tick = 1 hour), refresh the candidate pool.
+- **Periodic refresh**
+  Once per in-game week (e.g., every **2 016 ticks** with the 5-minute default cadence), refresh the candidate pool.
 - **Deterministic, efficient fetch**  
    Use an endpoint that accepts `results` (e.g., 12), `inc=name` (only first/last names), and a deterministic `seed`.
   - **Seed construction**: derive `apiSeed` from the game’s original seed + current in-game week index, e.g.  
@@ -68,9 +68,9 @@ Work is modeled as **discrete Tasks** rather than continuous processes.
 
 Overtime is directly tied to **employee energy**.
 
-- **Trigger**  
-   Employees have **energy** in the range `0..100`. Each hour (tick) of work consumes energy.  
-   An employee **always finishes the current task**, even if their energy dips **below 0** during execution. Any negative energy at completion counts as **overtime**.
+- **Trigger**
+  Employees have **energy** in the range `0..100`. Each tick (≈5 minutes at default cadence) of work consumes energy.
+  An employee **always finishes the current task**, even if their energy dips **below 0** during execution. Any negative energy at completion counts as **overtime**.
 - **Computation**  
    At task completion, convert the **magnitude of negative energy** into **overtime hours** (ticks). Energy is then clamped/reset according to rest policy.
 - **Compensation policy (player-defined)**  
@@ -99,7 +99,7 @@ Overtime is directly tied to **employee energy**.
 
 ## Hiring / Candidate Source
 
-- `hiring.candidateRefreshIntervalTicks: number` — e.g., `168`.
+- `hiring.candidateRefreshIntervalTicks: number` — e.g., `2016` at the 5-minute default cadence.
 - `hiring.externalNameProvider.enabled: boolean` — on/off.
 - `hiring.externalNameProvider.results: number` — e.g., `12`.
 - `hiring.externalNameProvider.includeFields: string[]` — e.g., `["name"]`.

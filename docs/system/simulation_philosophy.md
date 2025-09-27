@@ -5,7 +5,7 @@ This section details the core design philosophies that underpin each major subsy
 ## 1. Time & Simulation Loop: Stability and Fairness
 
 - **Philosophy**: The game world must be predictable and fair, progressing at a constant rate regardless of the user's hardware. A simulation's integrity depends on its timekeeping.
-- **Implementation Rationale**: It is important to decouple the simulation's "tick rate" from the UI's "frame rate". A tick represents a fixed unit of game time (1 hour), ensuring that a player on a 144Hz monitor experiences the same game progression as a player on a 60Hz monitor. The "catch-up" mechanism, which limits ticks per frame, embodies a user-centric philosophy: **responsiveness is more important than perfect simulation.** The game will never freeze the UI to catch up; it will instead fast-forward gracefully, maintaining a fluid player experience.
+- **Implementation Rationale**: It is important to decouple the simulation's "tick rate" from the UI's "frame rate". A tick represents a fixed unit of game time (default 5 minutes), ensuring that a player on a 144Hz monitor experiences the same game progression as a player on a 60Hz monitor. The "catch-up" mechanism, which limits ticks per frame, embodies a user-centric philosophy: **responsiveness is more important than perfect simulation.** The game will never freeze the UI to catch up; it will instead fast-forward gracefully, maintaining a fluid player experience.
 - **Example**: In a browser-based tech-stack we probably would use a `requestAnimationFrame` loop with a time accumulator instead of `setInterval`.
 
 ## 2. Environmental Model: Emergent Complexity from Simple Rules

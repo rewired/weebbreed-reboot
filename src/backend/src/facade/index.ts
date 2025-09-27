@@ -1,4 +1,5 @@
 import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
+import { DEFAULT_TICK_INTERVAL_MS, MINUTES_PER_HOUR } from '@/constants/time.js';
 import { EventBus, type EventFilter } from '@/lib/eventBus.js';
 import {
   computeHumidityForVpd,
@@ -519,7 +520,7 @@ export class SimulationFacade {
         'time.setTickLength',
       );
     }
-    const tickIntervalMs = minutes * 60 * 1000;
+    const tickIntervalMs = minutes * MINUTES_PER_HOUR * 1000;
     if (Math.abs(tickIntervalMs - this.tickIntervalMs) < Number.EPSILON) {
       return {
         ok: true,
@@ -909,9 +910,9 @@ export class SimulationFacade {
     }
     const minutes = this.state.metadata.tickLengthMinutes;
     if (Number.isFinite(minutes) && minutes > 0) {
-      return minutes * 60 * 1000;
+      return minutes * MINUTES_PER_HOUR * 1000;
     }
-    return 60 * 60 * 1000;
+    return DEFAULT_TICK_INTERVAL_MS;
   }
 
   private createScheduler(

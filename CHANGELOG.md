@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Shortened the default simulation tick length to 5 minutes (down from 60),
+  exposing shared timekeeping constants for the scheduler/state factory and
+  updating documentation to reflect the faster cadence.
 - Typed strain growth model harvest index and temperature metadata, wiring the
   schema defaults into the plant model and refreshing strain blueprints with
   curated coefficients for Q10, reference temperature, and flowering harvest

@@ -13,7 +13,7 @@ strategy, and operator-facing configuration levers.
   on the simulation loop’s `commit` phase so the job market refresh runs right
   after a tick is committed.
 - **Tick-based cadence.** The service derives the in-game week with
-  `Math.floor(tick / 168)` (168 ticks ≈ 1 simulated week when 1 tick = 1 hour).
+  `Math.floor(tick / 2016)` (2 016 ticks ≈ 1 simulated week at the 5-minute default cadence).
   A refresh is attempted whenever the derived week changes or the applicant pool
   is empty.
 - **Idempotence guard.** Within the same week the service short-circuits if the
@@ -159,7 +159,7 @@ HTTP support is disabled or `fetch` is unavailable.
 | `batchSize`      | 12               | Number of candidates requested per refresh (`results` query param).                                                                   |
 | `maxRetries`     | 2                | Maximum remote fetch attempts before falling back to offline generation.                                                              |
 | `httpEnabled`    | `true`           | Feature toggle; disabled automatically when `fetch` is unavailable or the environment flag below is set.                              |
-| `TICKS_PER_WEEK` | 168              | Interval between automatic refreshes (commit hook compares `tick / 168`).                                                             |
+| `TICKS_PER_WEEK` | 2 016            | Interval between automatic refreshes (commit hook compares `tick / 2016`).                                                            |
 | `fetchImpl`      | global `fetch`   | Injectable fetch implementation for tests or alternative transports.                                                                  |
 | `dataDirectory`  | resolved at boot | Source for personnel names/traits used during offline fallback.                                                                       |
 | `pDiverse`       | 0.1              | Probability that a candidate is assigned the `other` gender; the remaining probability is split evenly between male and female draws. |

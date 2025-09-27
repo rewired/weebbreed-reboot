@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SimulationFacade } from './index.js';
+import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import type { GameState } from '@/state/models.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import { EventBus } from '@/lib/eventBus.js';
@@ -85,7 +86,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
@@ -103,7 +104,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
@@ -127,7 +128,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,
@@ -149,7 +150,7 @@ const createTestState = (): GameState => ({
                   runtimeHours: 0,
                   maintenance: {
                     lastServiceTick: 0,
-                    nextDueTick: 720,
+                    nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
                     condition: 1,
                     runtimeHoursAtLastService: 0,
                     degradation: 0,

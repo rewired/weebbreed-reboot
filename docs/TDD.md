@@ -92,7 +92,7 @@
 
 ### Personnel & Labor Market
 
-- **Weekly refresh** of the candidate pool (e.g., every 168 ticks).
+- **Weekly refresh** of the candidate pool (e.g., every 2202f016 ticks).
 - **Seeded external name [provider][username.me]** (results & `inc=name` only) to generate **deterministic** candidate names from `apiSeed = "{gameSeed}-week-{weekIndex}"`.
 - **Fallback** to `/data/personnel/` when offline/unavailable.
 - **Profile synthesis**: for each candidate, generate `skills`, `traits`, and `hourlyWage` from balancing rules (deterministic when seeded).

@@ -18,7 +18,7 @@ const createDevice = (overrides: Partial<DeviceSnapshot>): DeviceSnapshot => ({
   runtimeHours: 0,
   maintenance: {
     lastServiceTick: 0,
-    nextDueTick: 720,
+    nextDueTick: 8640,
     condition: 0.98,
     degradation: 0.02,
   },

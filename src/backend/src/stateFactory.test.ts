@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_TICK_LENGTH_MINUTES } from '@/constants/time.js';
 import type { TaskDefinitionMap } from './state/models.js';
 import { createInitialState } from './stateFactory.js';
 import {
@@ -145,6 +146,27 @@ describe('createInitialState', () => {
     const firstDeviceIds = firstZone?.devices.map((device) => device.id);
     const secondDeviceIds = secondZone?.devices.map((device) => device.id);
     expect(firstDeviceIds).toEqual(secondDeviceIds);
+  });
+
+  it('applies the default tick length and honours overrides', async () => {
+    const baseContext = createStateFactoryContext('tick-default', {
+      repository: createBlueprintRepositoryStub(),
+      structureBlueprints: [createStructureBlueprint()],
+    });
+
+    const defaultState = await createInitialState(baseContext);
+    expect(defaultState.metadata.tickLengthMinutes).toBe(DEFAULT_TICK_LENGTH_MINUTES);
+
+    const overrideMinutes = 7;
+    const overriddenState = await createInitialState(
+      createStateFactoryContext('tick-override', {
+        repository: createBlueprintRepositoryStub(),
+        structureBlueprints: [createStructureBlueprint()],
+      }),
+      { tickLengthMinutes: overrideMinutes },
+    );
+
+    expect(overriddenState.metadata.tickLengthMinutes).toBe(overrideMinutes);
   });
 
   it('rejects device installations that are incompatible with the grow room purpose', async () => {
