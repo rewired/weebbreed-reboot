@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Aligned the personnel refresh button with the shared button primitive by
+  removing the unsupported `lg` size option and matching the default variant
+  to the primitive configuration.
 - Updated the finance ProfitChart to read the finance summary snapshot safely
   and derive chart metrics from available totals instead of missing ledger
   entries.

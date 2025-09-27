@@ -8,14 +8,14 @@ interface RefreshButtonProps {
   onRefreshComplete?: () => void;
   className?: string;
   variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md';
 }
 
 export const RefreshButton = ({
   bridge,
   onRefreshComplete,
   className,
-  variant = 'secondary',
+  variant = 'primary',
   size = 'md',
 }: RefreshButtonProps) => {
   const [isRefreshing, setIsRefreshing] = useState(false);
