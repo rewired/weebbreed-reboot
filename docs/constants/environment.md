@@ -40,9 +40,50 @@ The amount of relative humidity (as a fraction from 0 to 1) that a single plant 
 `PLANT_CO2_CONSUMPTION_PPM_PER_PLANT = 0.2`
 The amount of CO₂ (in ppm) that a single plant removes from the zone each hour during photosynthesis.
 
+## Device Effect Coefficients & Hysteresis Defaults
+
+`SPECIFIC_HEAT_AIR_KWH_PER_M3K = 0.000336`
+Specific heat capacity proxy for air, converting device energy draw into zone temperature deltas.
+`MIN_HEAT_CAPACITY_KWH_PER_K = 0.0001`
+Minimum fallback heat capacity applied when a zone volume would otherwise underflow.
+`DEFAULT_LIGHT_HEAT_FRACTION = 0.4`
+Assumed share of a light's electrical input that becomes heat within the zone.
+`DEFAULT_LIGHT_COVERAGE_M2 = 1`
+Fallback coverage area for lights that omit an explicit `coverageArea` setting.
+`DEFAULT_FULL_POWER_DELTA_K = 1`
+Temperature error (°C) that maps to full HVAC power when modulation is unavailable.
+`DEFAULT_HYSTERESIS_K = 0.5`
+Default temperature hysteresis band (°C) for HVAC controllers without overrides.
+`DEFAULT_HUMIDITY_HYSTERESIS = 0.05`
+Relative humidity hysteresis width used when humidity devices omit a custom range.
+`DEFAULT_FULL_POWER_DELTA_RH = 0.1`
+Relative humidity error that corresponds to full humidifier or dehumidifier output.
+`DEFAULT_CO2_PULSE_MINUTES = 1`
+Baseline CO₂ injection pulse length (minutes) for scaling per-tick dosing.
+`DEFAULT_MAX_CO2_PPM = 1800`
+Upper CO₂ safety clamp applied when devices do not define their own ceiling.
+
+## Transpiration & Nutrient Feedback
+
+`MIN_ZONE_VOLUME_M3 = 0.001`
+Minimum effective zone volume used when mapping transpiration mass to humidity deltas.
+`DEFAULT_NUTRIENT_GRAMS_PER_LITER_AT_STRENGTH_1 = 0.8`
+Estimated grams of nutrient salts consumed per litre of solution at full strength during transpiration feedback.
+
 ## Durability & Disease
 
 `BASE_DURABILITY_DECAY_PER_TICK = 0.00002`
 The base amount of durability that every active device loses each hour from wear and tear.
 `BASE_DISEASE_CHANCE_PER_TICK = 0.0001`
 The underlying random probability that any given plant might contract a disease each hour.
+
+## Climate Controller Defaults
+
+`CLIMATE_CONTROLLER_DEFAULT_TEMPERATURE_CONFIG = { kp: 20, ki: 1, min: -100, max: 100 }`
+PI gains and bounds for translating temperature error into heating/cooling demand.
+`CLIMATE_CONTROLLER_DEFAULT_HUMIDITY_CONFIG = { kp: 400, ki: 40, min: -100, max: 100 }`
+PI gains and bounds for humidity corrections, allowing humidify/dehumidify responses.
+`CLIMATE_CONTROLLER_DEFAULT_CO2_CONFIG = { kp: 0.1, ki: 0.02, min: 0, max: 100 }`
+PI gains and bounds driving CO₂ injection percentage commands.
+`CLIMATE_CONTROLLER_DEFAULT_OUTPUT_STEP = 1`
+Smallest discrete output step (% power) applied when quantising PI controller outputs.
