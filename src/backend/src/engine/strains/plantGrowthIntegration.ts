@@ -1,4 +1,4 @@
-import type { PlantState, ZoneEnvironmentState, SimulationTime } from '@/state/models.js';
+import type { PlantState, ZoneEnvironmentState, SimulationClockState } from '@/state/models.js';
 import type { EventCollector } from '@/lib/eventBus.js';
 import { enhancedStrainService, type StrainEnvironmentResult } from './enhancedStrainService.js';
 import type { EnhancedStrainBlueprint } from './enhancedStrainInterface.js';
@@ -16,7 +16,7 @@ export class PlantGrowthIntegration {
     strain: EnhancedStrainBlueprint,
     environment: ZoneEnvironmentState,
     events: EventCollector,
-    currentTime: SimulationTime,
+    currentTime: Pick<SimulationClockState, 'tick'>,
   ): {
     environmentResult: StrainEnvironmentResult;
     healthMultiplier: number;
@@ -24,7 +24,8 @@ export class PlantGrowthIntegration {
     yieldImpact: number;
   } {
     // Apply stress tolerance for mature plants (they can handle more stress)
-    const applyStressTolerance = plant.age_days > 14; // After 2 weeks
+    const ageInDays = plant.ageInHours / 24;
+    const applyStressTolerance = ageInDays > 14; // After 2 weeks
 
     const environmentResult = enhancedStrainService.evaluateEnvironment(
       strain,
@@ -36,7 +37,7 @@ export class PlantGrowthIntegration {
     // Emit environmental events for monitoring
     enhancedStrainService.emitEnvironmentalEvents(
       plant.id,
-      plant.zone_id,
+      plant.zoneId,
       strain,
       environmentResult,
       currentTime.tick,
@@ -96,7 +97,12 @@ export class PlantGrowthIntegration {
 
     if (phaseDurationTicks) {
       // Calculate how far through current phase we are
-      const ticksInCurrentPhase = plant.age_ticks; // This would need proper phase tracking
+      const ticksSincePlanting = Math.max(
+        0,
+        plant.lastMeasurementTick - plant.plantedAtTick,
+        tickLengthMinutes > 0 ? (plant.ageInHours * 60) / tickLengthMinutes : 0,
+      );
+      const ticksInCurrentPhase = ticksSincePlanting; // Placeholder until explicit phase tracking is implemented
       phaseProgress = Math.min(1.0, ticksInCurrentPhase / phaseDurationTicks);
 
       // Estimate days to next stage at current growth rate
@@ -207,14 +213,17 @@ export class PlantGrowthIntegration {
       case 'good':
         recommendation = `${strain.name} performs well with this cultivation method.`;
         break;
-      case 'neutral':
-        recommendation = `${strain.name} is compatible but may not be optimal for this method.`;
+      case 'acceptable':
+        recommendation = `${strain.name} is compatible with this method and may need minor adjustments.`;
         break;
       case 'poor':
         recommendation = `${strain.name} may struggle with this cultivation method.`;
         break;
       case 'incompatible':
         recommendation = `${strain.name} is not recommended for this cultivation method.`;
+        break;
+      default:
+        recommendation = `${strain.name} is compatible but may not be optimal for this method.`;
         break;
     }
 
