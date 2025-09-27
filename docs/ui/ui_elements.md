@@ -37,7 +37,7 @@ _Right Side - Controls & Navigation:_
 **Simulation Control:**
 
 - A circular Play/Pause button. It shows a "play" icon (play_circle) when the game is paused and a "pause" icon (pause_circle) when it's running.
-- A Game Speed control panel with buttons for "0.5x", "1x", "10x", "25x", "50x", and "100x" speeds. The currently selected speed is highlighted.
+- A Game Speed control panel with buttons for "0.5x", "1x", "10x", "25x", "50x", "100x", and "250x" speeds. The currently selected speed is highlighted.
 - **View Navigation**:
   - A circular button with a graph icon (monitoring) to switch to the Finances view.
   - A circular button with a people icon (groups) to switch to the Personnel view.

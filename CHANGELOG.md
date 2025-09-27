@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   environment evaluators to accept passthrough properties while preserving
   numeric safety when widening bands or reading optional durations.
 - Extended the frontend `FacadeIntentCommand` domain union with the `config` channel so facade hooks mirror the backend contract for configuration updates.
+- Expanded dashboard game-speed presets to `0.5×/1×/10×/25×/50×/100×/250×`, widened button styling to fit three-digit labels, and refreshed UI documentation to match the new list.
 
 ### Fixed
 

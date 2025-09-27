@@ -68,7 +68,7 @@ _Implementation status:_ `src/frontend/src/App.tsx` now implements this shell us
 
 - **Simulation Controls**:
   - **Play/Pause** toggle (icons: `play_circle` / `pause_circle`).
-  - **Game speed controls** (`.game-speed-controls`): buttons for `0.5x`, `1x`, `10x`, etc. The active one has `.active` and primary background color.
+  - **Game speed controls** (`.game-speed-controls`): buttons for `0.5x`, `1x`, `10x`, `25x`, `50x`, `100x`, and `250x`. The active one has `.active` and primary background color.
 
 ```css
 .game-speed-controls .btn {
