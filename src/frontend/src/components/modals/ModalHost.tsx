@@ -1359,14 +1359,14 @@ const modalRenderers: Record<
 export const ModalHost = ({ bridge }: ModalHostProps) => {
   const activeModal = useUIStore((state) => state.activeModal);
   const closeModal = useUIStore((state) => state.closeModal);
-  const pauseContext = useRef<{ wasRunning: boolean; speed: number } | null>(null);
+  const pauseContext = useRef<{ resumable: boolean; speed: number } | null>(null);
   const [pausing, setPausing] = useState(false);
 
   useEffect(() => {
     if (!activeModal) {
       const context = pauseContext.current;
       pauseContext.current = null;
-      if (context?.wasRunning) {
+      if (context?.resumable) {
         void bridge.sendControl({ action: 'play', gameSpeed: context.speed }).catch((error) => {
           console.error('Failed to resume simulation after modal close', error);
         });
@@ -1378,10 +1378,14 @@ export const ModalHost = ({ bridge }: ModalHostProps) => {
     }
     const snapshot = useSimulationStore.getState().snapshot;
     const timeStatus = useSimulationStore.getState().timeStatus;
-    const wasRunning = timeStatus?.running ?? (snapshot ? !snapshot.clock.isPaused : false);
+    const resumable = timeStatus
+      ? timeStatus.paused === false
+      : snapshot
+        ? !snapshot.clock.isPaused
+        : false;
     const speed = timeStatus?.speed ?? snapshot?.clock.targetTickRate ?? 1;
-    pauseContext.current = { wasRunning, speed };
-    if (wasRunning) {
+    pauseContext.current = { resumable, speed };
+    if (resumable) {
       setPausing(true);
       void bridge
         .sendControl({ action: 'pause' })
