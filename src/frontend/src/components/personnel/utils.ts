@@ -1,3 +1,5 @@
+import type { ApplicantSnapshot } from '@/types/simulation';
+
 export const getSkillColor = (level: number): 'success' | 'warning' | 'danger' | 'default' => {
   if (level >= 8) return 'success';
   if (level >= 6) return 'warning';
@@ -64,4 +66,30 @@ export const getStatusColor = (status: string): 'success' | 'warning' | 'danger'
 
 export const formatStatusDisplay = (status: string): string => {
   return status.charAt(0).toUpperCase() + status.slice(1);
+};
+
+export type NormalisedSkillEntry = [skill: string, level: number];
+
+export const normaliseSkillEntries = (
+  skills: ApplicantSnapshot['skills'] | undefined,
+): NormalisedSkillEntry[] => {
+  const entries: NormalisedSkillEntry[] = [];
+
+  if (!skills) {
+    return entries;
+  }
+
+  for (const [skill, level] of Object.entries(skills)) {
+    if (typeof level !== 'number') {
+      continue;
+    }
+
+    if (!Number.isFinite(level) || level <= 0) {
+      continue;
+    }
+
+    entries.push([skill, level]);
+  }
+
+  return entries;
 };

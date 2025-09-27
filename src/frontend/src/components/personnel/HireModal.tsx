@@ -10,6 +10,7 @@ import {
   formatSkillLevel,
   getRoleDisplayName,
   getGenderIcon,
+  normaliseSkillEntries,
 } from './utils';
 
 interface HireModalProps {
@@ -91,7 +92,7 @@ export const HireModal = ({ bridge, closeModal, context }: HireModalProps) => {
     }
   };
 
-  const skillEntries = Object.entries(applicant.skills).filter(([, level]) => level && level > 0);
+  const skillEntries = normaliseSkillEntries(applicant.skills);
   const averageSkillLevel =
     skillEntries.length > 0
       ? skillEntries.reduce((sum, [, level]) => sum + level, 0) / skillEntries.length
