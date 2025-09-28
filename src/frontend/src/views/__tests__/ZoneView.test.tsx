@@ -20,9 +20,9 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
   sendIntent: async () => ({ ok: true }),
   subscribeToUpdates: () => () => undefined,
   plants: {
-    addPlanting: async () => ({ ok: true }),
-    harvestPlant: async () => ({ ok: true }),
-    cullPlant: async () => ({ ok: true }),
+    addPlanting: vi.fn(async () => ({ ok: true })),
+    harvestPlant: vi.fn(async () => ({ ok: true })),
+    cullPlant: vi.fn(async () => ({ ok: true })),
   },
   devices: {
     installDevice: async () => ({ ok: true }),
@@ -501,6 +501,207 @@ describe('ZoneView', () => {
     expect(pestButton).toHaveAttribute('aria-pressed', 'true');
     expect(within(plantsCard).getByText('Pest Plant')).toBeInTheDocument();
     expect(within(plantsCard).queryByText('Pest Free Plant')).not.toBeInTheDocument();
+  });
+
+  it('filters plants by harvestable flag', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-ready',
+        strainName: 'Ready Plant',
+        isHarvestable: true,
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-growing',
+        strainName: 'Growing Plant',
+        isHarvestable: false,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const plantsCard = screen.getAllByTestId('zone-plants-card')[0]!;
+    const harvestableButton = within(plantsCard).getByTestId('plant-filter-harvestable');
+
+    await act(async () => {
+      fireEvent.click(harvestableButton);
+    });
+
+    expect(harvestableButton).toHaveAttribute('aria-pressed', 'true');
+    expect(within(plantsCard).getByText('Ready Plant')).toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Growing Plant')).not.toBeInTheDocument();
+  });
+
+  it('disables the Harvest all button when no plants are harvestable or the zone is restricted', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = zoneSnapshot.plants.map((plant, index) => ({
+      ...plant,
+      id: `plant-${index}`,
+      strainName: `Plant ${index}`,
+      isHarvestable: false,
+    }));
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const plantsCard = await screen.findByTestId('zone-plants-card');
+    const harvestAllButton = within(plantsCard).getByTestId('plant-harvest-all');
+    expect(harvestAllButton).toBeDisabled();
+
+    act(() => {
+      useSimulationStore.setState((state) => ({
+        snapshot: {
+          ...state.snapshot!,
+          zones: state.snapshot!.zones.map((zone) =>
+            zone.id === zoneSnapshot.id
+              ? {
+                  ...zone,
+                  plants: zone.plants.map((plant, index) => ({
+                    ...plant,
+                    isHarvestable: index === 0,
+                  })),
+                  health: {
+                    ...zone.health,
+                    preHarvestRestrictedUntilTick: (state.snapshot?.tick ?? 0) + 10,
+                  },
+                }
+              : zone,
+          ),
+        },
+      }));
+    });
+
+    expect(harvestAllButton).toBeDisabled();
+  });
+
+  it('harvests all ready plants when the Harvest all button is pressed', async () => {
+    const harvestPlant = vi.fn(async () => ({ ok: true }));
+    const bridge = buildBridge({
+      plants: {
+        addPlanting: vi.fn(async () => ({ ok: true })),
+        harvestPlant,
+        cullPlant: vi.fn(async () => ({ ok: true })),
+      },
+    });
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-harvest-1',
+        strainName: 'Harvest One',
+        isHarvestable: true,
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-harvest-2',
+        strainName: 'Harvest Two',
+        isHarvestable: true,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const plantsCard = await screen.findByTestId('zone-plants-card');
+    const harvestAllButton = within(plantsCard).getByTestId('plant-harvest-all');
+    expect(harvestAllButton).toBeEnabled();
+
+    await act(async () => {
+      fireEvent.click(harvestAllButton);
+    });
+
+    await waitFor(() => {
+      expect(harvestPlant).toHaveBeenCalledTimes(2);
+      expect(harvestPlant).toHaveBeenCalledWith({ plantId: 'plant-harvest-1' });
+      expect(harvestPlant).toHaveBeenCalledWith({ plantId: 'plant-harvest-2' });
+    });
+
+    await waitFor(() => {
+      expect(within(plantsCard).queryByText('Harvest One')).not.toBeInTheDocument();
+      expect(within(plantsCard).queryByText('Harvest Two')).not.toBeInTheDocument();
+    });
+  });
+
+  it('disables harvest and trash actions when zone restrictions apply', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.health = {
+      ...zoneSnapshot.health,
+      preHarvestRestrictedUntilTick: snapshot.tick + 5,
+    };
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'restricted-plant',
+        strainName: 'Restricted Plant',
+        isHarvestable: true,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const plantsCard = await screen.findByTestId('zone-plants-card');
+    const harvestButton = within(plantsCard).getByTestId('plant-action-harvest-restricted-plant');
+    const trashButton = within(plantsCard).getByTestId('plant-action-cull-restricted-plant');
+
+    expect(harvestButton).toBeDisabled();
+    expect(trashButton).toBeDisabled();
   });
 
   it('renders health summary within the plants card and removes the standalone health card', async () => {

@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Quellensichtung und Deprecation-Empfehlungen für Reservoir-Aufgaben (`docs/tasks/irrigation/phase0-alignment-report.md`).
 - Added an `isHarvestable` flag to plant snapshots, plumbing the backend UI snapshot,
   frontend types, fixtures, and store hydration so harvest readiness survives updates.
+- Introduced zone plant-table harvest management: a harvestable-only filter, per-plant
+  harvest/cull controls, and a batch "Harvest all" action that respects zone safety
+  restrictions, invokes the bridge intents, and keeps the list in sync.
 
 ### Changed
 
