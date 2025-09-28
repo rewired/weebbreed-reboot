@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -159,6 +159,8 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     overscan: 8,
   });
 
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
   const deviceGroups = useMemo(() => {
     if (!zone) {
       return [] as {
@@ -279,6 +281,29 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
 
     return groups;
   }, [zone]);
+
+  useEffect(() => {
+    setCollapsedGroups((previous) => {
+      const nextEntries = deviceGroups.map(
+        (group) =>
+          [group.id, typeof previous[group.id] === 'boolean' ? previous[group.id]! : true] as const,
+      );
+
+      const next = Object.fromEntries(nextEntries) as Record<string, boolean>;
+
+      if (Object.keys(previous).length !== nextEntries.length) {
+        return next;
+      }
+
+      for (const [id, value] of nextEntries) {
+        if (previous[id] !== value) {
+          return next;
+        }
+      }
+
+      return previous;
+    });
+  }, [deviceGroups]);
 
   if (!snapshot || !selectedZoneId || !selectedRoomId || !selectedStructureId || !zone) {
     return null;
@@ -628,111 +653,143 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             }
           >
             <div className="grid gap-3">
-              {deviceGroups.map((group) => (
-                <div
-                  key={group.id}
-                  data-testid="zone-device-group"
-                  className="rounded-2xl border border-border/40 bg-surface-muted/40 p-4"
-                >
+              {deviceGroups.map((group) => {
+                const isCollapsed = collapsedGroups[group.id] ?? true;
+                const contentId = `device-group-${group.id}`;
+                return (
                   <div
-                    className="flex flex-col gap-3 border-border/40 pb-3 md:flex-row md:items-start md:justify-between md:gap-4 md:border-b"
-                    data-testid="device-group-header"
+                    key={group.id}
+                    data-testid="zone-device-group"
+                    className="rounded-2xl border border-border/40 bg-surface-muted/40 p-4"
                   >
-                    <div className="flex flex-col">
-                      <span className="text-xs uppercase tracking-wide text-text-muted">
-                        {group.kind}
-                      </span>
-                      <span className="text-sm font-semibold text-text">{group.label}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-text-muted">
-                      <span>
-                        <span className="font-semibold text-text">{group.metrics.deviceCount}</span>{' '}
-                        devices
-                      </span>
-                      <span>
-                        Avg runtime{' '}
-                        <span className="font-semibold text-text">
-                          {formatNumber(group.metrics.averageRuntimeHours, {
-                            maximumFractionDigits: 0,
-                          })}
-                        </span>{' '}
-                        h
-                      </span>
-                      <span>
-                        Avg condition{' '}
-                        <span className="font-semibold text-text">
-                          {formatNumber(group.metrics.averageCondition * 100, {
-                            maximumFractionDigits: 0,
-                          })}
-                        </span>
-                        %
-                      </span>
-                      <span>
-                        Status{' '}
-                        <span className="font-semibold text-text">{group.metrics.statusLabel}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="mt-3 grid gap-3">
-                    {group.devices.map((device) => (
-                      <div
-                        key={device.id}
-                        className="flex items-center justify-between rounded-xl border border-border/40 bg-surface/40 px-4 py-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icon name="precision_manufacturing" />
-                          <div className="flex flex-col">
-                            <span className="text-sm font-semibold text-text">{device.name}</span>
-                            <span className="text-xs text-text-muted">
-                              Runtime{' '}
-                              {formatNumber(device.runtimeHours, { maximumFractionDigits: 0 })} h ·
-                              Condition{' '}
-                              {formatNumber(device.maintenance.condition * 100, {
-                                maximumFractionDigits: 0,
-                              })}
-                              %
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            icon={<Icon name="drive_file_move" />}
-                            onClick={() =>
-                              openModal({
-                                id: `move-device-${device.id}`,
-                                type: 'moveDevice',
-                                title: `Move ${device.name}`,
-                                subtitle: 'Relocate the device to a different zone.',
-                                context: { zoneId: zone.id, deviceId: device.id },
-                              })
-                            }
-                          >
-                            Move
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            icon={<Icon name="delete" />}
-                            onClick={() =>
-                              openModal({
-                                id: `remove-device-${device.id}`,
-                                type: 'removeDevice',
-                                title: `Delete ${device.name}`,
-                                subtitle: 'Remove the device from this zone.',
-                                context: { zoneId: zone.id, deviceId: device.id },
-                              })
-                            }
-                          >
-                            Delete
-                          </Button>
+                    <button
+                      type="button"
+                      className="flex w-full flex-col gap-3 border-border/40 pb-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 md:flex-row md:items-start md:justify-between md:gap-4 md:border-b"
+                      data-testid="device-group-header"
+                      aria-expanded={!isCollapsed}
+                      aria-controls={!isCollapsed ? contentId : undefined}
+                      onClick={() =>
+                        setCollapsedGroups((previous) => ({
+                          ...previous,
+                          [group.id]: !isCollapsed,
+                        }))
+                      }
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          name={isCollapsed ? 'chevron_right' : 'expand_more'}
+                          className="rounded-full bg-surface/50 p-1 text-text-muted"
+                          size={20}
+                        />
+                        <div className="flex flex-col">
+                          <span className="text-xs uppercase tracking-wide text-text-muted">
+                            {group.kind}
+                          </span>
+                          <span className="text-sm font-semibold text-text">{group.label}</span>
                         </div>
                       </div>
-                    ))}
+                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-text-muted">
+                        <span>
+                          <span className="font-semibold text-text">
+                            {group.metrics.deviceCount}
+                          </span>{' '}
+                          devices
+                        </span>
+                        <span>
+                          Avg runtime{' '}
+                          <span className="font-semibold text-text">
+                            {formatNumber(group.metrics.averageRuntimeHours, {
+                              maximumFractionDigits: 0,
+                            })}
+                          </span>{' '}
+                          h
+                        </span>
+                        <span>
+                          Avg condition{' '}
+                          <span className="font-semibold text-text">
+                            {formatNumber(group.metrics.averageCondition * 100, {
+                              maximumFractionDigits: 0,
+                            })}
+                          </span>
+                          %
+                        </span>
+                        <span>
+                          Status{' '}
+                          <span className="font-semibold text-text">
+                            {group.metrics.statusLabel}
+                          </span>
+                        </span>
+                      </div>
+                    </button>
+                    {!isCollapsed ? (
+                      <div
+                        id={contentId}
+                        data-testid="device-group-devices"
+                        className="mt-3 grid gap-3"
+                      >
+                        {group.devices.map((device) => (
+                          <div
+                            key={device.id}
+                            className="flex items-center justify-between rounded-xl border border-border/40 bg-surface/40 px-4 py-3"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Icon name="precision_manufacturing" />
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-text">
+                                  {device.name}
+                                </span>
+                                <span className="text-xs text-text-muted">
+                                  Runtime{' '}
+                                  {formatNumber(device.runtimeHours, { maximumFractionDigits: 0 })}{' '}
+                                  h · Condition{' '}
+                                  {formatNumber(device.maintenance.condition * 100, {
+                                    maximumFractionDigits: 0,
+                                  })}
+                                  %
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                icon={<Icon name="drive_file_move" />}
+                                onClick={() =>
+                                  openModal({
+                                    id: `move-device-${device.id}`,
+                                    type: 'moveDevice',
+                                    title: `Move ${device.name}`,
+                                    subtitle: 'Relocate the device to a different zone.',
+                                    context: { zoneId: zone.id, deviceId: device.id },
+                                  })
+                                }
+                              >
+                                Move
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="danger"
+                                icon={<Icon name="delete" />}
+                                onClick={() =>
+                                  openModal({
+                                    id: `remove-device-${device.id}`,
+                                    type: 'removeDevice',
+                                    title: `Delete ${device.name}`,
+                                    subtitle: 'Remove the device from this zone.',
+                                    context: { zoneId: zone.id, deviceId: device.id },
+                                  })
+                                }
+                              >
+                                Delete
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </Card>
         </div>

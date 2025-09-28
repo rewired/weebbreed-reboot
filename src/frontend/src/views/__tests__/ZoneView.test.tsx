@@ -48,6 +48,19 @@ describe('ZoneView', () => {
   const structure = quickstartSnapshot.structures[0];
   const room = quickstartSnapshot.rooms[0];
 
+  const expandAllDeviceGroups = async () => {
+    const groups = await screen.findAllByTestId('zone-device-group');
+    for (const group of groups) {
+      const toggle = within(group).getByTestId('device-group-header');
+      if (toggle.getAttribute('aria-expanded') !== 'true') {
+        await act(async () => {
+          toggle.click();
+        });
+      }
+    }
+    return groups;
+  };
+
   beforeAll(() => {
     class MockResizeObserver {
       constructor(_callback: ResizeObserverCallback) {
@@ -189,7 +202,8 @@ describe('ZoneView', () => {
 
     render(<ZoneView bridge={bridge} />);
 
-    const summaryHeading = await screen.findByText('Disease & treatment overview');
+    const summaryHeadings = await screen.findAllByText('Disease & treatment overview');
+    const summaryHeading = summaryHeadings[0]!;
     const healthSummary = summaryHeading.closest('div[data-testid="zone-health-summary"]');
     expect(healthSummary).not.toBeNull();
 
@@ -204,18 +218,18 @@ describe('ZoneView', () => {
       expect(within(healthSummary as HTMLElement).getByText(label)).toBeInTheDocument();
     }
 
-    expect(
-      within(healthSummary as HTMLElement).getByText(String(zone.health.diseases)),
-    ).toBeInTheDocument();
-    expect(
-      within(healthSummary as HTMLElement).getByText(String(zone.health.pests)),
-    ).toBeInTheDocument();
-    expect(
-      within(healthSummary as HTMLElement).getByText(String(zone.health.pendingTreatments)),
-    ).toBeInTheDocument();
-    expect(
-      within(healthSummary as HTMLElement).getByText(String(zone.health.appliedTreatments)),
-    ).toBeInTheDocument();
+    const expectRowValue = (label: string, value: string) => {
+      const row = within(healthSummary as HTMLElement)
+        .getByText(label)
+        .closest('div');
+      expect(row).not.toBeNull();
+      expect(row).toHaveTextContent(value);
+    };
+
+    expectRowValue('Diseases', String(zone.health.diseases));
+    expectRowValue('Pests', String(zone.health.pests));
+    expectRowValue('Pending treatments', String(zone.health.pendingTreatments));
+    expectRowValue('Applied treatments', String(zone.health.appliedTreatments));
 
     expect(screen.queryByRole('heading', { name: 'Health' })).not.toBeInTheDocument();
   });
@@ -243,6 +257,8 @@ describe('ZoneView', () => {
       });
 
       render(<ZoneView bridge={bridge} />);
+
+      await expandAllDeviceGroups();
 
       const [moveButton] = await screen.findAllByRole('button', { name: /Move$/ });
       await act(async () => {
@@ -287,6 +303,8 @@ describe('ZoneView', () => {
       });
 
       render(<ZoneView bridge={bridge} />);
+
+      await expandAllDeviceGroups();
 
       const [deleteButton] = await screen.findAllByRole('button', { name: /Delete$/ });
       await act(async () => {
@@ -336,5 +354,37 @@ describe('ZoneView', () => {
 
     expect(header).toHaveTextContent(/2\s+devices/i);
     expect(header).toHaveTextContent(/Avg condition\s+98%/i);
+  });
+
+  it('collapses device groups by default and expands on toggle', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const groups = await screen.findAllByTestId('zone-device-group');
+    const lightingGroup = groups.find((group) => within(group).queryByText(/Grow Lights/i));
+    expect(lightingGroup).toBeDefined();
+
+    const toggle = within(lightingGroup!).getByTestId('device-group-header');
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(within(lightingGroup!).queryByTestId('device-group-devices')).not.toBeInTheDocument();
+
+    await act(async () => {
+      toggle.click();
+    });
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(await within(lightingGroup!).findByTestId('device-group-devices')).toBeInTheDocument();
   });
 });
