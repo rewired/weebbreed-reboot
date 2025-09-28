@@ -25,6 +25,7 @@ import { EnvironmentBadgeRow } from '@/components/zone/EnvironmentBadgeRow';
 import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentBadges';
 
 declare module '@tanstack/react-table' {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData extends RowData, TValue> {
     headerLabel?: string;
   }
@@ -741,7 +742,11 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                         );
                       })
                     : rows.map((row) => (
-                        <tr key={row.id} data-plant-id={row.original.id} className="divide-x divide-border/10">
+                        <tr
+                          key={row.id}
+                          data-plant-id={row.original.id}
+                          className="divide-x divide-border/10"
+                        >
                           {row.getVisibleCells().map((cell) => (
                             <td key={cell.id} className="px-4 py-3">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}

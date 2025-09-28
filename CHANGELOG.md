@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   coverage.
 - Erstellt den Alignment-Report zu Phase 0 der Irrigation-&-Nutrient-Überarbeitung mit Stakeholder-Bestätigungen,
   Quellensichtung und Deprecation-Empfehlungen für Reservoir-Aufgaben (`docs/tasks/irrigation/phase0-alignment-report.md`).
-
+- Added an `isHarvestable` flag to plant snapshots, plumbing the backend UI snapshot,
+  frontend types, fixtures, and store hydration so harvest readiness survives updates.
 
 ### Changed
 
