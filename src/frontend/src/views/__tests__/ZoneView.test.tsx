@@ -200,6 +200,43 @@ describe('ZoneView', () => {
     expect(within(plantsCard).queryByText('plant-01')).not.toBeInTheDocument();
   });
 
+  it('sorts plant rows by health when toggling the column header', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const plantsCard = await screen.findByTestId('zone-plants-card');
+    const getFirstPlantId = () =>
+      plantsCard.querySelector('tbody tr')?.getAttribute('data-plant-id');
+
+    expect(getFirstPlantId()).toBe('plant-01');
+
+    const sortButton = within(plantsCard).getByTestId('plant-table-sort-health');
+
+    act(() => {
+      fireEvent.click(sortButton);
+    });
+
+    expect(getFirstPlantId()).toBe('plant-03');
+
+    act(() => {
+      fireEvent.click(sortButton);
+    });
+
+    expect(getFirstPlantId()).toBe('plant-01');
+  });
+
   it('displays plant health status icons only for affected plants', async () => {
     const bridge = buildBridge();
 
