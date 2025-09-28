@@ -10,7 +10,7 @@ import {
 
 const installDeviceSchema = z
   .object({
-    targetId: uuid,
+    targetId: entityIdentifier,
     deviceId: uuid,
     settings: settingsRecord.optional(),
   })

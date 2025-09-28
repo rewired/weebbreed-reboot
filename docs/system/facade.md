@@ -89,7 +89,8 @@ Common categories are below.
 
 ### 4.4 Devices
 
-- `installDevice(targetId, deviceId, settings?)` — checks **`allowedRoomPurposes`**.
+- `installDevice(targetId, deviceId, settings?)` — checks **`allowedRoomPurposes`**, clones blueprint defaults,
+  clamps coverage/airflow via zone geometry, and emits `device.installed` telemetry with the created instance ID.
 - `updateDevice(instanceId, settingsPatch)`
 - `moveDevice(instanceId, targetZoneId)` — re‑validate purpose.
 - `removeDevice(instanceId)`
@@ -97,7 +98,8 @@ Common categories are below.
 
 ### 4.5 Plants & Plantings
 
-- `addPlanting(zoneId, { strainId, count, startTick? })`
+- `addPlanting(zoneId, { strainId, count, startTick? })` — enforces cultivation method capacity, strain/method
+  compatibility hints, and emits `plant.planted` telemetry including all generated plant IDs.
 - `cullPlanting(plantingId, count?)`
 - `harvestPlanting(plantingId)` — creates inventory lots, emits events.
 - `applyIrrigation(zoneId, liters)` / `applyFertilizer(zoneId, { N,P,K } in g)` — optional manual overrides.
