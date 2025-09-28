@@ -106,6 +106,9 @@ const buildSnapshot = (
         },
         devices: [],
         plants: [],
+        lighting: {
+          photoperiodHours: { on: 18, off: 6 },
+        },
         control: {
           setpoints: controlSetpoints,
         },
@@ -262,5 +265,29 @@ describe('simulation store setpoint tolerances', () => {
     const nextSetpoints = useSimulationStore.getState().zoneSetpoints;
     expect(nextSetpoints).not.toBe(initialSetpoints);
     expect(nextSetpoints['zone-1']?.ppfd).toBe(484);
+  });
+});
+
+describe('simulation store lighting updates', () => {
+  beforeEach(() => {
+    useSimulationStore.getState().reset();
+  });
+
+  it('updates photoperiod hours when a lighting cycle event arrives', () => {
+    useSimulationStore.getState().hydrate({ snapshot: buildSnapshot({}) });
+
+    const event: SimulationEvent = {
+      type: 'devices.lightingCycleAdjusted',
+      zoneId: 'zone-1',
+      payload: {
+        zoneId: 'zone-1',
+        photoperiodHours: { on: 16, off: 8 },
+      },
+    };
+
+    useSimulationStore.getState().recordEvents([event]);
+
+    const snapshot = useSimulationStore.getState().snapshot;
+    expect(snapshot?.zones[0].lighting?.photoperiodHours).toEqual({ on: 16, off: 8 });
   });
 });

@@ -158,6 +158,15 @@ export interface DeviceInstallationResult {
   warnings?: string[];
 }
 
+export interface AdjustLightingCycleOptions {
+  zoneId: string;
+  photoperiodHours: { on: number; off: number };
+}
+
+export interface AdjustLightingCycleResult {
+  photoperiodHours: { on: number; off: number };
+}
+
 export interface SimulationBridge {
   connect: () => void;
   loadQuickStart: () => Promise<CommandResponse<unknown>>;
@@ -180,6 +189,9 @@ export interface SimulationBridge {
     installDevice: (
       options: InstallDeviceOptions,
     ) => Promise<CommandResponse<DeviceInstallationResult>>;
+    adjustLightingCycle: (
+      options: AdjustLightingCycleOptions,
+    ) => Promise<CommandResponse<AdjustLightingCycleResult>>;
   };
 }
 
@@ -248,6 +260,19 @@ class SocketSystemFacade implements SimulationBridge {
         payload,
       };
       return this.sendIntent<DeviceInstallationResult>(intent);
+    },
+    adjustLightingCycle: async (options: AdjustLightingCycleOptions) => {
+      this.requireConnected();
+      const payload = {
+        zoneId: options.zoneId,
+        photoperiodHours: options.photoperiodHours,
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'devices',
+        action: 'adjustLightingCycle',
+        payload,
+      };
+      return this.sendIntent<AdjustLightingCycleResult>(intent);
     },
   };
 

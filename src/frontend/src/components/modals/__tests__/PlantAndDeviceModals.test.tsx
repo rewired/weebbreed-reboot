@@ -261,6 +261,7 @@ describe('Plant and Device modals', () => {
       },
       devices: {
         installDevice: vi.fn(async () => ({ ok: true, warnings: ['Device load near limit.'] })),
+        adjustLightingCycle: vi.fn(async () => ({ ok: true })),
       },
     } satisfies SimulationBridge;
 

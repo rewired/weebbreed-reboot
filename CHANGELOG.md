@@ -66,6 +66,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added an EnvironmentPanel photoperiod slider that programs lighting cycles
+  via the new `devices.adjustLightingCycle` bridge intent, keeps KPI badges in
+  sync through lighting-cycle domain events, and includes Vitest coverage for
+  command payloads and synchronization behaviour.
 - Introduced a zone EnvironmentPanel component with collapsed KPI chips, device-aware setpoint sliders for temperature/humidity/VPD/CO₂/PPFD, and a PPFD lighting toggle wired through the simulation bridge with inline warning feedback.
 - Documented simulation constant governance in [ADR 0009](docs/system/adr/0009-simulation-constants-governance.md) and cross-linked the constants catalogue.
 - Exposed typed strain/device blueprint catalog fetchers and convenience wrappers for

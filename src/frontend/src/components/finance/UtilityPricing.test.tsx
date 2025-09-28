@@ -74,6 +74,7 @@ describe('UtilityPricing component', () => {
       },
       devices: {
         installDevice: async () => ({ ok: true }),
+        adjustLightingCycle: async () => ({ ok: true }),
       },
     } satisfies SimulationBridge;
     act(() => {
