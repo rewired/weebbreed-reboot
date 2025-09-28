@@ -512,9 +512,6 @@ export const EnvironmentPanel = ({
                     <span className="text-xs uppercase tracking-wide text-text-muted">dark</span>
                     <span className="sr-only">{photoperiodSummaryLabel}</span>
                   </span>
-                  <span className="text-xs text-text-muted">
-                    Dark period adjusts automatically to maintain a 24h day.
-                  </span>
                 </div>
               </div>
             </div>
