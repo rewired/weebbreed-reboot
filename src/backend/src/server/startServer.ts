@@ -37,6 +37,7 @@ import { SimulationLoop, type SimulationPhaseHandler } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
 import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
+import { LightingCycleService } from '@/engine/devices/lightingCycleService.js';
 import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { PlantingService } from '@/engine/plants/plantingService.js';
@@ -337,6 +338,7 @@ export const startBackendServer = async (
     rng,
     repository,
   });
+  const lightingCycleService = new LightingCycleService({ state });
   const plantingPlanService = new PlantingPlanService({ state, rng });
   const plantingService = new PlantingService({ state, rng, repository });
 
@@ -386,6 +388,8 @@ export const startBackendServer = async (
         ),
       toggleDeviceGroup: (intent, context) =>
         deviceGroupService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
+      adjustLightingCycle: (intent, context) =>
+        lightingCycleService.adjustLightingCycle(intent.zoneId, intent.photoperiodHours, context),
     },
     plants: {
       addPlanting: (intent, context) =>

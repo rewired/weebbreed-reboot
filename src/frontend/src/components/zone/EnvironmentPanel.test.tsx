@@ -219,7 +219,7 @@ describe('EnvironmentPanel', () => {
     const slider = panel.getByTestId('lighting-cycle-slider') as HTMLInputElement;
 
     await act(async () => {
-      fireEvent.change(slider, { target: { value: '19.5' } });
+      fireEvent.change(slider, { target: { value: '19' } });
       fireEvent.mouseUp(slider);
     });
 
@@ -227,8 +227,8 @@ describe('EnvironmentPanel', () => {
     expect(adjustLightingCycle).toHaveBeenLastCalledWith({
       zoneId: zone.id,
       photoperiodHours: {
-        on: 19.5,
-        off: 4.5,
+        on: 19,
+        off: 5,
       },
     });
   });
@@ -284,7 +284,10 @@ describe('EnvironmentPanel', () => {
       />,
     );
 
-    expect(panel.getByText('16h/8h')).toBeInTheDocument();
+    expect(panel.getByText('16 h light / 8 h dark')).toBeInTheDocument();
+    expect(
+      panel.getByText(/dark period adjusts automatically to maintain a 24h day/i),
+    ).toBeInTheDocument();
     const updatedSlider = panel.getByTestId('lighting-cycle-slider') as HTMLInputElement;
     expect(updatedSlider.value).toBe('16');
   });

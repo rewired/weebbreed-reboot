@@ -8,6 +8,7 @@ import { WorldService } from '@/engine/world/worldService.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
+import { LightingCycleService } from '@/engine/devices/lightingCycleService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { PlantingService } from '@/engine/plants/plantingService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
@@ -337,6 +338,7 @@ describe('SimulationFacade new intents', () => {
       rng,
       repository,
     });
+    const lightingCycleService = new LightingCycleService({ state });
     const plantingPlanService = new PlantingPlanService({ state, rng });
     const plantingService = new PlantingService({ state, rng, repository });
 
@@ -400,6 +402,8 @@ describe('SimulationFacade new intents', () => {
         },
         toggleDeviceGroup: (intent, context) =>
           deviceService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
+        adjustLightingCycle: (intent, context) =>
+          lightingCycleService.adjustLightingCycle(intent.zoneId, intent.photoperiodHours, context),
       },
       plants: {
         addPlanting: (intent, context) =>
@@ -487,6 +491,24 @@ describe('SimulationFacade new intents', () => {
     const second = await facade.world.getDeviceBlueprints({});
     expect(second.ok).toBe(true);
     expect(second.data).toEqual(expectedDeviceCatalog);
+  });
+
+  it('adjusts lighting cycles and emits telemetry', async () => {
+    const result = await facade.devices.adjustLightingCycle({
+      zoneId: ZONE_ID,
+      photoperiodHours: { on: 19, off: 5 },
+    });
+
+    expect(result.ok).toBe(true);
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    expect(zone.lighting?.photoperiodHours).toEqual({ on: 19, off: 5 });
+    expect(
+      events.some(
+        (event) =>
+          event.type === 'device.lightingCycleAdjusted' &&
+          (event.payload as { zoneId?: string } | undefined)?.zoneId === ZONE_ID,
+      ),
+    ).toBe(true);
   });
 
   it('renames a structure and emits an event', async () => {

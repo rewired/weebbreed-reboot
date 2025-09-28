@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Expanded the EnvironmentPanel photoperiod slider to cover the full 1–23 hour
+  light window with integer steps, refreshed the helper copy, and synced the
+  backend lighting-cycle command so zone snapshots persist and broadcast the
+  updated photoperiod.
 - Exposed a compact 50-entry finance ledger in the simulation snapshot and
   taught the frontend store plus revenue/expense breakdowns to hydrate from the
   live data instead of placeholder totals.

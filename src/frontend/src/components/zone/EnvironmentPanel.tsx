@@ -54,7 +54,7 @@ const HUMIDITY_DEVICE_KINDS = new Set(['humiditycontrolunit', 'dehumidifier']);
 const temperatureRange = { min: 16, max: 32, step: 0.5 } as const;
 const humidityRange = { min: 35, max: 90, step: 1 } as const;
 const co2Range = { min: 400, max: 1600, step: 25 } as const;
-const photoperiodRange = { min: 12, max: 23, step: 0.5 } as const;
+const photoperiodRange = { min: 1, max: 23, step: 1 } as const;
 const MINIMUM_DARK_HOURS = 1;
 const DEFAULT_LIGHT_HOURS = 18;
 
@@ -62,7 +62,8 @@ const clampPhotoperiodHours = (value: number): number => {
   if (!Number.isFinite(value)) {
     return DEFAULT_LIGHT_HOURS;
   }
-  return Math.min(Math.max(value, photoperiodRange.min), photoperiodRange.max);
+  const clamped = Math.min(Math.max(value, photoperiodRange.min), photoperiodRange.max);
+  return Math.round(clamped);
 };
 
 const resolvePhotoperiodLightHours = (zone: ZoneSnapshot): number => {
@@ -436,7 +437,7 @@ export const EnvironmentPanel = ({
 
   const effectivePpfdTarget = pendingPpfd ?? ppfdTarget;
   const isLightsOn = effectivePpfdTarget > 0;
-  const photoperiodDarkHours = Math.max(24 - photoperiodValue, MINIMUM_DARK_HOURS);
+  const photoperiodDarkHours = Math.round(Math.max(24 - photoperiodValue, MINIMUM_DARK_HOURS));
 
   const Container: 'section' | 'div' = variant === 'standalone' ? 'section' : 'div';
   const containerClasses = cx(
@@ -612,25 +613,30 @@ export const EnvironmentPanel = ({
                   className="flex-1 accent-primary"
                   data-testid="lighting-cycle-slider"
                 />
-                <span className="flex items-center gap-1 text-sm text-text-muted">
-                  <span className="font-semibold text-text">
-                    {formatNumber(photoperiodValue, {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}
-                    h
+                <div className="flex flex-col items-end gap-1 text-right">
+                  <span className="flex items-center gap-1 text-sm text-text-muted">
+                    <span className="font-semibold text-text">
+                      {formatNumber(photoperiodValue, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
+                      h
+                    </span>
+                    <span className="text-xs uppercase tracking-wide text-text-muted">light</span>
+                    <span className="text-text-muted">/</span>
+                    <span className="font-semibold text-text">
+                      {formatNumber(photoperiodDarkHours, {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}
+                      h
+                    </span>
+                    <span className="text-xs uppercase tracking-wide text-text-muted">dark</span>
                   </span>
-                  <span className="text-xs uppercase tracking-wide text-text-muted">light</span>
-                  <span className="text-text-muted">/</span>
-                  <span className="font-semibold text-text">
-                    {formatNumber(photoperiodDarkHours, {
-                      minimumFractionDigits: 1,
-                      maximumFractionDigits: 1,
-                    })}
-                    h
+                  <span className="text-xs text-text-muted">
+                    Dark period adjusts automatically to maintain a 24h day.
                   </span>
-                  <span className="text-xs uppercase tracking-wide text-text-muted">dark</span>
-                </span>
+                </div>
               </div>
             </div>
           </div>
