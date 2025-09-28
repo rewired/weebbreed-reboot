@@ -399,12 +399,15 @@ object:
 
 #### Supported actions per domain
 
+- **time** — `start`, `pause`, `resume`, `step`, `setSpeed`. Each call mirrors
+  the in-process scheduler API and resolves with the updated `TimeStatus`.
 - **world** — `getStructureBlueprints`, `getStrainBlueprints`,
   `getDeviceBlueprints`, `rentStructure`, `createRoom`, `updateRoom`,
   `deleteRoom`, `createZone`, `updateZone`, `deleteZone`, `renameStructure`,
-  `deleteStructure`, `duplicateStructure`, `duplicateRoom`, `duplicateZone`.
-  Duplication commands accept an optional `name` override and return
-  `{ structureId | roomId | zoneId }` for the newly created copy.
+  `deleteStructure`, `duplicateStructure`, `duplicateRoom`, `duplicateZone`,
+  `resetSession`, `newGame`. Duplication commands accept an optional `name`
+  override and return `{ structureId | roomId | zoneId }` for the newly
+  created copy.
 - **devices** — `installDevice`, `updateDevice`, `moveDevice`, `removeDevice`,
   `toggleDeviceGroup`. The toggle action returns `{ deviceIds: string[] }` with
   every instance that changed status.
@@ -416,6 +419,7 @@ object:
 - **workforce** — `refreshCandidates`, `hire`, `fire`, `setOvertimePolicy`,
   `assignStructure`, `enqueueTask` (payload defaults to `{}` when omitted).
 - **finance** — `sellInventory`, `setUtilityPrices`, `setMaintenancePolicy`.
+- **config** — `getDifficultyConfig` (payload defaults to `{}`).
 
 ##### Blueprint catalog commands
 
