@@ -28,6 +28,8 @@ import type { ZoneHistoryPoint } from '@/store/simulation';
 import { formatNumber } from '@/utils/formatNumber';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
+import { EnvironmentBadgeRow } from '@/components/zone/EnvironmentBadgeRow';
+import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentBadges';
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
@@ -70,6 +72,13 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   const openModal = useUIStore((state) => state.openModal);
 
   const zone = snapshot?.zones.find((item) => item.id === selectedZoneId);
+  const setpoints = zone ? zoneSetpoints[zone.id] : undefined;
+  const environmentBadges = useMemo(() => {
+    if (!zone) {
+      return [];
+    }
+    return buildEnvironmentBadgeDescriptors(zone, setpoints);
+  }, [zone, setpoints]);
 
   const table = useReactTable({
     data: zone?.plants ?? [],
@@ -275,8 +284,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     return null;
   }
 
-  const setpoints = zoneSetpoints[zone.id];
-
   const chartData = aggregateHistory.length
     ? aggregateHistory
     : [
@@ -295,15 +302,24 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   return (
     <div className="grid gap-6">
       <header className="flex flex-col gap-6 rounded-3xl border border-border/40 bg-surface-elevated/80 p-6">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
-          <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
-          <p className="text-sm text-text-muted">
-            {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation
-            method {zone.cultivationMethodId ?? '—'}
-          </p>
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
+            <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
+            <p className="text-sm text-text-muted">
+              {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation
+              method {zone.cultivationMethodId ?? '—'}
+            </p>
+          </div>
+          <EnvironmentBadgeRow badges={environmentBadges} className="md:justify-end" />
         </div>
-        <EnvironmentPanel zone={zone} setpoints={setpoints} bridge={bridge} variant="embedded" />
+        <EnvironmentPanel
+          zone={zone}
+          setpoints={setpoints}
+          bridge={bridge}
+          variant="embedded"
+          renderBadges={() => null}
+        />
       </header>
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <section className="grid gap-6">

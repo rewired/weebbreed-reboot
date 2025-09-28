@@ -99,6 +99,11 @@ describe('ZoneView', () => {
     const header = panels[0]?.closest('header');
     expect(header).not.toBeNull();
     expect(header).toContainElement(panels[0]!);
+
+    const headerElement = header as HTMLElement;
+    const toggle = within(panels[0]!).getByTestId('environment-panel-toggle');
+    expect(within(toggle).queryByText('Temp')).not.toBeInTheDocument();
+    expect(within(headerElement).getByText('Temp')).toBeInTheDocument();
   });
 
   it('opens the move device modal with zone context', async () => {
