@@ -216,6 +216,7 @@ describe('Plant and Device modals', () => {
   let sendIntentMock: ReturnType<typeof vi.fn>;
   let moveDeviceMock: ReturnType<typeof vi.fn>;
   let removeDeviceMock: ReturnType<typeof vi.fn>;
+  let installDeviceMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     modalRoot = document.createElement('div');
@@ -226,6 +227,7 @@ describe('Plant and Device modals', () => {
     sendIntentMock = vi.fn(async () => ({ ok: true }));
     moveDeviceMock = vi.fn(async () => ({ ok: true }));
     removeDeviceMock = vi.fn(async () => ({ ok: true }));
+    installDeviceMock = vi.fn(async () => ({ ok: true, warnings: ['Device load near limit.'] }));
 
     bridge = {
       connect: vi.fn(),
@@ -302,7 +304,7 @@ describe('Plant and Device modals', () => {
         })),
       },
       devices: {
-        installDevice: vi.fn(async () => ({ ok: true, warnings: ['Device load near limit.'] })),
+        installDevice: installDeviceMock as unknown as SimulationBridge['devices']['installDevice'],
         adjustLightingCycle: vi.fn(async () => ({ ok: true })),
         moveDevice: moveDeviceMock as unknown as SimulationBridge['devices']['moveDevice'],
         removeDevice: removeDeviceMock as unknown as SimulationBridge['devices']['removeDevice'],
@@ -396,13 +398,14 @@ describe('Plant and Device modals', () => {
     fireEvent.change(ppfdInput, { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
     expect(await screen.findByText('Value is required.')).toBeInTheDocument();
-    expect(bridge.devices.installDevice).not.toHaveBeenCalled();
+    expect(installDeviceMock).not.toHaveBeenCalled();
 
     fireEvent.change(ppfdInput, { target: { value: '680' } });
     fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
 
+    await screen.findByText('Installed 1 device with warnings.');
     await screen.findByText('Device load near limit.');
-    expect(bridge.devices.installDevice).toHaveBeenCalledWith({
+    expect(installDeviceMock).toHaveBeenCalledWith({
       targetId: 'zone-1',
       deviceId: 'device-1',
       settings: { ppfd: 680 },
@@ -411,11 +414,46 @@ describe('Plant and Device modals', () => {
     fireEvent.change(ppfdInput, { target: { value: '650' } });
     fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
 
+    await screen.findByText('Installed 1 device with warnings.');
     await screen.findByText('Device load near limit.');
-    expect(bridge.devices.installDevice).toHaveBeenLastCalledWith({
+    expect(installDeviceMock).toHaveBeenLastCalledWith({
       targetId: 'zone-1',
       deviceId: 'device-1',
     });
+  });
+
+  it('installs multiple devices when quantity exceeds one', async () => {
+    installDeviceMock.mockReset();
+    installDeviceMock
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true, warnings: ['Device load near limit.'] })
+      .mockResolvedValue({ ok: true });
+
+    render(<ModalHost bridge={bridge} />);
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'install-device',
+        type: 'installDevice',
+        title: 'Install device',
+        context: { zoneId: 'zone-1' },
+      });
+    });
+
+    const quantityInput = await screen.findByLabelText(/Device quantity/i);
+    fireEvent.change(quantityInput, { target: { value: '3' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
+
+    await screen.findByText('Installed 3 devices with warnings.');
+    expect(installDeviceMock).toHaveBeenCalledTimes(3);
+    for (let callIndex = 1; callIndex <= 3; callIndex += 1) {
+      expect(installDeviceMock).toHaveBeenNthCalledWith(callIndex, {
+        targetId: 'zone-1',
+        deviceId: 'device-1',
+      });
+    }
+    expect(screen.getAllByText('Device load near limit.')).toHaveLength(1);
   });
 
   it('opens the tune device modal from the zone view and dispatches a setpoint update', async () => {
