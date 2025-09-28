@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  Legend,
-} from 'recharts';
-import {
   useReactTable,
   flexRender,
   getCoreRowModel,
@@ -24,7 +14,6 @@ import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
 import type { DeviceSnapshot, PlantSnapshot } from '@/types/simulation';
-import type { ZoneHistoryPoint } from '@/store/simulation';
 import { formatNumber } from '@/utils/formatNumber';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
@@ -62,7 +51,6 @@ const plantColumns = [
 
 export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   const snapshot = useSimulationStore((state) => state.snapshot);
-  const zoneHistoryMap = useSimulationStore((state) => state.zoneHistory);
   const zoneSetpoints = useSimulationStore((state) => state.zoneSetpoints);
   const { selectedZoneId, selectedRoomId, selectedStructureId } = useNavigationStore((state) => ({
     selectedZoneId: state.selectedZoneId,
@@ -85,69 +73,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     columns: plantColumns,
     getCoreRowModel: getCoreRowModel(),
   });
-
-  const history = useMemo(() => {
-    if (!zone) {
-      return [] as ZoneHistoryPoint[];
-    }
-    return zoneHistoryMap[zone.id] ?? [];
-  }, [zone, zoneHistoryMap]);
-
-  const aggregateHistory = useMemo(() => {
-    if (!history.length) {
-      return [] as {
-        tick: number;
-        temperature: number;
-        humidity: number;
-        ppfd: number;
-        vpd: number;
-      }[];
-    }
-    const MAX_POINTS = 5000;
-    if (history.length <= MAX_POINTS) {
-      return history.map((point) => ({
-        tick: point.tick,
-        temperature: point.temperature,
-        humidity: point.relativeHumidity * 100,
-        ppfd: point.ppfd,
-        vpd: point.vpd,
-      }));
-    }
-    const bucketSize = Math.ceil(history.length / MAX_POINTS);
-    const aggregated: {
-      tick: number;
-      temperature: number;
-      humidity: number;
-      ppfd: number;
-      vpd: number;
-    }[] = [];
-    for (let index = 0; index < history.length; index += bucketSize) {
-      const slice = history.slice(index, index + bucketSize);
-      if (!slice.length) {
-        continue;
-      }
-      const totals = slice.reduce(
-        (acc, point) => {
-          acc.temperature += point.temperature;
-          acc.humidity += point.relativeHumidity;
-          acc.ppfd += point.ppfd;
-          acc.vpd += point.vpd;
-          return acc;
-        },
-        { temperature: 0, humidity: 0, ppfd: 0, vpd: 0 },
-      );
-      const count = slice.length;
-      const midpoint = slice[Math.floor(count / 2)];
-      aggregated.push({
-        tick: midpoint.tick,
-        temperature: totals.temperature / count,
-        humidity: (totals.humidity / count) * 100,
-        ppfd: totals.ppfd / count,
-        vpd: totals.vpd / count,
-      });
-    }
-    return aggregated;
-  }, [history]);
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const plantRowCount = zone?.plants.length ?? 0;
@@ -309,18 +234,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     return null;
   }
 
-  const chartData = aggregateHistory.length
-    ? aggregateHistory
-    : [
-        {
-          tick: snapshot.clock.tick,
-          temperature: zone.environment.temperature,
-          humidity: zone.environment.relativeHumidity * 100,
-          ppfd: zone.environment.ppfd,
-          vpd: zone.environment.vpd,
-        },
-      ];
-
   const rows = table.getRowModel().rows;
   const virtualRows = shouldVirtualize ? rowVirtualizer.getVirtualItems() : [];
 
@@ -409,100 +322,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
         </div>
       </header>
       <section className="grid gap-6">
-        <Card title="Environment" subtitle="Telemetry snapshot vs. historical trend">
-          <div className="grid gap-4 md:grid-cols-4">
-            <div className="flex flex-col gap-1 text-sm text-text-muted">
-              <span className="text-xs uppercase text-text-muted">Temperature</span>
-              <span className="text-lg font-semibold text-text">
-                {formatNumber(zone.environment.temperature, {
-                  minimumFractionDigits: 1,
-                  maximumFractionDigits: 1,
-                })}
-                °C
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 text-sm text-text-muted">
-              <span className="text-xs uppercase text-text-muted">Relative Humidity</span>
-              <span className="text-lg font-semibold text-text">
-                {formatNumber(zone.environment.relativeHumidity * 100, {
-                  maximumFractionDigits: 0,
-                })}
-                %
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 text-sm text-text-muted">
-              <span className="text-xs uppercase text-text-muted">Transpiration</span>
-              <span className="text-lg font-semibold text-text">
-                {formatNumber(zone.resources.lastTranspirationLiters)} L
-              </span>
-            </div>
-            <div className="flex flex-col gap-1 text-sm text-text-muted">
-              <span className="text-xs uppercase text-text-muted">Stress</span>
-              <span className="text-lg font-semibold text-text">
-                {formatNumber(zone.metrics.stressLevel * 100, { maximumFractionDigits: 0 })}%
-              </span>
-            </div>
-          </div>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
-                <XAxis dataKey="tick" stroke="rgba(148, 163, 184, 0.6)" fontSize={12} />
-                <YAxis yAxisId="left" stroke="rgba(148, 163, 184, 0.6)" fontSize={12} />
-                <YAxis
-                  yAxisId="right"
-                  orientation="right"
-                  stroke="rgba(148, 163, 184, 0.4)"
-                  fontSize={12}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                    borderRadius: 12,
-                    border: '1px solid rgba(148,163,184,0.2)',
-                  }}
-                />
-                <Legend />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="temperature"
-                  stroke="rgb(132,204,22)"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Temp °C"
-                />
-                <Line
-                  yAxisId="left"
-                  type="monotone"
-                  dataKey="humidity"
-                  stroke="rgb(14,165,233)"
-                  strokeWidth={2}
-                  dot={false}
-                  name="RH %"
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="ppfd"
-                  stroke="rgb(251,191,36)"
-                  strokeWidth={2}
-                  dot={false}
-                  name="PPFD"
-                />
-                <Line
-                  yAxisId="right"
-                  type="monotone"
-                  dataKey="vpd"
-                  stroke="rgb(248,113,113)"
-                  strokeWidth={2}
-                  dot={false}
-                  name="VPD"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
         <div
           className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.15fr_0.85fr]"
           data-testid="zone-plants-devices-row"

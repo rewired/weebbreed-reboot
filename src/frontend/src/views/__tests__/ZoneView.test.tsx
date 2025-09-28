@@ -7,20 +7,6 @@ import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
 import { useUIStore } from '@/store/ui';
 import type { SimulationBridge } from '@/facade/systemFacade';
-import type { ReactNode } from 'react';
-
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: ReactNode }) => (
-    <div data-testid="responsive-container">{children}</div>
-  ),
-  LineChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Line: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  Tooltip: () => null,
-  CartesianGrid: () => null,
-  Legend: () => null,
-}));
 
 const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridge => ({
   connect: () => undefined,
