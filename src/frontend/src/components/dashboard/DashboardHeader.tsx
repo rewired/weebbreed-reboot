@@ -68,7 +68,7 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
       <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="grid size-16 place-items-center rounded-full border border-border/50 bg-surface-muted/80">
-            <svg viewBox="0 0 36 36" className="size-12 -rotate-90">
+            <svg viewBox="0 0 36 36" className="size-12">
               <path
                 className="fill-none stroke-border/30"
                 strokeWidth={3.5}
