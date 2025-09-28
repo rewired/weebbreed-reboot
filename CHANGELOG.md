@@ -11,8 +11,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Dokumentiert den Umsetzungsplan für die Irrigation-&-Nutrient-Überarbeitung unter
   `docs/tasks/20250928-irrgitation-nutrient-overhaul.md`.
+- Implemented a device removal engine service that clears unsupported zone setpoints, emits
+  `device.removed` telemetry, and exposes the facade command with unit and integration
+  coverage.
 - Erstellt den Alignment-Report zu Phase 0 der Irrigation-&-Nutrient-Überarbeitung mit Stakeholder-Bestätigungen,
   Quellensichtung und Deprecation-Empfehlungen für Reservoir-Aufgaben (`docs/tasks/irrigation/phase0-alignment-report.md`).
+
 
 ### Changed
 

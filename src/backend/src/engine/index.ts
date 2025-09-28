@@ -14,4 +14,5 @@ export * from './health/healthEngine.js';
 export * from './workforce/index.js';
 export * from './roomPurposes/index.js';
 export * from './devices/deviceGroupService.js';
+export * from './devices/deviceRemovalService.js';
 export * from './world/worldService.js';

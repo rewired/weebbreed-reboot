@@ -15,8 +15,11 @@ import {
   AMBIENT_CO2_PPM,
   AMBIENT_HUMIDITY_RH,
   AMBIENT_TEMP_C,
+  CO2_DEVICE_KINDS,
   CO2_NORMALIZATION_FACTOR,
+  HUMIDITY_DEVICE_KINDS,
   HUMIDITY_NORMALIZATION_FACTOR,
+  TEMPERATURE_DEVICE_KINDS,
   TEMP_NORMALIZATION_FACTOR,
 } from '@/constants/environment.js';
 
@@ -87,10 +90,6 @@ const DEFAULT_SETPOINTS: ClimateControlSetpoints = {
   humidity: DEFAULT_AMBIENT.relativeHumidity,
   co2: DEFAULT_AMBIENT.co2,
 };
-
-const TEMPERATURE_DEVICE_KINDS = new Set(['ClimateUnit', 'HVAC']);
-const HUMIDITY_DEVICE_KINDS = new Set(['HumidityControlUnit', 'Dehumidifier']);
-const CO2_DEVICE_KINDS = new Set(['CO2Injector']);
 
 const clamp = (value: number, min: number, max: number): number => {
   return Math.min(Math.max(value, min), max);

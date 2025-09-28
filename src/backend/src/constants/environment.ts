@@ -16,6 +16,21 @@ export const AMBIENT_HUMIDITY_RH = 0.5;
 /** The default CO₂ concentration (in parts per million) of the outside world. */
 export const AMBIENT_CO2_PPM = 400;
 
+/** Device kinds that provide active temperature control within a zone. */
+export const TEMPERATURE_DEVICE_KINDS: ReadonlySet<string> = new Set(['ClimateUnit', 'HVAC']);
+
+/** Device kinds capable of humidifying or dehumidifying a zone. */
+export const HUMIDITY_DEVICE_KINDS: ReadonlySet<string> = new Set([
+  'HumidityControlUnit',
+  'Dehumidifier',
+]);
+
+/** Device kinds that enrich or scrub CO₂ within a zone. */
+export const CO2_DEVICE_KINDS: ReadonlySet<string> = new Set(['CO2Injector']);
+
+/** Device kinds that contribute photosynthetic photon flux density (PPFD). */
+export const LIGHT_DEVICE_KINDS: ReadonlySet<string> = new Set(['Lamp']);
+
 /** A multiplier determining how quickly a zone's temperature normalizes towards the ambient temperature each hour. */
 export const TEMP_NORMALIZATION_FACTOR = 0.1;
 
