@@ -131,8 +131,17 @@ describe('EnvironmentPanel', () => {
     expect(co2Slider).toBeDisabled();
   });
 
-  it('surfaces warnings returned from the simulation bridge', async () => {
+  it('omits the PPFD slider but allows toggling lighting and surfaces warnings', async () => {
     const zone = baseZone();
+    zone.environment.ppfd = 620;
+    zone.control = {
+      ...zone.control,
+      setpoints: {
+        ...zone.control?.setpoints,
+        ppfd: 620,
+      },
+    };
+
     const sendConfigUpdate = vi.fn(async () => ({
       ok: true,
       warnings: ['Value clamped to safe range.'],
@@ -149,14 +158,34 @@ describe('EnvironmentPanel', () => {
     );
 
     const panel = within(screen.getAllByTestId('environment-panel-root').at(-1)!);
-    const ppfdSlider = panel.getAllByTestId('ppfd-slider').at(-1) as HTMLInputElement;
+    expect(panel.queryByTestId('ppfd-slider')).not.toBeInTheDocument();
+
+    const toggleButton = panel.getByRole('button', { name: /turn lights off/i });
     await act(async () => {
-      fireEvent.change(ppfdSlider, { target: { value: '620' } });
-      fireEvent.mouseUp(ppfdSlider);
+      fireEvent.click(toggleButton);
     });
 
     await waitFor(() => expect(sendConfigUpdate).toHaveBeenCalled());
+    expect(sendConfigUpdate).toHaveBeenLastCalledWith({
+      type: 'setpoint',
+      zoneId: zone.id,
+      metric: 'ppfd',
+      value: 0,
+    });
     expect(panel.getByText('Value clamped to safe range.')).toBeInTheDocument();
+
+    const turnOnButton = panel.getByRole('button', { name: /turn lights on/i });
+    await act(async () => {
+      fireEvent.click(turnOnButton);
+    });
+
+    await waitFor(() => expect(sendConfigUpdate).toHaveBeenCalledTimes(2));
+    expect(sendConfigUpdate).toHaveBeenLastCalledWith({
+      type: 'setpoint',
+      zoneId: zone.id,
+      metric: 'ppfd',
+      value: 620,
+    });
   });
 
   it('debounces rapid slider updates before calling the simulation bridge', async () => {

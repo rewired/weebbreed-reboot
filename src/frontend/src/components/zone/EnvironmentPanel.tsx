@@ -50,7 +50,6 @@ const createDeviceMatcher = (zone: ZoneSnapshot) => {
 const temperatureRange = { min: 16, max: 32, step: 0.5 } as const;
 const humidityRange = { min: 35, max: 90, step: 1 } as const;
 const co2Range = { min: 400, max: 1600, step: 25 } as const;
-const ppfdRange = { min: 0, max: 1200, step: 10 } as const;
 
 const SliderLabel = ({ icon, children }: { icon: string; children: string }) => (
   <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -106,8 +105,7 @@ export const EnvironmentPanel = ({
   const [temperatureValue, setTemperatureValue] = useState<number>(temperatureTarget);
   const [humidityValue, setHumidityValue] = useState<number>(humidityTargetPercent);
   const [co2Value, setCo2Value] = useState<number>(co2Target);
-  const [ppfdValue, setPpfdValue] = useState<number>(ppfdTarget);
-
+  const [pendingPpfd, setPendingPpfd] = useState<number | null>(null);
   const lastNonZeroPpfd = useRef<number>(ppfdTarget > 0 ? ppfdTarget : 400);
 
   useEffect(() => {
@@ -123,7 +121,7 @@ export const EnvironmentPanel = ({
   }, [co2Target]);
 
   useEffect(() => {
-    setPpfdValue(ppfdTarget);
+    setPendingPpfd(null);
     if (ppfdTarget > 0) {
       lastNonZeroPpfd.current = ppfdTarget;
     }
@@ -204,22 +202,23 @@ export const EnvironmentPanel = ({
 
   useEffect(() => () => cancel(), [cancel]);
 
-  const toggleLights = async () => {
+  const toggleLights = useCallback(async () => {
     if (!canControlLighting) {
       return;
     }
-    const isOn = ppfdValue > 0;
-    const nextValue = isOn ? 0 : lastNonZeroPpfd.current > 0 ? lastNonZeroPpfd.current : 400;
-    if (!isOn && nextValue > 0) {
-      lastNonZeroPpfd.current = nextValue;
-    }
-    setPpfdValue(nextValue);
+    const currentPpfd = pendingPpfd ?? ppfdTarget;
+    const isOn = currentPpfd > 0;
+    const fallbackPpfd = lastNonZeroPpfd.current > 0 ? lastNonZeroPpfd.current : 400;
+    const nextValue = isOn ? 0 : fallbackPpfd;
+
     if (nextValue > 0) {
       lastNonZeroPpfd.current = nextValue;
     }
+
+    setPendingPpfd(nextValue);
     cancel();
     await handleSetpointChange('ppfd', nextValue);
-  };
+  }, [canControlLighting, cancel, handleSetpointChange, pendingPpfd, ppfdTarget]);
 
   const chips = [
     {
@@ -304,7 +303,8 @@ export const EnvironmentPanel = ({
     },
   ];
 
-  const isLightsOn = ppfdValue > 0;
+  const effectivePpfdTarget = pendingPpfd ?? ppfdTarget;
+  const isLightsOn = effectivePpfdTarget > 0;
 
   return (
     <section
@@ -439,40 +439,6 @@ export const EnvironmentPanel = ({
                 <span className="min-w-[64px] text-right text-sm font-semibold text-text">
                   {formatNumber(co2Value, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}{' '}
                   ppm
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-2 md:col-span-2">
-              <label htmlFor={`ppfd-${zone.id}`}>
-                <SliderLabel icon="sunny">PPFD Target</SliderLabel>
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  id={`ppfd-${zone.id}`}
-                  type="range"
-                  min={ppfdRange.min}
-                  max={ppfdRange.max}
-                  step={ppfdRange.step}
-                  value={ppfdValue}
-                  disabled={!canControlLighting || pendingMetric === 'ppfd'}
-                  onChange={(event) => {
-                    const nextValue = Number(event.target.value);
-                    setPpfdValue(nextValue);
-                    if (nextValue > 0) {
-                      lastNonZeroPpfd.current = nextValue;
-                    }
-                    schedule('ppfd', nextValue);
-                  }}
-                  onBlur={() => flush()}
-                  onMouseUp={() => flush()}
-                  onTouchEnd={() => flush()}
-                  className="flex-1 accent-primary"
-                  data-testid="ppfd-slider"
-                />
-                <span className="min-w-[64px] text-right text-sm font-semibold text-text">
-                  {formatNumber(ppfdValue, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}{' '}
-                  µmol
                 </span>
               </div>
             </div>
