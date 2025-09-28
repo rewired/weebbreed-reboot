@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildSimulationSnapshot, type FinanceLedgerEntrySnapshot } from './uiSnapshot.js';
-import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
+import {
+  buildSimulationSnapshot,
+  type FinanceLedgerEntrySnapshot,
+  type SnapshotBlueprintSource,
+} from './uiSnapshot.js';
 import type {
   GameState,
   LedgerEntry,
@@ -9,7 +12,7 @@ import type {
   ZoneResourceState,
 } from '@/state/models.js';
 
-const createRoomPurposeSource = (): RoomPurposeSource => ({
+const createBlueprintSource = (): SnapshotBlueprintSource => ({
   listRoomPurposes: () => [
     {
       id: 'purpose-1',
@@ -21,6 +24,12 @@ const createRoomPurposeSource = (): RoomPurposeSource => ({
   getRoomPurpose: (id: string) =>
     id === 'purpose-1'
       ? { id: 'purpose-1', kind: 'grow-room', name: 'Grow Room', description: 'Test purpose' }
+      : undefined,
+  getStrain: (id: string) =>
+    id === 'strain-1'
+      ? ({ id: 'strain-1', name: 'Test Strain' } as unknown as ReturnType<
+          SnapshotBlueprintSource['getStrain']
+        >)
       : undefined,
 });
 
@@ -186,11 +195,11 @@ const createLedgerEntries = (count: number): LedgerEntry[] =>
   }));
 
 describe('buildSimulationSnapshot finance ledger', () => {
-  const roomPurposeSource = createRoomPurposeSource();
+  const blueprintSource = createBlueprintSource();
 
   it('includes the last 50 ledger entries with compact fields', () => {
     const ledgerEntries = createLedgerEntries(55);
-    const snapshot = buildSimulationSnapshot(createState(ledgerEntries), roomPurposeSource);
+    const snapshot = buildSimulationSnapshot(createState(ledgerEntries), blueprintSource);
 
     const ledger = snapshot.finance.ledger;
     expect(ledger).toBeDefined();
@@ -209,8 +218,58 @@ describe('buildSimulationSnapshot finance ledger', () => {
   });
 
   it('omits the ledger field when no entries are recorded', () => {
-    const snapshot = buildSimulationSnapshot(createState([]), roomPurposeSource);
+    const snapshot = buildSimulationSnapshot(createState([]), blueprintSource);
 
     expect(snapshot.finance.ledger).toBeUndefined();
+  });
+});
+
+describe('buildSimulationSnapshot plants', () => {
+  it('populates strainName using the blueprint repository lookup', () => {
+    const blueprintSource = createBlueprintSource();
+    const state = createState([]);
+    state.structures[0]!.rooms[0]!.zones[0]!.plants = [
+      {
+        id: 'plant-1',
+        strainId: 'strain-1',
+        stage: 'seedling',
+        health: 0.9,
+        stress: 0.1,
+        biomassDryGrams: 12,
+        yieldDryGrams: 0,
+        plantedAtTick: 0,
+        zoneId: 'zone-1',
+        roomId: 'room-1',
+        structureId: 'structure-1',
+      } as unknown as GameState['structures'][number]['rooms'][number]['zones'][number]['plants'][number],
+    ];
+
+    const snapshot = buildSimulationSnapshot(state, blueprintSource);
+    const [plant] = snapshot.zones[0]?.plants ?? [];
+    expect(plant?.strainName).toBe('Test Strain');
+  });
+
+  it('falls back to the strainId when the strain blueprint is missing', () => {
+    const blueprintSource = createBlueprintSource();
+    const state = createState([]);
+    state.structures[0]!.rooms[0]!.zones[0]!.plants = [
+      {
+        id: 'plant-2',
+        strainId: 'unknown-strain',
+        stage: 'seedling',
+        health: 0.9,
+        stress: 0.1,
+        biomassDryGrams: 12,
+        yieldDryGrams: 0,
+        plantedAtTick: 0,
+        zoneId: 'zone-1',
+        roomId: 'room-1',
+        structureId: 'structure-1',
+      } as unknown as GameState['structures'][number]['rooms'][number]['zones'][number]['plants'][number],
+    ];
+
+    const snapshot = buildSimulationSnapshot(state, blueprintSource);
+    const [plant] = snapshot.zones[0]?.plants ?? [];
+    expect(plant?.strainName).toBe('unknown-strain');
   });
 });

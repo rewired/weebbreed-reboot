@@ -2,7 +2,6 @@ import type { IncomingMessage, Server as HttpServer, ServerResponse } from 'node
 import type { Observable, Subscription } from 'rxjs';
 
 import type { SimulationFacade, TimeStatus } from '@/facade/index.js';
-import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import {
   createUiStream,
   type EventBus,
@@ -10,7 +9,11 @@ import {
   type UiSimulationUpdateMessage,
   type UiStreamPacket,
 } from '@runtime/eventBus.js';
-import { buildSimulationSnapshot, type SimulationSnapshot } from '@/lib/uiSnapshot.js';
+import {
+  buildSimulationSnapshot,
+  type SimulationSnapshot,
+  type SnapshotBlueprintSource,
+} from '@/lib/uiSnapshot.js';
 
 const DEFAULT_KEEP_ALIVE_MS = 15000;
 
@@ -75,7 +78,7 @@ type SimulationUpdateMessage = UiSimulationUpdateMessage<SimulationSnapshot, Tim
 export interface SseGatewayOptions {
   httpServer: HttpServer;
   facade: SimulationFacade;
-  roomPurposeSource: RoomPurposeSource;
+  roomPurposeSource: SnapshotBlueprintSource;
   path?: string;
   keepAliveMs?: number;
   simulationBatchIntervalMs?: number;
@@ -91,7 +94,7 @@ export class SseGateway {
 
   private readonly facade: SimulationFacade;
 
-  private readonly roomPurposeSource: RoomPurposeSource;
+  private readonly roomPurposeSource: SnapshotBlueprintSource;
 
   private readonly path: string;
 

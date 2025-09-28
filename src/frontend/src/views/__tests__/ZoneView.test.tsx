@@ -167,9 +167,37 @@ describe('ZoneView', () => {
     const children = Array.from(layoutRow.children);
     expect(children).toHaveLength(2);
 
-    const [plantsCard, devicesCard] = children;
+    const [plantsCard, devicesCard] = children as HTMLElement[];
     expect(within(plantsCard).getByRole('heading', { name: 'Plants' })).toBeInTheDocument();
     expect(within(devicesCard).getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
+  });
+
+  it('displays strain names in the plant table without the plant ID column', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+    // Debug output (truncated)
+    // eslint-disable-next-line no-console
+    const [plantsCard] = screen.getAllByTestId('zone-plants-card') as HTMLElement[];
+    const headers = within(plantsCard).getAllByRole('columnheader');
+    expect(headers.map((header) => header.textContent?.trim())).not.toContain('Plant ID');
+
+    const strainCells = within(plantsCard).getAllByRole('cell', { name: 'AK-47' });
+    expect(strainCells.length).toBeGreaterThan(0);
+    expect(within(plantsCard).queryByText('plant-01')).not.toBeInTheDocument();
   });
 
   it('renders health summary within the plants card and removes the standalone health card', async () => {

@@ -17,7 +17,7 @@ import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import { RngService } from '@/lib/rng.js';
-import type { RoomPurpose, RoomPurposeSource } from '@/engine/roomPurposes/index.js';
+import type { RoomPurpose } from '@/engine/roomPurposes/index.js';
 import { SocketGateway } from '@/server/socketGateway.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import {
@@ -32,6 +32,7 @@ import {
   createStrainPriceMap,
   createStructureBlueprint,
 } from '@/testing/fixtures.js';
+import type { SnapshotBlueprintSource } from '@/lib/uiSnapshot.js';
 
 const STRUCTURE_ID = '11111111-1111-1111-1111-111111111111';
 const ROOM_ID = '22222222-2222-2222-2222-222222222222';
@@ -374,7 +375,7 @@ const createTestState = (): GameState => ({
   notes: [],
 });
 
-const roomPurposeSource: RoomPurposeSource = {
+const roomPurposeSource: SnapshotBlueprintSource = {
   listRoomPurposes: () => [
     { id: ROOM_PURPOSE_ID, kind: 'growroom', name: 'Grow Room' } satisfies RoomPurpose,
   ],
@@ -382,6 +383,7 @@ const roomPurposeSource: RoomPurposeSource = {
     id === ROOM_PURPOSE_ID
       ? { id: ROOM_PURPOSE_ID, kind: 'growroom', name: 'Grow Room' }
       : undefined,
+  getStrain: () => undefined,
 };
 
 const waitFor = async (predicate: () => boolean, timeoutMs = 1000): Promise<void> => {

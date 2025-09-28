@@ -23,12 +23,9 @@ import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentB
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
 const plantColumns = [
-  columnHelper.accessor('id', {
-    header: 'Plant ID',
-    cell: (info) => <span className="font-mono text-xs">{info.getValue()}</span>,
-  }),
-  columnHelper.accessor('strainId', {
+  columnHelper.accessor('strainName', {
     header: 'Strain',
+    cell: (info) => info.getValue() ?? info.row.original.strainId,
   }),
   columnHelper.accessor('stage', {
     header: 'Stage',

@@ -182,6 +182,7 @@ Batched snapshot diff and event bundles. Payload:
               {
                 "id": "plant-1",
                 "strainId": "strain-1",
+                "strainName": "Aurora Dream",
                 "stage": "flowering",
                 "health": 0.93,
                 "stress": 0.1,

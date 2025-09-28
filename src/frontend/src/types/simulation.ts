@@ -117,6 +117,7 @@ export interface ZoneHealthSnapshot {
 export interface PlantSnapshot {
   id: string;
   strainId: string;
+  strainName: string;
   stage: string;
   health: number;
   stress: number;

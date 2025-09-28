@@ -2,7 +2,6 @@ import type { Server as HttpServer } from 'node:http';
 import { Server as IOServer, type ServerOptions as IOServerOptions, type Socket } from 'socket.io';
 import type { Observable, Subscription } from 'rxjs';
 import { z, type ZodError } from 'zod';
-import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import type {
   CommandError,
   CommandResult,
@@ -19,7 +18,11 @@ import {
   type UiSimulationUpdateMessage,
   type UiStreamPacket,
 } from '@runtime/eventBus.js';
-import { buildSimulationSnapshot, type SimulationSnapshot } from '@/lib/uiSnapshot.js';
+import {
+  buildSimulationSnapshot,
+  type SimulationSnapshot,
+  type SnapshotBlueprintSource,
+} from '@/lib/uiSnapshot.js';
 import { logger } from '@runtime/logger.js';
 
 export type { SimulationSnapshot } from '@/lib/uiSnapshot.js';
@@ -154,7 +157,7 @@ export interface SocketGatewayOptions {
   simulationBatchMaxSize?: number;
   domainBatchIntervalMs?: number;
   domainBatchMaxSize?: number;
-  roomPurposeSource: RoomPurposeSource;
+  roomPurposeSource: SnapshotBlueprintSource;
   eventBus?: EventBus;
   uiStream$?: Observable<UiStreamPacket<SimulationSnapshot, TimeStatus>>;
 }
@@ -166,7 +169,7 @@ export class SocketGateway {
 
   private readonly io: IOServer;
 
-  private readonly roomPurposeSource: RoomPurposeSource;
+  private readonly roomPurposeSource: SnapshotBlueprintSource;
 
   private readonly uiSubscription: Subscription;
 
