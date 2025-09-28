@@ -22,7 +22,9 @@ type ModalType =
   | 'employeeDetails'
   | 'plantZone'
   | 'installDevice'
-  | 'tuneDevice';
+  | 'tuneDevice'
+  | 'moveDevice'
+  | 'removeDevice';
 
 export interface ModalDescriptor {
   id: string;

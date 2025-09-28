@@ -20,6 +20,8 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
   devices: {
     installDevice: async () => ({ ok: true }),
     adjustLightingCycle: async () => ({ ok: true }),
+    moveDevice: async () => ({ ok: true }),
+    removeDevice: async () => ({ ok: true }),
   },
   ...overrides,
 });
@@ -199,6 +201,8 @@ describe('EnvironmentPanel', () => {
         installDevice: async () => ({ ok: true }),
         adjustLightingCycle:
           adjustLightingCycle as SimulationBridge['devices']['adjustLightingCycle'],
+        moveDevice: async () => ({ ok: true }),
+        removeDevice: async () => ({ ok: true }),
       },
     });
 
@@ -240,6 +244,8 @@ describe('EnvironmentPanel', () => {
         installDevice: async () => ({ ok: true }),
         adjustLightingCycle:
           adjustLightingCycle as SimulationBridge['devices']['adjustLightingCycle'],
+        moveDevice: async () => ({ ok: true }),
+        removeDevice: async () => ({ ok: true }),
       },
     });
 

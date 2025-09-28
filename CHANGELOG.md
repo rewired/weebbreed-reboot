@@ -78,6 +78,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exposed typed strain/device blueprint catalog fetchers and convenience wrappers for
   `plants.addPlanting` and `devices.installDevice` on the frontend simulation bridge,
   including Vitest coverage to lock down the intent envelopes.
+- Extended the simulation bridge and modal host with `devices.moveDevice` and
+  `devices.removeDevice` flows, replacing the zone "Adjust" control with Move
+  and Delete actions plus regression coverage for the new UI intents.
 - Enabled façade support for `devices.installDevice` and `plants.addPlanting`, including zone compatibility checks,
   capacity validation, and new `device.installed` / `plant.planted` telemetry events.
 - Added zone-level "Plant zone" and "Install device" flows that launch capacity-aware modals backed by blueprint catalogs and new Vitest coverage.【F:src/frontend/src/views/ZoneView.tsx†L286-L398】【F:src/frontend/src/components/modals/ModalHost.tsx†L104-L470】【F:src/frontend/src/components/modals/**tests**/PlantAndDeviceModals.test.tsx†L64-L149】

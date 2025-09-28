@@ -26,6 +26,8 @@ const bridge: SimulationBridge = {
   devices: {
     installDevice: async () => ({ ok: true }),
     adjustLightingCycle: async () => ({ ok: true }),
+    moveDevice: async () => ({ ok: true }),
+    removeDevice: async () => ({ ok: true }),
   },
 };
 
