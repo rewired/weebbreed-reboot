@@ -246,7 +246,11 @@ const summarizeLighting = (
   const averagePpfd =
     toFiniteNumber(zone.metrics?.averagePpfd) ?? toFiniteNumber(zone.environment?.ppfd);
 
-  if (coverageRatio === undefined && averagePpfd === undefined) {
+  const photoperiodOn = toFiniteNumber(zone.lighting?.photoperiodHours?.on);
+  const photoperiodOff = toFiniteNumber(zone.lighting?.photoperiodHours?.off);
+  const hasPhotoperiod = photoperiodOn !== undefined && photoperiodOff !== undefined;
+
+  if (!hasPhotoperiod && coverageRatio === undefined && averagePpfd === undefined) {
     return undefined;
   }
 
@@ -256,6 +260,9 @@ const summarizeLighting = (
   }
   if (averagePpfd !== undefined) {
     snapshot.averagePpfd = averagePpfd;
+  }
+  if (hasPhotoperiod) {
+    snapshot.photoperiodHours = { on: photoperiodOn!, off: photoperiodOff! };
   }
 
   return snapshot;

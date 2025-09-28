@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
+import type { AdjustLightingCycleResult } from '@/engine/devices/lightingCycleService.js';
 import { entityIdentifier, settingsRecord, uuid } from './commonSchemas.js';
 import {
   createServiceCommand,
@@ -48,11 +49,24 @@ const toggleDeviceGroupSchema = z
   })
   .strict();
 
+const adjustLightingCycleSchema = z
+  .object({
+    zoneId: entityIdentifier,
+    photoperiodHours: z
+      .object({
+        on: z.number().finite().min(1).max(23),
+        off: z.number().finite().min(1).max(23),
+      })
+      .strict(),
+  })
+  .strict();
+
 export type InstallDeviceIntent = z.infer<typeof installDeviceSchema>;
 export type UpdateDeviceIntent = z.infer<typeof updateDeviceSchema>;
 export type MoveDeviceIntent = z.infer<typeof moveDeviceSchema>;
 export type RemoveDeviceIntent = z.infer<typeof removeDeviceSchema>;
 export type ToggleDeviceGroupIntent = z.infer<typeof toggleDeviceGroupSchema>;
+export type AdjustLightingCycleIntent = z.infer<typeof adjustLightingCycleSchema>;
 
 export interface DeviceIntentHandlers {
   installDevice: ServiceCommandHandler<InstallDeviceIntent>;
@@ -60,6 +74,7 @@ export interface DeviceIntentHandlers {
   moveDevice: ServiceCommandHandler<MoveDeviceIntent>;
   removeDevice: ServiceCommandHandler<RemoveDeviceIntent>;
   toggleDeviceGroup: ServiceCommandHandler<ToggleDeviceGroupIntent, DeviceGroupToggleResult>;
+  adjustLightingCycle: ServiceCommandHandler<AdjustLightingCycleIntent, AdjustLightingCycleResult>;
 }
 
 export interface DeviceCommandRegistry {
@@ -68,6 +83,7 @@ export interface DeviceCommandRegistry {
   moveDevice: CommandRegistration<MoveDeviceIntent>;
   removeDevice: CommandRegistration<RemoveDeviceIntent>;
   toggleDeviceGroup: CommandRegistration<ToggleDeviceGroupIntent, DeviceGroupToggleResult>;
+  adjustLightingCycle: CommandRegistration<AdjustLightingCycleIntent, AdjustLightingCycleResult>;
 }
 
 export interface DeviceCommandOptions {
@@ -109,6 +125,12 @@ export const buildDeviceCommands = ({
     () => services().toggleDeviceGroup,
     onMissingHandler,
   ),
+  adjustLightingCycle: createServiceCommand<AdjustLightingCycleIntent, AdjustLightingCycleResult>(
+    'devices.adjustLightingCycle',
+    adjustLightingCycleSchema,
+    () => services().adjustLightingCycle,
+    onMissingHandler,
+  ),
 });
 
 export const schemas = {
@@ -117,4 +139,5 @@ export const schemas = {
   moveDeviceSchema,
   removeDeviceSchema,
   toggleDeviceGroupSchema,
+  adjustLightingCycleSchema,
 };

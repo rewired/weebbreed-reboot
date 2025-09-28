@@ -12,6 +12,7 @@ import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
+import { LightingCycleService } from '@/engine/devices/lightingCycleService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
@@ -491,6 +492,7 @@ describe('SocketGateway facade intents integration', () => {
     });
     const deviceService = new DeviceGroupService({ state, rng });
     const deviceInstallationService = new DeviceInstallationService({ state, rng, repository });
+    const lightingCycleService = new LightingCycleService({ state });
     const plantingService = new PlantingPlanService({ state, rng });
 
     facade.updateServices({
@@ -519,6 +521,8 @@ describe('SocketGateway facade intents integration', () => {
           ),
         toggleDeviceGroup: (intent, context) =>
           deviceService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
+        adjustLightingCycle: (intent, context) =>
+          lightingCycleService.adjustLightingCycle(intent.zoneId, intent.photoperiodHours, context),
       },
       plants: {
         togglePlantingPlan: (intent, context) =>
@@ -711,6 +715,20 @@ describe('SocketGateway facade intents integration', () => {
     expect(response.ok).toBe(true);
     expect(state.structures[0]!.rooms[0]!.zones[0]!.devices[0]!.status).toBe('offline');
     await expectDomainEvent('device.groupToggled');
+  });
+
+  it('handles adjustLightingCycle intent', async () => {
+    const response = await emitIntent('devices', 'adjustLightingCycle', {
+      zoneId: ZONE_ID,
+      photoperiodHours: { on: 19, off: 5 },
+    });
+
+    expect(response.ok).toBe(true);
+    expect(state.structures[0]!.rooms[0]!.zones[0]!.lighting?.photoperiodHours).toEqual({
+      on: 19,
+      off: 5,
+    });
+    await expectDomainEvent('device.lightingCycleAdjusted');
   });
 
   it('installs a device via facade intent and emits telemetry', async () => {

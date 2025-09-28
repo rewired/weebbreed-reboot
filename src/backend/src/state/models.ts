@@ -161,6 +161,10 @@ export interface ZoneControlState {
   setpoints: ZoneControlSetpoints;
 }
 
+export interface ZoneLightingState {
+  photoperiodHours?: { on: number; off: number };
+}
+
 export interface ZonePlantingPlanState {
   id: string;
   strainId: string;
@@ -272,6 +276,7 @@ export interface ZoneState {
   devices: DeviceInstanceState[];
   metrics: ZoneMetricState;
   control: ZoneControlState;
+  lighting?: ZoneLightingState;
   health: ZoneHealthState;
   activeTaskIds: string[];
   plantingPlan?: ZonePlantingPlanState | null;

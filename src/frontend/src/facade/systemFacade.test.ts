@@ -132,4 +132,24 @@ describe('SocketSystemFacade convenience wrappers', () => {
       deviceId: 'device-2',
     });
   });
+
+  it('dispatches devices.adjustLightingCycle intents', async () => {
+    const response = { ok: true };
+    sendIntentMock.mockResolvedValueOnce(response);
+
+    const result = await bridge.devices.adjustLightingCycle({
+      zoneId: 'zone-5',
+      photoperiodHours: { on: 19, off: 5 },
+    });
+
+    expect(result).toBe(response);
+    expect(sendIntentMock).toHaveBeenCalledWith({
+      domain: 'devices',
+      action: 'adjustLightingCycle',
+      payload: {
+        zoneId: 'zone-5',
+        photoperiodHours: { on: 19, off: 5 },
+      },
+    });
+  });
 });

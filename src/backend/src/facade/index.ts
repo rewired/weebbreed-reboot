@@ -27,7 +27,9 @@ import {
   type MoveDeviceIntent,
   type RemoveDeviceIntent,
   type ToggleDeviceGroupIntent,
+  type AdjustLightingCycleIntent,
 } from './commands/devices.js';
+import type { AdjustLightingCycleResult } from '@/engine/devices/lightingCycleService.js';
 import {
   buildFinanceCommands,
   type FinanceIntentHandlers,
@@ -174,8 +176,10 @@ export type {
   MoveDeviceIntent,
   RemoveDeviceIntent,
   ToggleDeviceGroupIntent,
+  AdjustLightingCycleIntent,
   DeviceIntentHandlers,
 } from './commands/devices.js';
+export type { AdjustLightingCycleResult } from '@/engine/devices/lightingCycleService.js';
 export type {
   AddPlantingIntent,
   CullPlantingIntent,
@@ -291,6 +295,9 @@ export interface DeviceIntentAPI {
   toggleDeviceGroup(
     intent: ToggleDeviceGroupIntent,
   ): Promise<CommandResult<DeviceGroupToggleResult>>;
+  adjustLightingCycle(
+    intent: AdjustLightingCycleIntent,
+  ): Promise<CommandResult<AdjustLightingCycleResult>>;
 }
 
 export interface PlantIntentAPI {
