@@ -37,7 +37,9 @@ import { SimulationLoop, type SimulationPhaseHandler } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
 import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
+import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
+import { PlantingService } from '@/engine/plants/plantingService.js';
 import { JobMarketService } from '@/engine/workforce/jobMarketService.js';
 import type { UtilityPrices } from '@/data/schemas/index.js';
 
@@ -330,7 +332,13 @@ export const startBackendServer = async (
     difficultyConfig,
   });
   const deviceGroupService = new DeviceGroupService({ state, rng });
+  const deviceInstallationService = new DeviceInstallationService({
+    state,
+    rng,
+    repository,
+  });
   const plantingPlanService = new PlantingPlanService({ state, rng });
+  const plantingService = new PlantingService({ state, rng, repository });
 
   facade.updateServices({
     config: {
@@ -369,10 +377,25 @@ export const startBackendServer = async (
         worldService.duplicateZone(intent.zoneId, intent.name, context),
     },
     devices: {
+      installDevice: (intent, context) =>
+        deviceInstallationService.installDevice(
+          intent.targetId,
+          intent.deviceId,
+          intent.settings,
+          context,
+        ),
       toggleDeviceGroup: (intent, context) =>
         deviceGroupService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
     },
     plants: {
+      addPlanting: (intent, context) =>
+        plantingService.addPlanting(
+          intent.zoneId,
+          intent.strainId,
+          intent.count,
+          intent.startTick,
+          context,
+        ),
       togglePlantingPlan: (intent, context) =>
         plantingPlanService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
     },

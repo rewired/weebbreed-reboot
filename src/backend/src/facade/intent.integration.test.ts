@@ -7,7 +7,9 @@ import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
+import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
+import { PlantingService } from '@/engine/plants/plantingService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import { RngService } from '@/lib/rng.js';
@@ -22,22 +24,26 @@ import {
   createStrainBlueprint,
   createStrainPriceMap,
   createStructureBlueprint,
+  createCultivationMethodBlueprint,
+  createRoomPurpose,
 } from '@/testing/fixtures.js';
 
 const STRUCTURE_ID = '11111111-1111-1111-1111-111111111111';
 const ROOM_ID = '22222222-2222-2222-2222-222222222222';
 const ZONE_ID = 'zone_333333';
-const DEVICE_ID = '44444444-4444-4444-4444-444444444444';
-const DEVICE_BLUEPRINT_ID = '55555555-5555-5555-5555-555555555555';
-const METHOD_ID = '66666666-6666-6666-6666-666666666666';
-const STRAIN_ID = '77777777-7777-7777-7777-777777777777';
-const PLANTING_PLAN_ID = '88888888-8888-8888-8888-888888888888';
-const ROOM_PURPOSE_ID = '99999999-9999-9999-9999-999999999999';
 const STRAIN_BLUEPRINT_ALPHA_ID = '00000000-0000-0000-0000-000000000101';
 const STRAIN_BLUEPRINT_BETA_ID = '00000000-0000-0000-0000-000000000102';
 const DEVICE_BLUEPRINT_LAMP_ID = '00000000-0000-0000-0000-000000000201';
 const DEVICE_BLUEPRINT_CLIMATE_ID = '00000000-0000-0000-0000-000000000202';
 const STRUCTURE_BLUEPRINT_ID = '00000000-0000-0000-0000-000000000301';
+const STRAIN_BLUEPRINT_INCOMPATIBLE_ID = '00000000-0000-0000-0000-000000000103';
+const DEVICE_BLUEPRINT_INCOMPATIBLE_ID = '00000000-0000-0000-0000-000000000203';
+const DEVICE_ID = '44444444-4444-4444-4444-444444444444';
+const DEVICE_BLUEPRINT_ID = '55555555-5555-5555-5555-555555555555';
+const METHOD_ID = '66666666-6666-6666-6666-666666666666';
+const STRAIN_ID = STRAIN_BLUEPRINT_ALPHA_ID;
+const PLANTING_PLAN_ID = '88888888-8888-8888-8888-888888888888';
+const ROOM_PURPOSE_ID = '99999999-9999-9999-9999-999999999999';
 
 const createPriceCatalog = (): PriceCatalog => ({
   devicePrices: new Map([
@@ -233,7 +239,13 @@ describe('SimulationFacade new intents', () => {
         id: STRAIN_BLUEPRINT_BETA_ID,
         name: 'Borealis',
         slug: 'borealis',
-        methodAffinity: { [METHOD_ID]: 0.6 },
+        methodAffinity: { [METHOD_ID]: 0.55 },
+      }),
+      createStrainBlueprint({
+        id: STRAIN_BLUEPRINT_INCOMPATIBLE_ID,
+        name: 'Frostbite',
+        slug: 'frostbite',
+        methodAffinity: { [METHOD_ID]: 0.1 },
       }),
     ];
     const deviceBlueprints = [
@@ -251,10 +263,18 @@ describe('SimulationFacade new intents', () => {
         roomPurposes: '*',
         settings: { airflow: 360, targetTemperature: 24, coolingCapacity: 3.2 },
       }),
+      createDeviceBlueprint({
+        kind: 'Lamp',
+        id: DEVICE_BLUEPRINT_INCOMPATIBLE_ID,
+        name: 'Dry Zone Lamp',
+        roomPurposes: ['dryroom'],
+        settings: { power: 0.6, ppfd: 700, coverageArea: 8 },
+      }),
     ];
     const strainPrices = createStrainPriceMap([
       [STRAIN_BLUEPRINT_ALPHA_ID, { seedPrice: 1.2, harvestPricePerGram: 4.5 }],
       [STRAIN_BLUEPRINT_BETA_ID, { seedPrice: 0.95, harvestPricePerGram: 3.8 }],
+      [STRAIN_BLUEPRINT_INCOMPATIBLE_ID, { seedPrice: 0.8, harvestPricePerGram: 3.2 }],
     ]);
     const devicePrices = createDevicePriceMap([
       [
@@ -277,6 +297,19 @@ describe('SimulationFacade new intents', () => {
     repository = createBlueprintRepositoryStub({
       strains: strainBlueprints,
       devices: deviceBlueprints,
+      cultivationMethods: [createCultivationMethodBlueprint({ id: METHOD_ID, areaPerPlant: 1.5 })],
+      roomPurposes: [
+        createRoomPurpose({
+          id: ROOM_PURPOSE_ID,
+          kind: 'growroom',
+          name: 'Grow Room',
+        }),
+        createRoomPurpose({
+          id: 'dry-room-purpose',
+          kind: 'dryroom',
+          name: 'Dry Room',
+        }),
+      ],
       strainPrices,
       devicePrices,
     });
@@ -299,7 +332,13 @@ describe('SimulationFacade new intents', () => {
       structureBlueprints,
     });
     const deviceService = new DeviceGroupService({ state, rng });
+    const deviceInstallationService = new DeviceInstallationService({
+      state,
+      rng,
+      repository,
+    });
     const plantingPlanService = new PlantingPlanService({ state, rng });
+    const plantingService = new PlantingService({ state, rng, repository });
 
     facade.updateServices({
       world: {
@@ -318,10 +357,25 @@ describe('SimulationFacade new intents', () => {
           worldService.duplicateZone(intent.zoneId, intent.name, context),
       },
       devices: {
+        installDevice: (intent, context) =>
+          deviceInstallationService.installDevice(
+            intent.targetId,
+            intent.deviceId,
+            intent.settings,
+            context,
+          ),
         toggleDeviceGroup: (intent, context) =>
           deviceService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
       },
       plants: {
+        addPlanting: (intent, context) =>
+          plantingService.addPlanting(
+            intent.zoneId,
+            intent.strainId,
+            intent.count,
+            intent.startTick,
+            context,
+          ),
         togglePlantingPlan: (intent, context) =>
           plantingPlanService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
       },
@@ -481,5 +535,87 @@ describe('SimulationFacade new intents', () => {
     expect(plan?.enabled).toBe(false);
     expect(state.tasks.backlog.length).toBeGreaterThan(0);
     expect(events.some((event) => event.type === 'plant.plantingPlanToggled')).toBe(true);
+  });
+
+  it('installs a compatible device and emits telemetry', async () => {
+    const result = await facade.devices.installDevice({
+      targetId: ZONE_ID,
+      deviceId: DEVICE_BLUEPRINT_LAMP_ID,
+    });
+    expect(result.ok).toBe(true);
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    expect(zone.devices).toHaveLength(2);
+    const telemetry = events.find((event) => event.type === 'device.installed');
+    expect(telemetry).toBeDefined();
+    expect(telemetry?.payload).toMatchObject({
+      zoneId: ZONE_ID,
+      blueprintId: DEVICE_BLUEPRINT_LAMP_ID,
+    });
+    expect(result.data?.deviceId).toBeDefined();
+    if (telemetry?.payload && typeof telemetry.payload === 'object') {
+      expect(telemetry.payload.deviceId).toEqual(result.data?.deviceId);
+    }
+  });
+
+  it('rejects incompatible device installations with structured errors', async () => {
+    const response = await facade.devices.installDevice({
+      targetId: ZONE_ID,
+      deviceId: DEVICE_BLUEPRINT_INCOMPATIBLE_ID,
+    });
+    expect(response.ok).toBe(false);
+    expect(response.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+    expect(events.some((event) => event.type === 'device.installed')).toBe(false);
+  });
+
+  it('adds plants within capacity and emits telemetry', async () => {
+    const result = await facade.plants.addPlanting({
+      zoneId: ZONE_ID,
+      strainId: STRAIN_BLUEPRINT_ALPHA_ID,
+      count: 4,
+    });
+    expect(result.ok).toBe(true);
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    expect(zone.plants).toHaveLength(4);
+    const telemetry = events.find((event) => event.type === 'plant.planted');
+    expect(telemetry).toBeDefined();
+    expect(telemetry?.payload).toMatchObject({
+      zoneId: ZONE_ID,
+      strainId: STRAIN_BLUEPRINT_ALPHA_ID,
+      count: 4,
+    });
+    expect(Array.isArray(result.data?.plantIds)).toBe(true);
+    expect(result.data?.plantIds).toHaveLength(4);
+  });
+
+  it('warns when planting a strain with low method affinity', async () => {
+    const result = await facade.plants.addPlanting({
+      zoneId: ZONE_ID,
+      strainId: STRAIN_BLUEPRINT_BETA_ID,
+      count: 2,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toBeDefined();
+    expect(result.warnings?.[0]).toContain('low affinity');
+  });
+
+  it('rejects planting when capacity would be exceeded', async () => {
+    const response = await facade.plants.addPlanting({
+      zoneId: ZONE_ID,
+      strainId: STRAIN_BLUEPRINT_ALPHA_ID,
+      count: 200,
+    });
+    expect(response.ok).toBe(false);
+    expect(response.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+  });
+
+  it('rejects planting for incompatible strain affinity', async () => {
+    const response = await facade.plants.addPlanting({
+      zoneId: ZONE_ID,
+      strainId: STRAIN_BLUEPRINT_INCOMPATIBLE_ID,
+      count: 1,
+    });
+    expect(response.ok).toBe(false);
+    expect(response.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+    expect(events.some((event) => event.type === 'plant.planted')).toBe(false);
   });
 });

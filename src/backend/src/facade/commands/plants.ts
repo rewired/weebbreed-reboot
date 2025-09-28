@@ -10,7 +10,7 @@ import {
 
 const addPlantingSchema = z
   .object({
-    zoneId: uuid,
+    zoneId: entityIdentifier,
     strainId: uuid,
     count: positiveInteger,
     startTick: nonNegativeNumber.optional(),

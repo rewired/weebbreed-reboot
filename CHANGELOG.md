@@ -62,6 +62,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Documented simulation constant governance in [ADR 0009](docs/system/adr/0009-simulation-constants-governance.md) and cross-linked the constants catalogue.
+- Enabled façade support for `devices.installDevice` and `plants.addPlanting`, including zone compatibility checks,
+  capacity validation, and new `device.installed` / `plant.planted` telemetry events.
 - **Dynamic Structure Blueprint Loading**: The "Rent Structure" modal now dynamically loads available structure blueprints from the backend instead of using hardcoded frontend data. The backend exposes structure blueprints from `/data/blueprints/structures/*.json` through a new `getStructureBlueprints` facade intent. This ensures the frontend always displays the most current and accurate structure options available in the game.
 - Added world facade intents `getStrainBlueprints` and `getDeviceBlueprints` with deterministic catalog payloads (IDs, names, compatibility hints, default settings, and price hints), wired through the simulation facade/socket gateway and documented in the protocol guide.
 
