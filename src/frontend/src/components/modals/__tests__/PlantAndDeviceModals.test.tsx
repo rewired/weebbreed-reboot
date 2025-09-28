@@ -111,6 +111,20 @@ describe('Plant and Device modals', () => {
             traits: {},
             methodAffinity: { '659ba4d7-a5fc-482e-98d4-b614341883ac': 0.9 },
           },
+          {
+            id: 'strain-2',
+            slug: 'strain-2',
+            name: 'Nova',
+            lineage: {},
+            genotype: {},
+            chemotype: {},
+            generalResilience: 0.85,
+            germinationRate: 0.96,
+            compatibility: { methodAffinity: { '659ba4d7-a5fc-482e-98d4-b614341883ac': 0.96 } },
+            defaults: {},
+            traits: {},
+            methodAffinity: { '659ba4d7-a5fc-482e-98d4-b614341883ac': 0.96 },
+          },
         ],
       })),
       getDeviceBlueprints: vi.fn(async () => ({
@@ -190,9 +204,16 @@ describe('Plant and Device modals', () => {
     });
 
     expect(await screen.findByText(/Capacity 80 plants/i)).toBeInTheDocument();
-    expect(screen.getByText(/Good fit/i)).toBeInTheDocument();
+    const strainSelect = await screen.findByLabelText('Strain');
+    expect(screen.getByText(/Good fit \(90% affinity\)/i)).toBeInTheDocument();
 
-    const countInput = screen.getByLabelText('Plant count');
+    fireEvent.change(strainSelect, { target: { value: 'strain-2' } });
+    expect(await screen.findByText(/Excellent fit \(96% affinity\)/i)).toBeInTheDocument();
+
+    fireEvent.change(strainSelect, { target: { value: 'strain-1' } });
+    expect(await screen.findByText(/Good fit \(90% affinity\)/i)).toBeInTheDocument();
+
+    const countInput = await screen.findByLabelText(/Plant count/i);
     fireEvent.change(countInput, { target: { value: '120' } });
     expect(screen.getByText(/would exceed the estimated capacity/i)).toBeInTheDocument();
 

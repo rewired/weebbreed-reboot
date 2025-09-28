@@ -170,7 +170,7 @@ const PlantZoneModal = ({
         : 'Assign a cultivation method to compute capacity hints.';
     }
     const affinityPct = affinity * 100;
-    if (affinityPct >= 80) {
+    if (affinityPct >= 95) {
       return `Excellent fit (${formatNumber(affinityPct, { maximumFractionDigits: 0 })}% affinity)`;
     }
     if (affinityPct >= 60) {
