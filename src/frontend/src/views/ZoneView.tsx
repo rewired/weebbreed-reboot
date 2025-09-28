@@ -317,11 +317,11 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
           <EnvironmentBadgeRow badges={environmentBadges} className="md:justify-end" />
         </div>
         <div
-          className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] md:items-start"
+          className="grid gap-4 md:grid-cols-2 md:items-start"
           data-testid="zone-header-grid-row"
         >
           <section
-            className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-surface-muted/30 p-5"
+            className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-surface-muted/30 p-5 md:h-full"
             aria-labelledby="zone-resources-heading"
             data-testid="zone-resources-summary"
           >
@@ -378,7 +378,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             bridge={bridge}
             variant="embedded"
             renderBadges={() => null}
-            className="md:justify-self-end"
+            className="md:h-full"
           />
         </div>
       </header>
