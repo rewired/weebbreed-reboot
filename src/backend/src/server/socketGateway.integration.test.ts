@@ -11,6 +11,7 @@ import type { TimeStatus } from '@/facade/commands/time.js';
 import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
+import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
@@ -489,6 +490,7 @@ describe('SocketGateway facade intents integration', () => {
       structureBlueprints,
     });
     const deviceService = new DeviceGroupService({ state, rng });
+    const deviceInstallationService = new DeviceInstallationService({ state, rng, repository });
     const plantingService = new PlantingPlanService({ state, rng });
 
     facade.updateServices({
@@ -508,6 +510,13 @@ describe('SocketGateway facade intents integration', () => {
           worldService.duplicateZone(intent.zoneId, intent.name, context),
       },
       devices: {
+        installDevice: (intent, context) =>
+          deviceInstallationService.installDevice(
+            intent.targetId,
+            intent.deviceId,
+            intent.settings,
+            context,
+          ),
         toggleDeviceGroup: (intent, context) =>
           deviceService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
       },
@@ -702,6 +711,23 @@ describe('SocketGateway facade intents integration', () => {
     expect(response.ok).toBe(true);
     expect(state.structures[0]!.rooms[0]!.zones[0]!.devices[0]!.status).toBe('offline');
     await expectDomainEvent('device.groupToggled');
+  });
+
+  it('installs a device via facade intent and emits telemetry', async () => {
+    const response = await emitIntent('devices', 'installDevice', {
+      targetId: ZONE_ID,
+      deviceId: DEVICE_BLUEPRINT_LAMP_ID,
+      settings: { power: 0.72 },
+    });
+
+    expect(response.ok).toBe(true);
+
+    const zoneDevices = state.structures[0]!.rooms[0]!.zones[0]!.devices;
+    expect(zoneDevices.some((device) => device.blueprintId === DEVICE_BLUEPRINT_LAMP_ID)).toBe(
+      true,
+    );
+
+    await expectDomainEvent('device.installed');
   });
 
   it('handles togglePlantingPlan intent', async () => {
