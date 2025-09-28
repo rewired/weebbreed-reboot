@@ -5,9 +5,10 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
   createColumnHelper,
 } from '@tanstack/react-table';
-import type { ColumnFiltersState, FilterFn } from '@tanstack/react-table';
+import type { ColumnFiltersState, FilterFn, RowData, SortingState } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
@@ -22,6 +23,12 @@ import type { SimulationBridge } from '@/facade/systemFacade';
 import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
 import { EnvironmentBadgeRow } from '@/components/zone/EnvironmentBadgeRow';
 import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentBadges';
+
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends RowData, TValue> {
+    headerLabel?: string;
+  }
+}
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
@@ -118,11 +125,13 @@ const plantColumns = [
   columnHelper.accessor('strainName', {
     header: 'Strain',
     cell: (info) => info.getValue() ?? info.row.original.strainId,
+    meta: { headerLabel: 'Strain' },
   }),
   columnHelper.accessor('stage', {
     header: 'Stage',
     cell: (info) => <Badge tone="default">{info.getValue()}</Badge>,
     filterFn: stageFilter,
+    meta: { headerLabel: 'Stage' },
   }),
   columnHelper.accessor('hasDiseases', {
     header: () => <PlantStatusHeader icon="coronavirus" label="Diseases" />,
@@ -140,6 +149,7 @@ const plantColumns = [
     minSize: 56,
     maxSize: 72,
     filterFn: diseaseFlagFilter,
+    meta: { headerLabel: 'Diseases' },
   }),
   columnHelper.accessor('hasPests', {
     header: () => <PlantStatusHeader icon="bug_report" label="Pests" />,
@@ -157,6 +167,7 @@ const plantColumns = [
     minSize: 56,
     maxSize: 72,
     filterFn: diseaseFlagFilter,
+    meta: { headerLabel: 'Pests' },
   }),
   columnHelper.accessor('hasPendingTreatments', {
     header: () => <PlantStatusHeader icon="healing" label="Pending treatments" />,
@@ -173,20 +184,24 @@ const plantColumns = [
     size: 80,
     minSize: 56,
     maxSize: 88,
+    meta: { headerLabel: 'Pending treatments' },
   }),
   columnHelper.accessor('health', {
     header: 'Health',
     cell: (info) => `${formatNumber(info.getValue() * 100, { maximumFractionDigits: 0 })}%`,
+    meta: { headerLabel: 'Health' },
   }),
   columnHelper.accessor('stress', {
     header: 'Stress',
     cell: (info) => `${formatNumber(info.getValue() * 100, { maximumFractionDigits: 0 })}%`,
     filterFn: stressFilter,
+    meta: { headerLabel: 'Stress' },
   }),
   columnHelper.accessor('yieldDryGrams', {
     header: () => <span title="Estimated dry harvest yield in grams">Est. yield</span>,
     cell: (info) =>
       `${formatNumber(info.getValue(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} g`,
+    meta: { headerLabel: 'Estimated yield' },
   }),
 ];
 
@@ -210,9 +225,11 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   }, [zone, setpoints]);
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   useEffect(() => {
     setColumnFilters([]);
+    setSorting([]);
   }, [zone?.id]);
 
   const stageOptions = useMemo(() => {
@@ -261,10 +278,12 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   const table = useReactTable({
     data: zone?.plants ?? [],
     columns: plantColumns,
-    state: { columnFilters },
+    state: { columnFilters, sorting },
     onColumnFiltersChange: setColumnFilters,
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
@@ -634,13 +653,60 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 <thead className="sticky top-0 z-10 bg-surface-muted/80 text-xs uppercase tracking-wide text-text-muted">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="px-4 py-3 text-left">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
+                      {headerGroup.headers.map((header) => {
+                        if (header.isPlaceholder) {
+                          return <th key={header.id} className="px-4 py-3 text-left" />;
+                        }
+
+                        const canSort = header.column.getCanSort();
+                        const sortState = header.column.getIsSorted();
+                        const ariaSort = canSort
+                          ? sortState === 'asc'
+                            ? 'ascending'
+                            : sortState === 'desc'
+                              ? 'descending'
+                              : 'none'
+                          : undefined;
+                        const headerLabel =
+                          header.column.columnDef.meta?.headerLabel ?? header.column.id;
+
+                        return (
+                          <th key={header.id} className="px-4 py-3 text-left" aria-sort={ariaSort}>
+                            {canSort ? (
+                              <button
+                                type="button"
+                                data-testid={`plant-table-sort-${header.column.id}`}
+                                onClick={header.column.getToggleSortingHandler()}
+                                className={cx(
+                                  'flex items-center gap-2 text-xs font-semibold uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+                                  sortState ? 'text-text' : 'text-text-muted',
+                                )}
+                                aria-label={`Sort by ${headerLabel}`}
+                              >
+                                <span className="whitespace-nowrap">
+                                  {flexRender(header.column.columnDef.header, header.getContext())}
+                                </span>
+                                <Icon
+                                  name={
+                                    sortState === 'asc'
+                                      ? 'arrow_upward'
+                                      : sortState === 'desc'
+                                        ? 'arrow_downward'
+                                        : 'unfold_more'
+                                  }
+                                  size={16}
+                                  className={cx(
+                                    'transition-colors',
+                                    sortState ? 'text-text' : 'text-text-muted',
+                                  )}
+                                />
+                              </button>
+                            ) : (
+                              flexRender(header.column.columnDef.header, header.getContext())
+                            )}
+                          </th>
+                        );
+                      })}
                     </tr>
                   ))}
                 </thead>
@@ -656,6 +722,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                         return (
                           <tr
                             key={row.id}
+                            data-plant-id={row.original.id}
                             className="divide-x divide-border/10"
                             style={{
                               position: 'absolute',
@@ -674,7 +741,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                         );
                       })
                     : rows.map((row) => (
-                        <tr key={row.id} className="divide-x divide-border/10">
+                        <tr key={row.id} data-plant-id={row.original.id} className="divide-x divide-border/10">
                           {row.getVisibleCells().map((cell) => (
                             <td key={cell.id} className="px-4 py-3">
                               {flexRender(cell.column.columnDef.cell, cell.getContext())}
