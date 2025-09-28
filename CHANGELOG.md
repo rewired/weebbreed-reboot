@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Dokumentiert den Umsetzungsplan für die Irrigation-&-Nutrient-Überarbeitung unter
+  `docs/tasks/20250928-irrgitation-nutrient-overhaul.md`.
+
 ### Changed
 
 - Expanded the EnvironmentPanel photoperiod slider to cover the full 1–23 hour
