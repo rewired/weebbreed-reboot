@@ -49,11 +49,22 @@ describe('ModalHost', () => {
       connect: vi.fn(),
       loadQuickStart: vi.fn(async () => ({ ok: true })),
       getStructureBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
+      getStrainBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
+      getDeviceBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
       getDifficultyConfig: vi.fn(async () => ({ ok: true })),
       sendControl: sendControlMock as unknown as SimulationBridge['sendControl'],
       sendConfigUpdate: vi.fn(async () => ({ ok: true })),
       sendIntent: vi.fn(async () => ({ ok: true })),
-      subscribeToUpdates: vi.fn(() => vi.fn()),
+      subscribeToUpdates: (_handler: Parameters<SimulationBridge['subscribeToUpdates']>[0]) => {
+        void _handler;
+        return () => undefined;
+      },
+      plants: {
+        addPlanting: vi.fn(async () => ({ ok: true })),
+      },
+      devices: {
+        installDevice: vi.fn(async () => ({ ok: true })),
+      },
     };
 
     act(() => {

@@ -6,7 +6,27 @@ import { useSimulationStore } from '@/store/simulation';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import type { SimulationSnapshot } from '@/types/simulation';
 
-const bridge = { sendIntent: () => Promise.resolve() } as unknown as SimulationBridge;
+const bridge: SimulationBridge = {
+  connect: () => undefined,
+  loadQuickStart: async () => ({ ok: true }),
+  getStructureBlueprints: async () => ({ ok: true, data: [] }),
+  getStrainBlueprints: async () => ({ ok: true, data: [] }),
+  getDeviceBlueprints: async () => ({ ok: true, data: [] }),
+  getDifficultyConfig: async () => ({ ok: true }),
+  sendControl: async () => ({ ok: true }),
+  sendConfigUpdate: async () => ({ ok: true }),
+  sendIntent: async () => ({ ok: true }),
+  subscribeToUpdates: (_handler: Parameters<SimulationBridge['subscribeToUpdates']>[0]) => {
+    void _handler;
+    return () => undefined;
+  },
+  plants: {
+    addPlanting: async () => ({ ok: true }),
+  },
+  devices: {
+    installDevice: async () => ({ ok: true }),
+  },
+};
 
 const baseSnapshot: SimulationSnapshot = {
   tick: 12,
