@@ -28,6 +28,8 @@ import type { ZoneHistoryPoint } from '@/store/simulation';
 import { formatNumber } from '@/utils/formatNumber';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
+import { EnvironmentBadgeRow } from '@/components/zone/EnvironmentBadgeRow';
+import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentBadges';
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
@@ -70,6 +72,13 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   const openModal = useUIStore((state) => state.openModal);
 
   const zone = snapshot?.zones.find((item) => item.id === selectedZoneId);
+  const setpoints = zone ? zoneSetpoints[zone.id] : undefined;
+  const environmentBadges = useMemo(() => {
+    if (!zone) {
+      return [];
+    }
+    return buildEnvironmentBadgeDescriptors(zone, setpoints);
+  }, [zone, setpoints]);
 
   const table = useReactTable({
     data: zone?.plants ?? [],
@@ -275,8 +284,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     return null;
   }
 
-  const setpoints = zoneSetpoints[zone.id];
-
   const chartData = aggregateHistory.length
     ? aggregateHistory
     : [
@@ -294,16 +301,86 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
 
   return (
     <div className="grid gap-6">
-      <header className="flex flex-col gap-6 rounded-3xl border border-border/40 bg-surface-elevated/80 p-6">
-        <div className="flex flex-col gap-2">
-          <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
-          <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
-          <p className="text-sm text-text-muted">
-            {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation
-            method {zone.cultivationMethodId ?? '—'}
-          </p>
+      <header
+        className="grid gap-6 rounded-3xl border border-border/40 bg-surface-elevated/80 p-6"
+        data-testid="zone-view-header"
+      >
+        <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+          <div className="flex flex-col gap-2">
+            <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
+            <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
+            <p className="text-sm text-text-muted">
+              {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation
+              method {zone.cultivationMethodId ?? '—'}
+            </p>
+          </div>
+          <EnvironmentBadgeRow badges={environmentBadges} className="md:justify-end" />
         </div>
-        <EnvironmentPanel zone={zone} setpoints={setpoints} bridge={bridge} variant="embedded" />
+        <div
+          className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] md:items-start"
+          data-testid="zone-header-grid-row"
+        >
+          <section
+            className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-surface-muted/30 p-5"
+            aria-labelledby="zone-resources-heading"
+            data-testid="zone-resources-summary"
+          >
+            <div className="flex flex-col gap-1">
+              <h3
+                id="zone-resources-heading"
+                className="text-sm font-semibold tracking-tight text-text"
+              >
+                Resources
+              </h3>
+              <span className="text-xs text-text-muted">Reservoirs &amp; supplies</span>
+            </div>
+            <dl className="grid gap-3 text-sm text-text-muted">
+              <div className="flex items-center justify-between">
+                <dt>Water reserve</dt>
+                <dd>
+                  <Badge tone="default">{formatNumber(zone.resources.waterLiters)} L</Badge>
+                </dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt>Nutrient solution</dt>
+                <dd>
+                  <Badge tone="default">
+                    {formatNumber(zone.resources.nutrientSolutionLiters)} L
+                  </Badge>
+                </dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt>Nutrient strength</dt>
+                <dd>
+                  <Badge tone="default">
+                    {formatNumber(zone.resources.nutrientStrength, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}{' '}
+                    EC
+                  </Badge>
+                </dd>
+              </div>
+              <div className="flex items-center justify-between">
+                <dt>Daily consumption</dt>
+                <dd>
+                  <Badge tone="default">
+                    {formatNumber(zone.supplyStatus?.dailyWaterConsumptionLiters ?? 0)} L /{' '}
+                    {formatNumber(zone.supplyStatus?.dailyNutrientConsumptionLiters ?? 0)} L
+                  </Badge>
+                </dd>
+              </div>
+            </dl>
+          </section>
+          <EnvironmentPanel
+            zone={zone}
+            setpoints={setpoints}
+            bridge={bridge}
+            variant="embedded"
+            renderBadges={() => null}
+            className="md:justify-self-end"
+          />
+        </div>
       </header>
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <section className="grid gap-6">
@@ -532,37 +609,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
           </Card>
         </section>
         <section className="grid gap-6">
-          <Card title="Resources" subtitle="Reservoirs & supplies">
-            <div className="grid gap-3 text-sm text-text-muted">
-              <div className="flex items-center justify-between">
-                <span>Water reserve</span>
-                <Badge tone="default">{formatNumber(zone.resources.waterLiters)} L</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Nutrient solution</span>
-                <Badge tone="default">
-                  {formatNumber(zone.resources.nutrientSolutionLiters)} L
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Nutrient strength</span>
-                <Badge tone="default">
-                  {formatNumber(zone.resources.nutrientStrength, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}{' '}
-                  EC
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Daily consumption</span>
-                <Badge tone="default">
-                  {formatNumber(zone.supplyStatus?.dailyWaterConsumptionLiters ?? 0)} L /{' '}
-                  {formatNumber(zone.supplyStatus?.dailyNutrientConsumptionLiters ?? 0)} L
-                </Badge>
-              </div>
-            </div>
-          </Card>
           <Card
             title="Plants"
             subtitle="Batch overview"

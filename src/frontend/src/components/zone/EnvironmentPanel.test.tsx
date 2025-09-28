@@ -57,6 +57,29 @@ describe('EnvironmentPanel', () => {
     expect(within(header).getByText('VPD')).toBeInTheDocument();
   });
 
+  it('supports custom badge rendering', () => {
+    const zone = baseZone();
+    const bridge = buildBridge();
+
+    render(
+      <EnvironmentPanel
+        zone={zone}
+        setpoints={zone.control?.setpoints}
+        bridge={bridge}
+        defaultExpanded
+        renderBadges={(badges) => (
+          <div data-testid="custom-badge-row">{badges.map((badge) => badge.label).join(',')}</div>
+        )}
+      />,
+    );
+
+    const panel = within(screen.getAllByTestId('environment-panel-root').at(-1)!);
+    const header = panel.getByTestId('environment-panel-toggle');
+    expect(within(header).getByTestId('custom-badge-row')).toHaveTextContent(
+      'Temp,Humidity,VPD,CO₂,PPFD,Cycle',
+    );
+  });
+
   it('dispatches temperature updates through the simulation bridge', async () => {
     const zone = baseZone();
     const sendConfigUpdate = vi.fn(async () => ({ ok: true }));

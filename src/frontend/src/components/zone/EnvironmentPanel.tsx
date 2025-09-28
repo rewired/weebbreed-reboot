@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import cx from 'clsx';
 import type { ZoneSnapshot, ZoneControlSetpoints } from '@/types/simulation';
 import type { SimulationBridge } from '@/facade/systemFacade';
@@ -6,6 +7,9 @@ import { Icon } from '@/components/common/Icon';
 import { Badge } from '@/components/primitives/Badge';
 import { Button } from '@/components/primitives/Button';
 import { formatNumber } from '@/utils/formatNumber';
+import { EnvironmentBadgeRow } from './EnvironmentBadgeRow';
+import type { EnvironmentBadgeDescriptor } from './environmentBadges';
+import { buildEnvironmentBadgeDescriptors } from './environmentBadges';
 
 type SetpointMetric = 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd';
 
@@ -16,32 +20,14 @@ interface EnvironmentPanelProps {
   defaultExpanded?: boolean;
   variant?: 'standalone' | 'embedded';
   className?: string;
+  renderBadges?: (badges: EnvironmentBadgeDescriptor[]) => ReactNode;
 }
-
-type BadgeTone = 'default' | 'success' | 'warning' | 'danger';
 
 const SETPOINT_DEBOUNCE_MS = 250;
 
-const determineTone = (
-  current: number,
-  target?: number,
-  thresholds?: { success: number; warning: number },
-): BadgeTone => {
-  if (typeof target !== 'number') {
-    return 'default';
-  }
-  const delta = Math.abs(current - target);
-  if (!thresholds) {
-    return delta < Number.EPSILON ? 'success' : 'default';
-  }
-  if (delta <= thresholds.success) {
-    return 'success';
-  }
-  if (delta <= thresholds.warning) {
-    return 'warning';
-  }
-  return 'danger';
-};
+const defaultRenderBadges = (badges: EnvironmentBadgeDescriptor[]) => (
+  <EnvironmentBadgeRow badges={badges} />
+);
 
 const createDeviceMatcher = (zone: ZoneSnapshot) => {
   const deviceKinds = zone.devices.map((device) => device.kind?.toLowerCase?.() ?? '');
@@ -89,27 +75,6 @@ const SliderLabel = ({ icon, children }: { icon: string; children: string }) => 
   </span>
 );
 
-const KpiBadge = ({
-  icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-  tone: BadgeTone;
-}) => (
-  <Badge
-    tone={tone === 'default' ? 'default' : tone}
-    className="flex items-center gap-1 px-3 py-1 text-[11px]"
-  >
-    <Icon name={icon} size={16} className="text-xs text-inherit" />
-    <span>{label}</span>
-    <span className="normal-case font-semibold tracking-tight text-text">{value}</span>
-  </Badge>
-);
-
 export const EnvironmentPanel = ({
   zone,
   setpoints,
@@ -117,6 +82,7 @@ export const EnvironmentPanel = ({
   defaultExpanded = false,
   variant = 'standalone',
   className,
+  renderBadges,
 }: EnvironmentPanelProps) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -140,6 +106,14 @@ export const EnvironmentPanel = ({
   const co2Target = setpoints?.co2 ?? zone.environment.co2;
   const ppfdTarget = setpoints?.ppfd ?? zone.environment.ppfd;
   const resolvedPhotoperiodOnHours = useMemo(() => resolvePhotoperiodLightHours(zone), [zone]);
+  const badgeDescriptors = useMemo(
+    () => buildEnvironmentBadgeDescriptors(zone, setpoints),
+    [zone, setpoints],
+  );
+  const badgesContent = useMemo(() => {
+    const renderer = renderBadges ?? defaultRenderBadges;
+    return renderer(badgeDescriptors);
+  }, [renderBadges, badgeDescriptors]);
 
   const [temperatureValue, setTemperatureValue] = useState<number>(temperatureTarget);
   const [humidityValue, setHumidityValue] = useState<number>(humidityTargetPercent);
@@ -352,89 +326,6 @@ export const EnvironmentPanel = ({
     await handleSetpointChange('ppfd', nextValue);
   }, [canControlLighting, cancel, cancelLighting, handleSetpointChange, pendingPpfd, ppfdTarget]);
 
-  const chips = [
-    {
-      key: 'temp',
-      icon: 'thermostat',
-      label: 'Temp',
-      value: `${formatNumber(zone.environment.temperature, {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1,
-      })}°C`,
-      tone: determineTone(zone.environment.temperature, setpoints?.temperature, {
-        success: 1,
-        warning: 3,
-      }),
-    },
-    {
-      key: 'humidity',
-      icon: 'water_drop',
-      label: 'Humidity',
-      value: `${formatNumber(zone.environment.relativeHumidity * 100, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })}%`,
-      tone: determineTone(
-        zone.environment.relativeHumidity * 100,
-        setpoints?.humidity ? setpoints.humidity * 100 : undefined,
-        {
-          success: 5,
-          warning: 10,
-        },
-      ),
-    },
-    {
-      key: 'vpd',
-      icon: 'science',
-      label: 'VPD',
-      value: `${formatNumber(zone.environment.vpd, {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      })} kPa`,
-      tone: determineTone(zone.environment.vpd, setpoints?.vpd, {
-        success: 0.15,
-        warning: 0.35,
-      }),
-    },
-    {
-      key: 'co2',
-      icon: 'co2',
-      label: 'CO₂',
-      value: `${formatNumber(zone.environment.co2, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })} ppm`,
-      tone: determineTone(zone.environment.co2, setpoints?.co2, {
-        success: 100,
-        warning: 250,
-      }),
-    },
-    {
-      key: 'ppfd',
-      icon: 'sunny',
-      label: 'PPFD',
-      value: `${formatNumber(zone.environment.ppfd, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-      })} µmol`,
-      tone: determineTone(zone.environment.ppfd, setpoints?.ppfd, {
-        success: 50,
-        warning: 150,
-      }),
-    },
-    {
-      key: 'cycle',
-      icon: 'schedule',
-      label: 'Cycle',
-      value:
-        zone.lighting?.photoperiodHours?.on !== undefined &&
-        zone.lighting?.photoperiodHours?.off !== undefined
-          ? `${zone.lighting.photoperiodHours.on}h/${zone.lighting.photoperiodHours.off}h`
-          : '—',
-      tone: 'default' as BadgeTone,
-    },
-  ];
-
   const effectivePpfdTarget = pendingPpfd ?? ppfdTarget;
   const isLightsOn = effectivePpfdTarget > 0;
   const photoperiodDarkHours = Math.round(Math.max(24 - photoperiodValue, MINIMUM_DARK_HOURS));
@@ -484,17 +375,7 @@ export const EnvironmentPanel = ({
             className="text-text-muted"
           />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
-            <KpiBadge
-              key={chip.key}
-              icon={chip.icon}
-              label={chip.label}
-              value={chip.value}
-              tone={chip.tone}
-            />
-          ))}
-        </div>
+        {badgesContent}
       </button>
       {expanded ? (
         <div className={bodyClasses}>

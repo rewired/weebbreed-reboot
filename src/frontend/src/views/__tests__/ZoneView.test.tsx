@@ -99,6 +99,42 @@ describe('ZoneView', () => {
     const header = panels[0]?.closest('header');
     expect(header).not.toBeNull();
     expect(header).toContainElement(panels[0]!);
+
+    const headerElement = header as HTMLElement;
+    const toggle = within(panels[0]!).getByTestId('environment-panel-toggle');
+    expect(within(toggle).queryByText('Temp')).not.toBeInTheDocument();
+    expect(within(headerElement).getByText('Temp')).toBeInTheDocument();
+  });
+
+  it('positions the resources summary next to environment controls in the header', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const headers = await screen.findAllByTestId('zone-view-header');
+    const header = headers.at(-1)!;
+
+    const gridRow = within(header).getByTestId('zone-header-grid-row');
+    const resourcesSummary = within(gridRow).getByTestId('zone-resources-summary');
+    const environmentControls = within(gridRow).getByTestId('environment-panel-root');
+
+    const rowChildren = Array.from(gridRow.children);
+    expect(rowChildren[0]).toBe(resourcesSummary);
+    expect(rowChildren[1]).toBe(environmentControls);
+
+    const resourceSubtitles = within(header).getAllByText('Reservoirs & supplies');
+    expect(resourceSubtitles.length).toBeGreaterThan(0);
   });
 
   it('opens the move device modal with zone context', async () => {
