@@ -26,6 +26,8 @@ import { useUIStore } from '@/store/ui';
 import type { PlantSnapshot } from '@/types/simulation';
 import type { ZoneHistoryPoint } from '@/store/simulation';
 import { formatNumber } from '@/utils/formatNumber';
+import type { SimulationBridge } from '@/facade/systemFacade';
+import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
@@ -56,9 +58,10 @@ const plantColumns = [
   }),
 ];
 
-export const ZoneView = () => {
+export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   const snapshot = useSimulationStore((state) => state.snapshot);
   const zoneHistoryMap = useSimulationStore((state) => state.zoneHistory);
+  const zoneSetpoints = useSimulationStore((state) => state.zoneSetpoints);
   const { selectedZoneId, selectedRoomId, selectedStructureId } = useNavigationStore((state) => ({
     selectedZoneId: state.selectedZoneId,
     selectedRoomId: state.selectedRoomId,
@@ -151,6 +154,8 @@ export const ZoneView = () => {
     return null;
   }
 
+  const setpoints = zoneSetpoints[zone.id];
+
   const chartData = aggregateHistory.length
     ? aggregateHistory
     : [
@@ -187,6 +192,7 @@ export const ZoneView = () => {
           <Badge tone="default">CO₂ {formatNumber(zone.environment.co2)} ppm</Badge>
         </div>
       </header>
+      <EnvironmentPanel zone={zone} setpoints={setpoints} bridge={bridge} />
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <section className="grid gap-6">
           <Card title="Environment" subtitle="Telemetry snapshot vs. historical trend">

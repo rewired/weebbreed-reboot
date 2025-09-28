@@ -30,6 +30,13 @@ const now = new Date();
 
 const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
   const zoneId = overrides.id ?? 'zone-a';
+  const environment = overrides.environment ?? {
+    temperature: 24.2,
+    relativeHumidity: 0.62,
+    co2: 980,
+    ppfd: 540,
+    vpd: 1.3,
+  };
 
   const defaultDevices: DeviceSnapshot[] = [
     createDevice({
@@ -124,13 +131,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     ceilingHeight: 2.5,
     volume: 50,
     cultivationMethodId: 'method-sog',
-    environment: {
-      temperature: 24.2,
-      relativeHumidity: 0.62,
-      co2: 980,
-      ppfd: 540,
-      vpd: 1.3,
-    },
+    environment,
     resources: {
       waterLiters: 9000,
       nutrientSolutionLiters: 1800,
@@ -152,6 +153,15 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
       pests: 0,
       pendingTreatments: 0,
       appliedTreatments: 0,
+    },
+    control: overrides.control ?? {
+      setpoints: {
+        temperature: environment.temperature,
+        humidity: environment.relativeHumidity,
+        co2: environment.co2,
+        ppfd: environment.ppfd,
+        vpd: environment.vpd,
+      },
     },
     lighting: {
       photoperiodHours: { on: 18, off: 6 },
