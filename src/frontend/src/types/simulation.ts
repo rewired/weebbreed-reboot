@@ -123,6 +123,9 @@ export interface PlantSnapshot {
   stress: number;
   biomassDryGrams: number;
   yieldDryGrams: number;
+  hasDiseases: boolean;
+  hasPests: boolean;
+  hasPendingTreatments: boolean;
   zoneId?: string;
   structureId?: string;
   roomId?: string;
