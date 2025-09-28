@@ -30,6 +30,14 @@ interface ExpenseSubcategory {
   description: string;
 }
 
+interface ExpenseSummary {
+  categories: ExpenseCategory[];
+  totalExpenses: number;
+  capexTotal: number;
+  opexTotal: number;
+  avgExpensePerTick: number;
+}
+
 const CATEGORY_META: Record<
   FinanceLedgerCategory,
   { label: string; icon: string; color: string; type: 'CapEx' | 'OpEx' }
@@ -94,7 +102,7 @@ export const ExpenseBreakdown = ({
 }: ExpenseBreakdownProps) => {
   const snapshot = useSimulationStore((state) => state.snapshot);
 
-  const expenseData = useMemo(() => {
+  const expenseData = useMemo<ExpenseSummary>(() => {
     if (!snapshot?.finance) {
       return {
         categories: [],

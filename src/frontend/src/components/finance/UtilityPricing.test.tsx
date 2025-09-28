@@ -35,13 +35,47 @@ const createSnapshot = (): SimulationSnapshot => ({
   },
 });
 
+type SendIntentFn = SimulationBridge['sendIntent'];
+type SendIntentArgs = Parameters<SendIntentFn>;
+type SendIntentResult = Awaited<ReturnType<SendIntentFn>>;
+
 describe('UtilityPricing component', () => {
-  const bridge = {
-    sendIntent: vi.fn(),
-  } as unknown as SimulationBridge;
+  let bridge: SimulationBridge;
+  let sendIntentCallCount: number;
+  let lastIntent: SendIntentArgs[0] | null;
+  let sendIntentResponse: SendIntentResult;
 
   beforeEach(() => {
     vi.resetAllMocks();
+    sendIntentCallCount = 0;
+    lastIntent = null;
+    sendIntentResponse = { ok: true } as SendIntentResult;
+    const sendIntent = (async (intent: SendIntentArgs[0]) => {
+      sendIntentCallCount += 1;
+      lastIntent = intent;
+      return sendIntentResponse;
+    }) as SendIntentFn;
+    bridge = {
+      connect: vi.fn(),
+      loadQuickStart: async () => ({ ok: true }),
+      getStructureBlueprints: async () => ({ ok: true, data: [] }),
+      getStrainBlueprints: async () => ({ ok: true, data: [] }),
+      getDeviceBlueprints: async () => ({ ok: true, data: [] }),
+      getDifficultyConfig: async () => ({ ok: true }),
+      sendControl: async () => ({ ok: true }),
+      sendConfigUpdate: async () => ({ ok: true }),
+      sendIntent,
+      subscribeToUpdates: (_handler: Parameters<SimulationBridge['subscribeToUpdates']>[0]) => {
+        void _handler;
+        return () => undefined;
+      },
+      plants: {
+        addPlanting: async () => ({ ok: true }),
+      },
+      devices: {
+        installDevice: async () => ({ ok: true }),
+      },
+    } satisfies SimulationBridge;
     act(() => {
       useSimulationStore.setState({
         snapshot: createSnapshot(),
@@ -69,7 +103,7 @@ describe('UtilityPricing component', () => {
   });
 
   it('sends converted payload on save and shows success message', async () => {
-    bridge.sendIntent = vi.fn().mockResolvedValue({ ok: true });
+    sendIntentResponse = { ok: true } as SendIntentResult;
     render(<UtilityPricing bridge={bridge} />);
 
     const [electricityInput, waterInput, nutrientInput] = screen.getAllByLabelText('New Price');
@@ -78,10 +112,12 @@ describe('UtilityPricing component', () => {
     fireEvent.change(waterInput, { target: { value: '0.03' } });
     fireEvent.change(nutrientInput, { target: { value: '0.12' } });
 
+    await waitFor(() => expect(screen.getByText(/price change\(s\) pending/i)).toBeInTheDocument());
+
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
-    await waitFor(() => expect(bridge.sendIntent).toHaveBeenCalled());
-    expect(bridge.sendIntent).toHaveBeenCalledWith({
+    await waitFor(() => expect(sendIntentCallCount).toBe(1));
+    expect(lastIntent).toEqual({
       domain: 'finance',
       action: 'setUtilityPrices',
       payload: {
@@ -95,18 +131,20 @@ describe('UtilityPricing component', () => {
   });
 
   it('shows an error message when the update fails', async () => {
-    bridge.sendIntent = vi.fn().mockResolvedValue({
+    sendIntentResponse = {
       ok: false,
       errors: [{ message: 'Invalid payload' }],
-    });
+    } as SendIntentResult;
     render(<UtilityPricing bridge={bridge} />);
 
     const [electricityInput] = screen.getAllByLabelText('New Price');
     fireEvent.change(electricityInput, { target: { value: '0.18' } });
 
+    await waitFor(() => expect(screen.getByText(/price change\(s\) pending/i)).toBeInTheDocument());
+
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
-    await waitFor(() => expect(bridge.sendIntent).toHaveBeenCalled());
+    await waitFor(() => expect(sendIntentCallCount).toBe(1));
     await waitFor(() =>
       expect(
         screen.getByText(/Failed to update utility prices: Invalid payload/i),

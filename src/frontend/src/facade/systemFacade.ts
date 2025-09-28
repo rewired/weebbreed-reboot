@@ -51,10 +51,108 @@ export interface StructureBlueprint {
   upfrontFee: number;
 }
 
+export interface StrainCompatibilityHints {
+  methodAffinity: Record<string, number>;
+  stressTolerance?: Record<string, number>;
+}
+
+export interface StrainDefaultSettings {
+  envBands?: Record<string, unknown>;
+  phaseDurations?: Record<string, unknown>;
+  photoperiod?: Record<string, unknown>;
+  nutrientDemand?: Record<string, unknown>;
+  waterDemand?: Record<string, unknown>;
+  growthModel?: Record<string, unknown>;
+  yieldModel?: Record<string, unknown>;
+}
+
+export interface StrainTraits {
+  morphology?: Record<string, unknown>;
+  noise?: Record<string, unknown>;
+}
+
+export interface StrainPriceEntry {
+  seedPrice: number;
+  harvestPricePerGram: number;
+}
+
+export interface StrainBlueprint {
+  id: string;
+  slug: string;
+  name: string;
+  lineage: Record<string, unknown>;
+  genotype: Record<string, unknown>;
+  chemotype: Record<string, unknown>;
+  generalResilience: number;
+  germinationRate: number;
+  compatibility: StrainCompatibilityHints;
+  defaults: StrainDefaultSettings;
+  traits: StrainTraits;
+  metadata?: Record<string, unknown>;
+  price?: StrainPriceEntry;
+}
+
+export interface DeviceCompatibilityHints {
+  roomPurposes: string[];
+}
+
+export interface DeviceDefaultSettings {
+  settings: Record<string, unknown>;
+  coverage?: Record<string, unknown>;
+  limits?: Record<string, unknown>;
+}
+
+export interface DevicePriceEntry {
+  capitalExpenditure: number;
+  baseMaintenanceCostPerTick: number;
+  costIncreasePer1000Ticks: number;
+}
+
+export interface DeviceBlueprint {
+  id: string;
+  kind: string;
+  name: string;
+  quality: number;
+  complexity: number;
+  lifetimeHours: number;
+  capexEur?: number;
+  efficiencyDegeneration?: number;
+  compatibility: DeviceCompatibilityHints;
+  defaults: DeviceDefaultSettings;
+  maintenance?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  price?: DevicePriceEntry;
+}
+
+export interface AddPlantingOptions {
+  zoneId: string;
+  strainId: string;
+  count: number;
+  startTick?: number;
+}
+
+export interface PlantingResult {
+  plantIds: string[];
+  warnings?: string[];
+}
+
+export interface InstallDeviceOptions {
+  targetId: string;
+  deviceId: string;
+  settings?: Record<string, unknown>;
+}
+
+export interface DeviceInstallationResult {
+  deviceId: string;
+  warnings?: string[];
+}
+
 export interface SimulationBridge {
   connect: () => void;
   loadQuickStart: () => Promise<CommandResponse<unknown>>;
   getStructureBlueprints: () => Promise<CommandResponse<StructureBlueprint[]>>;
+  getStrainBlueprints: () => Promise<CommandResponse<StrainBlueprint[]>>;
+  getDeviceBlueprints: () => Promise<CommandResponse<DeviceBlueprint[]>>;
   getDifficultyConfig: () => Promise<CommandResponse<DifficultyConfig>>;
   sendControl: (
     command: SimulationControlCommand,
@@ -64,6 +162,14 @@ export interface SimulationBridge {
   ) => Promise<CommandResponse<SimulationTimeStatus | undefined>>;
   sendIntent: <T = unknown>(intent: FacadeIntentCommand) => Promise<CommandResponse<T>>;
   subscribeToUpdates: (handler: (update: SimulationUpdateEntry) => void) => () => void;
+  plants: {
+    addPlanting: (options: AddPlantingOptions) => Promise<CommandResponse<PlantingResult>>;
+  };
+  devices: {
+    installDevice: (
+      options: InstallDeviceOptions,
+    ) => Promise<CommandResponse<DeviceInstallationResult>>;
+  };
 }
 
 const generateRequestId = () =>
@@ -98,6 +204,41 @@ class SocketSystemFacade implements SimulationBridge {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   private isConnecting = false;
+
+  readonly plants = {
+    addPlanting: async (options: AddPlantingOptions) => {
+      this.requireConnected();
+      const payload = {
+        zoneId: options.zoneId,
+        strainId: options.strainId,
+        count: options.count,
+        ...(options.startTick !== undefined ? { startTick: options.startTick } : {}),
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'plants',
+        action: 'addPlanting',
+        payload,
+      };
+      return this.sendIntent<PlantingResult>(intent);
+    },
+  };
+
+  readonly devices = {
+    installDevice: async (options: InstallDeviceOptions) => {
+      this.requireConnected();
+      const payload = {
+        targetId: options.targetId,
+        deviceId: options.deviceId,
+        ...(options.settings ? { settings: options.settings } : {}),
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'devices',
+        action: 'installDevice',
+        payload,
+      };
+      return this.sendIntent<DeviceInstallationResult>(intent);
+    },
+  };
 
   connect() {
     if (this.socket || this.isConnecting) {
@@ -223,10 +364,7 @@ class SocketSystemFacade implements SimulationBridge {
   }
 
   async loadQuickStart(): Promise<CommandResponse<unknown>> {
-    if (!this.socket || !this.socket.connected) {
-      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
-      throw new Error(message);
-    }
+    this.requireConnected();
     const intent: FacadeIntentCommand = {
       domain: 'world',
       action: 'rentStructure',
@@ -236,10 +374,7 @@ class SocketSystemFacade implements SimulationBridge {
   }
 
   async getStructureBlueprints(): Promise<CommandResponse<StructureBlueprint[]>> {
-    if (!this.socket || !this.socket.connected) {
-      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
-      throw new Error(message);
-    }
+    this.requireConnected();
     const intent: FacadeIntentCommand = {
       domain: 'world',
       action: 'getStructureBlueprints',
@@ -248,11 +383,28 @@ class SocketSystemFacade implements SimulationBridge {
     return this.sendIntent<StructureBlueprint[]>(intent);
   }
 
+  async getStrainBlueprints(): Promise<CommandResponse<StrainBlueprint[]>> {
+    this.requireConnected();
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'getStrainBlueprints',
+      payload: {},
+    };
+    return this.sendIntent<StrainBlueprint[]>(intent);
+  }
+
+  async getDeviceBlueprints(): Promise<CommandResponse<DeviceBlueprint[]>> {
+    this.requireConnected();
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'getDeviceBlueprints',
+      payload: {},
+    };
+    return this.sendIntent<DeviceBlueprint[]>(intent);
+  }
+
   async getDifficultyConfig(): Promise<CommandResponse<DifficultyConfig>> {
-    if (!this.socket || !this.socket.connected) {
-      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
-      throw new Error(message);
-    }
+    this.requireConnected();
     const intent: FacadeIntentCommand = {
       domain: 'config',
       action: 'getDifficultyConfig',
@@ -346,6 +498,13 @@ class SocketSystemFacade implements SimulationBridge {
       this.reconnectDelay = Math.min(this.reconnectDelay * 2, MAX_RECONNECT_DELAY);
     };
     this.reconnectTimer = setTimeout(attempt, this.reconnectDelay);
+  }
+
+  private requireConnected() {
+    if (!this.socket || !this.socket.connected) {
+      const message = `${buildBackendReachabilityMessage()}${QUICKSTART_HELP_SUFFIX}`;
+      throw new Error(message);
+    }
   }
 }
 
