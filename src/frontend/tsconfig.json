@@ -14,7 +14,8 @@
       "@/styles/*": ["styles/*"],
       "@/data/*": ["data/*"],
       "@/facade/*": ["facade/*"],
-      "@/config/*": ["config/*"]
+      "@/config/*": ["config/*"],
+      "clsx": ["utils/clsx"]
     }
   },
   "include": ["src", "vite.config.ts", "tailwind.config.ts"],
