@@ -158,11 +158,10 @@ const resolveCo2HalfSaturation = (strain: StrainBlueprint): number => {
   );
 };
 
-const computeCanopyInterception = (leafAreaIndex: number, canopyArea: number): number => {
+const computeCanopyInterception = (leafAreaIndex: number): number => {
   const lai = clamp(leafAreaIndex, PLANT_LEAF_AREA_INDEX_MIN, PLANT_LEAF_AREA_INDEX_MAX);
-  const referenceArea = Math.max(canopyArea, PLANT_CANOPY_AREA_MIN);
   const extinctionCoefficient = PLANT_CANOPY_LIGHT_EXTINCTION_COEFFICIENT;
-  return clamp(1 - Math.exp(-extinctionCoefficient * lai * referenceArea), 0, 1);
+  return clamp(1 - Math.exp(-extinctionCoefficient * lai), 0, 1);
 };
 
 export interface DriverEvaluation {
@@ -396,9 +395,13 @@ export const updatePlantGrowth = (context: PlantGrowthContext): PlantGrowthResul
     tickHours,
   );
 
-  const canopyInterception = computeCanopyInterception(leafAreaIndex, canopyArea);
-  const incidentMol = ppfdToMoles(environment.ppfd, tickHours);
-  const absorbedMol = incidentMol * canopyInterception * lightResponse;
+  const canopyInterception = computeCanopyInterception(leafAreaIndex);
+  const incidentMolPerSquareMeter = ppfdToMoles(environment.ppfd, tickHours);
+  const totalIncidentMol = incidentMolPerSquareMeter * canopyArea;
+  const absorbedMol = Math.min(
+    totalIncidentMol,
+    totalIncidentMol * canopyInterception * lightResponse,
+  );
   const q10Value = toFiniteNumber(strain.growthModel?.temperature?.Q10);
   const tref = toFiniteNumber(strain.growthModel?.temperature?.T_ref_C) ?? 25;
   const q10Factor =

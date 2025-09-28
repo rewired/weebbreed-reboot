@@ -6,6 +6,9 @@ import type { PhenologyState } from './phenology.js';
 import { updatePlantGrowth } from './growthModel.js';
 import { computeVpd } from '@/engine/physio/vpd.js';
 import { TranspirationFeedbackService } from '@/engine/environment/transpirationFeedback.js';
+import { ppfdToMoles } from '@/engine/physio/ppfd.js';
+import { PLANT_BASE_GROWTH_PER_TICK } from '@/constants/balance.js';
+import { PLANT_CANOPY_AREA_MIN } from '@/constants/plants.js';
 
 const createTestStrain = (): StrainBlueprint => ({
   id: 'strain-test',
@@ -151,6 +154,62 @@ describe('updatePlantGrowth', () => {
     expect(brightResult.biomassDelta).toBeGreaterThan(0);
     expect(darkResult.transpirationLiters).toBeLessThan(brightResult.transpirationLiters);
     expect(brightResult.transpirationLiters).toBeGreaterThan(0);
+  });
+
+  it('never absorbs more photons than those incident on the canopy area', () => {
+    const baseStrain = createTestStrain();
+    const plant = createPlant({ stage: 'vegetative', biomassDryGrams: 32 });
+    const environment = createEnvironment({ ppfd: 750, temperature: 26, relativeHumidity: 0.58 });
+    const tickHours = 1;
+
+    const scenarios = [
+      { leafAreaIndex: 1.2, canopyArea: 0.25 },
+      { leafAreaIndex: 2.5, canopyArea: 0.6 },
+      { leafAreaIndex: 4.1, canopyArea: 1.2 },
+    ];
+
+    for (const scenario of scenarios) {
+      const strain: StrainBlueprint = {
+        ...baseStrain,
+        morphology: { ...baseStrain.morphology, leafAreaIndex: scenario.leafAreaIndex },
+      };
+      const phenologyConfig = createPhenologyConfig(strain);
+      const phenology = createInitialPhenologyState('vegetative');
+
+      const result = updatePlantGrowth({
+        plant,
+        strain,
+        environment,
+        tickHours,
+        phenology,
+        phenologyConfig,
+        resourceSupply: { waterSupplyFraction: 1, nutrientSupplyFraction: 1 },
+        canopyAreaOverride: scenario.canopyArea,
+      });
+
+      const combinedResponse = result.metrics.combinedResponse;
+      const baseBiomass = tickHours * PLANT_BASE_GROWTH_PER_TICK * combinedResponse;
+      const maintenanceFrac = strain.growthModel?.maintenanceFracPerDay ?? 0;
+      const maintenance = plant.biomassDryGrams * maintenanceFrac * (tickHours / 24);
+      const q10Value = strain.growthModel?.temperature?.Q10;
+      const tref = strain.growthModel?.temperature?.T_ref_C ?? 25;
+      const q10Factor =
+        q10Value && q10Value > 0 ? Math.pow(q10Value, (environment.temperature - tref) / 10) : 1;
+      const baseLueKgPerMol = strain.growthModel?.baseLightUseEfficiency ?? 0.0009;
+      const lue = baseLueKgPerMol * 1_000 * q10Factor;
+      const grossBiomass = result.biomassDelta + maintenance;
+
+      const absorbedMol =
+        grossBiomass > baseBiomass && lue > 0 && combinedResponse > 0
+          ? (grossBiomass - baseBiomass) / (lue * combinedResponse)
+          : 0;
+
+      const incidentMolPerSquareMeter = ppfdToMoles(environment.ppfd, tickHours);
+      const canopyArea = Math.max(scenario.canopyArea, PLANT_CANOPY_AREA_MIN);
+      const totalIncidentMol = incidentMolPerSquareMeter * canopyArea;
+
+      expect(absorbedMol).toBeLessThanOrEqual(totalIncidentMol + 1e-9);
+    }
   });
 
   it('reduces growth when temperature deviates from the optimal band', () => {
