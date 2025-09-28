@@ -67,14 +67,16 @@ Defined in `commands/devices.ts` and registered under the `devices` domain.【F:
 
 ### Plants (`plants.*`)
 
-| Action               | Payload highlights                                  | Result data                   |
-| -------------------- | --------------------------------------------------- | ----------------------------- |
-| `addPlanting`        | `zoneId`, `strainId`, `count`, optional `startTick` | –                             |
-| `cullPlanting`       | `plantingId`, optional `count`                      | –                             |
-| `harvestPlanting`    | `plantingId`                                        | –                             |
-| `applyIrrigation`    | `zoneId`, `liters`                                  | –                             |
-| `applyFertilizer`    | `zoneId`, `nutrients { n, p, k }`                   | –                             |
-| `togglePlantingPlan` | `zoneId`, `enabled`                                 | `{ enabled: boolean }` result |
+| Action               | Payload highlights                                  | Result data                                |
+| -------------------- | --------------------------------------------------- | ------------------------------------------ |
+| `addPlanting`        | `zoneId`, `strainId`, `count`, optional `startTick` | –                                          |
+| `cullPlanting`       | `plantingId`, optional `count`                      | –                                          |
+| `harvestPlanting`    | `plantingId`                                        | –                                          |
+| `harvestPlant`       | `plantId`                                           | `{ harvestBatchId, weightGrams, quality }` |
+| `cullPlant`          | `plantId`                                           | `{ plantId, stage }`                       |
+| `applyIrrigation`    | `zoneId`, `liters`                                  | –                                          |
+| `applyFertilizer`    | `zoneId`, `nutrients { n, p, k }`                   | –                                          |
+| `togglePlantingPlan` | `zoneId`, `enabled`                                 | `{ enabled: boolean }` result              |
 
 Configured in `commands/plants.ts` and exposed through the façade registry.【F:src/backend/src/facade/commands/plants.ts†L12-L104】【F:src/backend/src/facade/index.ts†L451-L479】
 

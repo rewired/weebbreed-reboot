@@ -102,6 +102,11 @@ Common categories are below.
   compatibility hints, and emits `plant.planted` telemetry including all generated plant IDs.
 - `cullPlanting(plantingId, count?)`
 - `harvestPlanting(plantingId)` — creates inventory lots, emits events.
+- `harvestPlant(plantId)` — removes a single plant, honoring zone safety
+  restrictions and returning `{ harvestBatchId, weightGrams, quality }` plus
+  optional warnings.
+- `cullPlant(plantId)` — discards a plant while respecting re-entry and
+  pre-harvest locks, returning `{ plantId, stage }` with warning propagation.
 - `applyIrrigation(zoneId, liters)` / `applyFertilizer(zoneId, { N,P,K } in g)` — optional manual overrides.
 - `togglePlantingPlan({ zoneId, enabled })` — activates/deactivates automation; returns `{ enabled }` plus a follow-up task event.
 

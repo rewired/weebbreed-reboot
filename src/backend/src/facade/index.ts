@@ -50,6 +50,8 @@ import {
   type AddPlantingIntent,
   type CullPlantingIntent,
   type HarvestPlantingIntent,
+  type HarvestPlantIntent,
+  type CullPlantIntent,
   type ApplyIrrigationIntent,
   type ApplyFertilizerIntent,
   type TogglePlantingPlanIntent,
@@ -123,6 +125,10 @@ import type {
 } from '@/engine/world/worldService.js';
 import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
 import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
+import type {
+  HarvestPlantResult,
+  DiscardPlantResult,
+} from '@/engine/plants/plantLifecycleService.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 
 const cloneState = <T>(value: T): T => {
@@ -184,11 +190,17 @@ export type {
   AddPlantingIntent,
   CullPlantingIntent,
   HarvestPlantingIntent,
+  HarvestPlantIntent,
+  CullPlantIntent,
   ApplyIrrigationIntent,
   ApplyFertilizerIntent,
   TogglePlantingPlanIntent,
   PlantIntentHandlers,
 } from './commands/plants.js';
+export type {
+  HarvestPlantResult,
+  DiscardPlantResult,
+} from '@/engine/plants/plantLifecycleService.js';
 export type {
   ScheduleScoutingIntent,
   ApplyTreatmentIntent,
@@ -304,6 +316,8 @@ export interface PlantIntentAPI {
   addPlanting(intent: AddPlantingIntent): Promise<CommandResult>;
   cullPlanting(intent: CullPlantingIntent): Promise<CommandResult>;
   harvestPlanting(intent: HarvestPlantingIntent): Promise<CommandResult>;
+  harvestPlant(intent: HarvestPlantIntent): Promise<CommandResult<HarvestPlantResult>>;
+  cullPlant(intent: CullPlantIntent): Promise<CommandResult<DiscardPlantResult>>;
   applyIrrigation(intent: ApplyIrrigationIntent): Promise<CommandResult>;
   applyFertilizer(intent: ApplyFertilizerIntent): Promise<CommandResult>;
   togglePlantingPlan(

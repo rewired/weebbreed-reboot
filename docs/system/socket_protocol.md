@@ -412,10 +412,12 @@ object:
 - **devices** — `installDevice`, `updateDevice`, `moveDevice`, `removeDevice`,
   `toggleDeviceGroup`. The toggle action returns `{ deviceIds: string[] }` with
   every instance that changed status.
-- **plants** — `addPlanting`, `cullPlanting`, `harvestPlanting`,
-  `applyIrrigation`, `applyFertilizer`, `togglePlantingPlan`. The automation
-  toggle responds with `{ enabled: boolean }` and emits a follow-up maintenance
-  task when the state flips.
+- **plants** — `addPlanting`, `cullPlanting`, `harvestPlanting`, `harvestPlant`,
+  `cullPlant`, `applyIrrigation`, `applyFertilizer`, `togglePlantingPlan`. The
+  automation toggle responds with `{ enabled: boolean }` and emits a follow-up
+  maintenance task when the state flips. `harvestPlant` returns `{ plantId,
+harvestBatchId, weightGrams, quality }` alongside optional warnings, and
+  `cullPlant` yields `{ plantId, stage }` with matching warning propagation.
 - **health** — `scheduleScouting`, `applyTreatment`, `quarantineZone`.
 - **workforce** — `refreshCandidates`, `hire`, `fire`, `setOvertimePolicy`,
   `assignStructure`, `enqueueTask` (payload defaults to `{}` when omitted).

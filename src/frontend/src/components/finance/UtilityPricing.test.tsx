@@ -71,6 +71,8 @@ describe('UtilityPricing component', () => {
       },
       plants: {
         addPlanting: async () => ({ ok: true }),
+        harvestPlant: async () => ({ ok: true }),
+        cullPlant: async () => ({ ok: true }),
       },
       devices: {
         installDevice: async () => ({ ok: true }),

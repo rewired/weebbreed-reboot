@@ -42,6 +42,7 @@ import { DeviceInstallationService } from '@/engine/devices/deviceInstallationSe
 import { DeviceRemovalService } from '@/engine/devices/deviceRemovalService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { PlantingService } from '@/engine/plants/plantingService.js';
+import { PlantLifecycleService } from '@/engine/plants/plantLifecycleService.js';
 import { JobMarketService } from '@/engine/workforce/jobMarketService.js';
 import type { UtilityPrices } from '@/data/schemas/index.js';
 
@@ -343,6 +344,7 @@ export const startBackendServer = async (
   const lightingCycleService = new LightingCycleService({ state });
   const plantingPlanService = new PlantingPlanService({ state, rng });
   const plantingService = new PlantingService({ state, rng, repository });
+  const plantLifecycleService = new PlantLifecycleService({ state, rng });
 
   facade.updateServices({
     config: {
@@ -404,6 +406,9 @@ export const startBackendServer = async (
           intent.startTick,
           context,
         ),
+      harvestPlant: (intent, context) =>
+        plantLifecycleService.harvestPlant(intent.plantId, context),
+      cullPlant: (intent, context) => plantLifecycleService.discardPlant(intent.plantId, context),
       togglePlantingPlan: (intent, context) =>
         plantingPlanService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
     },
