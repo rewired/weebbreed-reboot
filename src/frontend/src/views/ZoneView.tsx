@@ -321,22 +321,40 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                       </span>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    icon={<Icon name="tune" />}
-                    onClick={() =>
-                      openModal({
-                        id: `device-${device.id}`,
-                        type: 'tuneDevice',
-                        title: `Tune ${device.name}`,
-                        subtitle: 'Adjust device settings and control surfaces.',
-                        context: { zoneId: zone.id, deviceId: device.id },
-                      })
-                    }
-                  >
-                    Adjust
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      icon={<Icon name="drive_file_move" />}
+                      onClick={() =>
+                        openModal({
+                          id: `move-device-${device.id}`,
+                          type: 'moveDevice',
+                          title: `Move ${device.name}`,
+                          subtitle: 'Relocate the device to a different zone.',
+                          context: { zoneId: zone.id, deviceId: device.id },
+                        })
+                      }
+                    >
+                      Move
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon={<Icon name="delete" />}
+                      onClick={() =>
+                        openModal({
+                          id: `remove-device-${device.id}`,
+                          type: 'removeDevice',
+                          title: `Delete ${device.name}`,
+                          subtitle: 'Remove the device from this zone.',
+                          context: { zoneId: zone.id, deviceId: device.id },
+                        })
+                      }
+                    >
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

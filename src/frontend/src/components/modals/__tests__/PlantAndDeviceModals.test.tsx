@@ -95,7 +95,7 @@ const baseSnapshot: SimulationSnapshot = {
       volume: 150,
       cleanliness: 1,
       maintenanceLevel: 1,
-      zoneIds: ['zone-1'],
+      zoneIds: ['zone-1', 'zone-2'],
     },
   ],
   zones: [
@@ -158,6 +158,44 @@ const baseSnapshot: SimulationSnapshot = {
       plants: [],
       health: { diseases: 0, pests: 0, pendingTreatments: 0, appliedTreatments: 0 },
     },
+    {
+      id: 'zone-2',
+      name: 'Zone Two',
+      structureId: 'structure-1',
+      structureName: 'Structure One',
+      roomId: 'room-1',
+      roomName: 'Cultivation Room',
+      area: 18,
+      ceilingHeight: 2.8,
+      volume: 50.4,
+      cultivationMethodId: '659ba4d7-a5fc-482e-98d4-b614341883ac',
+      environment: {
+        temperature: 23,
+        relativeHumidity: 0.58,
+        co2: 940,
+        ppfd: 500,
+        vpd: 1.1,
+      },
+      resources: {
+        waterLiters: 0,
+        nutrientSolutionLiters: 0,
+        nutrientStrength: 1,
+        substrateHealth: 1,
+        reservoirLevel: 1,
+        lastTranspirationLiters: 0,
+      },
+      metrics: {
+        averageTemperature: 23,
+        averageHumidity: 0.58,
+        averageCo2: 940,
+        averagePpfd: 500,
+        stressLevel: 0.15,
+        lastUpdatedTick: 0,
+      },
+      devices: [],
+      plants: [],
+      health: { diseases: 0, pests: 0, pendingTreatments: 0, appliedTreatments: 0 },
+    },
   ],
   personnel: { employees: [], applicants: [], overallMorale: 1 },
   finance: {
@@ -176,6 +214,8 @@ describe('Plant and Device modals', () => {
   let modalRoot: HTMLDivElement;
   let sendConfigUpdateMock: ReturnType<typeof vi.fn>;
   let sendIntentMock: ReturnType<typeof vi.fn>;
+  let moveDeviceMock: ReturnType<typeof vi.fn>;
+  let removeDeviceMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     modalRoot = document.createElement('div');
@@ -184,6 +224,8 @@ describe('Plant and Device modals', () => {
 
     sendConfigUpdateMock = vi.fn(async () => ({ ok: true }));
     sendIntentMock = vi.fn(async () => ({ ok: true }));
+    moveDeviceMock = vi.fn(async () => ({ ok: true }));
+    removeDeviceMock = vi.fn(async () => ({ ok: true }));
 
     bridge = {
       connect: vi.fn(),
@@ -262,6 +304,8 @@ describe('Plant and Device modals', () => {
       devices: {
         installDevice: vi.fn(async () => ({ ok: true, warnings: ['Device load near limit.'] })),
         adjustLightingCycle: vi.fn(async () => ({ ok: true })),
+        moveDevice: moveDeviceMock as unknown as SimulationBridge['devices']['moveDevice'],
+        removeDevice: removeDeviceMock as unknown as SimulationBridge['devices']['removeDevice'],
       },
     } satisfies SimulationBridge;
 
@@ -372,8 +416,16 @@ describe('Plant and Device modals', () => {
       </>,
     );
 
-    const adjustButton = await screen.findByRole('button', { name: 'Adjust' });
-    fireEvent.click(adjustButton);
+    await screen.findByText('LED VegLight 600');
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'tune-device',
+        type: 'tuneDevice',
+        title: 'Tune device',
+        context: { zoneId: 'zone-1', deviceId: 'device-instance-1' },
+      });
+    });
 
     const temperatureInput = await screen.findByLabelText('Target Temperature');
     fireEvent.change(temperatureInput, { target: { value: '26' } });
@@ -406,8 +458,16 @@ describe('Plant and Device modals', () => {
       </>,
     );
 
-    const adjustButton = await screen.findByRole('button', { name: 'Adjust' });
-    fireEvent.click(adjustButton);
+    await screen.findByText('LED VegLight 600');
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'tune-device',
+        type: 'tuneDevice',
+        title: 'Tune device',
+        context: { zoneId: 'zone-1', deviceId: 'device-instance-1' },
+      });
+    });
 
     const powerInput = await screen.findByLabelText('Power');
     fireEvent.change(powerInput, { target: { value: '0.8' } });
@@ -427,6 +487,56 @@ describe('Plant and Device modals', () => {
     });
 
     expect(sendConfigUpdateMock).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('moves a device to another zone from the zone view', async () => {
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ZoneView bridge={bridge} />
+      </>,
+    );
+
+    const [moveButton] = await screen.findAllByRole('button', { name: /Move$/ });
+    fireEvent.click(moveButton);
+
+    const destinationSelect = await screen.findByLabelText('Destination zone');
+    fireEvent.change(destinationSelect, { target: { value: 'zone-2' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Move device' }));
+
+    await waitFor(() => {
+      expect(moveDeviceMock).toHaveBeenCalledWith({
+        instanceId: 'device-instance-1',
+        targetZoneId: 'zone-2',
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('deletes a device after confirmation', async () => {
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ZoneView bridge={bridge} />
+      </>,
+    );
+
+    const [deleteButton] = await screen.findAllByRole('button', { name: /Delete$/ });
+    fireEvent.click(deleteButton);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Delete device' }));
+
+    await waitFor(() => {
+      expect(removeDeviceMock).toHaveBeenCalledWith({ instanceId: 'device-instance-1' });
+    });
 
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

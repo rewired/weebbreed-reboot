@@ -167,6 +167,15 @@ export interface AdjustLightingCycleResult {
   photoperiodHours: { on: number; off: number };
 }
 
+export interface MoveDeviceOptions {
+  instanceId: string;
+  targetZoneId: string;
+}
+
+export interface RemoveDeviceOptions {
+  instanceId: string;
+}
+
 export interface SimulationBridge {
   connect: () => void;
   loadQuickStart: () => Promise<CommandResponse<unknown>>;
@@ -192,6 +201,8 @@ export interface SimulationBridge {
     adjustLightingCycle: (
       options: AdjustLightingCycleOptions,
     ) => Promise<CommandResponse<AdjustLightingCycleResult>>;
+    moveDevice: (options: MoveDeviceOptions) => Promise<CommandResponse<unknown>>;
+    removeDevice: (options: RemoveDeviceOptions) => Promise<CommandResponse<unknown>>;
   };
 }
 
@@ -273,6 +284,31 @@ class SocketSystemFacade implements SimulationBridge {
         payload,
       };
       return this.sendIntent<AdjustLightingCycleResult>(intent);
+    },
+    moveDevice: async (options: MoveDeviceOptions) => {
+      this.requireConnected();
+      const payload = {
+        instanceId: options.instanceId,
+        targetZoneId: options.targetZoneId,
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'devices',
+        action: 'moveDevice',
+        payload,
+      };
+      return this.sendIntent(intent);
+    },
+    removeDevice: async (options: RemoveDeviceOptions) => {
+      this.requireConnected();
+      const payload = {
+        instanceId: options.instanceId,
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'devices',
+        action: 'removeDevice',
+        payload,
+      };
+      return this.sendIntent(intent);
     },
   };
 

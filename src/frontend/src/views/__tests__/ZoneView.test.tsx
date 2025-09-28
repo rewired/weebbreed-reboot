@@ -5,6 +5,7 @@ import { ZoneView } from '../ZoneView';
 import { quickstartSnapshot } from '@/data/mockTelemetry';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
+import { useUIStore } from '@/store/ui';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import type { ReactNode } from 'react';
 
@@ -36,6 +37,8 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
   devices: {
     installDevice: async () => ({ ok: true }),
     adjustLightingCycle: async () => ({ ok: true }),
+    moveDevice: async () => ({ ok: true }),
+    removeDevice: async () => ({ ok: true }),
   },
   ...overrides,
 });
@@ -96,5 +99,93 @@ describe('ZoneView', () => {
     const header = panels[0]?.closest('header');
     expect(header).not.toBeNull();
     expect(header).toContainElement(panels[0]!);
+  });
+
+  it('opens the move device modal with zone context', async () => {
+    const originalOpenModal = useUIStore.getState().openModal;
+    const openModal = vi.fn();
+
+    act(() => {
+      useUIStore.setState({ openModal } as Partial<ReturnType<typeof useUIStore.getState>>);
+    });
+
+    try {
+      const bridge = buildBridge();
+
+      act(() => {
+        useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+        useNavigationStore.setState({
+          currentView: 'zone',
+          selectedStructureId: structure.id,
+          selectedRoomId: room.id,
+          selectedZoneId: zone.id,
+          isSidebarOpen: false,
+        });
+      });
+
+      render(<ZoneView bridge={bridge} />);
+
+      const [moveButton] = await screen.findAllByRole('button', { name: /Move$/ });
+      await act(async () => {
+        moveButton.click();
+      });
+
+      expect(openModal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'moveDevice',
+          context: { zoneId: zone.id, deviceId: zone.devices[0]!.id },
+        }),
+      );
+    } finally {
+      act(() => {
+        useUIStore.setState({
+          openModal: originalOpenModal,
+        } as Partial<ReturnType<typeof useUIStore.getState>>);
+      });
+    }
+  });
+
+  it('opens the delete device modal with zone context', async () => {
+    const originalOpenModal = useUIStore.getState().openModal;
+    const openModal = vi.fn();
+
+    act(() => {
+      useUIStore.setState({ openModal } as Partial<ReturnType<typeof useUIStore.getState>>);
+    });
+
+    try {
+      const bridge = buildBridge();
+
+      act(() => {
+        useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+        useNavigationStore.setState({
+          currentView: 'zone',
+          selectedStructureId: structure.id,
+          selectedRoomId: room.id,
+          selectedZoneId: zone.id,
+          isSidebarOpen: false,
+        });
+      });
+
+      render(<ZoneView bridge={bridge} />);
+
+      const [deleteButton] = await screen.findAllByRole('button', { name: /Delete$/ });
+      await act(async () => {
+        deleteButton.click();
+      });
+
+      expect(openModal).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'removeDevice',
+          context: { zoneId: zone.id, deviceId: zone.devices[0]!.id },
+        }),
+      );
+    } finally {
+      act(() => {
+        useUIStore.setState({
+          openModal: originalOpenModal,
+        } as Partial<ReturnType<typeof useUIStore.getState>>);
+      });
+    }
   });
 });
