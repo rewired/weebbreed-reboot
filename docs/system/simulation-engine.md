@@ -95,6 +95,9 @@ Plants respond to environment and resources; **stress** reduces **health**; **he
    Additional penalties from **active diseases/pests** and **resource deficits**.
 5. **Potential growth**
    - **Light response** (rectangular hyperbola/saturation over PPFD), **temperature response** (Gaussian), **CO₂ factor** (half-saturation).
+   - **Canopy interception** applies the Beer–Lambert law using only the leaf-area index: `interception = 1 − exp(−k × LAI)`.
+     The interception fraction is dimensionless; total absorbed photons are computed as `incidentMol_m2 × canopyArea × interception`
+     and explicitly capped so they never exceed the photons delivered to that canopy area.
    - Apply phase caps and **LUE** to get `potentialGrowth_g_dry_per_tick`.
    - Apply health & stress: `actualGrowth = potentialGrowth * health * (1 − γ * stress)`.
    - Accrue `biomassDry_g`; enforce `maxBiomassDry_g` and phase harvest index.
