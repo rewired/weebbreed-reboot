@@ -1,31 +1,8 @@
-# Codex Prompt – Irrigation & Nutrient Overhaul · Phase 1 (Data Model & Schemas)
+# Codex Prompt — Phase 1: Datenmodell & Schema-Erweiterungen
 
-You are Codex working on the Weed Breed TypeScript backend. All changes must comply with `/AGENTS.md`, the simulation tick contract, and the Phase 1 goals in `/docs/tasks/20250928-irrgitation-nutrient-overhaul.md`.
+**Zielsetzung:** Ergänze Struktur-, Zonen- und Schema-Definitionen gemäß Proposal und halte Save/Load deterministisch.
 
-## Objective
-
-Extend structure and zone state, JSON schemas, and save/load pipelines to support the new irrigation utilities.
-
-## Required Steps
-
-1. Catalogue every schema definition affecting structure, zone, and inventory state (runtime, savegame, blueprint validation). Identify the files to update and note required migrations.
-2. Modify the structure schema to include:
-   - `utilities.waterMeter_m3` (default 0).
-   - `utilities.lastTickWaterDraw_L` (default 0).
-   - `inventory.nutrients[]` entries with `id`, `name`, `form`, `npk`, `amount_kg`.
-3. Extend zone schemas with `irrigation.methodId` (required) plus optional `targetEC_mS_cm` and `runoffFraction` fields.
-4. Recompile or regenerate any derived schema bundles/versioned registries so validation remains deterministic.
-5. Update save/load serializers, initial seed state, and schema migrations to ensure new fields persist across round-trips.
-6. Document schema updates in `/docs/system` (append a changelog note) and flag downstream consumers that require adjustments.
-
-## Deliverables
-
-- Updated TypeScript schema modules reflecting the new fields, with defaults and validation constraints.
-- Migration or fallback logic ensuring legacy saves hydrate the new fields safely.
-- Documentation updates summarising the schema expansion and downstream impact.
-
-## Constraints & Reminders
-
-- Maintain SI naming conventions—no unit suffixes in keys, numeric fields in canonical SI (litres, kilograms, etc.).
-- Ensure schema version numbers or hashes are bumped so migrations trigger predictably.
-- Add or update tests that exercise schema validation for the new fields (no skipping or TODOs).
+1. Erweiterte Felder im Strukturzustand implementieren: `utilities.waterMeter_m3`, `utilities.lastTickWaterDraw_L`, sowie `inventory.nutrients[]` mit den Attributen `id`, `name`, `form`, `npk`, `amount_kg`.
+2. Ergänze das Zonenmodell um `irrigation.methodId`, `irrigation.targetEC_mS_cm` (optional) und `irrigation.runoffFraction` (optional).
+3. Aktualisiere alle betroffenen JSON-Schemas (Savegame, Blueprint, Runtime-State) und stelle sicher, dass die Validatoren die neuen Felder abdecken. Orientiere dich am Pseudocode `extendStateSchemas` aus `/docs/tasks/20250928-irrgitation-nutrient-overhaul.md`.
+4. Passe Serializer und Deserializer für Save/Load sowie den deterministischen Seed-State an, sodass die neuen Felder korrekt geschrieben und gelesen werden.
