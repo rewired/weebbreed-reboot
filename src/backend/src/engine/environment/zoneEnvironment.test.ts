@@ -4,7 +4,12 @@ import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { ClimateController } from './climateController.js';
-import { AMBIENT_CO2_PPM, AMBIENT_HUMIDITY_RH, AMBIENT_TEMP_C } from '@/constants/environment.js';
+import {
+  AMBIENT_CO2_PPM,
+  AMBIENT_HUMIDITY_RH,
+  AMBIENT_TEMP_C,
+  SATURATION_VAPOR_DENSITY_KG_PER_M3,
+} from '@/constants/environment.js';
 import type {
   DeviceInstanceState,
   FootprintDimensions,
@@ -415,6 +420,115 @@ describe('ZoneEnvironmentService', () => {
 
     expect(zone.environment.relativeHumidity).toBeLessThan(0.92);
     expect(zone.environment.relativeHumidity).toBeGreaterThanOrEqual(0);
+  });
+
+  it('applies humidity device mass per tick independently of tick length', () => {
+    const initialHumidifyRh = 0.4;
+    const humidifyTarget = 0.65;
+    const humidifyRate = 0.12;
+    const humidifyEfficiency = 0.85;
+
+    const runHumidityTick = (
+      tickMinutes: number,
+      initialRh: number,
+      targetRh: number,
+      settings: Record<string, unknown>,
+      efficiency: number,
+    ) => {
+      const environment = createEnvironment({ relativeHumidity: initialRh });
+      const device = createDevice(
+        `humidity-${tickMinutes}-${Math.round(initialRh * 100)}`,
+        'HumidityControlUnit',
+        settings,
+        efficiency,
+      );
+      const zone = createZone([device], environment);
+      zone.control.setpoints.humidity = targetRh;
+      const room = createRoom(zone);
+      const structure = createStructure(room);
+      const state = createGameState(structure);
+      const service = new ZoneEnvironmentService();
+
+      service.applyDeviceDeltas(state, tickMinutes, undefined);
+
+      return zone;
+    };
+
+    const humidifierSettings: Record<string, unknown> = {
+      power: 0.4,
+      targetHumidity: humidifyTarget,
+      hysteresis: 0.05,
+      fullPowerAtDeltaHumidity: 0.05,
+      humidifyRateKgPerTick: humidifyRate,
+    };
+
+    const humidifyFive = runHumidityTick(
+      5,
+      initialHumidifyRh,
+      humidifyTarget,
+      humidifierSettings,
+      humidifyEfficiency,
+    );
+    const humidifySixty = runHumidityTick(
+      60,
+      initialHumidifyRh,
+      humidifyTarget,
+      humidifierSettings,
+      humidifyEfficiency,
+    );
+
+    const humidifyDeltaFive = humidifyFive.environment.relativeHumidity - initialHumidifyRh;
+    const humidifyDeltaSixty = humidifySixty.environment.relativeHumidity - initialHumidifyRh;
+
+    const saturationMass = humidifyFive.volume * SATURATION_VAPOR_DENSITY_KG_PER_M3;
+    const humidifyMassPerTick = humidifyRate * humidifyEfficiency;
+    const humidifyPotentialDelta = humidifyMassPerTick / saturationMass;
+    const humidifyDesiredDelta = humidifyTarget - initialHumidifyRh;
+    const expectedHumidifyDelta = Math.min(humidifyDesiredDelta, humidifyPotentialDelta);
+
+    expect(humidifyDeltaFive).toBeCloseTo(expectedHumidifyDelta, 6);
+    expect(humidifyDeltaSixty).toBeCloseTo(expectedHumidifyDelta, 6);
+    expect(humidifyDeltaFive).toBeCloseTo(humidifyDeltaSixty, 6);
+
+    const initialDehumidifyRh = 0.82;
+    const dehumidifyTarget = 0.5;
+    const dehumidifyRate = 0.09;
+    const dehumidifyEfficiency = 0.9;
+
+    const dehumidifierSettings: Record<string, unknown> = {
+      power: 0.45,
+      targetHumidity: dehumidifyTarget,
+      hysteresis: 0.05,
+      fullPowerAtDeltaHumidity: 0.05,
+      dehumidifyRateKgPerTick: dehumidifyRate,
+    };
+
+    const dehumidifyFive = runHumidityTick(
+      5,
+      initialDehumidifyRh,
+      dehumidifyTarget,
+      dehumidifierSettings,
+      dehumidifyEfficiency,
+    );
+    const dehumidifySixty = runHumidityTick(
+      60,
+      initialDehumidifyRh,
+      dehumidifyTarget,
+      dehumidifierSettings,
+      dehumidifyEfficiency,
+    );
+
+    const dehumidifyDeltaFive = dehumidifyFive.environment.relativeHumidity - initialDehumidifyRh;
+    const dehumidifyDeltaSixty = dehumidifySixty.environment.relativeHumidity - initialDehumidifyRh;
+
+    const dehumidifyMassPerTick = dehumidifyRate * dehumidifyEfficiency;
+    const dehumidifyPotentialDelta = dehumidifyMassPerTick / saturationMass;
+    const dehumidifyDesiredDelta = dehumidifyTarget - initialDehumidifyRh;
+    const expectedDehumidifyDelta = Math.max(dehumidifyDesiredDelta, -dehumidifyPotentialDelta);
+
+    expect(dehumidifyDeltaFive).toBeCloseTo(expectedDehumidifyDelta, 6);
+    expect(dehumidifyDeltaSixty).toBeCloseTo(expectedDehumidifyDelta, 6);
+    expect(dehumidifyDeltaFive).toBeCloseTo(dehumidifyDeltaSixty, 6);
   });
 
   it('resets PPFD based on device contributions each tick', () => {

@@ -234,7 +234,7 @@ describe('deviceEffects', () => {
       },
     });
 
-    const fullPowerMass = 0.1 * tickHours * 0.85;
+    const fullPowerMass = 0.1 * 0.85;
     const expectedFullPowerDelta =
       fullPowerMass / (geometry.volume * SATURATION_VAPOR_DENSITY_KG_PER_M3);
     const expectedDelta = expectedFullPowerDelta * 0.6;
@@ -277,7 +277,7 @@ describe('deviceEffects', () => {
       },
     });
 
-    const fullPowerMass = 0.12 * tickHours * 0.8;
+    const fullPowerMass = 0.12 * 0.8;
     const expectedFullPowerDelta =
       fullPowerMass / (geometry.volume * SATURATION_VAPOR_DENSITY_KG_PER_M3);
     const expectedDelta = -expectedFullPowerDelta * 0.8;

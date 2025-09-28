@@ -363,7 +363,7 @@ const computeHumidityEffect = (
     return { ...DEFAULT_DEVICE_EFFECT };
   }
 
-  const massAtFullPower = baseRate * tickHours * efficiency;
+  const massAtFullPower = baseRate * efficiency;
   if (massAtFullPower <= 0) {
     return { ...DEFAULT_DEVICE_EFFECT };
   }
