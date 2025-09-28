@@ -15,6 +15,18 @@ export interface ZoneResourceSnapshot {
   lastTranspirationLiters: number;
 }
 
+export interface ZoneControlSetpoints {
+  temperature?: number;
+  humidity?: number;
+  co2?: number;
+  ppfd?: number;
+  vpd?: number;
+}
+
+export interface ZoneControlSnapshot {
+  setpoints: ZoneControlSetpoints;
+}
+
 export interface DeviceMaintenanceSnapshot {
   lastServiceTick: number;
   nextDueTick: number;
@@ -81,6 +93,7 @@ export interface ZoneSnapshot {
   };
   devices: DeviceSnapshot[];
   plants: PlantSnapshot[];
+  control?: ZoneControlSnapshot;
   health: ZoneHealthSnapshot;
   lighting?: ZoneLightingSnapshot;
   supplyStatus?: ZoneSupplyStatusSnapshot;

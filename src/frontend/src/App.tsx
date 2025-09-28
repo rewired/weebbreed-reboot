@@ -35,7 +35,7 @@ const App = () => {
       case 'room':
         return <RoomView />;
       case 'zone':
-        return <ZoneView />;
+        return <ZoneView bridge={bridge} />;
       case 'personnel':
         return <PersonnelView bridge={bridge} />;
       case 'finance':

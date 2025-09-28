@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Introduced a zone EnvironmentPanel component with collapsed KPI chips, device-aware setpoint sliders for temperature/humidity/VPD/CO₂/PPFD, and a PPFD lighting toggle wired through the simulation bridge with inline warning feedback.
 - Documented simulation constant governance in [ADR 0009](docs/system/adr/0009-simulation-constants-governance.md) and cross-linked the constants catalogue.
 - Exposed typed strain/device blueprint catalog fetchers and convenience wrappers for
   `plants.addPlanting` and `devices.installDevice` on the frontend simulation bridge,

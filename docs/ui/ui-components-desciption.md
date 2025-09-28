@@ -401,13 +401,14 @@ These are complex components directly related to displaying and interacting with
 
 - **Purpose:** A detailed panel for viewing and adjusting the environmental controls of a zone. It has two states to balance information density with control availability.
 - **Detailed Functionality:**
-  - **Collapsed State:** By default, the panel is collapsed and acts as a high-level KPI summary. It displays the most critical environmental metrics (Temperature, Humidity, PPFD, Light Cycle) with color-coded status indicators (e.g., green for optimal, yellow for warning) for a quick at-a-glance assessment of the zone's health. Clicking anywhere on this summary bar expands the panel.
+  - **Collapsed State:** By default, the panel is collapsed and acts as a high-level KPI summary. It displays the most critical environmental metrics (Temperature, Humidity, VPD, CO₂, PPFD, and Light Cycle) with color-coded status indicators (e.g., green for optimal, yellow for warning) for a quick at-a-glance assessment of the zone's health. Clicking anywhere on this summary bar expands the panel.
   - **Expanded State:** When expanded, the panel reveals a detailed control interface.
-    - **Sliders:** Users can adjust `Temperature`, `Humidity`, and `CO₂` levels using interactive range sliders. The current value is displayed in real-time.
-    - **Lighting Controls:** A dedicated section allows toggling the entire light system on/off (`PowerIcon`). If on, the `Light Power` can be adjusted via a percentage slider, and the `Light Cycle` (e.g., 18h on / 6h off) can be set using a special range slider.
+    - **Range Inputs:** Users can adjust `Temperature`, `Relative Humidity`, `VPD`, `CO₂`, and `PPFD` using interactive range sliders. Slider values mirror the current setpoints and update as `env.setpointUpdated` events arrive from the simulation facade so remote changes remain in sync.
+    - **Lighting Controls:** A dedicated section allows toggling the entire light system on/off (`PowerIcon`). Turning the lights off sends a PPFD target of zero while preserving the previous non-zero target for a quick restore. The panel reads the current light cycle from telemetry for context.
     - **Device Dependency:** Controls are automatically disabled (grayed out) if the required device (e.g., an HVAC unit for temperature control) is not installed in the zone, providing clear feedback to the user about equipment limitations. This is a key feature that connects the simulation's inventory (`zone.devices`) directly to the UI's capabilities.
+    - **Warnings:** Facade warnings (for example, clamp notifications) are surfaced inline beneath the controls so operators can react immediately when a target is adjusted beyond safe bounds.
     - **Additional KPIs:** Displays secondary metrics like Vapor Pressure Deficit (VPD) that are derived from the primary environmental values.
-- **Props:** `zone`, `onUpdate`.
+- **Props:** `zone`, `setpoints`, `bridge`.
 - **Icons Used:**
   - `ThermometerIcon`
   - `DropletIcon`

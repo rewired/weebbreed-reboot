@@ -5,6 +5,7 @@ import type {
   SimulationSnapshot,
   SimulationTimeStatus,
   SimulationUpdateEntry,
+  ZoneControlSetpoints,
 } from '@/types/simulation';
 
 export interface ZoneHistoryPoint {
@@ -24,6 +25,7 @@ interface SimulationState {
   timeStatus: SimulationTimeStatus | null;
   connectionStatus: ConnectionStatus;
   zoneHistory: Record<string, ZoneHistoryPoint[]>;
+  zoneSetpoints: Record<string, ZoneControlSetpoints>;
   lastTick: number;
 }
 
@@ -43,6 +45,156 @@ interface SimulationActions {
 
 const MAX_EVENT_ENTRIES = 200;
 const MAX_ZONE_HISTORY_POINTS = 5000;
+
+const SETPOINT_KEYS: (keyof ZoneControlSetpoints)[] = [
+  'temperature',
+  'humidity',
+  'co2',
+  'ppfd',
+  'vpd',
+];
+
+const shallowEqualSetpoints = (
+  a: ZoneControlSetpoints | undefined,
+  b: ZoneControlSetpoints | undefined,
+) => {
+  if (a === b) {
+    return true;
+  }
+  if (!a || !b) {
+    return false;
+  }
+  return SETPOINT_KEYS.every((key) => a[key] === b[key]);
+};
+
+const deriveZoneSetpointsFromSnapshot = (
+  snapshot: SimulationSnapshot,
+  previous: Record<string, ZoneControlSetpoints>,
+): Record<string, ZoneControlSetpoints> => {
+  let mutated = false;
+  const next: Record<string, ZoneControlSetpoints> = {};
+  const seen = new Set<string>();
+
+  for (const zone of snapshot.zones) {
+    seen.add(zone.id);
+    if (zone.control?.setpoints) {
+      const cloned: ZoneControlSetpoints = { ...zone.control.setpoints };
+      next[zone.id] = cloned;
+      if (!shallowEqualSetpoints(previous[zone.id], cloned)) {
+        mutated = true;
+      }
+    } else if (previous[zone.id]) {
+      next[zone.id] = previous[zone.id]!;
+    } else {
+      next[zone.id] = {};
+      mutated = true;
+    }
+  }
+
+  if (!mutated && Object.keys(previous).length !== seen.size) {
+    mutated = true;
+  }
+
+  return mutated ? next : previous;
+};
+
+const applySetpointEvents = (
+  state: Record<string, ZoneControlSetpoints>,
+  events: SimulationEvent[],
+): Record<string, ZoneControlSetpoints> => {
+  if (!events.length) {
+    return state;
+  }
+
+  let mutated = false;
+  const nextState: Record<string, ZoneControlSetpoints> = { ...state };
+
+  for (const event of events) {
+    if (event.type !== 'env.setpointUpdated') {
+      continue;
+    }
+
+    const payload = event.payload;
+    const zoneId =
+      (payload &&
+      typeof payload === 'object' &&
+      typeof (payload as { zoneId?: unknown }).zoneId === 'string'
+        ? ((payload as { zoneId: string }).zoneId as string)
+        : undefined) ?? event.zoneId;
+
+    if (!zoneId) {
+      continue;
+    }
+
+    const current: ZoneControlSetpoints = { ...nextState[zoneId] };
+    let zoneMutated = false;
+
+    if (payload && typeof payload === 'object') {
+      const control = (payload as { control?: unknown }).control;
+      if (control && typeof control === 'object') {
+        for (const key of SETPOINT_KEYS) {
+          const value = (control as Record<string, unknown>)[key];
+          if (typeof value === 'number' && current[key] !== value) {
+            current[key] = value;
+            zoneMutated = true;
+          }
+        }
+      }
+
+      const metric = (payload as { metric?: unknown }).metric;
+      const value = (payload as { value?: unknown }).value;
+      if (typeof metric === 'string' && typeof value === 'number') {
+        switch (metric) {
+          case 'temperature':
+            if (current.temperature !== value) {
+              current.temperature = value;
+              zoneMutated = true;
+            }
+            break;
+          case 'relativeHumidity':
+            if (current.humidity !== value) {
+              current.humidity = value;
+              zoneMutated = true;
+            }
+            break;
+          case 'co2':
+            if (current.co2 !== value) {
+              current.co2 = value;
+              zoneMutated = true;
+            }
+            break;
+          case 'ppfd':
+            if (current.ppfd !== value) {
+              current.ppfd = value;
+              zoneMutated = true;
+            }
+            break;
+          case 'vpd':
+            if (current.vpd !== value) {
+              current.vpd = value;
+              zoneMutated = true;
+            }
+            break;
+          default:
+            break;
+        }
+      }
+
+      const effectiveHumidity = (payload as { effectiveHumidity?: unknown }).effectiveHumidity;
+      if (typeof effectiveHumidity === 'number' && current.humidity !== effectiveHumidity) {
+        current.humidity = effectiveHumidity;
+        zoneMutated = true;
+      }
+    }
+
+    if (zoneMutated) {
+      nextState[zoneId] = current;
+      mutated = true;
+    }
+  }
+
+  return mutated ? nextState : state;
+};
 
 const preserveFinanceLedger = (
   nextSnapshot: SimulationSnapshot,
@@ -145,6 +297,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
   timeStatus: null,
   connectionStatus: 'idle',
   zoneHistory: {},
+  zoneSetpoints: {},
   lastTick: 0,
   hydrate: ({ snapshot, updates = [], events = [], time }) => {
     const previousSnapshot = get().snapshot;
@@ -165,11 +318,14 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
         targetTickRate: snapshotWithLedger.clock.targetTickRate,
       },
     });
+    const setpointsFromSnapshot = deriveZoneSetpointsFromSnapshot(snapshotWithLedger, {});
+    const setpointsWithEvents = applySetpointEvents(setpointsFromSnapshot, events);
     set({
       snapshot: snapshotWithLedger,
       events: mergeEvents([], events),
       timeStatus: time ?? null,
       zoneHistory: finalHistory,
+      zoneSetpoints: setpointsWithEvents,
       lastTick: snapshotWithLedger.clock.tick,
     });
   },
@@ -186,18 +342,36 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       ...update,
       snapshot: snapshotWithLedger,
     });
+    const setpointsFromSnapshot = deriveZoneSetpointsFromSnapshot(
+      snapshotWithLedger,
+      get().zoneSetpoints,
+    );
+    const setpointsWithEvents = applySetpointEvents(setpointsFromSnapshot, update.events);
     set((state) => ({
       snapshot: snapshotWithLedger,
       timeStatus: update.time,
       events: mergeEvents(state.events, update.events),
       zoneHistory: nextHistory,
+      zoneSetpoints: setpointsWithEvents,
       lastTick: update.tick,
     }));
   },
   recordEvents: (events) =>
-    set((state) => ({
-      events: mergeEvents(state.events, events),
-    })),
+    set((state) => {
+      const mergedEvents = mergeEvents(state.events, events);
+      const setpoints = applySetpointEvents(state.zoneSetpoints, events);
+      if (mergedEvents === state.events && setpoints === state.zoneSetpoints) {
+        return {};
+      }
+      const patch: Partial<SimulationState> = {};
+      if (mergedEvents !== state.events) {
+        patch.events = mergedEvents;
+      }
+      if (setpoints !== state.zoneSetpoints) {
+        patch.zoneSetpoints = setpoints;
+      }
+      return patch;
+    }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setTimeStatus: (status) => set({ timeStatus: status }),
   reset: () =>
@@ -207,6 +381,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       timeStatus: null,
       connectionStatus: 'idle',
       zoneHistory: {},
+      zoneSetpoints: {},
       lastTick: 0,
     }),
 }));
