@@ -275,7 +275,7 @@ describe('Plant and Device modals', () => {
             complexity: 0.2,
             lifetimeHours: 5000,
             compatibility: { roomPurposes: ['growroom'] },
-            defaults: { settings: { coverageArea: 1.5, power: 0.7 } },
+            defaults: { settings: { coverageArea: 1.5, power: 0.7, ppfd: 650 } },
             maintenance: {},
             metadata: {},
             price: {
@@ -286,7 +286,7 @@ describe('Plant and Device modals', () => {
             roomPurposes: ['growroom'],
             coverage: { maxArea_m2: 1.5 },
             limits: {},
-            settings: { coverageArea: 1.5, power: 0.7 },
+            settings: { coverageArea: 1.5, power: 0.7, ppfd: 650 },
           },
         ],
       })),
@@ -378,7 +378,7 @@ describe('Plant and Device modals', () => {
     });
   });
 
-  it('validates device settings JSON and reports facade warnings', async () => {
+  it('validates device target inputs and reports facade warnings', async () => {
     render(<ModalHost bridge={bridge} />);
 
     act(() => {
@@ -392,19 +392,29 @@ describe('Plant and Device modals', () => {
 
     expect(await screen.findByText(/Covers up to/i)).toBeInTheDocument();
 
-    const textarea = screen.getByLabelText('Settings (JSON)');
-    fireEvent.change(textarea, { target: { value: '{"power":' } });
+    const ppfdInput = await screen.findByLabelText('Target PPFD (µmol·m⁻²·s⁻¹)');
+    fireEvent.change(ppfdInput, { target: { value: '' } });
     fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
-    expect(await screen.findByText('Settings must be valid JSON.')).toBeInTheDocument();
+    expect(await screen.findByText('Value is required.')).toBeInTheDocument();
+    expect(bridge.devices.installDevice).not.toHaveBeenCalled();
 
-    fireEvent.change(textarea, { target: { value: '{"power":0.5}' } });
+    fireEvent.change(ppfdInput, { target: { value: '680' } });
     fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
 
     await screen.findByText('Device load near limit.');
     expect(bridge.devices.installDevice).toHaveBeenCalledWith({
       targetId: 'zone-1',
       deviceId: 'device-1',
-      settings: { power: 0.5 },
+      settings: { ppfd: 680 },
+    });
+
+    fireEvent.change(ppfdInput, { target: { value: '650' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Install device' }));
+
+    await screen.findByText('Device load near limit.');
+    expect(bridge.devices.installDevice).toHaveBeenLastCalledWith({
+      targetId: 'zone-1',
+      deviceId: 'device-1',
     });
   });
 
