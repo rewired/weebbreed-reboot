@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Corrected humidity device mass scaling so per-tick rates humidify/dehumidify
   zones consistently regardless of tick length while leaving energy usage tied
   to the simulated duration.
+- Allowed dehumidifier-only zones to accept humidity setpoints by aligning facade
+  device-kind filters with environment services, adding integration coverage, and
+  documenting the supported device kinds for socket clients.
 - Hardened the frontend seed generator by typing `seed-config.json`, dropping
   unused config overrides, routing weighted picks through the Mulberry32 RNG,
   and enforcing blacklist lookups with `Set<string>` to keep deterministic name
