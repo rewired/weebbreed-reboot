@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Removed the EnvironmentPanel VPD slider, keeping the badge summary while routing VPD adjustments through humidity controls only.
 - Reworked the Install Device modal to expose blueprint target defaults as structured inputs, validate overrides inline, and
   submit only changed setpoints when installing devices.
+- Surfaced blueprint coverage limits in the Install Device modal, presenting area and volume capacities (deriving floor
+  coverage from room height when only volume is supplied) and extending Vitest coverage for both metrics.
 
 ### Fixed
 

@@ -290,6 +290,27 @@ describe('Plant and Device modals', () => {
             limits: {},
             settings: { coverageArea: 1.5, power: 0.7, ppfd: 650 },
           },
+          {
+            id: 'device-2',
+            kind: 'ventilation',
+            name: 'Cyclone Fan 150',
+            quality: 0.8,
+            complexity: 0.1,
+            lifetimeHours: 4000,
+            compatibility: { roomPurposes: ['growroom'] },
+            defaults: { settings: { airflow: 170 } },
+            maintenance: {},
+            metadata: {},
+            price: {
+              capitalExpenditure: 0,
+              baseMaintenanceCostPerTick: 0,
+              costIncreasePer1000Ticks: 0,
+            },
+            roomPurposes: ['growroom'],
+            coverage: { maxVolume_m3: 15 },
+            limits: {},
+            settings: { airflow: 170 },
+          },
         ],
       })),
       getDifficultyConfig: vi.fn(async () => ({ ok: true })),
@@ -392,7 +413,9 @@ describe('Plant and Device modals', () => {
       });
     });
 
-    expect(await screen.findByText(/Covers up to/i)).toBeInTheDocument();
+    const areaCoverage = await screen.findByText('Covers up to 1.5 m² · Zone area 20 m²');
+    expect(areaCoverage).toBeInTheDocument();
+    expect(areaCoverage).toHaveClass('text-warning');
 
     const ppfdInput = await screen.findByLabelText('Target PPFD (µmol·m⁻²·s⁻¹)');
     fireEvent.change(ppfdInput, { target: { value: '' } });
@@ -454,6 +477,28 @@ describe('Plant and Device modals', () => {
       });
     }
     expect(screen.getAllByText('Device load near limit.')).toHaveLength(1);
+  });
+
+  it('displays volume-based coverage and derived area when available', async () => {
+    render(<ModalHost bridge={bridge} />);
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'install-device',
+        type: 'installDevice',
+        title: 'Install device',
+        context: { zoneId: 'zone-1' },
+      });
+    });
+
+    const deviceSelect = await screen.findByLabelText('Device blueprint');
+    fireEvent.change(deviceSelect, { target: { value: 'device-2' } });
+
+    const volumeCoverage = await screen.findByText(
+      'Covers up to 5.36 m² (≈ derived from 2.8 m height) · 15 m³ · Zone area 20 m² · Zone volume 56 m³',
+    );
+    expect(volumeCoverage).toBeInTheDocument();
+    expect(volumeCoverage).toHaveClass('text-warning');
   });
 
   it('opens the tune device modal from the zone view and dispatches a setpoint update', async () => {
