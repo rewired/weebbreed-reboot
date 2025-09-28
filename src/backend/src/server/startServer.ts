@@ -39,6 +39,7 @@ import { WorldService } from '@/engine/world/worldService.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { LightingCycleService } from '@/engine/devices/lightingCycleService.js';
 import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
+import { DeviceRemovalService } from '@/engine/devices/deviceRemovalService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { PlantingService } from '@/engine/plants/plantingService.js';
 import { JobMarketService } from '@/engine/workforce/jobMarketService.js';
@@ -338,6 +339,7 @@ export const startBackendServer = async (
     rng,
     repository,
   });
+  const deviceRemovalService = new DeviceRemovalService({ state });
   const lightingCycleService = new LightingCycleService({ state });
   const plantingPlanService = new PlantingPlanService({ state, rng });
   const plantingService = new PlantingService({ state, rng, repository });
@@ -386,6 +388,8 @@ export const startBackendServer = async (
           intent.settings,
           context,
         ),
+      removeDevice: (intent, context) =>
+        deviceRemovalService.removeDevice(intent.instanceId, context),
       toggleDeviceGroup: (intent, context) =>
         deviceGroupService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
       adjustLightingCycle: (intent, context) =>

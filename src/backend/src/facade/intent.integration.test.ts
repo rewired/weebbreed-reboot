@@ -8,6 +8,7 @@ import { WorldService } from '@/engine/world/worldService.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import { DeviceGroupService } from '@/engine/devices/deviceGroupService.js';
 import { DeviceInstallationService } from '@/engine/devices/deviceInstallationService.js';
+import { DeviceRemovalService } from '@/engine/devices/deviceRemovalService.js';
 import { LightingCycleService } from '@/engine/devices/lightingCycleService.js';
 import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { PlantingService } from '@/engine/plants/plantingService.js';
@@ -338,6 +339,7 @@ describe('SimulationFacade new intents', () => {
       rng,
       repository,
     });
+    const deviceRemovalService = new DeviceRemovalService({ state });
     const lightingCycleService = new LightingCycleService({ state });
     const plantingPlanService = new PlantingPlanService({ state, rng });
     const plantingService = new PlantingService({ state, rng, repository });
@@ -366,40 +368,8 @@ describe('SimulationFacade new intents', () => {
             intent.settings,
             context,
           ),
-        removeDevice: (intent, context) => {
-          for (const structure of state.structures) {
-            for (const room of structure.rooms) {
-              for (const zone of room.zones) {
-                const index = zone.devices.findIndex((device) => device.id === intent.instanceId);
-                if (index >= 0) {
-                  const [removed] = zone.devices.splice(index, 1);
-                  context.events.queue(
-                    'device.removed',
-                    {
-                      structureId: structure.id,
-                      roomId: room.id,
-                      zoneId: zone.id,
-                      deviceId: removed.id,
-                    },
-                    context.tick,
-                    'info',
-                  );
-                  return { ok: true };
-                }
-              }
-            }
-          }
-          return {
-            ok: false,
-            errors: [
-              {
-                code: 'ERR_NOT_FOUND',
-                message: `Device ${intent.instanceId} was not found.`,
-                path: ['devices.removeDevice', 'instanceId'],
-              },
-            ],
-          };
-        },
+        removeDevice: (intent, context) =>
+          deviceRemovalService.removeDevice(intent.instanceId, context),
         toggleDeviceGroup: (intent, context) =>
           deviceService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
         adjustLightingCycle: (intent, context) =>
@@ -628,6 +598,7 @@ describe('SimulationFacade new intents', () => {
     const result = await facade.devices.removeDevice({ instanceId: generatedDevice.id });
 
     expect(result.ok).toBe(true);
+    expect(result.warnings).toBeUndefined();
     expect(zone.devices.some((device) => device.id === generatedDevice.id)).toBe(false);
     const removalEvent = events.find(
       (event) =>
@@ -637,6 +608,32 @@ describe('SimulationFacade new intents', () => {
         (event.payload as { deviceId?: string }).deviceId === generatedDevice.id,
     );
     expect(removalEvent).toBeDefined();
+  });
+
+  it('clears unsupported setpoints when removing the last control device', async () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    zone.control ??= { setpoints: {} };
+    zone.control.setpoints.ppfd = 420;
+
+    const result = await facade.devices.removeDevice({ instanceId: DEVICE_ID });
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toEqual([
+      'Cleared PPFD setpoint because the zone no longer has lighting devices.',
+    ]);
+    expect(zone.control.setpoints.ppfd).toBeUndefined();
+
+    const removalEvent = events.find(
+      (event) =>
+        event.type === 'device.removed' &&
+        event.payload &&
+        typeof event.payload === 'object' &&
+        (event.payload as { deviceId?: string }).deviceId === DEVICE_ID,
+    );
+    expect(removalEvent).toBeDefined();
+    if (removalEvent && typeof removalEvent.payload === 'object') {
+      expect((removalEvent.payload as { warnings?: string[] }).warnings).toEqual(result.warnings);
+    }
   });
 
   it('rejects incompatible device installations with structured errors', async () => {
