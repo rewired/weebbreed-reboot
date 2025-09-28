@@ -7,6 +7,7 @@ import type {
   SimulationUpdateEntry,
   ZoneControlSetpoints,
 } from '@/types/simulation';
+import { ZONE_CONTROL_SETPOINT_KEYS, canonicalizeZoneControlSetpoints } from '@/types/simulation';
 
 export interface ZoneHistoryPoint {
   tick: number;
@@ -46,13 +47,7 @@ interface SimulationActions {
 const MAX_EVENT_ENTRIES = 200;
 const MAX_ZONE_HISTORY_POINTS = 5000;
 
-const SETPOINT_KEYS: (keyof ZoneControlSetpoints)[] = [
-  'temperature',
-  'humidity',
-  'co2',
-  'ppfd',
-  'vpd',
-];
+const SETPOINT_KEYS = ZONE_CONTROL_SETPOINT_KEYS;
 
 const shallowEqualSetpoints = (
   a: ZoneControlSetpoints | undefined,
@@ -78,7 +73,8 @@ const deriveZoneSetpointsFromSnapshot = (
   for (const zone of snapshot.zones) {
     seen.add(zone.id);
     if (zone.control?.setpoints) {
-      const cloned: ZoneControlSetpoints = { ...zone.control.setpoints };
+      const canonical = canonicalizeZoneControlSetpoints(zone.control.setpoints);
+      const cloned: ZoneControlSetpoints = { ...canonical };
       next[zone.id] = cloned;
       if (!shallowEqualSetpoints(previous[zone.id], cloned)) {
         mutated = true;
@@ -132,8 +128,11 @@ const applySetpointEvents = (
     if (payload && typeof payload === 'object') {
       const control = (payload as { control?: unknown }).control;
       if (control && typeof control === 'object') {
+        const canonicalControl = canonicalizeZoneControlSetpoints(
+          control as ZoneControlSetpoints & { relativeHumidity?: number },
+        );
         for (const key of SETPOINT_KEYS) {
-          const value = (control as Record<string, unknown>)[key];
+          const value = (canonicalControl as Record<string, unknown>)[key];
           if (typeof value === 'number' && current[key] !== value) {
             current[key] = value;
             zoneMutated = true;
@@ -152,6 +151,7 @@ const applySetpointEvents = (
             }
             break;
           case 'relativeHumidity':
+          case 'humidity':
             if (current.humidity !== value) {
               current.humidity = value;
               zoneMutated = true;

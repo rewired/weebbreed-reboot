@@ -23,6 +23,63 @@ export interface ZoneControlSetpoints {
   vpd?: number;
 }
 
+export type ZoneControlSetpointKey = keyof ZoneControlSetpoints;
+
+export const ZONE_CONTROL_SETPOINT_KEYS: ZoneControlSetpointKey[] = [
+  'temperature',
+  'humidity',
+  'co2',
+  'ppfd',
+  'vpd',
+];
+
+export type ZoneControlSetpointsLike = ZoneControlSetpoints & {
+  relativeHumidity?: number;
+};
+
+export const resolveHumiditySetpoint = (
+  setpoints?: Pick<ZoneControlSetpointsLike, 'humidity' | 'relativeHumidity'> | null,
+): number | undefined => {
+  if (!setpoints) {
+    return undefined;
+  }
+  if (typeof setpoints.humidity === 'number') {
+    return setpoints.humidity;
+  }
+  if (typeof setpoints.relativeHumidity === 'number') {
+    return setpoints.relativeHumidity;
+  }
+  return undefined;
+};
+
+export const canonicalizeZoneControlSetpoints = (
+  setpoints?: ZoneControlSetpointsLike | null,
+): ZoneControlSetpoints => {
+  if (!setpoints) {
+    return {};
+  }
+
+  const humidity = resolveHumiditySetpoint(setpoints);
+  const base = { ...setpoints } as ZoneControlSetpoints & {
+    relativeHumidity?: number;
+  };
+  if ('relativeHumidity' in base) {
+    delete base.relativeHumidity;
+  }
+
+  if (humidity === undefined) {
+    if ('humidity' in base && typeof base.humidity !== 'number') {
+      delete base.humidity;
+    }
+    return base;
+  }
+
+  return {
+    ...base,
+    humidity,
+  };
+};
+
 export interface ZoneControlSnapshot {
   setpoints: ZoneControlSetpoints;
 }
