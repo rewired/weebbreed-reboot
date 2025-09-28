@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import cx from 'clsx';
 import {
   useReactTable,
@@ -227,10 +227,18 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
 
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [showHarvestableOnly, setShowHarvestableOnly] = useState(false);
+  const [pendingPlantActions, setPendingPlantActions] = useState<
+    Record<string, 'harvest' | 'cull' | undefined>
+  >({});
+  const [harvestAllBusy, setHarvestAllBusy] = useState(false);
 
   useEffect(() => {
     setColumnFilters([]);
     setSorting([]);
+    setShowHarvestableOnly(false);
+    setPendingPlantActions({});
+    setHarvestAllBusy(false);
   }, [zone?.id]);
 
   const stageOptions = useMemo(() => {
@@ -276,9 +284,227 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     (filter) => filter.id === 'hasPests' && filter.value === 'flagged',
   );
 
+  const harvestablePlantIds = useMemo(() => {
+    if (!zone) {
+      return [] as string[];
+    }
+    return zone.plants.filter((plant) => plant.isHarvestable).map((plant) => plant.id);
+  }, [zone]);
+
+  const tableData = useMemo(() => {
+    if (!zone) {
+      return [] as PlantSnapshot[];
+    }
+    if (!showHarvestableOnly) {
+      return zone.plants;
+    }
+    return zone.plants.filter((plant) => plant.isHarvestable);
+  }, [zone, showHarvestableOnly]);
+
+  const applyLocalPlantRemoval = useCallback(
+    (removedIds: string[]) => {
+      const zoneId = zone?.id;
+      if (!removedIds.length || !zoneId) {
+        return;
+      }
+      const idSet = new Set(removedIds);
+      useSimulationStore.setState((state) => {
+        const snapshotState = state.snapshot;
+        if (!snapshotState) {
+          return state;
+        }
+        const zoneIndex = snapshotState.zones.findIndex((entry) => entry.id === zoneId);
+        if (zoneIndex === -1) {
+          return state;
+        }
+        const targetZone = snapshotState.zones[zoneIndex]!;
+        const nextPlants = targetZone.plants.filter((plant) => !idSet.has(plant.id));
+        if (nextPlants.length === targetZone.plants.length) {
+          return state;
+        }
+        const nextZones = [...snapshotState.zones];
+        nextZones[zoneIndex] = { ...targetZone, plants: nextPlants };
+        return { snapshot: { ...snapshotState, zones: nextZones } };
+      });
+    },
+    [zone?.id],
+  );
+
+  const handleHarvest = useCallback(
+    async (plantId: string) => {
+      if (!plantId) {
+        return;
+      }
+      setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'harvest' }));
+      try {
+        const response = await bridge.plants.harvestPlant({ plantId });
+        if (!response.ok) {
+          console.warn('Harvest plant command failed', response.errors ?? response.warnings);
+          return;
+        }
+        if (response.warnings?.length) {
+          console.warn('Harvest plant command warnings:', response.warnings);
+        }
+        applyLocalPlantRemoval([plantId]);
+      } catch (error) {
+        console.error('Failed to harvest plant', error);
+      } finally {
+        setPendingPlantActions((previous) => {
+          const next = { ...previous };
+          delete next[plantId];
+          return next;
+        });
+      }
+    },
+    [applyLocalPlantRemoval, bridge.plants],
+  );
+
+  const handleCull = useCallback(
+    async (plantId: string) => {
+      if (!plantId) {
+        return;
+      }
+      setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'cull' }));
+      try {
+        const response = await bridge.plants.cullPlant({ plantId });
+        if (!response.ok) {
+          console.warn('Cull plant command failed', response.errors ?? response.warnings);
+          return;
+        }
+        if (response.warnings?.length) {
+          console.warn('Cull plant command warnings:', response.warnings);
+        }
+        applyLocalPlantRemoval([plantId]);
+      } catch (error) {
+        console.error('Failed to cull plant', error);
+      } finally {
+        setPendingPlantActions((previous) => {
+          const next = { ...previous };
+          delete next[plantId];
+          return next;
+        });
+      }
+    },
+    [applyLocalPlantRemoval, bridge.plants],
+  );
+
+  const handleHarvestAll = useCallback(async () => {
+    if (!harvestablePlantIds.length) {
+      return;
+    }
+    setHarvestAllBusy(true);
+    const succeeded: string[] = [];
+    try {
+      for (const plantId of harvestablePlantIds) {
+        setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'harvest' }));
+        try {
+          const response = await bridge.plants.harvestPlant({ plantId });
+          if (!response.ok) {
+            console.warn('Harvest plant command failed', response.errors ?? response.warnings);
+            continue;
+          }
+          if (response.warnings?.length) {
+            console.warn('Harvest plant command warnings:', response.warnings);
+          }
+          succeeded.push(plantId);
+        } catch (error) {
+          console.error('Failed to harvest plant', error);
+        } finally {
+          setPendingPlantActions((previous) => {
+            const next = { ...previous };
+            delete next[plantId];
+            return next;
+          });
+        }
+      }
+      if (succeeded.length) {
+        applyLocalPlantRemoval(succeeded);
+      }
+    } finally {
+      setHarvestAllBusy(false);
+    }
+  }, [applyLocalPlantRemoval, bridge.plants, harvestablePlantIds]);
+
+  const tableColumns = useMemo(() => {
+    const currentTick = snapshot?.tick ?? snapshot?.clock.tick ?? 0;
+    const reentryRestrictedUntil = zone?.health.reentryRestrictedUntilTick;
+    const preHarvestRestrictedUntil = zone?.health.preHarvestRestrictedUntilTick;
+    const reentryRestricted =
+      typeof reentryRestrictedUntil === 'number' && reentryRestrictedUntil > currentTick;
+    const preHarvestRestricted =
+      typeof preHarvestRestrictedUntil === 'number' && preHarvestRestrictedUntil > currentTick;
+    const zoneRestricted = reentryRestricted || preHarvestRestricted;
+
+    return [
+      ...plantColumns,
+      columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        meta: { headerLabel: 'Actions' },
+        size: 220,
+        minSize: 200,
+        maxSize: 260,
+        cell: (info) => {
+          const plant = info.row.original;
+          const pending = pendingPlantActions[plant.id];
+          const harvestDisabled =
+            !plant.isHarvestable || zoneRestricted || pending === 'cull' || harvestAllBusy;
+          const cullDisabled = zoneRestricted || pending === 'harvest' || harvestAllBusy;
+          const harvestTitle = !plant.isHarvestable
+            ? 'This plant is not ready for harvest.'
+            : zoneRestricted
+              ? 'Zone safety restrictions prevent harvesting right now.'
+              : undefined;
+          const cullTitle = zoneRestricted
+            ? 'Zone safety restrictions prevent culling right now.'
+            : undefined;
+
+          return (
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                data-testid={`plant-action-harvest-${plant.id}`}
+                icon={<Icon name="grass" size={16} />}
+                disabled={harvestDisabled}
+                title={harvestTitle}
+                onClick={() => {
+                  void handleHarvest(plant.id);
+                }}
+              >
+                Harvest
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                data-testid={`plant-action-cull-${plant.id}`}
+                icon={<Icon name="delete" size={16} />}
+                disabled={cullDisabled}
+                title={cullTitle}
+                onClick={() => {
+                  void handleCull(plant.id);
+                }}
+              >
+                Trash
+              </Button>
+            </div>
+          );
+        },
+      }),
+    ];
+  }, [
+    handleCull,
+    handleHarvest,
+    harvestAllBusy,
+    pendingPlantActions,
+    snapshot?.clock.tick,
+    snapshot?.tick,
+    zone?.health,
+  ]);
+
   const table = useReactTable({
-    data: zone?.plants ?? [],
-    columns: plantColumns,
+    data: tableData,
+    columns: tableColumns,
     state: { columnFilters, sorting },
     onColumnFiltersChange: setColumnFilters,
     onSortingChange: setSorting,
@@ -299,8 +525,30 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
 
   const totalPlantCount = zone?.plants.length ?? 0;
   const hasPlants = totalPlantCount > 0;
+  const harvestableCount = harvestablePlantIds.length;
+  const currentTick = snapshot?.tick ?? snapshot?.clock.tick ?? 0;
+  const preHarvestRestricted = Boolean(
+    zone?.health.preHarvestRestrictedUntilTick !== undefined &&
+      zone.health.preHarvestRestrictedUntilTick !== null &&
+      zone.health.preHarvestRestrictedUntilTick > currentTick,
+  );
+  const reentryRestricted = Boolean(
+    zone?.health.reentryRestrictedUntilTick !== undefined &&
+      zone.health.reentryRestrictedUntilTick !== null &&
+      zone.health.reentryRestrictedUntilTick > currentTick,
+  );
+  const zoneRestricted = preHarvestRestricted || reentryRestricted;
   const stageSelectId = `zone-${zone?.id ?? 'unknown'}-stage-filter`;
   const stressSelectId = `zone-${zone?.id ?? 'unknown'}-stress-filter`;
+  const harvestFilterActive = showHarvestableOnly;
+  const harvestAllDisabled = harvestAllBusy || zoneRestricted || harvestableCount === 0;
+  const harvestAllTitle = harvestAllBusy
+    ? 'Harvest commands are currently running.'
+    : zoneRestricted
+      ? 'Zone safety restrictions prevent harvesting right now.'
+      : harvestableCount === 0
+        ? 'No harvestable plants available.'
+        : null;
 
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
@@ -547,21 +795,36 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             title="Plants"
             subtitle="Batch overview"
             action={
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Icon name="local_florist" />}
-                onClick={() =>
-                  openModal({
-                    id: `plant-${zone.id}`,
-                    type: 'plantZone',
-                    title: `Plant ${zone.name}`,
-                    context: { zoneId: zone.id },
-                  })
-                }
-              >
-                Plant zone
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<Icon name="local_florist" />}
+                  onClick={() =>
+                    openModal({
+                      id: `plant-${zone.id}`,
+                      type: 'plantZone',
+                      title: `Plant ${zone.name}`,
+                      context: { zoneId: zone.id },
+                    })
+                  }
+                >
+                  Plant zone
+                </Button>
+                <Button
+                  size="sm"
+                  variant="primary"
+                  icon={<Icon name="agriculture" />}
+                  data-testid="plant-harvest-all"
+                  disabled={harvestAllDisabled}
+                  title={harvestAllTitle ?? undefined}
+                  onClick={() => {
+                    void handleHarvestAll();
+                  }}
+                >
+                  Harvest all
+                </Button>
+              </div>
             }
             data-testid="zone-plants-card"
           >
@@ -617,6 +880,22 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 type="button"
                 size="sm"
                 variant="ghost"
+                data-testid="plant-filter-harvestable"
+                icon={<Icon name="agriculture" size={16} />}
+                className={cx(
+                  'border border-border/30 text-xs font-semibold uppercase tracking-wide text-text-muted hover:text-text',
+                  harvestFilterActive && 'border-primary/40 bg-primary/10 text-primary',
+                )}
+                aria-pressed={harvestFilterActive}
+                onClick={() => setShowHarvestableOnly((value) => !value)}
+                disabled={!hasPlants}
+              >
+                Harvestable only
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
                 data-testid="plant-filter-diseases"
                 icon={<Icon name="coronavirus" size={16} />}
                 className={cx(
@@ -648,9 +927,9 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             </div>
             <div
               ref={tableContainerRef}
-              className="max-h-96 overflow-y-auto rounded-2xl border border-border/30"
+              className="max-h-96 overflow-auto rounded-2xl border border-border/30"
             >
-              <table className="min-w-full divide-y divide-border/30 text-sm">
+              <table className="min-w-[820px] divide-y divide-border/30 text-sm">
                 <thead className="sticky top-0 z-10 bg-surface-muted/80 text-xs uppercase tracking-wide text-text-muted">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
