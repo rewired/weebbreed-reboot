@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   including Vitest coverage to lock down the intent envelopes.
 - Enabled façade support for `devices.installDevice` and `plants.addPlanting`, including zone compatibility checks,
   capacity validation, and new `device.installed` / `plant.planted` telemetry events.
+- Added zone-level "Plant zone" and "Install device" flows that launch capacity-aware modals backed by blueprint catalogs and new Vitest coverage.【F:src/frontend/src/views/ZoneView.tsx†L286-L398】【F:src/frontend/src/components/modals/ModalHost.tsx†L104-L470】【F:src/frontend/src/components/modals/**tests**/PlantAndDeviceModals.test.tsx†L64-L149】
 - **Dynamic Structure Blueprint Loading**: The "Rent Structure" modal now dynamically loads available structure blueprints from the backend instead of using hardcoded frontend data. The backend exposes structure blueprints from `/data/blueprints/structures/*.json` through a new `getStructureBlueprints` facade intent. This ensures the frontend always displays the most current and accurate structure options available in the game.
 - Added world facade intents `getStrainBlueprints` and `getDeviceBlueprints` with deterministic catalog payloads (IDs, names, compatibility hints, default settings, and price hints), wired through the simulation facade/socket gateway and documented in the protocol guide.
 

@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { ModalFrame } from '@/components/modals/ModalFrame';
-import type { StructureBlueprint, SimulationBridge } from '@/facade/systemFacade';
+import type {
+  DeviceBlueprint,
+  StrainBlueprint,
+  StructureBlueprint,
+  SimulationBridge,
+} from '@/facade/systemFacade';
 import { HireModal } from '@/components/personnel/HireModal';
 import { FireModal } from '@/components/personnel/FireModal';
 import { useUIStore } from '@/store/ui';
@@ -44,6 +49,538 @@ const ActionFooter = ({
     </Button>
   </div>
 );
+
+const CULTIVATION_METHOD_HINTS: Record<
+  string,
+  { name: string; areaPerPlant: number; description: string }
+> = {
+  '85cc0916-0e8a-495e-af8f-50291abe6855': {
+    name: 'Basic Soil Pot',
+    areaPerPlant: 0.5,
+    description: 'One plant per soil pot. Reliable but lower density.',
+  },
+  '41229377-ef2d-4723-931f-72eea87d7a62': {
+    name: 'Screen of Green',
+    areaPerPlant: 1,
+    description: 'Low-density method using horizontal training screens.',
+  },
+  '659ba4d7-a5fc-482e-98d4-b614341883ac': {
+    name: 'Sea of Green',
+    areaPerPlant: 0.25,
+    description: 'High-density micro canopy with many small plants.',
+  },
+};
+
+const getCultivationMethodHint = (methodId?: string | null) =>
+  methodId ? (CULTIVATION_METHOD_HINTS[methodId] ?? null) : null;
+
+const PlantZoneModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const zoneId = typeof context?.zoneId === 'string' ? context.zoneId : null;
+  const zone = useSimulationStore((state) =>
+    zoneId ? (state.snapshot?.zones.find((item) => item.id === zoneId) ?? null) : null,
+  );
+  const [strains, setStrains] = useState<StrainBlueprint[]>([]);
+  const [selectedStrainId, setSelectedStrainId] = useState('');
+  const [count, setCount] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadBlueprints = async () => {
+      setLoading(true);
+      try {
+        const response = await bridge.getStrainBlueprints();
+        if (!isMounted) {
+          return;
+        }
+        if (response.ok && response.data) {
+          setStrains(response.data);
+          if (response.data.length > 0) {
+            setSelectedStrainId((previous) => {
+              const existing = response.data.find((item) => item.id === previous);
+              return existing ? existing.id : response.data[0]!.id;
+            });
+          }
+        } else {
+          setFeedback('Failed to load strain catalog from facade.');
+        }
+      } catch (error) {
+        console.error('Failed to load strain catalog', error);
+        if (isMounted) {
+          setFeedback('Connection error while loading strain catalog.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadBlueprints();
+    return () => {
+      isMounted = false;
+    };
+  }, [bridge]);
+
+  const methodHint = getCultivationMethodHint(zone?.cultivationMethodId);
+  const capacity = useMemo(() => {
+    if (!zone || !methodHint) {
+      return null;
+    }
+    const areaPerPlant = Math.max(methodHint.areaPerPlant, 0.1);
+    return Math.max(1, Math.floor(zone.area / areaPerPlant));
+  }, [methodHint, zone]);
+
+  const plantedCount = zone?.plants.length ?? 0;
+  const remainingCapacity = capacity !== null ? Math.max(0, capacity - plantedCount) : null;
+  const selectedStrain = useMemo(
+    () => strains.find((strain) => strain.id === selectedStrainId) ?? null,
+    [selectedStrainId, strains],
+  );
+
+  const affinity = useMemo(() => {
+    if (!selectedStrain) {
+      return null;
+    }
+    const methodId = zone?.cultivationMethodId;
+    if (!methodId) {
+      return null;
+    }
+    if (typeof selectedStrain.methodAffinity?.[methodId] === 'number') {
+      return selectedStrain.methodAffinity[methodId]!;
+    }
+    return selectedStrain.compatibility.methodAffinity[methodId] ?? null;
+  }, [selectedStrain, zone?.cultivationMethodId]);
+
+  const compatibilityLabel = useMemo(() => {
+    if (affinity === null) {
+      return zone?.cultivationMethodId
+        ? 'No affinity data for this cultivation method.'
+        : 'Assign a cultivation method to compute capacity hints.';
+    }
+    const affinityPct = affinity * 100;
+    if (affinityPct >= 80) {
+      return `Excellent fit (${formatNumber(affinityPct, { maximumFractionDigits: 0 })}% affinity)`;
+    }
+    if (affinityPct >= 60) {
+      return `Good fit (${formatNumber(affinityPct, { maximumFractionDigits: 0 })}% affinity)`;
+    }
+    if (affinityPct >= 40) {
+      return `Fair fit (${formatNumber(affinityPct, { maximumFractionDigits: 0 })}% affinity)`;
+    }
+    return `Low affinity (${formatNumber(affinityPct, { maximumFractionDigits: 0 })}%). Consider another strain or method.`;
+  }, [affinity, zone?.cultivationMethodId]);
+
+  const exceedsCapacity = useMemo(() => {
+    if (capacity === null) {
+      return false;
+    }
+    return count + plantedCount > capacity;
+  }, [capacity, count, plantedCount]);
+
+  const handlePlanting = async () => {
+    if (!zoneId) {
+      setFeedback('Zone context missing. Close the modal and retry.');
+      return;
+    }
+    if (!selectedStrainId) {
+      setFeedback('Select a strain to continue.');
+      return;
+    }
+    setBusy(true);
+    setFeedback(null);
+    setWarnings([]);
+    try {
+      const response = await bridge.plants.addPlanting({
+        zoneId,
+        strainId: selectedStrainId,
+        count,
+      });
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Planting intent rejected by facade.');
+        return;
+      }
+      if (response.warnings?.length) {
+        setWarnings(response.warnings);
+        return;
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Failed to plant zone', error);
+      setFeedback('Connection error while planting this zone.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!zone || !zoneId) {
+    return (
+      <p className="text-sm text-text-muted">Zone context unavailable. Select a zone and retry.</p>
+    );
+  }
+
+  if (loading) {
+    return <p className="text-sm text-text-muted">Loading strain catalog…</p>;
+  }
+
+  if (!strains.length) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm text-text-muted">No strains available from the facade catalog.</p>
+        {feedback ? <Feedback message={feedback} /> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-3 text-sm">
+        <div className="rounded-xl bg-surface-muted/50 p-3 text-xs text-text-muted">
+          <span className="block text-text font-semibold">{zone.name}</span>
+          <span>
+            {formatNumber(zone.area)} m² · {plantedCount} plants active
+            {methodHint
+              ? ` · ${methodHint.name} (${formatNumber(methodHint.areaPerPlant, {
+                  maximumFractionDigits: 2,
+                })} m²/plant)`
+              : zone.cultivationMethodId
+                ? ` · method ${zone.cultivationMethodId}`
+                : ' · no cultivation method configured'}
+          </span>
+          {capacity !== null ? (
+            <span className="mt-1 block">
+              Capacity {capacity} plants ({remainingCapacity} slots free)
+            </span>
+          ) : (
+            <span className="mt-1 block">Assign a cultivation method to compute capacity.</span>
+          )}
+        </div>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Strain
+          </span>
+          <select
+            value={selectedStrainId}
+            onChange={(event) => setSelectedStrainId(event.target.value)}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          >
+            {strains.map((strain) => (
+              <option key={strain.id} value={strain.id}>
+                {strain.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Plant count
+          </span>
+          <input
+            type="number"
+            min={1}
+            value={count}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              setCount(Number.isFinite(nextValue) && nextValue > 0 ? Math.floor(nextValue) : 1);
+            }}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          />
+          {exceedsCapacity ? (
+            <span className="text-xs text-warning">
+              Planting {count} plants now would exceed the estimated capacity by{' '}
+              {count + plantedCount - (capacity ?? 0)} plants.
+            </span>
+          ) : (
+            <span className="text-xs text-text-muted">
+              Remaining capacity estimate: {remainingCapacity}
+            </span>
+          )}
+        </label>
+        <p className="text-xs text-text-muted">{compatibilityLabel}</p>
+        {methodHint ? <p className="text-xs text-text-muted">{methodHint.description}</p> : null}
+      </div>
+      {feedback ? <Feedback message={feedback} /> : null}
+      {warnings.map((warning) => (
+        <Feedback key={warning} message={warning} />
+      ))}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handlePlanting}
+        confirmLabel={busy ? 'Planting…' : 'Plant zone'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
+const resolveCoverageArea = (device: DeviceBlueprint | null | undefined) => {
+  if (!device) {
+    return null;
+  }
+  if (device.coverage) {
+    if (typeof device.coverage.maxArea_m2 === 'number') {
+      return device.coverage.maxArea_m2;
+    }
+    if (typeof device.coverage.coverageArea === 'number') {
+      return device.coverage.coverageArea;
+    }
+  }
+  const defaultSettings =
+    (device.defaults?.settings as Record<string, unknown> | undefined) ??
+    (device.settings as Record<string, unknown> | undefined);
+  if (defaultSettings && typeof defaultSettings.coverageArea === 'number') {
+    return defaultSettings.coverageArea;
+  }
+  return null;
+};
+
+const InstallDeviceModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const targetId = typeof context?.zoneId === 'string' ? context.zoneId : null;
+  const zone = useSimulationStore((state) =>
+    targetId ? (state.snapshot?.zones.find((item) => item.id === targetId) ?? null) : null,
+  );
+  const room = useSimulationStore((state) =>
+    zone?.roomId ? (state.snapshot?.rooms.find((item) => item.id === zone.roomId) ?? null) : null,
+  );
+  const [devices, setDevices] = useState<DeviceBlueprint[]>([]);
+  const [selectedId, setSelectedId] = useState('');
+  const [settingsText, setSettingsText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadBlueprints = async () => {
+      setLoading(true);
+      try {
+        const response = await bridge.getDeviceBlueprints();
+        if (!isMounted) {
+          return;
+        }
+        if (response.ok && response.data) {
+          setDevices(response.data);
+          if (response.data.length > 0) {
+            setSelectedId((previous) => {
+              const existing = response.data.find((item) => item.id === previous);
+              return existing ? existing.id : response.data[0]!.id;
+            });
+          }
+        } else {
+          setFeedback('Failed to load device catalog from facade.');
+        }
+      } catch (error) {
+        console.error('Failed to load device catalog', error);
+        if (isMounted) {
+          setFeedback('Connection error while loading device catalog.');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadBlueprints();
+    return () => {
+      isMounted = false;
+    };
+  }, [bridge]);
+
+  const selectedDevice = useMemo(
+    () => devices.find((device) => device.id === selectedId) ?? null,
+    [devices, selectedId],
+  );
+
+  useEffect(() => {
+    if (!selectedDevice) {
+      setSettingsText('');
+      return;
+    }
+    const defaults =
+      (selectedDevice.defaults?.settings as Record<string, unknown> | undefined) ??
+      (selectedDevice.settings as Record<string, unknown> | undefined) ??
+      {};
+    try {
+      setSettingsText(JSON.stringify(defaults, null, 2));
+    } catch (error) {
+      console.warn('Failed to serialise default device settings', error);
+      setSettingsText('{}');
+    }
+  }, [selectedDevice]);
+
+  const coverageArea = resolveCoverageArea(selectedDevice);
+  const coverageWarning = coverageArea !== null && zone ? coverageArea < zone.area : false;
+  const allowedPurposes =
+    selectedDevice?.roomPurposes ?? selectedDevice?.compatibility?.roomPurposes ?? [];
+  const roomPurpose = room?.purposeKind ?? room?.purposeId ?? 'unknown';
+  const purposeAllowed = allowedPurposes.length === 0 || allowedPurposes.includes(roomPurpose);
+
+  const handleInstall = async () => {
+    if (!targetId) {
+      setFeedback('Zone context missing. Close the modal and retry.');
+      return;
+    }
+    if (!selectedId) {
+      setFeedback('Select a device blueprint to continue.');
+      return;
+    }
+    setBusy(true);
+    setFeedback(null);
+    setSettingsError(null);
+    setWarnings([]);
+    let parsedSettings: Record<string, unknown> | undefined;
+    if (settingsText.trim().length > 0) {
+      try {
+        const parsed = JSON.parse(settingsText);
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+          setSettingsError('Settings JSON must represent an object.');
+          setBusy(false);
+          return;
+        }
+        parsedSettings = parsed as Record<string, unknown>;
+      } catch (error) {
+        console.error('Invalid device settings JSON', error);
+        setSettingsError('Settings must be valid JSON.');
+        setBusy(false);
+        return;
+      }
+    }
+    try {
+      const response = await bridge.devices.installDevice({
+        targetId,
+        deviceId: selectedId,
+        settings: parsedSettings,
+      });
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Device installation rejected by facade.');
+        return;
+      }
+      if (response.warnings?.length) {
+        setWarnings(response.warnings);
+        return;
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Failed to install device', error);
+      setFeedback('Connection error while installing device.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!zone || !targetId) {
+    return (
+      <p className="text-sm text-text-muted">Zone context unavailable. Select a zone and retry.</p>
+    );
+  }
+
+  if (loading) {
+    return <p className="text-sm text-text-muted">Loading device catalog…</p>;
+  }
+
+  if (!devices.length) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm text-text-muted">No device blueprints available from the facade.</p>
+        {feedback ? <Feedback message={feedback} /> : null}
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-3 text-sm">
+        <div className="rounded-xl bg-surface-muted/50 p-3 text-xs text-text-muted">
+          <span className="block text-text font-semibold">{zone.name}</span>
+          <span>
+            Room purpose: {roomPurpose}
+            {allowedPurposes.length
+              ? ` · Allowed: ${allowedPurposes.join(', ')}`
+              : ' · All room purposes supported'}
+          </span>
+          {coverageArea !== null ? (
+            <span className={coverageWarning ? 'mt-1 block text-warning' : 'mt-1 block'}>
+              Covers up to {formatNumber(coverageArea, { maximumFractionDigits: 2 })} m² · Zone area{' '}
+              {formatNumber(zone.area, { maximumFractionDigits: 2 })} m²
+            </span>
+          ) : (
+            <span className="mt-1 block">No coverage metadata provided for this blueprint.</span>
+          )}
+          {!purposeAllowed ? (
+            <span className="mt-1 block text-warning">
+              Blueprint is not marked for {roomPurpose} rooms. Installation may be rejected.
+            </span>
+          ) : null}
+        </div>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Device blueprint
+          </span>
+          <select
+            value={selectedId}
+            onChange={(event) => setSelectedId(event.target.value)}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          >
+            {devices.map((device) => (
+              <option key={device.id} value={device.id}>
+                {device.name} · {device.kind}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Settings (JSON)
+          </span>
+          <textarea
+            value={settingsText}
+            onChange={(event) => setSettingsText(event.target.value)}
+            rows={6}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 font-mono text-xs text-text focus:border-primary focus:outline-none"
+            placeholder="Override settings (JSON)"
+          />
+        </label>
+        {settingsError ? <Feedback message={settingsError} /> : null}
+      </div>
+      {feedback ? <Feedback message={feedback} /> : null}
+      {warnings.map((warning) => (
+        <Feedback key={warning} message={warning} />
+      ))}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleInstall}
+        confirmLabel={busy ? 'Installing…' : 'Install device'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
 
 const RentStructureModal = ({
   bridge,
@@ -1351,6 +1888,9 @@ const modalRenderers: Record<
   createZone: ({ bridge, closeModal, context }) => (
     <CreateZoneModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
+  plantZone: ({ bridge, closeModal, context }) => (
+    <PlantZoneModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
   deleteZone: () => (
     <p className="text-sm text-text-muted">
       Zone deletion flow will be wired once zone intent schemas land in the facade.
@@ -1370,6 +1910,9 @@ const modalRenderers: Record<
   ),
   employeeDetails: ({ bridge, closeModal, context }) => (
     <EmployeeDetailsModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
+  installDevice: ({ bridge, closeModal, context }) => (
+    <InstallDeviceModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
 };
 

@@ -283,7 +283,27 @@ export const ZoneView = () => {
               </ResponsiveContainer>
             </div>
           </Card>
-          <Card title="Devices" subtitle="Operations & maintenance">
+          <Card
+            title="Devices"
+            subtitle="Operations & maintenance"
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Icon name="precision_manufacturing" />}
+                onClick={() =>
+                  openModal({
+                    id: `install-${zone.id}`,
+                    type: 'installDevice',
+                    title: `Install device in ${zone.name}`,
+                    context: { zoneId: zone.id },
+                  })
+                }
+              >
+                Install device
+              </Button>
+            }
+          >
             <div className="grid gap-3">
               {zone.devices.map((device) => (
                 <div
@@ -356,7 +376,27 @@ export const ZoneView = () => {
               </div>
             </div>
           </Card>
-          <Card title="Plants" subtitle="Batch overview">
+          <Card
+            title="Plants"
+            subtitle="Batch overview"
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Icon name="local_florist" />}
+                onClick={() =>
+                  openModal({
+                    id: `plant-${zone.id}`,
+                    type: 'plantZone',
+                    title: `Plant ${zone.name}`,
+                    context: { zoneId: zone.id },
+                  })
+                }
+              >
+                Plant zone
+              </Button>
+            }
+          >
             <div
               ref={tableContainerRef}
               className="max-h-96 overflow-y-auto rounded-2xl border border-border/30"
@@ -417,7 +457,9 @@ export const ZoneView = () => {
               </table>
             </div>
             {zone.plants.length === 0 ? (
-              <p className="mt-3 text-sm text-text-muted">No plants assigned to this zone yet.</p>
+              <p className="mt-3 text-sm text-text-muted">
+                No plants assigned to this zone yet. Use "Plant zone" to schedule a new batch.
+              </p>
             ) : null}
           </Card>
           <Card title="Health" subtitle="Disease & treatment overview">

@@ -90,6 +90,7 @@ export interface StrainBlueprint {
   traits: StrainTraits;
   metadata?: Record<string, unknown>;
   price?: StrainPriceEntry;
+  methodAffinity?: Record<string, number>;
 }
 
 export interface DeviceCompatibilityHints {
@@ -108,6 +109,12 @@ export interface DevicePriceEntry {
   costIncreasePer1000Ticks: number;
 }
 
+export interface DeviceCoverageMetadata {
+  maxArea_m2?: number;
+  coverageArea?: number;
+  [key: string]: unknown;
+}
+
 export interface DeviceBlueprint {
   id: string;
   kind: string;
@@ -122,6 +129,10 @@ export interface DeviceBlueprint {
   maintenance?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
   price?: DevicePriceEntry;
+  roomPurposes?: string[];
+  coverage?: DeviceCoverageMetadata;
+  limits?: Record<string, unknown>;
+  settings?: Record<string, unknown>;
 }
 
 export interface AddPlantingOptions {

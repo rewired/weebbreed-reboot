@@ -19,7 +19,9 @@ type ModalType =
   | 'hireApplicant'
   | 'fireEmployee'
   | 'rejectApplicant'
-  | 'employeeDetails';
+  | 'employeeDetails'
+  | 'plantZone'
+  | 'installDevice';
 
 export interface ModalDescriptor {
   id: string;

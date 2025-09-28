@@ -250,7 +250,7 @@ The application follows a structure → room → zone drill-down supported by pe
 
 ### Modal Components
 
-- **AddDeviceModal**: install device form using `FormSelect`, `FormInput`, `PrimaryButton` for zone context.【F:docs/ui/ui-components-desciption.md†L360-L420】
+- **InstallDeviceModal**: loads device blueprints via the facade, validates JSON overrides, and emits `devices.installDevice` with compatibility hints.【F:src/frontend/src/components/modals/ModalHost.tsx†L325-L470】【F:src/frontend/src/components/modals/**tests**/PlantAndDeviceModals.test.tsx†L104-L149】
 - **CreateRoomModal**: collects name, purpose, area, height; enforces geometry; uses `useZoneStore.createRoom`; tested via `ModalHost`.【F:docs/ui/ui-components-desciption.md†L360-L420】
 - **CreateZoneModal**: allocates footprint, selects method, optional plant count; dispatches `world.createZone`; validated in tests.【F:docs/ui/ui-components-desciption.md†L360-L420】
 - **DuplicateStructureModal/DuplicateRoomModal/DuplicateZoneModal**: review footprint, device counts, names before cloning via respective intents; confirm actions handled through zone store helpers and regression tests.【F:docs/ui/ui-components-desciption.md†L360-L460】
@@ -259,7 +259,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - **InfoModal**: surfaces pest/disease blueprint details (symptoms, controls).【F:docs/ui/ui-components-desciption.md†L440-L451】
 - **NewGameModal**: collects company/CEO name and deterministic seed; uses `FormInput` + `PrimaryButton`.【F:docs/ui/ui-components-desciption.md†L333-L347】
 - **PlantDetailModal**: shows plant stats with harvest/trash actions using `CutIcon` and `TrashIcon`; harvest disabled until ready.【F:docs/ui/ui-components-desciption.md†L440-L462】
-- **PlantStrainModal**: plants new strain; populates options from snapshot; uses forms primitives.【F:docs/ui/ui-components-desciption.md†L440-L462】
+- **PlantZoneModal**: fetches strain catalogs, projects capacity from cultivation methods, and dispatches `plants.addPlanting` with surfaced warnings.【F:src/frontend/src/components/modals/ModalHost.tsx†L104-L323】【F:src/frontend/src/components/modals/**tests**/PlantAndDeviceModals.test.tsx†L64-L103】
 - **InstallDeviceModal/UpdateDeviceModal/MoveDeviceModal**: manage device lifecycle (install JSON validation, patch existing settings, relocate hardware) through zone-store helpers and `SimulationFacade` intents.【F:docs/ui/ui-components-desciption.md†L440-L533】
 - **Device removal confirmation**: reuses confirmation modal to call `devices.removeDevice` via zone store helper.【F:docs/ui/ui-components-desciption.md†L440-L533】
 - **RentStructureModal**: rents new structure with affordability gating; uses forms primitives.【F:docs/ui/ui-components-desciption.md†L533-L540】
@@ -271,6 +271,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - **ZoneCard**: compact zone summary with navigation click and `ActionIcons`; includes progress bars for plant growth.【F:docs/ui/ui-components-desciption.md†L420-L440】
 - **ZoneDeviceList**: groups devices by name, aggregates counts, exposes install/update/move/remove actions; draws from zone store helpers.【F:docs/ui/ui-components-desciption.md†L421-L533】
 - **ZonePlantPanel**: grid of plants with inspection mode (tooltips, direct actions) and selection mode enabling `BatchActionBar` for Harvest/Trash/Treat; integrates pest/disease info and automation toggles.【F:docs/ui/ui-components-desciption.md†L440-L462】
+- **ZoneView**: renders device and plant CTAs that open the install/plant modals with the active zone context, reinforcing empty-state guidance when lists are empty.【F:src/frontend/src/views/ZoneView.tsx†L286-L398】
 
 ### View Components (Composition Level)
 
