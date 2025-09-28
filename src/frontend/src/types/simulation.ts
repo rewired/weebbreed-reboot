@@ -126,6 +126,7 @@ export interface PlantSnapshot {
   hasDiseases: boolean;
   hasPests: boolean;
   hasPendingTreatments: boolean;
+  isHarvestable: boolean;
   zoneId?: string;
   structureId?: string;
   roomId?: string;

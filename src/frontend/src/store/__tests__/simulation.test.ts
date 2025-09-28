@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { useSimulationStore } from '../simulation';
 import type {
+  PlantSnapshot,
   SimulationEvent,
   SimulationSnapshot,
   SimulationUpdateEntry,
@@ -289,5 +290,43 @@ describe('simulation store lighting updates', () => {
 
     const snapshot = useSimulationStore.getState().snapshot;
     expect(snapshot?.zones[0].lighting?.photoperiodHours).toEqual({ on: 16, off: 8 });
+  });
+});
+
+describe('simulation store plant harvest flags', () => {
+  beforeEach(() => {
+    useSimulationStore.getState().reset();
+  });
+
+  it('preserves the harvestable flag through hydrate and updates', () => {
+    const baseSnapshot = buildSnapshot({});
+    const plant: PlantSnapshot = {
+      id: 'plant-1',
+      strainId: 'strain-1',
+      strainName: 'Strain 1',
+      stage: 'harvestReady',
+      health: 0.92,
+      stress: 0.08,
+      biomassDryGrams: 180,
+      yieldDryGrams: 90,
+      hasDiseases: false,
+      hasPests: false,
+      hasPendingTreatments: false,
+      isHarvestable: false,
+    };
+
+    baseSnapshot.zones[0]!.plants = [plant];
+
+    useSimulationStore.getState().hydrate({ snapshot: baseSnapshot });
+
+    expect(useSimulationStore.getState().snapshot?.zones[0]?.plants[0]?.isHarvestable).toBe(false);
+
+    const update = buildUpdate({}, 43);
+    const updatedPlant: PlantSnapshot = { ...plant, isHarvestable: true };
+    update.snapshot.zones[0]!.plants = [updatedPlant];
+
+    useSimulationStore.getState().applyUpdate(update);
+
+    expect(useSimulationStore.getState().snapshot?.zones[0]?.plants[0]?.isHarvestable).toBe(true);
   });
 });

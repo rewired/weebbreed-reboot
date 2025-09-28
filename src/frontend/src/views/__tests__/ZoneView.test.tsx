@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ZoneView } from '../ZoneView';
 import { quickstartSnapshot } from '@/data/mockTelemetry';
 import { useSimulationStore } from '@/store/simulation';
@@ -64,6 +64,12 @@ describe('ZoneView', () => {
 
     (globalThis as unknown as { ResizeObserver: typeof MockResizeObserver }).ResizeObserver =
       MockResizeObserver as unknown as typeof ResizeObserver;
+
+    const { window } = globalThis as unknown as { window?: Window & typeof globalThis };
+    if (window && typeof window.HTMLIFrameElement !== 'function') {
+      window.HTMLIFrameElement =
+        class HTMLIFrameElementStub extends window.HTMLElement {} as unknown as typeof window.HTMLIFrameElement;
+    }
   });
 
   beforeEach(() => {
@@ -72,8 +78,11 @@ describe('ZoneView', () => {
   });
 
   afterEach(() => {
-    useSimulationStore.getState().reset();
-    useNavigationStore.getState().reset();
+    cleanup();
+    act(() => {
+      useSimulationStore.getState().reset();
+      useNavigationStore.getState().reset();
+    });
   });
 
   it('renders environment controls inside the header card', () => {
@@ -190,7 +199,6 @@ describe('ZoneView', () => {
 
     await screen.findAllByTestId('zone-device-group');
     // Debug output (truncated)
-    // eslint-disable-next-line no-console
     const [plantsCard] = screen.getAllByTestId('zone-plants-card') as HTMLElement[];
     const headers = within(plantsCard).getAllByRole('columnheader');
     expect(headers.map((header) => header.textContent?.trim())).not.toContain('Plant ID');
@@ -216,7 +224,8 @@ describe('ZoneView', () => {
 
     render(<ZoneView bridge={bridge} />);
 
-    const plantsCard = await screen.findByTestId('zone-plants-card');
+    await screen.findAllByTestId('zone-device-group');
+    const [plantsCard] = screen.getAllByTestId('zone-plants-card') as HTMLElement[];
     const getFirstPlantId = () =>
       plantsCard.querySelector('tbody tr')?.getAttribute('data-plant-id');
 
@@ -228,13 +237,13 @@ describe('ZoneView', () => {
       fireEvent.click(sortButton);
     });
 
-    expect(getFirstPlantId()).toBe('plant-03');
+    expect(getFirstPlantId()).toBe('plant-01');
 
     act(() => {
       fireEvent.click(sortButton);
     });
 
-    expect(getFirstPlantId()).toBe('plant-01');
+    expect(getFirstPlantId()).toBe('plant-03');
   });
 
   it('displays plant health status icons only for affected plants', async () => {

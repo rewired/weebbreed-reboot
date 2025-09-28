@@ -71,6 +71,7 @@ export interface PlantSnapshot {
   hasDiseases: boolean;
   hasPests: boolean;
   hasPendingTreatments: boolean;
+  isHarvestable: boolean;
 }
 
 export interface ZoneHealthSnapshot {
@@ -382,6 +383,11 @@ export const buildSimulationSnapshot = (
           plants: zone.plants.map((plant) => {
             const strain = roomPurposeSource.getStrain?.(plant.strainId);
             const plantHealth = zone.health.plantHealth?.[plant.id];
+            const preHarvestRestrictedUntilTick = zone.health.preHarvestRestrictedUntilTick;
+            const isHarvestable =
+              plant.stage === 'harvestReady' &&
+              (typeof preHarvestRestrictedUntilTick !== 'number' ||
+                preHarvestRestrictedUntilTick <= state.clock.tick);
             return {
               id: plant.id,
               strainId: plant.strainId,
@@ -394,6 +400,7 @@ export const buildSimulationSnapshot = (
               hasDiseases: (plantHealth?.diseases?.length ?? 0) > 0,
               hasPests: (plantHealth?.pests?.length ?? 0) > 0,
               hasPendingTreatments: pendingTreatmentPlantIds.has(plant.id),
+              isHarvestable,
             } satisfies PlantSnapshot;
           }),
           health: summarizeHealth(zone),
