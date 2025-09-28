@@ -170,6 +170,53 @@ describe('ZoneView', () => {
     expect(within(devicesCard).getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
   });
 
+  it('renders health summary within the plants card and removes the standalone health card', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const summaryHeading = await screen.findByText('Disease & treatment overview');
+    const healthSummary = summaryHeading.closest('div[data-testid="zone-health-summary"]');
+    expect(healthSummary).not.toBeNull();
+
+    const plantsCard = summaryHeading.closest('[data-testid="zone-plants-card"]');
+    expect(plantsCard).not.toBeNull();
+    expect(
+      within(plantsCard as HTMLElement).getByRole('heading', { name: 'Plants' }),
+    ).toBeInTheDocument();
+
+    const labels = ['Diseases', 'Pests', 'Pending treatments', 'Applied treatments'];
+    for (const label of labels) {
+      expect(within(healthSummary as HTMLElement).getByText(label)).toBeInTheDocument();
+    }
+
+    expect(
+      within(healthSummary as HTMLElement).getByText(String(zone.health.diseases)),
+    ).toBeInTheDocument();
+    expect(
+      within(healthSummary as HTMLElement).getByText(String(zone.health.pests)),
+    ).toBeInTheDocument();
+    expect(
+      within(healthSummary as HTMLElement).getByText(String(zone.health.pendingTreatments)),
+    ).toBeInTheDocument();
+    expect(
+      within(healthSummary as HTMLElement).getByText(String(zone.health.appliedTreatments)),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByRole('heading', { name: 'Health' })).not.toBeInTheDocument();
+  });
+
   it('opens the move device modal with zone context', async () => {
     const originalOpenModal = useUIStore.getState().openModal;
     const openModal = vi.fn();
