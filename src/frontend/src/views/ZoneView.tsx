@@ -376,6 +376,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             zone={zone}
             setpoints={setpoints}
             bridge={bridge}
+            defaultExpanded
             variant="embedded"
             renderBadges={() => null}
             className="md:h-full"

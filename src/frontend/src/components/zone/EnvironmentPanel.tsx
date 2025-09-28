@@ -84,7 +84,7 @@ export const EnvironmentPanel = ({
   className,
   renderBadges,
 }: EnvironmentPanelProps) => {
-  const [expanded, setExpanded] = useState(defaultExpanded);
+  const [expanded, setExpanded] = useState(() => (variant === 'embedded' ? true : defaultExpanded));
   const [warnings, setWarnings] = useState<string[]>([]);
   const [pendingMetric, setPendingMetric] = useState<SetpointMetric | 'lightingCycle' | null>(null);
 
@@ -351,7 +351,7 @@ export const EnvironmentPanel = ({
     variant === 'standalone' ? 'rounded-3xl px-6 py-4' : 'rounded-2xl px-5 py-4',
   );
   const bodyClasses = cx(
-    'grid gap-6 border-t',
+    'grid gap-6 border-t pt-5',
     variant === 'standalone' ? 'border-border/50 px-6 pb-6' : 'border-border/40 px-5 pb-5',
   );
 
