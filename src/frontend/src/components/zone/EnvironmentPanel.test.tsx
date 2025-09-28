@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { EnvironmentPanel } from './EnvironmentPanel';
@@ -26,6 +26,10 @@ describe('EnvironmentPanel', () => {
     vi.restoreAllMocks();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const baseZone = () => structuredClone(quickstartSnapshot.zones[0]);
 
   it('dispatches temperature updates through the simulation bridge', async () => {
@@ -46,6 +50,7 @@ describe('EnvironmentPanel', () => {
     const slider = panel.getAllByTestId('temperature-slider').at(-1) as HTMLInputElement;
     await act(async () => {
       fireEvent.change(slider, { target: { value: '27' } });
+      fireEvent.mouseUp(slider);
     });
 
     await waitFor(() => expect(sendConfigUpdate).toHaveBeenCalled());
@@ -75,6 +80,7 @@ describe('EnvironmentPanel', () => {
     const humiditySlider = panel.getAllByTestId('humidity-slider').at(-1) as HTMLInputElement;
     await act(async () => {
       fireEvent.change(humiditySlider, { target: { value: '55' } });
+      fireEvent.mouseUp(humiditySlider);
     });
 
     await waitFor(() => expect(sendConfigUpdate).toHaveBeenCalled());
@@ -126,9 +132,49 @@ describe('EnvironmentPanel', () => {
     const ppfdSlider = panel.getAllByTestId('ppfd-slider').at(-1) as HTMLInputElement;
     await act(async () => {
       fireEvent.change(ppfdSlider, { target: { value: '620' } });
+      fireEvent.mouseUp(ppfdSlider);
     });
 
     await waitFor(() => expect(sendConfigUpdate).toHaveBeenCalled());
     expect(panel.getByText('Value clamped to safe range.')).toBeInTheDocument();
+  });
+
+  it('debounces rapid slider updates before calling the simulation bridge', async () => {
+    vi.useFakeTimers();
+
+    const zone = baseZone();
+    const sendConfigUpdate = vi.fn(async () => ({ ok: true }));
+    const bridge = buildBridge({ sendConfigUpdate });
+
+    render(
+      <EnvironmentPanel
+        zone={zone}
+        setpoints={zone.control?.setpoints}
+        bridge={bridge}
+        defaultExpanded
+      />,
+    );
+
+    const panel = within(screen.getAllByTestId('environment-panel-root').at(-1)!);
+    const slider = panel.getAllByTestId('temperature-slider').at(-1) as HTMLInputElement;
+
+    act(() => {
+      fireEvent.change(slider, { target: { value: '26' } });
+      fireEvent.change(slider, { target: { value: '27' } });
+    });
+
+    expect(sendConfigUpdate).not.toHaveBeenCalled();
+
+    await act(async () => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(sendConfigUpdate).toHaveBeenCalledTimes(1);
+    expect(sendConfigUpdate).toHaveBeenLastCalledWith({
+      type: 'setpoint',
+      zoneId: zone.id,
+      metric: 'temperature',
+      value: 27,
+    });
   });
 });
