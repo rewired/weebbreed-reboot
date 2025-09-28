@@ -354,7 +354,7 @@ describe('EnvironmentPanel', () => {
     });
   });
 
-  it('renders the embedded variant without the standalone section wrapper', () => {
+  it('renders the embedded variant expanded by default without the standalone section wrapper', () => {
     const zone = baseZone();
     const bridge = buildBridge();
 
@@ -368,6 +368,11 @@ describe('EnvironmentPanel', () => {
     );
 
     const roots = screen.getAllByTestId('environment-panel-root');
-    expect(roots.at(-1)?.tagName).toBe('DIV');
+    const panelRoot = roots.at(-1)!;
+    expect(panelRoot.tagName).toBe('DIV');
+
+    const toggle = within(panelRoot).getByTestId('environment-panel-toggle');
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(within(panelRoot).getAllByTestId('temperature-slider').at(-1)).toBeInTheDocument();
   });
 });
