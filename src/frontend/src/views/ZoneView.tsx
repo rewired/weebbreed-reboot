@@ -173,26 +173,17 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
 
   return (
     <div className="grid gap-6">
-      <header className="flex flex-col gap-2 rounded-3xl border border-border/40 bg-surface-elevated/80 p-6">
-        <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
-        <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
-        <p className="text-sm text-text-muted">
-          {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation method{' '}
-          {zone.cultivationMethodId ?? '—'}
-        </p>
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <Badge tone="success">
-            VPD{' '}
-            {formatNumber(zone.environment.vpd, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
-          </Badge>
-          <Badge tone="default">PPFD {formatNumber(zone.environment.ppfd)} µmol</Badge>
-          <Badge tone="default">CO₂ {formatNumber(zone.environment.co2)} ppm</Badge>
+      <header className="flex flex-col gap-6 rounded-3xl border border-border/40 bg-surface-elevated/80 p-6">
+        <div className="flex flex-col gap-2">
+          <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
+          <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
+          <p className="text-sm text-text-muted">
+            {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation
+            method {zone.cultivationMethodId ?? '—'}
+          </p>
         </div>
+        <EnvironmentPanel zone={zone} setpoints={setpoints} bridge={bridge} variant="embedded" />
       </header>
-      <EnvironmentPanel zone={zone} setpoints={setpoints} bridge={bridge} />
       <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
         <section className="grid gap-6">
           <Card title="Environment" subtitle="Telemetry snapshot vs. historical trend">

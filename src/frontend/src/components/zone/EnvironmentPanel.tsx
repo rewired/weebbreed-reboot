@@ -14,6 +14,8 @@ interface EnvironmentPanelProps {
   setpoints?: ZoneControlSetpoints;
   bridge: SimulationBridge;
   defaultExpanded?: boolean;
+  variant?: 'standalone' | 'embedded';
+  className?: string;
 }
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger';
@@ -112,6 +114,8 @@ export const EnvironmentPanel = ({
   setpoints,
   bridge,
   defaultExpanded = false,
+  variant = 'standalone',
+  className,
 }: EnvironmentPanelProps) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -434,14 +438,27 @@ export const EnvironmentPanel = ({
   const isLightsOn = effectivePpfdTarget > 0;
   const photoperiodDarkHours = Math.max(24 - photoperiodValue, MINIMUM_DARK_HOURS);
 
+  const Container: 'section' | 'div' = variant === 'standalone' ? 'section' : 'div';
+  const containerClasses = cx(
+    variant === 'standalone'
+      ? 'rounded-3xl border border-border/50 bg-surface-elevated/70'
+      : 'rounded-2xl border border-border/40 bg-surface-muted/30',
+    className,
+  );
+  const toggleClasses = cx(
+    'flex w-full flex-col gap-4 text-left transition hover:bg-surface-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+    variant === 'standalone' ? 'rounded-3xl px-6 py-4' : 'rounded-2xl px-5 py-4',
+  );
+  const bodyClasses = cx(
+    'grid gap-6 border-t',
+    variant === 'standalone' ? 'border-border/50 px-6 pb-6' : 'border-border/40 px-5 pb-5',
+  );
+
   return (
-    <section
-      className="rounded-3xl border border-border/50 bg-surface-elevated/70"
-      data-testid="environment-panel-root"
-    >
+    <Container className={containerClasses} data-testid="environment-panel-root">
       <button
         type="button"
-        className="flex w-full flex-col gap-4 rounded-3xl px-6 py-4 text-left transition hover:bg-surface-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className={toggleClasses}
         onClick={() => setExpanded((value) => !value)}
         aria-expanded={expanded}
         data-testid="environment-panel-toggle"
@@ -470,7 +487,7 @@ export const EnvironmentPanel = ({
         </div>
       </button>
       {expanded ? (
-        <div className="grid gap-6 border-t border-border/50 px-6 pb-6">
+        <div className={bodyClasses}>
           <div className="grid gap-5 md:grid-cols-2">
             <div className="grid gap-2">
               <label htmlFor={`temperature-${zone.id}`}>
@@ -653,6 +670,6 @@ export const EnvironmentPanel = ({
           ) : null}
         </div>
       ) : null}
-    </section>
+    </Container>
   );
 };
