@@ -36,7 +36,7 @@ const moveDeviceSchema = z
 
 const removeDeviceSchema = z
   .object({
-    instanceId: uuid,
+    instanceId: entityIdentifier,
   })
   .strict();
 

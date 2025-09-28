@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const uuid = z.string().uuid();
 
-export const prefixedIdentifier = z.string().regex(/^[a-z]+_[a-z0-9]{6,}$/i, {
+export const prefixedIdentifier = z.string().regex(/^[a-z]+(?:[-_][a-z0-9]+)+$/i, {
   message: 'Value must be a UUID or prefixed identifier.',
 });
 

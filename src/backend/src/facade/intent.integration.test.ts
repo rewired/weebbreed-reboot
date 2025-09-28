@@ -364,6 +364,40 @@ describe('SimulationFacade new intents', () => {
             intent.settings,
             context,
           ),
+        removeDevice: (intent, context) => {
+          for (const structure of state.structures) {
+            for (const room of structure.rooms) {
+              for (const zone of room.zones) {
+                const index = zone.devices.findIndex((device) => device.id === intent.instanceId);
+                if (index >= 0) {
+                  const [removed] = zone.devices.splice(index, 1);
+                  context.events.queue(
+                    'device.removed',
+                    {
+                      structureId: structure.id,
+                      roomId: room.id,
+                      zoneId: zone.id,
+                      deviceId: removed.id,
+                    },
+                    context.tick,
+                    'info',
+                  );
+                  return { ok: true };
+                }
+              }
+            }
+          }
+          return {
+            ok: false,
+            errors: [
+              {
+                code: 'ERR_NOT_FOUND',
+                message: `Device ${intent.instanceId} was not found.`,
+                path: ['devices.removeDevice', 'instanceId'],
+              },
+            ],
+          };
+        },
         toggleDeviceGroup: (intent, context) =>
           deviceService.toggleDeviceGroup(intent.zoneId, intent.kind, intent.enabled, context),
       },
@@ -555,6 +589,32 @@ describe('SimulationFacade new intents', () => {
     if (telemetry?.payload && typeof telemetry.payload === 'object') {
       expect(telemetry.payload.deviceId).toEqual(result.data?.deviceId);
     }
+  });
+
+  it('removes a device with a generated instance identifier', async () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const existing = zone.devices[0]!;
+    const generatedDevice: DeviceInstanceState = {
+      ...existing,
+      id: 'device-instance-42',
+      name: 'Temporary Fixture',
+    };
+    zone.devices.push(generatedDevice);
+
+    expect(zone.devices.some((device) => device.id === generatedDevice.id)).toBe(true);
+
+    const result = await facade.devices.removeDevice({ instanceId: generatedDevice.id });
+
+    expect(result.ok).toBe(true);
+    expect(zone.devices.some((device) => device.id === generatedDevice.id)).toBe(false);
+    const removalEvent = events.find(
+      (event) =>
+        event.type === 'device.removed' &&
+        event.payload &&
+        typeof event.payload === 'object' &&
+        (event.payload as { deviceId?: string }).deviceId === generatedDevice.id,
+    );
+    expect(removalEvent).toBeDefined();
   });
 
   it('rejects incompatible device installations with structured errors', async () => {
