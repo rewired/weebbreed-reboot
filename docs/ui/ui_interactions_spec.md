@@ -128,7 +128,7 @@ The interface is hierarchical and supports a strategic (macro) and operational (
 - **AddZoneModal** → `facade.world.createZone({ roomId, zone: { name, area, methodId, targetPlantCount? } })`.
 - **InstallDeviceModal** → `facade.devices.installDevice({ targetId, deviceId, settings })` (enforces `allowedRoomPurposes`).
 - **AddSupplyModal** → `facade.plants.applyIrrigation({ zoneId, liters })` / `facade.plants.applyFertilizer({ zoneId, nutrients })`.
-- **PlantStrainModal** → `facade.plants.addPlanting({ zoneId, strainId, count })`.
+- **PlantZoneModal** → `facade.plants.addPlanting({ zoneId, strainId, count })` with capacity and method affinity hints sourced from the cultivation method blueprint.【F:src/frontend/src/components/modals/ModalHost.tsx†L104-L323】
 - **BreedStrainModal** → select two parent strains by **UUID `id`** to create a new strain (lineage stores parent UUIDs; empty parents ⇒ ur‑plant).
 
 **Management & Editing**

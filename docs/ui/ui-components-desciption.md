@@ -276,13 +276,17 @@ These components define the main structure and layout of the application interfa
 
 These components define the content for various modals used for user input and information display.
 
-### `AddDeviceModal.tsx`
+### `PlantZoneModal` (`ModalHost`)
 
-- **Purpose:** A form for installing a new device in a zone.
-- **Props:** `onSubmit`, `zoneId`, `onClose`.
-- **Icons Used:** None.
-- **Dependencies:** `FormSelect`, `FormInput`, `PrimaryButton`.
-- **Usage Context:** Displayed when the user clicks "Install Device" in the `ZoneDeviceList`.
+- **Purpose:** Gathers strain and count for a zone planting, loads the strain catalog via the facade, and surfaces cultivation-method capacity and affinity hints before dispatching `plants.addPlanting`.
+- **State:** Manages async catalog loading, selection state, capacity feedback, and warning surfaces from the command response.
+- **Usage Context:** Triggered from the zone detail "Plant zone" CTA; modal pausing handled by `ModalHost` ensures safe execution.【F:src/frontend/src/views/ZoneView.tsx†L380-L398】【F:src/frontend/src/components/modals/ModalHost.tsx†L104-L323】【F:src/frontend/src/components/modals/**tests**/PlantAndDeviceModals.test.tsx†L64-L103】
+
+### `InstallDeviceModal` (`ModalHost`)
+
+- **Purpose:** Presents the device catalog with coverage/compatibility hints, allows JSON overrides for settings, and submits `devices.installDevice` while relaying facade warnings back to the user.
+- **State:** Tracks catalog loading, editable JSON text, parse errors, and facade warnings so the modal only closes on clean installs.
+- **Usage Context:** Invoked from the zone detail "Install device" CTA; complements device list empty states and hooks into the shared modal pause/resume workflow.【F:src/frontend/src/views/ZoneView.tsx†L286-L305】【F:src/frontend/src/components/modals/ModalHost.tsx†L325-L470】【F:src/frontend/src/components/modals/**tests**/PlantAndDeviceModals.test.tsx†L104-L149】
 
 ### `CreateRoomModal.tsx`
 
@@ -360,36 +364,10 @@ These components define the content for various modals used for user input and i
 - **Dependencies:** `CutIcon`, `TrashIcon`.
 - **Usage Context:** Displayed when a user clicks on a plant card in the `ZonePlantPanel` (when not in selection mode).
 
-### `PlantStrainModal.tsx`
-
-- **Purpose:** A form for planting a new strain of plants in a zone. The dropdown is dynamically populated with strains available in the game state.
-- **Props:** `onSubmit`, `zoneId`, `availableStrains`, `onClose`.
-- **Icons Used:** None.
-- **Dependencies:** `FormSelect`, `FormInput`, `PrimaryButton`.
-- **Usage Context:** Displayed when the "Plant New" button is clicked in the `ZonePlantPanel`.
-
-### `InstallDeviceModal.tsx`
-
-- **Purpose:** Captures the target blueprint (and optional JSON settings) for installing a device into a zone, then emits `devices.installDevice` through the zone store helper.【F:src/frontend/src/views/zone/modals/InstallDeviceModal.tsx†L1-L154】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】
-- **Props:** `zone`, `blueprintOptions?`, `onSubmit`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Triggered from the “Install device” button in the zone device inventory panel; the modal enforces JSON validation before dispatching the façade intent.【F:src/frontend/src/views/ZoneDetail.tsx†L1019-L1050】
-
-### `UpdateDeviceModal.tsx`
-
-- **Purpose:** Allows operators to submit a JSON patch for an existing device instance; on submit the component calls `devices.updateDevice` via the zone store.【F:src/frontend/src/views/zone/modals/UpdateDeviceModal.tsx†L1-L114】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】
-- **Props:** `device`, `onSubmit`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Reached through the “Adjust settings” action in the device inventory; it pre-fills the current settings and requires at least one key before enabling the send.【F:src/frontend/src/views/ZoneDetail.tsx†L1038-L1072】
-
-### `MoveDeviceModal.tsx`
-
-- **Purpose:** Presents a dropdown of eligible zones and forwards the selection to `devices.moveDevice`, ensuring the facade validates room-purpose constraints.【F:src/frontend/src/views/zone/modals/MoveDeviceModal.tsx†L1-L129】【F:src/frontend/src/components/ModalHost.tsx†L1-L260】
-- **Props:** `device`, `currentZone`, `availableZones`, `onSubmit`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Launched from the “Move” action in the device inventory list when relocating hardware between zones.【F:src/frontend/src/views/ZoneDetail.tsx†L1046-L1072】
-
 ### Device removal confirmation
 
-- **Purpose:** Device removal reuses `ConfirmDeletionModal`, injecting device-specific copy before emitting `devices.removeDevice` through `useZoneStore.removeDevice` so the facade handles bookkeeping.【F:src/frontend/src/components/ModalHost.tsx†L1-L260】【F:src/frontend/src/store/zoneStore.ts†L435-L456】
-- **Usage Context:** Available from the “Remove” button in the device inventory panel; once confirmed the zone snapshot updates after the façade acknowledges the command.【F:src/frontend/src/views/ZoneDetail.tsx†L1072-L1086】
+- **Purpose:** Device removal reuses `ConfirmDeletionModal`, injecting device-specific copy before emitting `devices.removeDevice` so the facade handles bookkeeping.【F:src/frontend/src/components/modals/ModalHost.tsx†L1356-L1371】
+- **Usage Context:** Available from the “Remove” button in the device inventory panel; once confirmed the zone snapshot updates after the façade acknowledges the command.【F:src/frontend/src/components/modals/ModalHost.tsx†L1356-L1371】
 
 ### `RentStructureModal.tsx`
 
