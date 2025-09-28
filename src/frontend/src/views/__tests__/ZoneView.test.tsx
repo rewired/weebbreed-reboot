@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import { ZoneView } from '../ZoneView';
 import { quickstartSnapshot } from '@/data/mockTelemetry';
 import { useSimulationStore } from '@/store/simulation';
@@ -187,5 +187,35 @@ describe('ZoneView', () => {
         } as Partial<ReturnType<typeof useUIStore.getState>>);
       });
     }
+  });
+
+  it('renders grouped devices with aggregated metrics and no group-level actions', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    const groups = await screen.findAllByTestId('zone-device-group');
+    expect(groups.length).toBeGreaterThan(0);
+
+    const lightingGroup = groups.find((group) => within(group).queryByText(/Grow Lights/i));
+    expect(lightingGroup).toBeDefined();
+
+    const header = within(lightingGroup!).getByTestId('device-group-header');
+    expect(within(header).queryByRole('button', { name: /Move/i })).toBeNull();
+    expect(within(header).queryByRole('button', { name: /Delete/i })).toBeNull();
+
+    expect(header).toHaveTextContent(/2\s+devices/i);
+    expect(header).toHaveTextContent(/Avg condition\s+98%/i);
   });
 });

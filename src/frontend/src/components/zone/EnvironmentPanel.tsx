@@ -438,6 +438,15 @@ export const EnvironmentPanel = ({
   const effectivePpfdTarget = pendingPpfd ?? ppfdTarget;
   const isLightsOn = effectivePpfdTarget > 0;
   const photoperiodDarkHours = Math.round(Math.max(24 - photoperiodValue, MINIMUM_DARK_HOURS));
+  const photoperiodLightHoursLabel = formatNumber(photoperiodValue, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+  const photoperiodDarkHoursLabel = formatNumber(photoperiodDarkHours, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+  const photoperiodSummaryLabel = `${photoperiodLightHoursLabel} h light / ${photoperiodDarkHoursLabel} h dark`;
 
   const Container: 'section' | 'div' = variant === 'standalone' ? 'section' : 'div';
   const containerClasses = cx(
@@ -615,23 +624,12 @@ export const EnvironmentPanel = ({
                 />
                 <div className="flex flex-col items-end gap-1 text-right">
                   <span className="flex items-center gap-1 text-sm text-text-muted">
-                    <span className="font-semibold text-text">
-                      {formatNumber(photoperiodValue, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
-                      h
-                    </span>
-                    <span className="text-xs uppercase tracking-wide text-text-muted">light</span>
-                    <span className="text-text-muted">/</span>
-                    <span className="font-semibold text-text">
-                      {formatNumber(photoperiodDarkHours, {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0,
-                      })}
-                      h
-                    </span>
+                    <span className="font-semibold text-text">{photoperiodLightHoursLabel} h</span>{' '}
+                    <span className="text-xs uppercase tracking-wide text-text-muted">light</span>{' '}
+                    <span className="text-text-muted">/</span>{' '}
+                    <span className="font-semibold text-text">{photoperiodDarkHoursLabel} h</span>{' '}
                     <span className="text-xs uppercase tracking-wide text-text-muted">dark</span>
+                    <span className="sr-only">{photoperiodSummaryLabel}</span>
                   </span>
                   <span className="text-xs text-text-muted">
                     Dark period adjusts automatically to maintain a 24h day.
