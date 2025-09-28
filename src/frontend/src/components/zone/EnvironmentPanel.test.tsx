@@ -32,6 +32,26 @@ describe('EnvironmentPanel', () => {
 
   const baseZone = () => structuredClone(quickstartSnapshot.zones[0]);
 
+  it('shows VPD summary but no direct VPD control', () => {
+    const zone = baseZone();
+    const bridge = buildBridge();
+
+    render(
+      <EnvironmentPanel
+        zone={zone}
+        setpoints={zone.control?.setpoints}
+        bridge={bridge}
+        defaultExpanded
+      />,
+    );
+
+    const panel = within(screen.getAllByTestId('environment-panel-root').at(-1)!);
+    expect(panel.queryByTestId('vpd-slider')).not.toBeInTheDocument();
+
+    const header = panel.getByTestId('environment-panel-toggle');
+    expect(within(header).getByText('VPD')).toBeInTheDocument();
+  });
+
   it('dispatches temperature updates through the simulation bridge', async () => {
     const zone = baseZone();
     const sendConfigUpdate = vi.fn(async () => ({ ok: true }));

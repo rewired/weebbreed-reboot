@@ -7,7 +7,7 @@ import { Badge } from '@/components/primitives/Badge';
 import { Button } from '@/components/primitives/Button';
 import { formatNumber } from '@/utils/formatNumber';
 
-type SetpointMetric = 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd' | 'vpd';
+type SetpointMetric = 'temperature' | 'relativeHumidity' | 'co2' | 'ppfd';
 
 interface EnvironmentPanelProps {
   zone: ZoneSnapshot;
@@ -49,7 +49,6 @@ const createDeviceMatcher = (zone: ZoneSnapshot) => {
 
 const temperatureRange = { min: 16, max: 32, step: 0.5 } as const;
 const humidityRange = { min: 35, max: 90, step: 1 } as const;
-const vpdRange = { min: 0, max: 2.5, step: 0.05 } as const;
 const co2Range = { min: 400, max: 1600, step: 25 } as const;
 const ppfdRange = { min: 0, max: 1200, step: 10 } as const;
 
@@ -101,13 +100,11 @@ export const EnvironmentPanel = ({
   const temperatureTarget = setpoints?.temperature ?? zone.environment.temperature;
   const humidityTargetPercent =
     ((setpoints?.humidity ?? zone.environment.relativeHumidity) || 0) * 100;
-  const vpdTarget = setpoints?.vpd ?? zone.environment.vpd;
   const co2Target = setpoints?.co2 ?? zone.environment.co2;
   const ppfdTarget = setpoints?.ppfd ?? zone.environment.ppfd;
 
   const [temperatureValue, setTemperatureValue] = useState<number>(temperatureTarget);
   const [humidityValue, setHumidityValue] = useState<number>(humidityTargetPercent);
-  const [vpdValue, setVpdValue] = useState<number>(vpdTarget);
   const [co2Value, setCo2Value] = useState<number>(co2Target);
   const [ppfdValue, setPpfdValue] = useState<number>(ppfdTarget);
 
@@ -120,10 +117,6 @@ export const EnvironmentPanel = ({
   useEffect(() => {
     setHumidityValue(humidityTargetPercent);
   }, [humidityTargetPercent]);
-
-  useEffect(() => {
-    setVpdValue(vpdTarget);
-  }, [vpdTarget]);
 
   useEffect(() => {
     setCo2Value(co2Target);
@@ -415,37 +408,6 @@ export const EnvironmentPanel = ({
                     maximumFractionDigits: 0,
                   })}
                   %
-                </span>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              <label htmlFor={`vpd-${zone.id}`}>
-                <SliderLabel icon="science">VPD Target</SliderLabel>
-              </label>
-              <div className="flex items-center gap-3">
-                <input
-                  id={`vpd-${zone.id}`}
-                  type="range"
-                  min={vpdRange.min}
-                  max={vpdRange.max}
-                  step={vpdRange.step}
-                  value={vpdValue}
-                  disabled={!canControlHumidity || pendingMetric === 'vpd'}
-                  onChange={(event) => {
-                    const nextValue = Number(event.target.value);
-                    setVpdValue(nextValue);
-                    schedule('vpd', nextValue);
-                  }}
-                  onBlur={() => flush()}
-                  onMouseUp={() => flush()}
-                  onTouchEnd={() => flush()}
-                  className="flex-1 accent-primary"
-                  data-testid="vpd-slider"
-                />
-                <span className="min-w-[64px] text-right text-sm font-semibold text-text">
-                  {formatNumber(vpdValue, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
-                  kPa
                 </span>
               </div>
             </div>
