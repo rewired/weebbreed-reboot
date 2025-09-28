@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ZoneView } from '../ZoneView';
 import { quickstartSnapshot } from '@/data/mockTelemetry';
 import { useSimulationStore } from '@/store/simulation';
@@ -253,6 +253,206 @@ describe('ZoneView', () => {
     expect(within(healthyRow).queryByLabelText('Treatment scheduled')).not.toBeInTheDocument();
   });
 
+  it('filters plants by stage', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-seedling',
+        strainName: 'Seedling Plant',
+        stage: 'seedling',
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-veg',
+        strainName: 'Vegetation Plant',
+        stage: 'vegetation',
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-flower',
+        strainName: 'Flowering Plant',
+        stage: 'flowering',
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const plantsCard = screen.getAllByTestId('zone-plants-card')[0]!;
+    const stageSelect = within(plantsCard).getByTestId('plant-filter-stage');
+
+    await act(async () => {
+      fireEvent.change(stageSelect, { target: { value: 'flowering' } });
+    });
+
+    expect(within(plantsCard).getByText('Flowering Plant')).toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Seedling Plant')).not.toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Vegetation Plant')).not.toBeInTheDocument();
+  });
+
+  it('filters plants by stress level', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-low-stress',
+        strainName: 'Low Stress Plant',
+        stress: 0.1,
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-medium-stress',
+        strainName: 'Medium Stress Plant',
+        stress: 0.45,
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-high-stress',
+        strainName: 'High Stress Plant',
+        stress: 0.78,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const plantsCard = screen.getAllByTestId('zone-plants-card')[0]!;
+    const stressSelect = within(plantsCard).getByTestId('plant-filter-stress');
+
+    await act(async () => {
+      fireEvent.change(stressSelect, { target: { value: 'high' } });
+    });
+
+    expect(within(plantsCard).getByText('High Stress Plant')).toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Low Stress Plant')).not.toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Medium Stress Plant')).not.toBeInTheDocument();
+  });
+
+  it('filters plants by disease flag', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-diseased',
+        strainName: 'Diseased Plant',
+        hasDiseases: true,
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-healthy',
+        strainName: 'Healthy Plant',
+        hasDiseases: false,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const plantsCard = screen.getAllByTestId('zone-plants-card')[0]!;
+    const diseaseButton = within(plantsCard).getByTestId('plant-filter-diseases');
+
+    await act(async () => {
+      fireEvent.click(diseaseButton);
+    });
+
+    expect(diseaseButton).toHaveAttribute('aria-pressed', 'true');
+    expect(within(plantsCard).getByText('Diseased Plant')).toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Healthy Plant')).not.toBeInTheDocument();
+  });
+
+  it('filters plants by pest flag', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-pests',
+        strainName: 'Pest Plant',
+        hasPests: true,
+      },
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-clear',
+        strainName: 'Pest Free Plant',
+        hasPests: false,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const plantsCard = screen.getAllByTestId('zone-plants-card')[0]!;
+    const pestButton = within(plantsCard).getByTestId('plant-filter-pests');
+
+    await act(async () => {
+      fireEvent.click(pestButton);
+    });
+
+    expect(pestButton).toHaveAttribute('aria-pressed', 'true');
+    expect(within(plantsCard).getByText('Pest Plant')).toBeInTheDocument();
+    expect(within(plantsCard).queryByText('Pest Free Plant')).not.toBeInTheDocument();
+  });
+
   it('renders health summary within the plants card and removes the standalone health card', async () => {
     const bridge = buildBridge();
 
@@ -452,6 +652,8 @@ describe('ZoneView', () => {
     });
 
     expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(await within(lightingGroup!).findByTestId('device-group-devices')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(within(lightingGroup!).queryByTestId('device-group-devices')).toBeInTheDocument();
+    });
   });
 });
