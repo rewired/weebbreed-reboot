@@ -337,9 +337,10 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                     onClick={() =>
                       openModal({
                         id: `device-${device.id}`,
-                        type: 'duplicateRoom',
+                        type: 'tuneDevice',
                         title: `Tune ${device.name}`,
-                        subtitle: 'Dispatch devices.adjustSettings intent',
+                        subtitle: 'Adjust device settings and control surfaces.',
+                        context: { zoneId: zone.id, deviceId: device.id },
                       })
                     }
                   >

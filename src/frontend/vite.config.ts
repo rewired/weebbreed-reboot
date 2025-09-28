@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src'),
+        clsx: path.resolve(__dirname, 'src/utils/clsx.ts'),
       },
     },
     test: {

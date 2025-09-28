@@ -18,6 +18,7 @@ import { ModifierInputs } from '../modifiers/ModifierInputs';
 import { DifficultyModifiers } from '../../types/difficulty';
 import { useDifficultyConfig } from '@/hooks/useDifficultyConfig';
 import { formatNumber } from '@/utils/formatNumber';
+import { TuneDeviceModal } from './TuneDeviceModal';
 
 interface ModalHostProps {
   bridge: SimulationBridge;
@@ -105,11 +106,12 @@ const PlantZoneModal = ({
           return;
         }
         if (response.ok && response.data) {
-          setStrains(response.data);
-          if (response.data.length > 0) {
+          const data = response.data;
+          setStrains(data);
+          if (data.length > 0) {
             setSelectedStrainId((previous) => {
-              const existing = response.data.find((item) => item.id === previous);
-              return existing ? existing.id : response.data[0]!.id;
+              const existing = data.find((item) => item.id === previous);
+              return existing ? existing.id : data[0]!.id;
             });
           }
         } else {
@@ -382,11 +384,12 @@ const InstallDeviceModal = ({
           return;
         }
         if (response.ok && response.data) {
-          setDevices(response.data);
-          if (response.data.length > 0) {
+          const data = response.data;
+          setDevices(data);
+          if (data.length > 0) {
             setSelectedId((previous) => {
-              const existing = response.data.find((item) => item.id === previous);
-              return existing ? existing.id : response.data[0]!.id;
+              const existing = data.find((item) => item.id === previous);
+              return existing ? existing.id : data[0]!.id;
             });
           }
         } else {
@@ -1930,6 +1933,9 @@ const modalRenderers: Record<
   ),
   installDevice: ({ bridge, closeModal, context }) => (
     <InstallDeviceModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
+  tuneDevice: ({ bridge, closeModal, context }) => (
+    <TuneDeviceModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
 };
 

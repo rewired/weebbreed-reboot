@@ -21,7 +21,8 @@ type ModalType =
   | 'rejectApplicant'
   | 'employeeDetails'
   | 'plantZone'
-  | 'installDevice';
+  | 'installDevice'
+  | 'tuneDevice';
 
 export interface ModalDescriptor {
   id: string;

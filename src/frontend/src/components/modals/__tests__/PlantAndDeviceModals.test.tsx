@@ -1,11 +1,60 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
 import { ModalHost } from '../ModalHost';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
+import { useNavigationStore } from '@/store/navigation';
+import { ZoneView } from '@/views/ZoneView';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import type { SimulationSnapshot } from '@/types/simulation';
+
+vi.mock('recharts', () => ({
+  ResponsiveContainer: ({ children }: { children: ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  LineChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  Line: () => null,
+  XAxis: () => null,
+  YAxis: () => null,
+  Tooltip: () => null,
+  CartesianGrid: () => null,
+  Legend: () => null,
+}));
+
+vi.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: () => ({
+    getVirtualItems: () => [],
+    getTotalSize: () => 0,
+    measureElement: () => undefined,
+  }),
+}));
+
+vi.mock('@/components/zone/EnvironmentPanel', () => ({
+  EnvironmentPanel: ({ zone }: { zone: { name: string } }) => (
+    <div data-testid="environment-panel">Environment controls for {zone.name}</div>
+  ),
+}));
+
+beforeAll(() => {
+  class MockResizeObserver {
+    constructor(_callback: ResizeObserverCallback) {
+      void _callback;
+    }
+    observe(_target: Element, _options?: ResizeObserverOptions) {
+      void _target;
+      void _options;
+    }
+    unobserve(_target: Element) {
+      void _target;
+    }
+    disconnect() {}
+  }
+
+  (globalThis as unknown as { ResizeObserver: typeof MockResizeObserver }).ResizeObserver =
+    MockResizeObserver as unknown as typeof ResizeObserver;
+});
 
 const baseSnapshot: SimulationSnapshot = {
   tick: 0,
@@ -16,7 +65,22 @@ const baseSnapshot: SimulationSnapshot = {
     startedAt: new Date(0).toISOString(),
     lastUpdatedAt: new Date(0).toISOString(),
   },
-  structures: [],
+  structures: [
+    {
+      id: 'structure-1',
+      name: 'Structure One',
+      status: 'active',
+      footprint: {
+        length: 10,
+        width: 5,
+        height: 4,
+        area: 50,
+        volume: 200,
+      },
+      rentPerTick: 0,
+      roomIds: ['room-1'],
+    },
+  ],
   rooms: [
     {
       id: 'room-1',
@@ -69,7 +133,28 @@ const baseSnapshot: SimulationSnapshot = {
         stressLevel: 0.2,
         lastUpdatedTick: 0,
       },
-      devices: [],
+      devices: [
+        {
+          id: 'device-instance-1',
+          blueprintId: 'device-1',
+          kind: 'lighting',
+          name: 'LED VegLight 600',
+          zoneId: 'zone-1',
+          status: 'operational',
+          efficiency: 0.95,
+          runtimeHours: 1200,
+          maintenance: {
+            lastServiceTick: 0,
+            nextDueTick: 1000,
+            condition: 0.9,
+            degradation: 0.05,
+          },
+          settings: {
+            targetTemperature: 24,
+            power: 0.7,
+          },
+        },
+      ],
       plants: [],
       health: { diseases: 0, pests: 0, pendingTreatments: 0, appliedTreatments: 0 },
     },
@@ -88,8 +173,18 @@ const baseSnapshot: SimulationSnapshot = {
 
 describe('Plant and Device modals', () => {
   let bridge: SimulationBridge;
+  let modalRoot: HTMLDivElement;
+  let sendConfigUpdateMock: ReturnType<typeof vi.fn>;
+  let sendIntentMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    modalRoot = document.createElement('div');
+    modalRoot.id = 'modal-root';
+    document.body.appendChild(modalRoot);
+
+    sendConfigUpdateMock = vi.fn(async () => ({ ok: true }));
+    sendIntentMock = vi.fn(async () => ({ ok: true }));
+
     bridge = {
       connect: vi.fn(),
       loadQuickStart: vi.fn(async () => ({ ok: true })),
@@ -155,8 +250,8 @@ describe('Plant and Device modals', () => {
       })),
       getDifficultyConfig: vi.fn(async () => ({ ok: true })),
       sendControl: vi.fn(async () => ({ ok: true })),
-      sendConfigUpdate: vi.fn(async () => ({ ok: true })),
-      sendIntent: vi.fn(async () => ({ ok: true })),
+      sendConfigUpdate: sendConfigUpdateMock as unknown as SimulationBridge['sendConfigUpdate'],
+      sendIntent: sendIntentMock as unknown as SimulationBridge['sendIntent'],
       subscribeToUpdates: () => () => undefined,
       plants: {
         addPlanting: vi.fn(async () => ({
@@ -176,9 +271,17 @@ describe('Plant and Device modals', () => {
         timeStatus: null,
         connectionStatus: 'connected',
         zoneHistory: {},
+        zoneSetpoints: {},
         lastTick: 0,
       });
       useUIStore.setState({ activeModal: null, modalQueue: [] });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: 'structure-1',
+        selectedRoomId: 'room-1',
+        selectedZoneId: 'zone-1',
+        isSidebarOpen: false,
+      });
     });
   });
 
@@ -188,7 +291,9 @@ describe('Plant and Device modals', () => {
     act(() => {
       useSimulationStore.getState().reset();
       useUIStore.setState({ activeModal: null, modalQueue: [] });
+      useNavigationStore.getState().reset();
     });
+    modalRoot.remove();
   });
 
   it('surfaces planting capacity hints and warnings', async () => {
@@ -255,6 +360,75 @@ describe('Plant and Device modals', () => {
       targetId: 'zone-1',
       deviceId: 'device-1',
       settings: { power: 0.5 },
+    });
+  });
+
+  it('opens the tune device modal from the zone view and dispatches a setpoint update', async () => {
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ZoneView bridge={bridge} />
+      </>,
+    );
+
+    const adjustButton = await screen.findByRole('button', { name: 'Adjust' });
+    fireEvent.click(adjustButton);
+
+    const temperatureInput = await screen.findByLabelText('Target Temperature');
+    fireEvent.change(temperatureInput, { target: { value: '26' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+
+    await waitFor(() => {
+      expect(sendConfigUpdateMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'setpoint',
+          zoneId: 'zone-1',
+          metric: 'temperature',
+          value: 26,
+        }),
+      );
+    });
+
+    expect(sendIntentMock).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
+  it('dispatches an adjustSettings intent when non-setpoint fields change', async () => {
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ZoneView bridge={bridge} />
+      </>,
+    );
+
+    const adjustButton = await screen.findByRole('button', { name: 'Adjust' });
+    fireEvent.click(adjustButton);
+
+    const powerInput = await screen.findByLabelText('Power');
+    fireEvent.change(powerInput, { target: { value: '0.8' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+
+    await waitFor(() => {
+      expect(sendIntentMock).toHaveBeenCalledWith({
+        domain: 'devices',
+        action: 'adjustSettings',
+        payload: {
+          zoneId: 'zone-1',
+          deviceId: 'device-instance-1',
+          settings: { power: 0.8 },
+        },
+      });
+    });
+
+    expect(sendConfigUpdateMock).not.toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
 });

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, act } from '@testing-library/react';
+import { cleanup, render, act, screen } from '@testing-library/react';
 import { ModalHost } from './ModalHost';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
@@ -152,5 +152,19 @@ describe('ModalHost', () => {
     });
 
     expect(sendControlMock).not.toHaveBeenCalled();
+  });
+
+  it('renders the tune device modal when requested', async () => {
+    render(<ModalHost bridge={bridge} />);
+
+    act(() => {
+      useUIStore.getState().openModal({ id: 'tune', type: 'tuneDevice', title: 'Tune device' });
+    });
+
+    expect(
+      await screen.findByText(
+        /Device data unavailable\. Select a zone and device to adjust settings\./i,
+      ),
+    ).toBeInTheDocument();
   });
 });
