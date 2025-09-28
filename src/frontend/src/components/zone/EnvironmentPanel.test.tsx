@@ -308,9 +308,7 @@ describe('EnvironmentPanel', () => {
     );
 
     expect(panel.getByText('16 h light / 8 h dark')).toBeInTheDocument();
-    expect(
-      panel.getByText(/dark period adjusts automatically to maintain a 24h day/i),
-    ).toBeInTheDocument();
+    expect(panel.getByText('Cycle clamped to device coverage.')).toBeInTheDocument();
     const updatedSlider = panel.getByTestId('lighting-cycle-slider') as HTMLInputElement;
     expect(updatedSlider.value).toBe('16');
   });

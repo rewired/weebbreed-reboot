@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ModalHost } from '../ModalHost';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
@@ -9,19 +8,6 @@ import { useNavigationStore } from '@/store/navigation';
 import { ZoneView } from '@/views/ZoneView';
 import type { SimulationBridge } from '@/facade/systemFacade';
 import type { SimulationSnapshot } from '@/types/simulation';
-
-vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: ReactNode }) => (
-    <div data-testid="responsive-container">{children}</div>
-  ),
-  LineChart: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  Line: () => null,
-  XAxis: () => null,
-  YAxis: () => null,
-  Tooltip: () => null,
-  CartesianGrid: () => null,
-  Legend: () => null,
-}));
 
 vi.mock('@tanstack/react-virtual', () => ({
   useVirtualizer: () => ({
@@ -207,6 +193,18 @@ const baseSnapshot: SimulationSnapshot = {
     lastTickRevenue: 0,
     lastTickExpenses: 0,
   },
+};
+
+const expandAllDeviceGroups = async () => {
+  const groups = await screen.findAllByTestId('zone-device-group');
+  for (const group of groups) {
+    const toggle = within(group).getByTestId('device-group-header');
+    if (toggle.getAttribute('aria-expanded') !== 'true') {
+      await act(async () => {
+        toggle.click();
+      });
+    }
+  }
 };
 
 describe('Plant and Device modals', () => {
@@ -509,6 +507,7 @@ describe('Plant and Device modals', () => {
       </>,
     );
 
+    await expandAllDeviceGroups();
     await screen.findByText('LED VegLight 600');
 
     act(() => {
@@ -551,6 +550,7 @@ describe('Plant and Device modals', () => {
       </>,
     );
 
+    await expandAllDeviceGroups();
     await screen.findByText('LED VegLight 600');
 
     act(() => {
@@ -594,6 +594,7 @@ describe('Plant and Device modals', () => {
       </>,
     );
 
+    await expandAllDeviceGroups();
     const [moveButton] = await screen.findAllByRole('button', { name: /Move$/ });
     fireEvent.click(moveButton);
 
@@ -622,6 +623,7 @@ describe('Plant and Device modals', () => {
       </>,
     );
 
+    await expandAllDeviceGroups();
     const [deleteButton] = await screen.findAllByRole('button', { name: /Delete$/ });
     fireEvent.click(deleteButton);
 
