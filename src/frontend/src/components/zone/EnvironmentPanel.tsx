@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import cx from 'clsx';
 import type { ZoneSnapshot, ZoneControlSetpoints } from '@/types/simulation';
 import type { SimulationBridge } from '@/facade/systemFacade';
@@ -17,6 +17,8 @@ interface EnvironmentPanelProps {
 }
 
 type BadgeTone = 'default' | 'success' | 'warning' | 'danger';
+
+const SETPOINT_DEBOUNCE_MS = 250;
 
 const determineTone = (
   current: number,
@@ -134,30 +136,80 @@ export const EnvironmentPanel = ({
     }
   }, [ppfdTarget]);
 
-  const handleSetpointChange = async (metric: SetpointMetric, value: number) => {
-    setPendingMetric(metric);
-    setWarnings([]);
-    try {
-      const response = await bridge.sendConfigUpdate({
-        type: 'setpoint',
-        zoneId: zone.id,
-        metric,
-        value,
-      });
+  const handleSetpointChange = useCallback(
+    async (metric: SetpointMetric, value: number) => {
+      setPendingMetric(metric);
+      setWarnings([]);
+      try {
+        const response = await bridge.sendConfigUpdate({
+          type: 'setpoint',
+          zoneId: zone.id,
+          metric,
+          value,
+        });
 
-      if (!response.ok) {
-        const message = response.errors?.[0]?.message ?? 'Failed to update setpoint.';
-        setWarnings([message]);
-      } else if (response.warnings?.length) {
-        setWarnings(response.warnings);
+        if (!response.ok) {
+          const message = response.errors?.[0]?.message ?? 'Failed to update setpoint.';
+          setWarnings([message]);
+        } else if (response.warnings?.length) {
+          setWarnings(response.warnings);
+        }
+      } catch (error) {
+        console.error('Failed to update zone setpoint', error);
+        setWarnings(['Failed to update setpoint.']);
+      } finally {
+        setPendingMetric(null);
       }
-    } catch (error) {
-      console.error('Failed to update zone setpoint', error);
-      setWarnings(['Failed to update setpoint.']);
-    } finally {
-      setPendingMetric(null);
-    }
-  };
+    },
+    [bridge, zone.id],
+  );
+
+  const debouncedSetpoint = useMemo(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let lastCall: { metric: SetpointMetric; value: number } | null = null;
+
+    const flush = () => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+
+      if (lastCall) {
+        const call = lastCall;
+        lastCall = null;
+        void handleSetpointChange(call.metric, call.value);
+      }
+    };
+
+    return {
+      schedule(metric: SetpointMetric, value: number) {
+        lastCall = { metric, value };
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
+          timeout = null;
+          const call = lastCall;
+          lastCall = null;
+          if (call) {
+            void handleSetpointChange(call.metric, call.value);
+          }
+        }, SETPOINT_DEBOUNCE_MS);
+      },
+      flush,
+      cancel() {
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        lastCall = null;
+      },
+    };
+  }, [handleSetpointChange]);
+
+  const { schedule, flush, cancel } = debouncedSetpoint;
+
+  useEffect(() => () => cancel(), [cancel]);
 
   const toggleLights = async () => {
     if (!canControlLighting) {
@@ -172,6 +224,7 @@ export const EnvironmentPanel = ({
     if (nextValue > 0) {
       lastNonZeroPpfd.current = nextValue;
     }
+    cancel();
     await handleSetpointChange('ppfd', nextValue);
   };
 
@@ -314,8 +367,11 @@ export const EnvironmentPanel = ({
                   onChange={(event) => {
                     const nextValue = Number(event.target.value);
                     setTemperatureValue(nextValue);
-                    void handleSetpointChange('temperature', nextValue);
+                    schedule('temperature', nextValue);
                   }}
+                  onBlur={() => flush()}
+                  onMouseUp={() => flush()}
+                  onTouchEnd={() => flush()}
                   className="flex-1 accent-primary"
                   data-testid="temperature-slider"
                 />
@@ -345,8 +401,11 @@ export const EnvironmentPanel = ({
                   onChange={(event) => {
                     const nextValue = Number(event.target.value);
                     setHumidityValue(nextValue);
-                    void handleSetpointChange('relativeHumidity', nextValue / 100);
+                    schedule('relativeHumidity', nextValue / 100);
                   }}
+                  onBlur={() => flush()}
+                  onMouseUp={() => flush()}
+                  onTouchEnd={() => flush()}
                   className="flex-1 accent-primary"
                   data-testid="humidity-slider"
                 />
@@ -376,8 +435,11 @@ export const EnvironmentPanel = ({
                   onChange={(event) => {
                     const nextValue = Number(event.target.value);
                     setVpdValue(nextValue);
-                    void handleSetpointChange('vpd', nextValue);
+                    schedule('vpd', nextValue);
                   }}
+                  onBlur={() => flush()}
+                  onMouseUp={() => flush()}
+                  onTouchEnd={() => flush()}
                   className="flex-1 accent-primary"
                   data-testid="vpd-slider"
                 />
@@ -404,8 +466,11 @@ export const EnvironmentPanel = ({
                   onChange={(event) => {
                     const nextValue = Number(event.target.value);
                     setCo2Value(nextValue);
-                    void handleSetpointChange('co2', nextValue);
+                    schedule('co2', nextValue);
                   }}
+                  onBlur={() => flush()}
+                  onMouseUp={() => flush()}
+                  onTouchEnd={() => flush()}
                   className="flex-1 accent-primary"
                   data-testid="co2-slider"
                 />
@@ -435,8 +500,11 @@ export const EnvironmentPanel = ({
                     if (nextValue > 0) {
                       lastNonZeroPpfd.current = nextValue;
                     }
-                    void handleSetpointChange('ppfd', nextValue);
+                    schedule('ppfd', nextValue);
                   }}
+                  onBlur={() => flush()}
+                  onMouseUp={() => flush()}
+                  onTouchEnd={() => flush()}
                   className="flex-1 accent-primary"
                   data-testid="ppfd-slider"
                 />
