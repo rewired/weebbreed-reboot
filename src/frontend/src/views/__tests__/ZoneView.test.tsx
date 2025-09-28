@@ -126,12 +126,15 @@ describe('ZoneView', () => {
     const header = headers.at(-1)!;
 
     const gridRow = within(header).getByTestId('zone-header-grid-row');
+    expect(gridRow).toHaveClass('md:grid-cols-2');
     const resourcesSummary = within(gridRow).getByTestId('zone-resources-summary');
     const environmentControls = within(gridRow).getByTestId('environment-panel-root');
 
     const rowChildren = Array.from(gridRow.children);
     expect(rowChildren[0]).toBe(resourcesSummary);
     expect(rowChildren[1]).toBe(environmentControls);
+    expect(resourcesSummary).toHaveClass('md:h-full');
+    expect(environmentControls).toHaveClass('md:h-full');
 
     const resourceSubtitles = within(header).getAllByText('Reservoirs & supplies');
     expect(resourceSubtitles.length).toBeGreaterThan(0);
