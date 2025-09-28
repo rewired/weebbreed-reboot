@@ -137,6 +137,39 @@ describe('ZoneView', () => {
     expect(resourceSubtitles.length).toBeGreaterThan(0);
   });
 
+  it('renders plants and devices cards within a shared responsive row', async () => {
+    const bridge = buildBridge();
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot: quickstartSnapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: structure.id,
+        selectedRoomId: room.id,
+        selectedZoneId: zone.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const layoutRows = screen.getAllByTestId('zone-plants-devices-row');
+    expect(layoutRows.length).toBeGreaterThan(0);
+
+    const [layoutRow] = layoutRows;
+    expect(layoutRow).toHaveClass('grid');
+    expect(layoutRow.className).toContain('lg:grid-cols-2');
+
+    const children = Array.from(layoutRow.children);
+    expect(children).toHaveLength(2);
+
+    const [plantsCard, devicesCard] = children;
+    expect(within(plantsCard).getByRole('heading', { name: 'Plants' })).toBeInTheDocument();
+    expect(within(devicesCard).getByRole('heading', { name: 'Devices' })).toBeInTheDocument();
+  });
+
   it('opens the move device modal with zone context', async () => {
     const originalOpenModal = useUIStore.getState().openModal;
     const openModal = vi.fn();
