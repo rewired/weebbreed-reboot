@@ -200,6 +200,59 @@ describe('ZoneView', () => {
     expect(within(plantsCard).queryByText('plant-01')).not.toBeInTheDocument();
   });
 
+  it('displays plant health status icons only for affected plants', async () => {
+    const bridge = buildBridge();
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-affected',
+        strainName: 'Affected Plant',
+        hasDiseases: true,
+        hasPests: true,
+        hasPendingTreatments: true,
+      },
+      {
+        ...zoneSnapshot.plants[1]!,
+        id: 'plant-healthy',
+        strainName: 'Healthy Plant',
+        hasDiseases: false,
+        hasPests: false,
+        hasPendingTreatments: false,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    render(<ZoneView bridge={bridge} />);
+
+    await screen.findAllByTestId('zone-device-group');
+
+    const [plantsCard] = screen.getAllByTestId('zone-plants-card');
+    const rows = within(plantsCard).getAllByRole('row');
+    const flaggedRow = rows.find((row) => within(row).queryByText('Affected Plant'))!;
+    const healthyRow = rows.find((row) => within(row).queryByText('Healthy Plant'))!;
+
+    expect(within(flaggedRow).getByLabelText('Diseases detected')).toBeInTheDocument();
+    expect(within(flaggedRow).getByLabelText('Pests detected')).toBeInTheDocument();
+    expect(within(flaggedRow).getByLabelText('Treatment scheduled')).toBeInTheDocument();
+
+    expect(within(healthyRow).queryByLabelText('Diseases detected')).not.toBeInTheDocument();
+    expect(within(healthyRow).queryByLabelText('Pests detected')).not.toBeInTheDocument();
+    expect(within(healthyRow).queryByLabelText('Treatment scheduled')).not.toBeInTheDocument();
+  });
+
   it('renders health summary within the plants card and removes the standalone health card', async () => {
     const bridge = buildBridge();
 

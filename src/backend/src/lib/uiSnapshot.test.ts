@@ -272,4 +272,96 @@ describe('buildSimulationSnapshot plants', () => {
     const [plant] = snapshot.zones[0]?.plants ?? [];
     expect(plant?.strainName).toBe('unknown-strain');
   });
+
+  it('merges per-plant health flags from the zone health state', () => {
+    const blueprintSource = createBlueprintSource();
+    const state = createState([]);
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    zone.plants = [
+      {
+        id: 'plant-1',
+        strainId: 'strain-1',
+        stage: 'vegetative',
+        health: 0.8,
+        stress: 0.2,
+        biomassDryGrams: 10,
+        yieldDryGrams: 1,
+        plantedAtTick: 0,
+        zoneId: zone.id,
+        roomId: zone.roomId,
+        structureId: state.structures[0]!.id,
+      } as unknown as GameState['structures'][number]['rooms'][number]['zones'][number]['plants'][number],
+      {
+        id: 'plant-2',
+        strainId: 'strain-1',
+        stage: 'vegetative',
+        health: 0.95,
+        stress: 0.05,
+        biomassDryGrams: 12,
+        yieldDryGrams: 2,
+        plantedAtTick: 0,
+        zoneId: zone.id,
+        roomId: zone.roomId,
+        structureId: state.structures[0]!.id,
+      } as unknown as GameState['structures'][number]['rooms'][number]['zones'][number]['plants'][number],
+    ];
+    zone.health.plantHealth = {
+      'plant-1': {
+        diseases: [
+          {
+            id: 'disease-instance-1',
+            diseaseId: 'powdery-mildew',
+            severity: 0.3,
+            infection: 0.2,
+            detected: true,
+            symptomTimerTicks: 0,
+            spreadCooldownTicks: 0,
+            baseInfectionRatePerDay: 0,
+            baseRecoveryRatePerDay: 0,
+            baseDegenerationRatePerDay: 0,
+            activeTreatments: [],
+          },
+        ],
+        pests: [
+          {
+            id: 'pest-instance-1',
+            pestId: 'spider-mites',
+            population: 10,
+            damage: 0.1,
+            detected: true,
+            symptomTimerTicks: 0,
+            spreadCooldownTicks: 0,
+            baseReproductionRatePerDay: 0,
+            baseMortalityRatePerDay: 0,
+            baseDamageRatePerDay: 0,
+            activeTreatments: [],
+          },
+        ],
+      },
+      'plant-2': {
+        diseases: [],
+        pests: [],
+      },
+    } as typeof zone.health.plantHealth;
+    zone.health.pendingTreatments = [
+      {
+        optionId: 'treatment-1',
+        target: 'disease',
+        plantIds: ['plant-1'],
+        scheduledTick: 42,
+        diseaseIds: ['powdery-mildew'],
+      },
+    ] as unknown as typeof zone.health.pendingTreatments;
+
+    const snapshot = buildSimulationSnapshot(state, blueprintSource);
+    const [flagged, healthy] = snapshot.zones[0]!.plants;
+
+    expect(flagged.hasDiseases).toBe(true);
+    expect(flagged.hasPests).toBe(true);
+    expect(flagged.hasPendingTreatments).toBe(true);
+
+    expect(healthy.hasDiseases).toBe(false);
+    expect(healthy.hasPests).toBe(false);
+    expect(healthy.hasPendingTreatments).toBe(false);
+  });
 });

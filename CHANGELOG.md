@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Collapsed zone device groups by default behind accessible toggle buttons in
   `ZoneView`, surfacing icons and coverage for the expanded state while
   extending Vitest coverage for the new behaviour.
+- Surfaced per-plant pest, disease, and treatment indicators in simulation
+  snapshots and rendered matching status icons in the zone plant table,
+  complete with accessibility labels and regression tests.
 - Expanded the EnvironmentPanel photoperiod slider to cover the full 1–23 hour
   light window with integer steps, refreshed the helper copy, and synced the
   backend lighting-cycle command so zone snapshots persist and broadcast the

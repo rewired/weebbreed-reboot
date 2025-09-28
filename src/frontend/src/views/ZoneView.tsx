@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import cx from 'clsx';
 import {
   useReactTable,
   flexRender,
@@ -22,6 +23,54 @@ import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentB
 
 const columnHelper = createColumnHelper<PlantSnapshot>();
 
+const PlantStatusHeader = ({ icon, label }: { icon: string; label: string }) => (
+  <span className="flex justify-center" title={label}>
+    <Icon name={icon} size={18} className="text-text-muted" />
+    <span className="sr-only">{label}</span>
+  </span>
+);
+
+const PlantStatusIndicator = ({
+  isActive,
+  icon,
+  label,
+  tone,
+  background,
+}: {
+  isActive: boolean;
+  icon: string;
+  label: string;
+  tone: string;
+  background: string;
+}) => {
+  if (!isActive) {
+    return (
+      <span className="flex justify-center">
+        <span
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-transparent"
+          aria-hidden
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span className="flex justify-center">
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        className={cx(
+          'inline-flex h-8 w-8 items-center justify-center rounded-full border text-sm shadow-sm',
+          background,
+        )}
+      >
+        <Icon name={icon} size={18} className={tone} />
+      </span>
+    </span>
+  );
+};
+
 const plantColumns = [
   columnHelper.accessor('strainName', {
     header: 'Strain',
@@ -30,6 +79,54 @@ const plantColumns = [
   columnHelper.accessor('stage', {
     header: 'Stage',
     cell: (info) => <Badge tone="default">{info.getValue()}</Badge>,
+  }),
+  columnHelper.accessor('hasDiseases', {
+    header: () => <PlantStatusHeader icon="coronavirus" label="Diseases" />,
+    enableSorting: false,
+    cell: (info) => (
+      <PlantStatusIndicator
+        isActive={info.getValue()}
+        icon="coronavirus"
+        label="Diseases detected"
+        tone="text-danger"
+        background="border-danger/40 bg-danger/10"
+      />
+    ),
+    size: 64,
+    minSize: 56,
+    maxSize: 72,
+  }),
+  columnHelper.accessor('hasPests', {
+    header: () => <PlantStatusHeader icon="bug_report" label="Pests" />,
+    enableSorting: false,
+    cell: (info) => (
+      <PlantStatusIndicator
+        isActive={info.getValue()}
+        icon="bug_report"
+        label="Pests detected"
+        tone="text-warning"
+        background="border-warning/40 bg-warning/10"
+      />
+    ),
+    size: 64,
+    minSize: 56,
+    maxSize: 72,
+  }),
+  columnHelper.accessor('hasPendingTreatments', {
+    header: () => <PlantStatusHeader icon="healing" label="Pending treatments" />,
+    enableSorting: false,
+    cell: (info) => (
+      <PlantStatusIndicator
+        isActive={info.getValue()}
+        icon="healing"
+        label="Treatment scheduled"
+        tone="text-primary"
+        background="border-primary/30 bg-primary/10"
+      />
+    ),
+    size: 80,
+    minSize: 56,
+    maxSize: 88,
   }),
   columnHelper.accessor('health', {
     header: 'Health',

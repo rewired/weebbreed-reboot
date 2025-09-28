@@ -68,6 +68,9 @@ export interface PlantSnapshot {
   stress: number;
   biomassDryGrams: number;
   yieldDryGrams: number;
+  hasDiseases: boolean;
+  hasPests: boolean;
+  hasPendingTreatments: boolean;
 }
 
 export interface ZoneHealthSnapshot {
@@ -339,6 +342,17 @@ export const buildSimulationSnapshot = (
         zoneIds.push(zone.id);
         const lighting = summarizeLighting(zone);
         const plantingPlan = clonePlantingPlan(zone.plantingPlan);
+        const pendingTreatmentPlantIds = new Set<string>();
+        for (const treatment of zone.health.pendingTreatments ?? []) {
+          if (!treatment || !Array.isArray(treatment.plantIds)) {
+            continue;
+          }
+          for (const plantId of treatment.plantIds) {
+            if (typeof plantId === 'string' && plantId.length > 0) {
+              pendingTreatmentPlantIds.add(plantId);
+            }
+          }
+        }
         zones.push({
           id: zone.id,
           name: zone.name,
@@ -367,6 +381,7 @@ export const buildSimulationSnapshot = (
           })),
           plants: zone.plants.map((plant) => {
             const strain = roomPurposeSource.getStrain?.(plant.strainId);
+            const plantHealth = zone.health.plantHealth?.[plant.id];
             return {
               id: plant.id,
               strainId: plant.strainId,
@@ -376,6 +391,9 @@ export const buildSimulationSnapshot = (
               stress: plant.stress,
               biomassDryGrams: plant.biomassDryGrams,
               yieldDryGrams: plant.yieldDryGrams,
+              hasDiseases: (plantHealth?.diseases?.length ?? 0) > 0,
+              hasPests: (plantHealth?.pests?.length ?? 0) > 0,
+              hasPendingTreatments: pendingTreatmentPlantIds.has(plant.id),
             } satisfies PlantSnapshot;
           }),
           health: summarizeHealth(zone),
