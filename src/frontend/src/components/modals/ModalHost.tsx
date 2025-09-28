@@ -359,6 +359,12 @@ interface TargetFieldDefinition {
   defaultValue: number;
 }
 
+const MIN_DEVICE_QUANTITY = 1;
+const MAX_DEVICE_QUANTITY = 20;
+
+const clampQuantity = (value: number) =>
+  Math.min(MAX_DEVICE_QUANTITY, Math.max(MIN_DEVICE_QUANTITY, Math.floor(value)));
+
 const TARGET_FIELD_TEMPLATES: {
   keys: string[];
   label: string;
@@ -445,6 +451,7 @@ const InstallDeviceModal = ({
   const [warnings, setWarnings] = useState<string[]>([]);
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [quantity, setQuantity] = useState(MIN_DEVICE_QUANTITY);
 
   useEffect(() => {
     let isMounted = true;
@@ -522,6 +529,10 @@ const InstallDeviceModal = ({
       setFeedback('Select a device blueprint to continue.');
       return;
     }
+    if (quantity < MIN_DEVICE_QUANTITY || quantity > MAX_DEVICE_QUANTITY) {
+      setFeedback(`Enter a quantity between ${MIN_DEVICE_QUANTITY} and ${MAX_DEVICE_QUANTITY}.`);
+      return;
+    }
     setBusy(true);
     setFeedback(null);
     setWarnings([]);
@@ -571,14 +582,33 @@ const InstallDeviceModal = ({
       if (Object.keys(overrides).length) {
         options.settings = overrides;
       }
-      const response = await bridge.devices.installDevice(options);
-      if (!response.ok) {
-        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
-        setFeedback(warning ?? 'Device installation rejected by facade.');
-        return;
+      const aggregatedWarnings: string[] = [];
+      let installedCount = 0;
+      for (let index = 0; index < quantity; index += 1) {
+        const response = await bridge.devices.installDevice(options);
+        if (!response.ok) {
+          const warning =
+            response.errors?.[0]?.message ??
+            response.warnings?.[0] ??
+            'Device installation rejected by facade.';
+          const prefix =
+            installedCount > 0 ? `Installed ${installedCount} of ${quantity} devices. ` : '';
+          setFeedback(`${prefix}${warning}`);
+          if (aggregatedWarnings.length) {
+            setWarnings([...new Set(aggregatedWarnings)]);
+          }
+          return;
+        }
+        installedCount += 1;
+        if (response.warnings?.length) {
+          aggregatedWarnings.push(...response.warnings);
+        }
       }
-      if (response.warnings?.length) {
-        setWarnings(response.warnings);
+      if (aggregatedWarnings.length) {
+        setWarnings([...new Set(aggregatedWarnings)]);
+        setFeedback(
+          `Installed ${installedCount} device${installedCount === 1 ? '' : 's'} with warnings.`,
+        );
         return;
       }
       closeModal();
@@ -649,6 +679,29 @@ const InstallDeviceModal = ({
               </option>
             ))}
           </select>
+        </label>
+        <label className="grid gap-1">
+          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+            Device quantity
+          </span>
+          <input
+            type="number"
+            min={MIN_DEVICE_QUANTITY}
+            max={MAX_DEVICE_QUANTITY}
+            value={quantity}
+            onChange={(event) => {
+              const nextValue = Number(event.target.value);
+              setQuantity(
+                Number.isFinite(nextValue) ? clampQuantity(nextValue) : MIN_DEVICE_QUANTITY,
+              );
+              setFeedback(null);
+              setWarnings([]);
+            }}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          />
+          <span className="text-xs text-text-muted">
+            Install between {MIN_DEVICE_QUANTITY} and {MAX_DEVICE_QUANTITY} identical devices.
+          </span>
         </label>
         {targetFields.length ? (
           <div className="grid gap-3">
