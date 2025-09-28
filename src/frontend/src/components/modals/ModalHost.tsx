@@ -329,25 +329,61 @@ const PlantZoneModal = ({
   );
 };
 
-const resolveCoverageArea = (device: DeviceBlueprint | null | undefined) => {
+interface CoverageCapacity {
+  area?: { value: number; derived: boolean; referenceHeight?: number };
+  volume?: { value: number };
+}
+
+const resolveCoverageCapacity = (
+  device: DeviceBlueprint | null | undefined,
+  context?: { zoneHeight?: number | null; roomHeight?: number | null },
+): CoverageCapacity | null => {
   if (!device) {
     return null;
   }
-  if (device.coverage) {
-    if (typeof device.coverage.maxArea_m2 === 'number') {
-      return device.coverage.maxArea_m2;
-    }
-    if (typeof device.coverage.coverageArea === 'number') {
-      return device.coverage.coverageArea;
+
+  const asNumber = (value: unknown): number | null =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null;
+
+  const coverage = device.coverage ?? {};
+  const areaFromCoverage = asNumber((coverage as Record<string, unknown>).maxArea_m2);
+  const fallbackCoverageArea = asNumber((coverage as Record<string, unknown>).coverageArea);
+  const areaFromDefaults = asNumber(
+    (device.defaults?.settings as Record<string, unknown> | undefined)?.coverageArea,
+  );
+  const areaFromSettings = asNumber(
+    (device.settings as Record<string, unknown> | undefined)?.coverageArea,
+  );
+
+  const volumeFromCoverage = asNumber((coverage as Record<string, unknown>).maxVolume_m3);
+
+  const capacity: CoverageCapacity = {};
+
+  const resolvedArea =
+    areaFromCoverage ?? fallbackCoverageArea ?? areaFromDefaults ?? areaFromSettings ?? null;
+  if (resolvedArea !== null) {
+    capacity.area = { value: resolvedArea, derived: false };
+  }
+
+  if (volumeFromCoverage !== null) {
+    capacity.volume = { value: volumeFromCoverage };
+  }
+
+  if (!capacity.area && capacity.volume) {
+    const height = asNumber(context?.zoneHeight) ?? asNumber(context?.roomHeight);
+    if (height && height > 0) {
+      const derivedArea = capacity.volume.value / height;
+      if (Number.isFinite(derivedArea)) {
+        capacity.area = { value: derivedArea, derived: true, referenceHeight: height };
+      }
     }
   }
-  const defaultSettings =
-    (device.defaults?.settings as Record<string, unknown> | undefined) ??
-    (device.settings as Record<string, unknown> | undefined);
-  if (defaultSettings && typeof defaultSettings.coverageArea === 'number') {
-    return defaultSettings.coverageArea;
+
+  if (!capacity.area && !capacity.volume) {
+    return null;
   }
-  return null;
+
+  return capacity;
 };
 
 interface TargetFieldDefinition {
@@ -513,8 +549,47 @@ const InstallDeviceModal = ({
     setFieldErrors({});
   }, [selectedDevice, targetFields]);
 
-  const coverageArea = resolveCoverageArea(selectedDevice);
-  const coverageWarning = coverageArea !== null && zone ? coverageArea < zone.area : false;
+  const coverage = resolveCoverageCapacity(selectedDevice, {
+    zoneHeight: zone?.ceilingHeight,
+    roomHeight: room?.height,
+  });
+  const coverageAreaLimit = typeof coverage?.area?.value === 'number' ? coverage.area.value : null;
+  const coverageVolumeLimit =
+    typeof coverage?.volume?.value === 'number' ? coverage.volume.value : null;
+  const coverageWarning =
+    !!zone &&
+    ((coverageAreaLimit !== null && coverageAreaLimit < zone.area) ||
+      (coverageVolumeLimit !== null && coverageVolumeLimit < zone.volume));
+  const coverageSummaryParts: string[] = [];
+  if (coverage?.area) {
+    const areaValue = formatNumber(coverage.area.value, { maximumFractionDigits: 2 });
+    if (coverage.area.derived && coverage.area.referenceHeight) {
+      const heightValue = formatNumber(coverage.area.referenceHeight, { maximumFractionDigits: 2 });
+      coverageSummaryParts.push(`${areaValue} m² (≈ derived from ${heightValue} m height)`);
+    } else {
+      coverageSummaryParts.push(`${areaValue} m²`);
+    }
+  }
+  if (coverage?.volume) {
+    coverageSummaryParts.push(
+      `${formatNumber(coverage.volume.value, { maximumFractionDigits: 2 })} m³`,
+    );
+  }
+
+  const zoneSummaryParts: string[] = [];
+  if (coverage?.area && zone) {
+    zoneSummaryParts.push(`Zone area ${formatNumber(zone.area, { maximumFractionDigits: 2 })} m²`);
+  }
+  if (coverage?.volume && zone) {
+    zoneSummaryParts.push(
+      `Zone volume ${formatNumber(zone.volume, { maximumFractionDigits: 2 })} m³`,
+    );
+  }
+
+  const coverageDescription =
+    coverage && coverageSummaryParts.length
+      ? `Covers up to ${[...coverageSummaryParts, ...zoneSummaryParts].join(' · ')}`
+      : null;
   const allowedPurposes =
     selectedDevice?.roomPurposes ?? selectedDevice?.compatibility?.roomPurposes ?? [];
   const roomPurpose = room?.purposeKind ?? room?.purposeId ?? 'unknown';
@@ -650,10 +725,9 @@ const InstallDeviceModal = ({
               ? ` · Allowed: ${allowedPurposes.join(', ')}`
               : ' · All room purposes supported'}
           </span>
-          {coverageArea !== null ? (
+          {coverageDescription ? (
             <span className={coverageWarning ? 'mt-1 block text-warning' : 'mt-1 block'}>
-              Covers up to {formatNumber(coverageArea, { maximumFractionDigits: 2 })} m² · Zone area{' '}
-              {formatNumber(zone.area, { maximumFractionDigits: 2 })} m²
+              {coverageDescription}
             </span>
           ) : (
             <span className="mt-1 block">No coverage metadata provided for this blueprint.</span>
