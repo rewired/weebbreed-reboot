@@ -17,7 +17,10 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
   sendIntent: async () => ({ ok: true }),
   subscribeToUpdates: () => () => undefined,
   plants: { addPlanting: async () => ({ ok: true }) },
-  devices: { installDevice: async () => ({ ok: true }) },
+  devices: {
+    installDevice: async () => ({ ok: true }),
+    adjustLightingCycle: async () => ({ ok: true }),
+  },
   ...overrides,
 });
 
@@ -186,6 +189,98 @@ describe('EnvironmentPanel', () => {
       metric: 'ppfd',
       value: 620,
     });
+  });
+
+  it('dispatches lighting cycle adjustments through the simulation bridge', async () => {
+    const zone = baseZone();
+    const adjustLightingCycle = vi.fn(async () => ({ ok: true }));
+    const bridge = buildBridge({
+      devices: {
+        installDevice: async () => ({ ok: true }),
+        adjustLightingCycle:
+          adjustLightingCycle as SimulationBridge['devices']['adjustLightingCycle'],
+      },
+    });
+
+    render(
+      <EnvironmentPanel
+        zone={zone}
+        setpoints={zone.control?.setpoints}
+        bridge={bridge}
+        defaultExpanded
+      />,
+    );
+
+    const panel = within(screen.getAllByTestId('environment-panel-root').at(-1)!);
+    const slider = panel.getByTestId('lighting-cycle-slider') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(slider, { target: { value: '19.5' } });
+      fireEvent.mouseUp(slider);
+    });
+
+    await waitFor(() => expect(adjustLightingCycle).toHaveBeenCalled());
+    expect(adjustLightingCycle).toHaveBeenLastCalledWith({
+      zoneId: zone.id,
+      photoperiodHours: {
+        on: 19.5,
+        off: 4.5,
+      },
+    });
+  });
+
+  it('surfaces lighting cycle warnings inline and syncs badge updates', async () => {
+    const zone = baseZone();
+    const adjustLightingCycle = vi.fn(async () => ({
+      ok: true,
+      warnings: ['Cycle clamped to device coverage.'],
+    }));
+    const bridge = buildBridge({
+      devices: {
+        installDevice: async () => ({ ok: true }),
+        adjustLightingCycle:
+          adjustLightingCycle as SimulationBridge['devices']['adjustLightingCycle'],
+      },
+    });
+
+    const { rerender } = render(
+      <EnvironmentPanel
+        zone={zone}
+        setpoints={zone.control?.setpoints}
+        bridge={bridge}
+        defaultExpanded
+      />,
+    );
+
+    const panel = within(screen.getAllByTestId('environment-panel-root').at(-1)!);
+    const slider = panel.getByTestId('lighting-cycle-slider') as HTMLInputElement;
+
+    await act(async () => {
+      fireEvent.change(slider, { target: { value: '17' } });
+      fireEvent.mouseUp(slider);
+    });
+
+    await waitFor(() => expect(adjustLightingCycle).toHaveBeenCalled());
+    expect(panel.getByText('Cycle clamped to device coverage.')).toBeInTheDocument();
+
+    const updatedZone = structuredClone(zone);
+    updatedZone.lighting = {
+      ...(updatedZone.lighting ?? {}),
+      photoperiodHours: { on: 16, off: 8 },
+    };
+
+    rerender(
+      <EnvironmentPanel
+        zone={updatedZone}
+        setpoints={updatedZone.control?.setpoints}
+        bridge={bridge}
+        defaultExpanded
+      />,
+    );
+
+    expect(panel.getByText('16h/8h')).toBeInTheDocument();
+    const updatedSlider = panel.getByTestId('lighting-cycle-slider') as HTMLInputElement;
+    expect(updatedSlider.value).toBe('16');
   });
 
   it('debounces rapid slider updates before calling the simulation bridge', async () => {

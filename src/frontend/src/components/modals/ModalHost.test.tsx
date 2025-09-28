@@ -64,6 +64,7 @@ describe('ModalHost', () => {
       },
       devices: {
         installDevice: vi.fn(async () => ({ ok: true })),
+        adjustLightingCycle: vi.fn(async () => ({ ok: true })),
       },
     };
 

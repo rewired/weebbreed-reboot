@@ -50,6 +50,32 @@ const createDeviceMatcher = (zone: ZoneSnapshot) => {
 const temperatureRange = { min: 16, max: 32, step: 0.5 } as const;
 const humidityRange = { min: 35, max: 90, step: 1 } as const;
 const co2Range = { min: 400, max: 1600, step: 25 } as const;
+const photoperiodRange = { min: 12, max: 23, step: 0.5 } as const;
+const MINIMUM_DARK_HOURS = 1;
+const DEFAULT_LIGHT_HOURS = 18;
+
+const clampPhotoperiodHours = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return DEFAULT_LIGHT_HOURS;
+  }
+  return Math.min(Math.max(value, photoperiodRange.min), photoperiodRange.max);
+};
+
+const resolvePhotoperiodLightHours = (zone: ZoneSnapshot): number => {
+  const photoperiod = zone.lighting?.photoperiodHours;
+  if (photoperiod) {
+    const { on, off } = photoperiod;
+    if (typeof on === 'number') {
+      return clampPhotoperiodHours(on);
+    }
+    if (typeof off === 'number') {
+      return clampPhotoperiodHours(24 - off);
+    }
+  }
+  return DEFAULT_LIGHT_HOURS;
+};
+
+const normaliseHours = (value: number): number => Number.parseFloat(value.toFixed(2));
 
 const SliderLabel = ({ icon, children }: { icon: string; children: string }) => (
   <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
@@ -87,7 +113,7 @@ export const EnvironmentPanel = ({
 }: EnvironmentPanelProps) => {
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const [pendingMetric, setPendingMetric] = useState<SetpointMetric | null>(null);
+  const [pendingMetric, setPendingMetric] = useState<SetpointMetric | 'lightingCycle' | null>(null);
 
   const matchDevice = useMemo(() => createDeviceMatcher(zone), [zone]);
 
@@ -101,11 +127,13 @@ export const EnvironmentPanel = ({
     ((setpoints?.humidity ?? zone.environment.relativeHumidity) || 0) * 100;
   const co2Target = setpoints?.co2 ?? zone.environment.co2;
   const ppfdTarget = setpoints?.ppfd ?? zone.environment.ppfd;
+  const resolvedPhotoperiodOnHours = useMemo(() => resolvePhotoperiodLightHours(zone), [zone]);
 
   const [temperatureValue, setTemperatureValue] = useState<number>(temperatureTarget);
   const [humidityValue, setHumidityValue] = useState<number>(humidityTargetPercent);
   const [co2Value, setCo2Value] = useState<number>(co2Target);
   const [pendingPpfd, setPendingPpfd] = useState<number | null>(null);
+  const [photoperiodValue, setPhotoperiodValue] = useState<number>(resolvedPhotoperiodOnHours);
   const lastNonZeroPpfd = useRef<number>(ppfdTarget > 0 ? ppfdTarget : 400);
 
   useEffect(() => {
@@ -126,6 +154,10 @@ export const EnvironmentPanel = ({
       lastNonZeroPpfd.current = ppfdTarget;
     }
   }, [ppfdTarget]);
+
+  useEffect(() => {
+    setPhotoperiodValue(resolvedPhotoperiodOnHours);
+  }, [resolvedPhotoperiodOnHours]);
 
   const handleSetpointChange = useCallback(
     async (metric: SetpointMetric, value: number) => {
@@ -153,6 +185,42 @@ export const EnvironmentPanel = ({
       }
     },
     [bridge, zone.id],
+  );
+
+  const handleLightingCycleChange = useCallback(
+    async (lightHours: number) => {
+      if (!canControlLighting) {
+        return;
+      }
+
+      const clampedLightHours = clampPhotoperiodHours(lightHours);
+      const darkHours = Math.max(24 - clampedLightHours, MINIMUM_DARK_HOURS);
+
+      setPendingMetric('lightingCycle');
+      setWarnings([]);
+      try {
+        const response = await bridge.devices.adjustLightingCycle({
+          zoneId: zone.id,
+          photoperiodHours: {
+            on: normaliseHours(clampedLightHours),
+            off: normaliseHours(darkHours),
+          },
+        });
+
+        if (!response.ok) {
+          const message = response.errors?.[0]?.message ?? 'Failed to update lighting cycle.';
+          setWarnings([message]);
+        } else if (response.warnings?.length) {
+          setWarnings(response.warnings);
+        }
+      } catch (error) {
+        console.error('Failed to adjust lighting cycle', error);
+        setWarnings(['Failed to update lighting cycle.']);
+      } finally {
+        setPendingMetric(null);
+      }
+    },
+    [bridge, zone.id, canControlLighting],
   );
 
   const debouncedSetpoint = useMemo(() => {
@@ -202,6 +270,57 @@ export const EnvironmentPanel = ({
 
   useEffect(() => () => cancel(), [cancel]);
 
+  const photoperiodController = useMemo(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+    let lastValue: number | null = null;
+
+    const flush = () => {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+
+      if (lastValue !== null) {
+        const value = lastValue;
+        lastValue = null;
+        void handleLightingCycleChange(value);
+      }
+    };
+
+    return {
+      schedule(value: number) {
+        lastValue = value;
+        if (timeout) {
+          clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
+          timeout = null;
+          const pendingValue = lastValue;
+          lastValue = null;
+          if (pendingValue !== null) {
+            void handleLightingCycleChange(pendingValue);
+          }
+        }, SETPOINT_DEBOUNCE_MS);
+      },
+      flush,
+      cancel() {
+        if (timeout) {
+          clearTimeout(timeout);
+          timeout = null;
+        }
+        lastValue = null;
+      },
+    };
+  }, [handleLightingCycleChange]);
+
+  const {
+    schedule: scheduleLighting,
+    flush: flushLighting,
+    cancel: cancelLighting,
+  } = photoperiodController;
+
+  useEffect(() => () => cancelLighting(), [cancelLighting]);
+
   const toggleLights = useCallback(async () => {
     if (!canControlLighting) {
       return;
@@ -217,8 +336,9 @@ export const EnvironmentPanel = ({
 
     setPendingPpfd(nextValue);
     cancel();
+    cancelLighting();
     await handleSetpointChange('ppfd', nextValue);
-  }, [canControlLighting, cancel, handleSetpointChange, pendingPpfd, ppfdTarget]);
+  }, [canControlLighting, cancel, cancelLighting, handleSetpointChange, pendingPpfd, ppfdTarget]);
 
   const chips = [
     {
@@ -305,6 +425,7 @@ export const EnvironmentPanel = ({
 
   const effectivePpfdTarget = pendingPpfd ?? ppfdTarget;
   const isLightsOn = effectivePpfdTarget > 0;
+  const photoperiodDarkHours = Math.max(24 - photoperiodValue, MINIMUM_DARK_HOURS);
 
   return (
     <section
@@ -439,6 +560,52 @@ export const EnvironmentPanel = ({
                 <span className="min-w-[64px] text-right text-sm font-semibold text-text">
                   {formatNumber(co2Value, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}{' '}
                   ppm
+                </span>
+              </div>
+            </div>
+
+            <div className="grid gap-2 md:col-span-2">
+              <label htmlFor={`photoperiod-${zone.id}`}>
+                <SliderLabel icon="schedule">Lighting Cycle</SliderLabel>
+              </label>
+              <div className="flex flex-wrap items-center gap-3">
+                <input
+                  id={`photoperiod-${zone.id}`}
+                  type="range"
+                  min={photoperiodRange.min}
+                  max={photoperiodRange.max}
+                  step={photoperiodRange.step}
+                  value={photoperiodValue}
+                  disabled={!canControlLighting || pendingMetric === 'lightingCycle'}
+                  onChange={(event) => {
+                    const nextValue = clampPhotoperiodHours(Number(event.target.value));
+                    setPhotoperiodValue(nextValue);
+                    scheduleLighting(nextValue);
+                  }}
+                  onBlur={() => flushLighting()}
+                  onMouseUp={() => flushLighting()}
+                  onTouchEnd={() => flushLighting()}
+                  className="flex-1 accent-primary"
+                  data-testid="lighting-cycle-slider"
+                />
+                <span className="flex items-center gap-1 text-sm text-text-muted">
+                  <span className="font-semibold text-text">
+                    {formatNumber(photoperiodValue, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
+                    h
+                  </span>
+                  <span className="text-xs uppercase tracking-wide text-text-muted">light</span>
+                  <span className="text-text-muted">/</span>
+                  <span className="font-semibold text-text">
+                    {formatNumber(photoperiodDarkHours, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
+                    h
+                  </span>
+                  <span className="text-xs uppercase tracking-wide text-text-muted">dark</span>
                 </span>
               </div>
             </div>

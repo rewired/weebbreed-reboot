@@ -66,6 +66,8 @@ const SETPOINT_TOLERANCES: Record<ZoneControlSetpointKey, Tolerance> = {
   vpd: { abs: 0.005, rel: 1e-2 },
 };
 
+const PHOTOPERIOD_TOLERANCE: Tolerance = { abs: 0.05, rel: 5e-3 };
+
 const isApproximatelyEqual = (
   left: number,
   right: number,
@@ -112,6 +114,142 @@ const shallowEqualSetpoints = (
     const tolerance = SETPOINT_TOLERANCES[key] ?? DEFAULT_TOLERANCE;
     return isApproximatelyEqual(left, right, tolerance);
   });
+};
+
+const clampHours = (value: number): number => {
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  if (value < 0) {
+    return 0;
+  }
+  if (value > 24) {
+    return 24;
+  }
+  return value;
+};
+
+const extractPhotoperiodPayload = (
+  event: SimulationEvent,
+): {
+  zoneId?: string;
+  photoperiodHours?: { on?: number; off?: number };
+} => {
+  if (!event.payload || typeof event.payload !== 'object') {
+    return { zoneId: event.zoneId };
+  }
+
+  const payload = event.payload as Record<string, unknown> & {
+    photoperiodHours?: { on?: number; off?: number };
+    lighting?: { photoperiodHours?: { on?: number; off?: number } };
+  };
+
+  const zoneId =
+    typeof payload.zoneId === 'string'
+      ? payload.zoneId
+      : typeof event.zoneId === 'string'
+        ? event.zoneId
+        : undefined;
+
+  const photoperiod = payload.photoperiodHours ?? payload.lighting?.photoperiodHours ?? undefined;
+
+  if (!photoperiod || typeof photoperiod !== 'object') {
+    return { zoneId };
+  }
+
+  const on = photoperiod.on;
+  const off = photoperiod.off;
+
+  return {
+    zoneId,
+    photoperiodHours: {
+      on: typeof on === 'number' && Number.isFinite(on) ? on : undefined,
+      off: typeof off === 'number' && Number.isFinite(off) ? off : undefined,
+    },
+  };
+};
+
+const applyLightingEventsToSnapshot = (
+  snapshot: SimulationSnapshot,
+  events: SimulationEvent[],
+): SimulationSnapshot => {
+  if (!events.length) {
+    return snapshot;
+  }
+
+  let zones = snapshot.zones;
+  let mutated = false;
+
+  for (const event of events) {
+    const type = event.type ?? '';
+    if (!/lightingcycle|photoperiod/i.test(type)) {
+      continue;
+    }
+
+    const { zoneId, photoperiodHours } = extractPhotoperiodPayload(event);
+    if (!zoneId || !photoperiodHours) {
+      continue;
+    }
+
+    const zoneIndex = zones.findIndex((zone) => zone.id === zoneId);
+    if (zoneIndex === -1) {
+      continue;
+    }
+
+    const zone = zones[zoneIndex]!;
+    const nextOn =
+      photoperiodHours.on !== undefined
+        ? clampHours(photoperiodHours.on)
+        : photoperiodHours.off !== undefined
+          ? clampHours(24 - photoperiodHours.off)
+          : undefined;
+
+    if (nextOn === undefined) {
+      continue;
+    }
+
+    const nextOff =
+      photoperiodHours.off !== undefined
+        ? clampHours(photoperiodHours.off)
+        : clampHours(24 - nextOn);
+
+    const currentOn = zone.lighting?.photoperiodHours?.on;
+    const currentOff = zone.lighting?.photoperiodHours?.off;
+
+    if (
+      typeof currentOn === 'number' &&
+      typeof currentOff === 'number' &&
+      isApproximatelyEqual(currentOn, nextOn, PHOTOPERIOD_TOLERANCE) &&
+      isApproximatelyEqual(currentOff, nextOff, PHOTOPERIOD_TOLERANCE)
+    ) {
+      continue;
+    }
+
+    if (!mutated) {
+      zones = [...zones];
+      mutated = true;
+    }
+
+    zones[zoneIndex] = {
+      ...zone,
+      lighting: {
+        ...(zone.lighting ?? {}),
+        photoperiodHours: {
+          on: nextOn,
+          off: nextOff,
+        },
+      },
+    };
+  }
+
+  if (!mutated) {
+    return snapshot;
+  }
+
+  return {
+    ...snapshot,
+    zones,
+  };
 };
 
 const deriveZoneSetpointsFromSnapshot = (
@@ -354,31 +492,32 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
   hydrate: ({ snapshot, updates = [], events = [], time }) => {
     const previousSnapshot = get().snapshot;
     const snapshotWithLedger = preserveFinanceLedger(snapshot, previousSnapshot);
+    const snapshotWithLighting = applyLightingEventsToSnapshot(snapshotWithLedger, events);
     const history = updates.reduce<Record<string, ZoneHistoryPoint[]>>((acc, entry) => {
       return appendZoneHistory(acc, entry);
     }, {});
     const finalHistory = appendZoneHistory(history, {
-      tick: snapshotWithLedger.clock.tick,
+      tick: snapshotWithLighting.clock.tick,
       ts: Date.now(),
       events: [],
-      snapshot: snapshotWithLedger,
+      snapshot: snapshotWithLighting,
       time: time ?? {
-        running: !snapshotWithLedger.clock.isPaused,
-        paused: snapshotWithLedger.clock.isPaused,
-        speed: snapshotWithLedger.clock.targetTickRate,
-        tick: snapshotWithLedger.clock.tick,
-        targetTickRate: snapshotWithLedger.clock.targetTickRate,
+        running: !snapshotWithLighting.clock.isPaused,
+        paused: snapshotWithLighting.clock.isPaused,
+        speed: snapshotWithLighting.clock.targetTickRate,
+        tick: snapshotWithLighting.clock.tick,
+        targetTickRate: snapshotWithLighting.clock.targetTickRate,
       },
     });
-    const setpointsFromSnapshot = deriveZoneSetpointsFromSnapshot(snapshotWithLedger, {});
+    const setpointsFromSnapshot = deriveZoneSetpointsFromSnapshot(snapshotWithLighting, {});
     const setpointsWithEvents = applySetpointEvents(setpointsFromSnapshot, events);
     set({
-      snapshot: snapshotWithLedger,
+      snapshot: snapshotWithLighting,
       events: mergeEvents([], events),
       timeStatus: time ?? null,
       zoneHistory: finalHistory,
       zoneSetpoints: setpointsWithEvents,
-      lastTick: snapshotWithLedger.clock.tick,
+      lastTick: snapshotWithLighting.clock.tick,
     });
   },
   applyUpdate: (update) => {
@@ -390,17 +529,18 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     );
     const previousSnapshot = get().snapshot;
     const snapshotWithLedger = preserveFinanceLedger(update.snapshot, previousSnapshot);
+    const snapshotWithLighting = applyLightingEventsToSnapshot(snapshotWithLedger, update.events);
     const nextHistory = appendZoneHistory(get().zoneHistory, {
       ...update,
-      snapshot: snapshotWithLedger,
+      snapshot: snapshotWithLighting,
     });
     const setpointsFromSnapshot = deriveZoneSetpointsFromSnapshot(
-      snapshotWithLedger,
+      snapshotWithLighting,
       get().zoneSetpoints,
     );
     const setpointsWithEvents = applySetpointEvents(setpointsFromSnapshot, update.events);
     set((state) => ({
-      snapshot: snapshotWithLedger,
+      snapshot: snapshotWithLighting,
       timeStatus: update.time,
       events: mergeEvents(state.events, update.events),
       zoneHistory: nextHistory,
@@ -412,7 +552,16 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     set((state) => {
       const mergedEvents = mergeEvents(state.events, events);
       const setpoints = applySetpointEvents(state.zoneSetpoints, events);
-      if (mergedEvents === state.events && setpoints === state.zoneSetpoints) {
+      const snapshotWithLighting =
+        state.snapshot && events.length
+          ? applyLightingEventsToSnapshot(state.snapshot, events)
+          : state.snapshot;
+
+      if (
+        mergedEvents === state.events &&
+        setpoints === state.zoneSetpoints &&
+        snapshotWithLighting === state.snapshot
+      ) {
         return {};
       }
       const patch: Partial<SimulationState> = {};
@@ -421,6 +570,9 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       }
       if (setpoints !== state.zoneSetpoints) {
         patch.zoneSetpoints = setpoints;
+      }
+      if (snapshotWithLighting !== state.snapshot) {
+        patch.snapshot = snapshotWithLighting;
       }
       return patch;
     }),
