@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expanded dashboard game-speed presets to `0.5×/1×/10×/25×/50×/100×/250×`, widened button styling to fit three-digit labels, and refreshed UI documentation to match the new list.
 - Debounced zone EnvironmentPanel setpoint sliders so local adjustments respond instantly while bridge updates batch after a short delay, flushing on blur/mouseup and cancelling on unmount alongside new regression coverage.
 - Removed the EnvironmentPanel VPD slider, keeping the badge summary while routing VPD adjustments through humidity controls only.
+- Reworked the Install Device modal to expose blueprint target defaults as structured inputs, validate overrides inline, and
+  submit only changed setpoints when installing devices.
 
 ### Fixed
 

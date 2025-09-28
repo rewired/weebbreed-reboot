@@ -4,6 +4,7 @@ import { Icon } from '@/components/common/Icon';
 import { ModalFrame } from '@/components/modals/ModalFrame';
 import type {
   DeviceBlueprint,
+  InstallDeviceOptions,
   StrainBlueprint,
   StructureBlueprint,
   SimulationBridge,
@@ -349,6 +350,77 @@ const resolveCoverageArea = (device: DeviceBlueprint | null | undefined) => {
   return null;
 };
 
+interface TargetFieldDefinition {
+  key: string;
+  label: string;
+  helper?: string;
+  step?: string;
+  validate?: (value: number) => string | null;
+  defaultValue: number;
+}
+
+const TARGET_FIELD_TEMPLATES: {
+  keys: string[];
+  label: string;
+  helper?: string;
+  step?: string;
+  validate?: (value: number) => string | null;
+}[] = [
+  {
+    keys: ['targetTemperature', 'temperatureTarget'],
+    label: 'Target temperature (°C)',
+    step: '0.1',
+  },
+  {
+    keys: ['targetHumidity', 'targetRelativeHumidity', 'humidityTarget'],
+    label: 'Target humidity (0–1)',
+    step: '0.01',
+    validate: (value) => (value < 0 || value > 1 ? 'Enter a value between 0 and 1.' : null),
+  },
+  {
+    keys: ['targetCO2', 'targetCo2', 'co2Target'],
+    label: 'Target CO₂ (ppm)',
+    validate: (value) => (value < 0 ? 'Value must be non-negative.' : null),
+  },
+  {
+    keys: ['ppfd', 'targetPpfd', 'lightTarget'],
+    label: 'Target PPFD (µmol·m⁻²·s⁻¹)',
+    validate: (value) => (value < 0 ? 'Value must be non-negative.' : null),
+  },
+];
+
+const deriveTargetFields = (device: DeviceBlueprint | null): TargetFieldDefinition[] => {
+  if (!device) {
+    return [];
+  }
+  const defaults =
+    (device.defaults?.settings as Record<string, unknown> | undefined) ??
+    (device.settings as Record<string, unknown> | undefined) ??
+    {};
+
+  const derived: TargetFieldDefinition[] = [];
+
+  for (const template of TARGET_FIELD_TEMPLATES) {
+    const matchedKey = template.keys.find(
+      (candidate) =>
+        typeof defaults[candidate] === 'number' && Number.isFinite(defaults[candidate]),
+    );
+    if (!matchedKey) {
+      continue;
+    }
+    derived.push({
+      key: matchedKey,
+      label: template.label,
+      helper: template.helper,
+      step: template.step,
+      validate: template.validate,
+      defaultValue: defaults[matchedKey] as number,
+    });
+  }
+
+  return derived;
+};
+
 const InstallDeviceModal = ({
   bridge,
   closeModal,
@@ -367,12 +439,12 @@ const InstallDeviceModal = ({
   );
   const [devices, setDevices] = useState<DeviceBlueprint[]>([]);
   const [selectedId, setSelectedId] = useState('');
-  const [settingsText, setSettingsText] = useState('');
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [settingsError, setSettingsError] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let isMounted = true;
@@ -418,22 +490,21 @@ const InstallDeviceModal = ({
     [devices, selectedId],
   );
 
+  const targetFields = useMemo(() => deriveTargetFields(selectedDevice), [selectedDevice]);
+
   useEffect(() => {
     if (!selectedDevice) {
-      setSettingsText('');
+      setFieldValues({});
+      setFieldErrors({});
       return;
     }
-    const defaults =
-      (selectedDevice.defaults?.settings as Record<string, unknown> | undefined) ??
-      (selectedDevice.settings as Record<string, unknown> | undefined) ??
-      {};
-    try {
-      setSettingsText(JSON.stringify(defaults, null, 2));
-    } catch (error) {
-      console.warn('Failed to serialise default device settings', error);
-      setSettingsText('{}');
+    const initial: Record<string, string> = {};
+    for (const field of targetFields) {
+      initial[field.key] = String(field.defaultValue);
     }
-  }, [selectedDevice]);
+    setFieldValues(initial);
+    setFieldErrors({});
+  }, [selectedDevice, targetFields]);
 
   const coverageArea = resolveCoverageArea(selectedDevice);
   const coverageWarning = coverageArea !== null && zone ? coverageArea < zone.area : false;
@@ -453,31 +524,54 @@ const InstallDeviceModal = ({
     }
     setBusy(true);
     setFeedback(null);
-    setSettingsError(null);
     setWarnings([]);
-    let parsedSettings: Record<string, unknown> | undefined;
-    if (settingsText.trim().length > 0) {
-      try {
-        const parsed = JSON.parse(settingsText);
-        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          setSettingsError('Settings JSON must represent an object.');
-          setBusy(false);
-          return;
-        }
-        parsedSettings = parsed as Record<string, unknown>;
-      } catch (error) {
-        console.error('Invalid device settings JSON', error);
-        setSettingsError('Settings must be valid JSON.');
-        setBusy(false);
-        return;
+    const overrides: Record<string, number> = {};
+    const nextErrors: Record<string, string> = {};
+    let invalid = false;
+
+    for (const field of targetFields) {
+      const rawValue = fieldValues[field.key] ?? '';
+      const trimmed = rawValue.trim();
+      if (!trimmed.length) {
+        nextErrors[field.key] = 'Value is required.';
+        invalid = true;
+        continue;
       }
+      const numeric = Number(trimmed);
+      if (!Number.isFinite(numeric)) {
+        nextErrors[field.key] = 'Enter a valid number.';
+        invalid = true;
+        continue;
+      }
+      const validationError = field.validate ? field.validate(numeric) : null;
+      if (validationError) {
+        nextErrors[field.key] = validationError;
+        invalid = true;
+        continue;
+      }
+      if (numeric === field.defaultValue) {
+        continue;
+      }
+      overrides[field.key] = numeric;
     }
+
+    setFieldErrors(nextErrors);
+
+    if (invalid) {
+      setBusy(false);
+      setFeedback('Resolve the highlighted errors and try again.');
+      return;
+    }
+
     try {
-      const response = await bridge.devices.installDevice({
+      const options: InstallDeviceOptions = {
         targetId,
         deviceId: selectedId,
-        settings: parsedSettings,
-      });
+      };
+      if (Object.keys(overrides).length) {
+        options.settings = overrides;
+      }
+      const response = await bridge.devices.installDevice(options);
       if (!response.ok) {
         const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
         setFeedback(warning ?? 'Device installation rejected by facade.');
@@ -556,19 +650,50 @@ const InstallDeviceModal = ({
             ))}
           </select>
         </label>
-        <label className="grid gap-1">
-          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-            Settings (JSON)
-          </span>
-          <textarea
-            value={settingsText}
-            onChange={(event) => setSettingsText(event.target.value)}
-            rows={6}
-            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 font-mono text-xs text-text focus:border-primary focus:outline-none"
-            placeholder="Override settings (JSON)"
-          />
-        </label>
-        {settingsError ? <Feedback message={settingsError} /> : null}
+        {targetFields.length ? (
+          <div className="grid gap-3">
+            {targetFields.map((field) => (
+              <label key={field.key} className="grid gap-1">
+                <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                  {field.label}
+                </span>
+                <input
+                  type="number"
+                  value={fieldValues[field.key] ?? ''}
+                  onChange={(event) => {
+                    const value = event.target.value;
+                    setFieldValues((previous) => ({ ...previous, [field.key]: value }));
+                    setFieldErrors((previous) => {
+                      if (!previous[field.key]) {
+                        return previous;
+                      }
+                      const next = { ...previous };
+                      delete next[field.key];
+                      return next;
+                    });
+                    setFeedback(null);
+                    setWarnings([]);
+                  }}
+                  step={field.step}
+                  className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+                  placeholder="Enter a value"
+                  inputMode="decimal"
+                />
+                {field.helper ? (
+                  <span className="text-xs text-text-muted">{field.helper}</span>
+                ) : null}
+                {fieldErrors[field.key] ? (
+                  <span className="text-xs text-warning">{fieldErrors[field.key]}</span>
+                ) : null}
+              </label>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-text-muted">
+            This blueprint does not expose adjustable target settings. Defaults will be used on
+            install.
+          </p>
+        )}
       </div>
       {feedback ? <Feedback message={feedback} /> : null}
       {warnings.map((warning) => (
