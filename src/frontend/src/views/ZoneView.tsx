@@ -39,10 +39,10 @@ const plantColumns = [
     header: 'Stress',
     cell: (info) => `${formatNumber(info.getValue() * 100, { maximumFractionDigits: 0 })}%`,
   }),
-  columnHelper.accessor('biomassDryGrams', {
-    header: 'Biomass (g)',
+  columnHelper.accessor('yieldDryGrams', {
+    header: () => <span title="Estimated dry harvest yield in grams">Est. yield</span>,
     cell: (info) =>
-      formatNumber(info.getValue(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+      `${formatNumber(info.getValue(), { minimumFractionDigits: 1, maximumFractionDigits: 1 })} g`,
   }),
 ];
 
