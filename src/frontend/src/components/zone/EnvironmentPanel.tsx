@@ -47,6 +47,8 @@ const createDeviceMatcher = (zone: ZoneSnapshot) => {
     deviceKinds.some((kind) => keywords.some((keyword) => kind.includes(keyword)));
 };
 
+const HUMIDITY_DEVICE_KINDS = new Set(['humiditycontrolunit', 'dehumidifier']);
+
 const temperatureRange = { min: 16, max: 32, step: 0.5 } as const;
 const humidityRange = { min: 35, max: 90, step: 1 } as const;
 const co2Range = { min: 400, max: 1600, step: 25 } as const;
@@ -116,9 +118,14 @@ export const EnvironmentPanel = ({
   const [pendingMetric, setPendingMetric] = useState<SetpointMetric | 'lightingCycle' | null>(null);
 
   const matchDevice = useMemo(() => createDeviceMatcher(zone), [zone]);
+  const hasHumidityDevice = useMemo(
+    () =>
+      zone.devices.some((device) => HUMIDITY_DEVICE_KINDS.has(device.kind?.toLowerCase?.() ?? '')),
+    [zone],
+  );
 
   const canControlTemperature = matchDevice(['climate', 'hvac', 'cool', 'heat']);
-  const canControlHumidity = matchDevice(['humid', 'dehumid', 'climate']);
+  const canControlHumidity = hasHumidityDevice || matchDevice(['humid', 'dehumid', 'climate']);
   const canControlCo2 = matchDevice(['co2', 'scrub', 'inject']);
   const canControlLighting = matchDevice(['light', 'lamp']);
 

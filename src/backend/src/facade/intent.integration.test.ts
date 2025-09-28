@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { EventBus } from '@/lib/eventBus.js';
 import { SimulationFacade } from '@/facade/index.js';
-import type { GameState } from '@/state/models.js';
+import type { DeviceInstanceState, GameState } from '@/state/models.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';
@@ -617,5 +617,51 @@ describe('SimulationFacade new intents', () => {
     expect(response.ok).toBe(false);
     expect(response.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
     expect(events.some((event) => event.type === 'plant.planted')).toBe(false);
+  });
+
+  it('routes humidity setpoints through dehumidifier devices and emits telemetry', () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const dehumidifier: DeviceInstanceState = {
+      id: 'device-dehu-1',
+      blueprintId: 'blueprint-dehu-1',
+      kind: 'Dehumidifier',
+      name: 'DryBox 200',
+      zoneId: ZONE_ID,
+      status: 'operational',
+      efficiency: 0.95,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+        condition: 1,
+        runtimeHoursAtLastService: 0,
+        degradation: 0,
+      },
+      settings: { targetHumidity: 0.5, moistureRemoval: 3.5 },
+    };
+
+    zone.devices = [dehumidifier];
+    zone.control = { setpoints: {} };
+
+    const result = facade.setZoneSetpoint(ZONE_ID, 'relativeHumidity', 0.58);
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toBeUndefined();
+    expect(zone.control.setpoints.humidity).toBeCloseTo(0.58, 6);
+    expect(dehumidifier.settings.targetHumidity).toBeCloseTo(0.58, 6);
+
+    const humidityEvent = events.find((event) => event.type === 'env.setpointUpdated');
+    expect(humidityEvent).toBeDefined();
+    expect(humidityEvent?.payload).toMatchObject({
+      zoneId: ZONE_ID,
+      metric: 'relativeHumidity',
+      value: 0.58,
+    });
+
+    const control =
+      humidityEvent?.payload && typeof humidityEvent.payload === 'object'
+        ? (humidityEvent.payload as { control?: { humidity?: number } }).control
+        : undefined;
+    expect(control?.humidity).toBeCloseTo(0.58, 6);
   });
 });

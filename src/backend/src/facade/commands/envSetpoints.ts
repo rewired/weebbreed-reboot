@@ -2,7 +2,7 @@ import { saturationVaporPressure } from '@/engine/physio/vpd.js';
 import type { ZoneControlState, ZoneState } from '@/state/models.js';
 
 export const TEMPERATURE_DEVICE_KINDS = new Set(['ClimateUnit', 'HVAC']);
-export const HUMIDITY_DEVICE_KINDS = new Set(['HumidityControlUnit']);
+export const HUMIDITY_DEVICE_KINDS = new Set(['HumidityControlUnit', 'Dehumidifier']);
 export const CO2_DEVICE_KINDS = new Set(['CO2Injector']);
 export const LIGHT_DEVICE_KINDS = new Set(['Lamp']);
 
