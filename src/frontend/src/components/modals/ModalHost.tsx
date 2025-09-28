@@ -597,26 +597,43 @@ const RentStructureModal = ({
 
   // Load structure blueprints from backend
   useEffect(() => {
+    let isMounted = true;
     const loadBlueprints = async () => {
+      if (isMounted) {
+        setLoading(true);
+      }
       try {
         const response = await bridge.getStructureBlueprints();
+        if (!isMounted) {
+          return;
+        }
         if (response.ok && response.data) {
-          setBlueprints(response.data);
-          if (response.data.length > 0) {
-            setSelected(response.data[0].id);
+          if (isMounted) {
+            setBlueprints(response.data);
+            if (response.data.length > 0) {
+              setSelected(response.data[0].id);
+            }
           }
-        } else {
+        } else if (isMounted) {
           setFeedback('Failed to load structure blueprints from backend.');
         }
       } catch (error) {
         console.error('Failed to load structure blueprints:', error);
-        setFeedback('Connection error while loading structure blueprints.');
+        if (isMounted) {
+          setFeedback('Connection error while loading structure blueprints.');
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadBlueprints();
+    void loadBlueprints();
+
+    return () => {
+      isMounted = false;
+    };
   }, [bridge]);
 
   const handleRent = async () => {
