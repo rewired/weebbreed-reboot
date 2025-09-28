@@ -4,8 +4,10 @@ import {
   useReactTable,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
   createColumnHelper,
 } from '@tanstack/react-table';
+import type { ColumnFiltersState, FilterFn } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card } from '@/components/primitives/Card';
 import { Button } from '@/components/primitives/Button';
@@ -71,6 +73,47 @@ const PlantStatusIndicator = ({
   );
 };
 
+const diseaseFlagFilter: FilterFn<PlantSnapshot> = (row, columnId, filterValue) => {
+  if (filterValue !== 'flagged') {
+    return true;
+  }
+  return Boolean(row.getValue<boolean>(columnId));
+};
+
+const stageFilter: FilterFn<PlantSnapshot> = (row, columnId, filterValue) => {
+  if (!filterValue || filterValue === 'all') {
+    return true;
+  }
+
+  return row.getValue<string>(columnId) === filterValue;
+};
+
+const stressFilter: FilterFn<PlantSnapshot> = (row, columnId, filterValue) => {
+  if (!filterValue || filterValue === 'all') {
+    return true;
+  }
+
+  const value = row.getValue<number>(columnId);
+
+  switch (filterValue) {
+    case 'low':
+      return value < 0.33;
+    case 'medium':
+      return value >= 0.33 && value < 0.66;
+    case 'high':
+      return value >= 0.66;
+    default:
+      return true;
+  }
+};
+
+const STRESS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All stress levels' },
+  { value: 'low', label: 'Low (< 33%)' },
+  { value: 'medium', label: 'Medium (33–65%)' },
+  { value: 'high', label: 'High (≥ 66%)' },
+];
+
 const plantColumns = [
   columnHelper.accessor('strainName', {
     header: 'Strain',
@@ -79,6 +122,7 @@ const plantColumns = [
   columnHelper.accessor('stage', {
     header: 'Stage',
     cell: (info) => <Badge tone="default">{info.getValue()}</Badge>,
+    filterFn: stageFilter,
   }),
   columnHelper.accessor('hasDiseases', {
     header: () => <PlantStatusHeader icon="coronavirus" label="Diseases" />,
@@ -95,6 +139,7 @@ const plantColumns = [
     size: 64,
     minSize: 56,
     maxSize: 72,
+    filterFn: diseaseFlagFilter,
   }),
   columnHelper.accessor('hasPests', {
     header: () => <PlantStatusHeader icon="bug_report" label="Pests" />,
@@ -111,6 +156,7 @@ const plantColumns = [
     size: 64,
     minSize: 56,
     maxSize: 72,
+    filterFn: diseaseFlagFilter,
   }),
   columnHelper.accessor('hasPendingTreatments', {
     header: () => <PlantStatusHeader icon="healing" label="Pending treatments" />,
@@ -135,6 +181,7 @@ const plantColumns = [
   columnHelper.accessor('stress', {
     header: 'Stress',
     cell: (info) => `${formatNumber(info.getValue() * 100, { maximumFractionDigits: 0 })}%`,
+    filterFn: stressFilter,
   }),
   columnHelper.accessor('yieldDryGrams', {
     header: () => <span title="Estimated dry harvest yield in grams">Est. yield</span>,
@@ -162,21 +209,78 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     return buildEnvironmentBadgeDescriptors(zone, setpoints);
   }, [zone, setpoints]);
 
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  useEffect(() => {
+    setColumnFilters([]);
+  }, [zone?.id]);
+
+  const stageOptions = useMemo(() => {
+    if (!zone) {
+      return [] as string[];
+    }
+
+    const uniqueStages = new Set<string>();
+    for (const plant of zone.plants) {
+      if (plant.stage) {
+        uniqueStages.add(plant.stage);
+      }
+    }
+
+    return Array.from(uniqueStages).sort((a, b) => a.localeCompare(b));
+  }, [zone]);
+
+  const handleColumnFilterChange = (columnId: string, value: string | undefined) => {
+    setColumnFilters((previous) => {
+      const withoutColumn = previous.filter((filter) => filter.id !== columnId);
+      if (!value || value === 'all') {
+        return withoutColumn;
+      }
+      return [...withoutColumn, { id: columnId, value }];
+    });
+  };
+
+  const toggleFlagFilter = (columnId: 'hasDiseases' | 'hasPests') => {
+    const isActive = columnFilters.some(
+      (filter) => filter.id === columnId && filter.value === 'flagged',
+    );
+    handleColumnFilterChange(columnId, isActive ? 'all' : 'flagged');
+  };
+
+  const stageFilterValue =
+    (columnFilters.find((filter) => filter.id === 'stage')?.value as string | undefined) ?? 'all';
+  const stressFilterValue =
+    (columnFilters.find((filter) => filter.id === 'stress')?.value as string | undefined) ?? 'all';
+  const diseaseFilterActive = columnFilters.some(
+    (filter) => filter.id === 'hasDiseases' && filter.value === 'flagged',
+  );
+  const pestFilterActive = columnFilters.some(
+    (filter) => filter.id === 'hasPests' && filter.value === 'flagged',
+  );
+
   const table = useReactTable({
     data: zone?.plants ?? [],
     columns: plantColumns,
+    state: { columnFilters },
+    onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
   });
 
   const tableContainerRef = useRef<HTMLDivElement>(null);
-  const plantRowCount = zone?.plants.length ?? 0;
-  const shouldVirtualize = plantRowCount > 100;
+  const rows = table.getRowModel().rows;
+  const shouldVirtualize = rows.length > 100;
   const rowVirtualizer = useVirtualizer({
-    count: shouldVirtualize ? plantRowCount : 0,
+    count: shouldVirtualize ? rows.length : 0,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => 44,
     overscan: 8,
   });
+
+  const totalPlantCount = zone?.plants.length ?? 0;
+  const hasPlants = totalPlantCount > 0;
+  const stageSelectId = `zone-${zone?.id ?? 'unknown'}-stage-filter`;
+  const stressSelectId = `zone-${zone?.id ?? 'unknown'}-stress-filter`;
 
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
@@ -328,7 +432,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     return null;
   }
 
-  const rows = table.getRowModel().rows;
   const virtualRows = shouldVirtualize ? rowVirtualizer.getVirtualItems() : [];
 
   return (
@@ -442,6 +545,87 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             }
             data-testid="zone-plants-card"
           >
+            <div
+              className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border/30 bg-surface-muted/60 px-4 py-3"
+              data-testid="zone-plants-filters"
+            >
+              <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                Filters
+              </span>
+              <label
+                htmlFor={stageSelectId}
+                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Stage
+                <select
+                  id={stageSelectId}
+                  data-testid="plant-filter-stage"
+                  className="rounded-lg border border-border/30 bg-surface-elevated px-2 py-1 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+                  value={stageFilterValue}
+                  onChange={(event) => handleColumnFilterChange('stage', event.target.value)}
+                  disabled={!hasPlants || stageOptions.length === 0}
+                >
+                  <option value="all">All stages</option>
+                  {stageOptions.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label
+                htmlFor={stressSelectId}
+                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Stress
+                <select
+                  id={stressSelectId}
+                  data-testid="plant-filter-stress"
+                  className="rounded-lg border border-border/30 bg-surface-elevated px-2 py-1 text-sm text-text focus:outline-none focus:ring-2 focus:ring-primary/40 disabled:opacity-60"
+                  value={stressFilterValue}
+                  onChange={(event) => handleColumnFilterChange('stress', event.target.value)}
+                  disabled={!hasPlants}
+                >
+                  {STRESS_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                data-testid="plant-filter-diseases"
+                icon={<Icon name="coronavirus" size={16} />}
+                className={cx(
+                  'border border-border/30 text-xs font-semibold uppercase tracking-wide text-text-muted hover:text-text',
+                  diseaseFilterActive && 'border-danger/40 bg-danger/10 text-danger',
+                )}
+                aria-pressed={diseaseFilterActive}
+                onClick={() => toggleFlagFilter('hasDiseases')}
+                disabled={!hasPlants}
+              >
+                Diseased plants only
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                data-testid="plant-filter-pests"
+                icon={<Icon name="bug_report" size={16} />}
+                className={cx(
+                  'border border-border/30 text-xs font-semibold uppercase tracking-wide text-text-muted hover:text-text',
+                  pestFilterActive && 'border-warning/40 bg-warning/10 text-warning',
+                )}
+                aria-pressed={pestFilterActive}
+                onClick={() => toggleFlagFilter('hasPests')}
+                disabled={!hasPlants}
+              >
+                Pest-affected plants only
+              </Button>
+            </div>
             <div
               ref={tableContainerRef}
               className="max-h-96 overflow-y-auto rounded-2xl border border-border/30"
