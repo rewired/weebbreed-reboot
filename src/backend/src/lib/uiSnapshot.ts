@@ -1,4 +1,5 @@
 import { requireRoomPurpose, type RoomPurposeSource } from '@/engine/roomPurposes/index.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import {
   getApplicantPersonalSeed,
   type ApplicantState,
@@ -61,6 +62,7 @@ export interface DeviceSnapshot {
 export interface PlantSnapshot {
   id: string;
   strainId: string;
+  strainName: string;
   stage: PlantState['stage'];
   health: number;
   stress: number;
@@ -308,9 +310,11 @@ const cloneControl = (control: ZoneControlState): ZoneControlState => ({
   },
 });
 
+export type SnapshotBlueprintSource = RoomPurposeSource & Pick<BlueprintRepository, 'getStrain'>;
+
 export const buildSimulationSnapshot = (
   state: GameState,
-  roomPurposeSource: RoomPurposeSource,
+  roomPurposeSource: SnapshotBlueprintSource,
 ): SimulationSnapshot => {
   const structures: StructureSnapshot[] = [];
   const rooms: RoomSnapshot[] = [];
@@ -361,15 +365,19 @@ export const buildSimulationSnapshot = (
             maintenance: { ...device.maintenance },
             settings: { ...device.settings },
           })),
-          plants: zone.plants.map((plant) => ({
-            id: plant.id,
-            strainId: plant.strainId,
-            stage: plant.stage,
-            health: plant.health,
-            stress: plant.stress,
-            biomassDryGrams: plant.biomassDryGrams,
-            yieldDryGrams: plant.yieldDryGrams,
-          })),
+          plants: zone.plants.map((plant) => {
+            const strain = roomPurposeSource.getStrain?.(plant.strainId);
+            return {
+              id: plant.id,
+              strainId: plant.strainId,
+              strainName: strain?.name ?? plant.strainId,
+              stage: plant.stage,
+              health: plant.health,
+              stress: plant.stress,
+              biomassDryGrams: plant.biomassDryGrams,
+              yieldDryGrams: plant.yieldDryGrams,
+            } satisfies PlantSnapshot;
+          }),
           health: summarizeHealth(zone),
           lighting,
           plantingPlan,

@@ -85,6 +85,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     {
       id: 'plant-01',
       strainId: 'ak-47',
+      strainName: 'AK-47',
       stage: 'vegetation',
       health: 0.94,
       stress: 0.08,
@@ -97,6 +98,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     {
       id: 'plant-02',
       strainId: 'ak-47',
+      strainName: 'AK-47',
       stage: 'vegetation',
       health: 0.92,
       stress: 0.12,
@@ -109,6 +111,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     {
       id: 'plant-03',
       strainId: 'ak-47',
+      strainName: 'AK-47',
       stage: 'vegetation',
       health: 0.9,
       stress: 0.15,
@@ -293,6 +296,7 @@ export const quickstartSnapshot: SimulationSnapshot = {
         {
           id: 'plant-04',
           strainId: 'ak-47',
+          strainName: 'AK-47',
           stage: 'vegetation',
           health: 0.95,
           stress: 0.07,

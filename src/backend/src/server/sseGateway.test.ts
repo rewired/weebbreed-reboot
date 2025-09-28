@@ -4,10 +4,9 @@ import { Subject } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { SimulationFacade, TimeStatus } from '@/facade/index.js';
-import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import { SseGateway } from './sseGateway.js';
 import type { UiStreamPacket } from '@runtime/eventBus.js';
-import type { SimulationSnapshot } from '@/lib/uiSnapshot.js';
+import type { SimulationSnapshot, SnapshotBlueprintSource } from '@/lib/uiSnapshot.js';
 import type { GameState } from '@/state/models.js';
 
 interface ReceivedEvent {
@@ -141,8 +140,9 @@ describe('SseGateway', () => {
       getTimeStatus: () => initialTimeStatus,
     } as unknown as SimulationFacade;
 
-    const roomPurposeSource: RoomPurposeSource = {
+    const roomPurposeSource: SnapshotBlueprintSource = {
       listRoomPurposes: () => [],
+      getStrain: () => undefined,
     };
 
     uiStream$ = new Subject<UiStreamPacket<SimulationSnapshot, TimeStatus>>();
