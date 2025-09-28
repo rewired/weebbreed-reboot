@@ -61,6 +61,8 @@ describe('ModalHost', () => {
       },
       plants: {
         addPlanting: vi.fn(async () => ({ ok: true })),
+        harvestPlant: vi.fn(async () => ({ ok: true })),
+        cullPlant: vi.fn(async () => ({ ok: true })),
       },
       devices: {
         installDevice: vi.fn(async () => ({ ok: true })),

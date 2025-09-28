@@ -438,6 +438,8 @@ class StubFacade {
     addPlanting: (payload: unknown) => this.resolveIntent('plants', 'addPlanting', payload),
     cullPlanting: (payload: unknown) => this.resolveIntent('plants', 'cullPlanting', payload),
     harvestPlanting: (payload: unknown) => this.resolveIntent('plants', 'harvestPlanting', payload),
+    harvestPlant: (payload: unknown) => this.resolveIntent('plants', 'harvestPlant', payload),
+    cullPlant: (payload: unknown) => this.resolveIntent('plants', 'cullPlant', payload),
     applyIrrigation: (payload: unknown) => this.resolveIntent('plants', 'applyIrrigation', payload),
     applyFertilizer: (payload: unknown) => this.resolveIntent('plants', 'applyFertilizer', payload),
   };

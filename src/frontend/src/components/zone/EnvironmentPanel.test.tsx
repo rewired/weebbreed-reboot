@@ -16,7 +16,11 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
   sendConfigUpdate: async () => ({ ok: true }),
   sendIntent: async () => ({ ok: true }),
   subscribeToUpdates: () => () => undefined,
-  plants: { addPlanting: async () => ({ ok: true }) },
+  plants: {
+    addPlanting: async () => ({ ok: true }),
+    harvestPlant: async () => ({ ok: true }),
+    cullPlant: async () => ({ ok: true }),
+  },
   devices: {
     installDevice: async () => ({ ok: true }),
     adjustLightingCycle: async () => ({ ok: true }),

@@ -321,6 +321,8 @@ describe('Plant and Device modals', () => {
           ok: true,
           warnings: ['Capacity tight, monitor stress.'],
         })),
+        harvestPlant: vi.fn(async () => ({ ok: true })),
+        cullPlant: vi.fn(async () => ({ ok: true })),
       },
       devices: {
         installDevice: installDeviceMock as unknown as SimulationBridge['devices']['installDevice'],

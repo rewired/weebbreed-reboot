@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Implemented a device removal engine service that clears unsupported zone setpoints, emits
   `device.removed` telemetry, and exposes the facade command with unit and integration
   coverage.
+- Added a plant lifecycle service with single-plant harvest/cull commands that honor zone
+  safety restrictions, wiring the backend facade, socket intents, and frontend bridge
+  contracts to return typed results.
 - Erstellt den Alignment-Report zu Phase 0 der Irrigation-&-Nutrient-Überarbeitung mit Stakeholder-Bestätigungen,
   Quellensichtung und Deprecation-Empfehlungen für Reservoir-Aufgaben (`docs/tasks/irrigation/phase0-alignment-report.md`).
 - Added an `isHarvestable` flag to plant snapshots, plumbing the backend UI snapshot,

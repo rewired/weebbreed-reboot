@@ -147,6 +147,34 @@ export interface PlantingResult {
   warnings?: string[];
 }
 
+export interface HarvestPlantOptions {
+  plantId: string;
+}
+
+export interface HarvestPlantResult {
+  plantId: string;
+  zoneId: string;
+  roomId: string;
+  structureId: string;
+  harvestBatchId: string;
+  weightGrams: number;
+  quality: number;
+  warnings?: string[];
+}
+
+export interface CullPlantOptions {
+  plantId: string;
+}
+
+export interface CullPlantResult {
+  plantId: string;
+  zoneId: string;
+  roomId: string;
+  structureId: string;
+  stage: string;
+  warnings?: string[];
+}
+
 export interface InstallDeviceOptions {
   targetId: string;
   deviceId: string;
@@ -193,6 +221,8 @@ export interface SimulationBridge {
   subscribeToUpdates: (handler: (update: SimulationUpdateEntry) => void) => () => void;
   plants: {
     addPlanting: (options: AddPlantingOptions) => Promise<CommandResponse<PlantingResult>>;
+    harvestPlant: (options: HarvestPlantOptions) => Promise<CommandResponse<HarvestPlantResult>>;
+    cullPlant: (options: CullPlantOptions) => Promise<CommandResponse<CullPlantResult>>;
   };
   devices: {
     installDevice: (
@@ -254,6 +284,30 @@ class SocketSystemFacade implements SimulationBridge {
         payload,
       };
       return this.sendIntent<PlantingResult>(intent);
+    },
+    harvestPlant: async (options: HarvestPlantOptions) => {
+      this.requireConnected();
+      const payload = {
+        plantId: options.plantId,
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'plants',
+        action: 'harvestPlant',
+        payload,
+      };
+      return this.sendIntent<HarvestPlantResult>(intent);
+    },
+    cullPlant: async (options: CullPlantOptions) => {
+      this.requireConnected();
+      const payload = {
+        plantId: options.plantId,
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'plants',
+        action: 'cullPlant',
+        payload,
+      };
+      return this.sendIntent<CullPlantResult>(intent);
     },
   };
 

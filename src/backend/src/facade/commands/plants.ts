@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import type { PlantingPlanToggleResult } from '@/engine/plants/plantingPlanService.js';
+import type {
+  DiscardPlantResult,
+  HarvestPlantResult,
+} from '@/engine/plants/plantLifecycleService.js';
 import { entityIdentifier, nonNegativeNumber, positiveInteger, uuid } from './commonSchemas.js';
 import {
   createServiceCommand,
@@ -27,6 +31,18 @@ const cullPlantingSchema = z
 const harvestPlantingSchema = z
   .object({
     plantingId: uuid,
+  })
+  .strict();
+
+const harvestPlantSchema = z
+  .object({
+    plantId: entityIdentifier,
+  })
+  .strict();
+
+const cullPlantSchema = z
+  .object({
+    plantId: entityIdentifier,
   })
   .strict();
 
@@ -60,6 +76,8 @@ const togglePlantingPlanSchema = z
 export type AddPlantingIntent = z.infer<typeof addPlantingSchema>;
 export type CullPlantingIntent = z.infer<typeof cullPlantingSchema>;
 export type HarvestPlantingIntent = z.infer<typeof harvestPlantingSchema>;
+export type HarvestPlantIntent = z.infer<typeof harvestPlantSchema>;
+export type CullPlantIntent = z.infer<typeof cullPlantSchema>;
 export type ApplyIrrigationIntent = z.infer<typeof applyIrrigationSchema>;
 export type ApplyFertilizerIntent = z.infer<typeof applyFertilizerSchema>;
 export type TogglePlantingPlanIntent = z.infer<typeof togglePlantingPlanSchema>;
@@ -68,6 +86,8 @@ export interface PlantIntentHandlers {
   addPlanting: ServiceCommandHandler<AddPlantingIntent>;
   cullPlanting: ServiceCommandHandler<CullPlantingIntent>;
   harvestPlanting: ServiceCommandHandler<HarvestPlantingIntent>;
+  harvestPlant: ServiceCommandHandler<HarvestPlantIntent, HarvestPlantResult>;
+  cullPlant: ServiceCommandHandler<CullPlantIntent, DiscardPlantResult>;
   applyIrrigation: ServiceCommandHandler<ApplyIrrigationIntent>;
   applyFertilizer: ServiceCommandHandler<ApplyFertilizerIntent>;
   togglePlantingPlan: ServiceCommandHandler<TogglePlantingPlanIntent, PlantingPlanToggleResult>;
@@ -77,6 +97,8 @@ export interface PlantCommandRegistry {
   addPlanting: CommandRegistration<AddPlantingIntent>;
   cullPlanting: CommandRegistration<CullPlantingIntent>;
   harvestPlanting: CommandRegistration<HarvestPlantingIntent>;
+  harvestPlant: CommandRegistration<HarvestPlantIntent, HarvestPlantResult>;
+  cullPlant: CommandRegistration<CullPlantIntent, DiscardPlantResult>;
   applyIrrigation: CommandRegistration<ApplyIrrigationIntent>;
   applyFertilizer: CommandRegistration<ApplyFertilizerIntent>;
   togglePlantingPlan: CommandRegistration<TogglePlantingPlanIntent, PlantingPlanToggleResult>;
@@ -109,6 +131,18 @@ export const buildPlantCommands = ({
     () => services().harvestPlanting,
     onMissingHandler,
   ),
+  harvestPlant: createServiceCommand<HarvestPlantIntent, HarvestPlantResult>(
+    'plants.harvestPlant',
+    harvestPlantSchema,
+    () => services().harvestPlant,
+    onMissingHandler,
+  ),
+  cullPlant: createServiceCommand<CullPlantIntent, DiscardPlantResult>(
+    'plants.cullPlant',
+    cullPlantSchema,
+    () => services().cullPlant,
+    onMissingHandler,
+  ),
   applyIrrigation: createServiceCommand(
     'plants.applyIrrigation',
     applyIrrigationSchema,
@@ -133,6 +167,8 @@ export const schemas = {
   addPlantingSchema,
   cullPlantingSchema,
   harvestPlantingSchema,
+  harvestPlantSchema,
+  cullPlantSchema,
   applyIrrigationSchema,
   applyFertilizerSchema,
   togglePlantingPlanSchema,

@@ -9,6 +9,7 @@ export * from './plants/phenology.js';
 export * from './plants/resourceDemand.js';
 export * from './plants/growthModel.js';
 export * from './plants/plantingPlanService.js';
+export * from './plants/plantLifecycleService.js';
 export * from './health/models.js';
 export * from './health/healthEngine.js';
 export * from './workforce/index.js';
