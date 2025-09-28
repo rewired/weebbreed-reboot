@@ -382,101 +382,190 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
           />
         </div>
       </header>
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-        <section className="grid gap-6">
-          <Card title="Environment" subtitle="Telemetry snapshot vs. historical trend">
-            <div className="grid gap-4 md:grid-cols-4">
-              <div className="flex flex-col gap-1 text-sm text-text-muted">
-                <span className="text-xs uppercase text-text-muted">Temperature</span>
-                <span className="text-lg font-semibold text-text">
-                  {formatNumber(zone.environment.temperature, {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1,
-                  })}
-                  °C
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 text-sm text-text-muted">
-                <span className="text-xs uppercase text-text-muted">Relative Humidity</span>
-                <span className="text-lg font-semibold text-text">
-                  {formatNumber(zone.environment.relativeHumidity * 100, {
-                    maximumFractionDigits: 0,
-                  })}
-                  %
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 text-sm text-text-muted">
-                <span className="text-xs uppercase text-text-muted">Transpiration</span>
-                <span className="text-lg font-semibold text-text">
-                  {formatNumber(zone.resources.lastTranspirationLiters)} L
-                </span>
-              </div>
-              <div className="flex flex-col gap-1 text-sm text-text-muted">
-                <span className="text-xs uppercase text-text-muted">Stress</span>
-                <span className="text-lg font-semibold text-text">
-                  {formatNumber(zone.metrics.stressLevel * 100, { maximumFractionDigits: 0 })}%
-                </span>
-              </div>
+      <section className="grid gap-6">
+        <Card title="Environment" subtitle="Telemetry snapshot vs. historical trend">
+          <div className="grid gap-4 md:grid-cols-4">
+            <div className="flex flex-col gap-1 text-sm text-text-muted">
+              <span className="text-xs uppercase text-text-muted">Temperature</span>
+              <span className="text-lg font-semibold text-text">
+                {formatNumber(zone.environment.temperature, {
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 1,
+                })}
+                °C
+              </span>
             </div>
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
-                  <XAxis dataKey="tick" stroke="rgba(148, 163, 184, 0.6)" fontSize={12} />
-                  <YAxis yAxisId="left" stroke="rgba(148, 163, 184, 0.6)" fontSize={12} />
-                  <YAxis
-                    yAxisId="right"
-                    orientation="right"
-                    stroke="rgba(148, 163, 184, 0.4)"
-                    fontSize={12}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'rgba(30, 41, 59, 0.9)',
-                      borderRadius: 12,
-                      border: '1px solid rgba(148,163,184,0.2)',
-                    }}
-                  />
-                  <Legend />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="temperature"
-                    stroke="rgb(132,204,22)"
-                    strokeWidth={2}
-                    dot={false}
-                    name="Temp °C"
-                  />
-                  <Line
-                    yAxisId="left"
-                    type="monotone"
-                    dataKey="humidity"
-                    stroke="rgb(14,165,233)"
-                    strokeWidth={2}
-                    dot={false}
-                    name="RH %"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="ppfd"
-                    stroke="rgb(251,191,36)"
-                    strokeWidth={2}
-                    dot={false}
-                    name="PPFD"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="vpd"
-                    stroke="rgb(248,113,113)"
-                    strokeWidth={2}
-                    dot={false}
-                    name="VPD"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="flex flex-col gap-1 text-sm text-text-muted">
+              <span className="text-xs uppercase text-text-muted">Relative Humidity</span>
+              <span className="text-lg font-semibold text-text">
+                {formatNumber(zone.environment.relativeHumidity * 100, {
+                  maximumFractionDigits: 0,
+                })}
+                %
+              </span>
             </div>
+            <div className="flex flex-col gap-1 text-sm text-text-muted">
+              <span className="text-xs uppercase text-text-muted">Transpiration</span>
+              <span className="text-lg font-semibold text-text">
+                {formatNumber(zone.resources.lastTranspirationLiters)} L
+              </span>
+            </div>
+            <div className="flex flex-col gap-1 text-sm text-text-muted">
+              <span className="text-xs uppercase text-text-muted">Stress</span>
+              <span className="text-lg font-semibold text-text">
+                {formatNumber(zone.metrics.stressLevel * 100, { maximumFractionDigits: 0 })}%
+              </span>
+            </div>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                <XAxis dataKey="tick" stroke="rgba(148, 163, 184, 0.6)" fontSize={12} />
+                <YAxis yAxisId="left" stroke="rgba(148, 163, 184, 0.6)" fontSize={12} />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  stroke="rgba(148, 163, 184, 0.4)"
+                  fontSize={12}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'rgba(30, 41, 59, 0.9)',
+                    borderRadius: 12,
+                    border: '1px solid rgba(148,163,184,0.2)',
+                  }}
+                />
+                <Legend />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="temperature"
+                  stroke="rgb(132,204,22)"
+                  strokeWidth={2}
+                  dot={false}
+                  name="Temp °C"
+                />
+                <Line
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="humidity"
+                  stroke="rgb(14,165,233)"
+                  strokeWidth={2}
+                  dot={false}
+                  name="RH %"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="ppfd"
+                  stroke="rgb(251,191,36)"
+                  strokeWidth={2}
+                  dot={false}
+                  name="PPFD"
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="vpd"
+                  stroke="rgb(248,113,113)"
+                  strokeWidth={2}
+                  dot={false}
+                  name="VPD"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <div
+          className="grid gap-6 lg:grid-cols-2 xl:grid-cols-[1.15fr_0.85fr]"
+          data-testid="zone-plants-devices-row"
+        >
+          <Card
+            title="Plants"
+            subtitle="Batch overview"
+            action={
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={<Icon name="local_florist" />}
+                onClick={() =>
+                  openModal({
+                    id: `plant-${zone.id}`,
+                    type: 'plantZone',
+                    title: `Plant ${zone.name}`,
+                    context: { zoneId: zone.id },
+                  })
+                }
+              >
+                Plant zone
+              </Button>
+            }
+          >
+            <div
+              ref={tableContainerRef}
+              className="max-h-96 overflow-y-auto rounded-2xl border border-border/30"
+            >
+              <table className="min-w-full divide-y divide-border/30 text-sm">
+                <thead className="sticky top-0 z-10 bg-surface-muted/80 text-xs uppercase tracking-wide text-text-muted">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th key={header.id} className="px-4 py-3 text-left">
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody
+                  className="relative bg-surface-elevated/40"
+                  style={
+                    shouldVirtualize ? { height: `${rowVirtualizer.getTotalSize()}px` } : undefined
+                  }
+                >
+                  {shouldVirtualize
+                    ? virtualRows.map((virtualRow) => {
+                        const row = rows[virtualRow.index];
+                        return (
+                          <tr
+                            key={row.id}
+                            className="divide-x divide-border/10"
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              transform: `translateY(${virtualRow.start}px)`,
+                            }}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="px-4 py-3">
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            ))}
+                          </tr>
+                        );
+                      })
+                    : rows.map((row) => (
+                        <tr key={row.id} className="divide-x divide-border/10">
+                          {row.getVisibleCells().map((cell) => (
+                            <td key={cell.id} className="px-4 py-3">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                </tbody>
+              </table>
+            </div>
+            {zone.plants.length === 0 ? (
+              <p className="mt-3 text-sm text-text-muted">
+                No plants assigned to this zone yet. Use "Plant zone" to schedule a new batch.
+              </p>
+            ) : null}
           </Card>
           <Card
             title="Devices"
@@ -607,120 +696,32 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
               ))}
             </div>
           </Card>
-        </section>
-        <section className="grid gap-6">
-          <Card
-            title="Plants"
-            subtitle="Batch overview"
-            action={
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<Icon name="local_florist" />}
-                onClick={() =>
-                  openModal({
-                    id: `plant-${zone.id}`,
-                    type: 'plantZone',
-                    title: `Plant ${zone.name}`,
-                    context: { zoneId: zone.id },
-                  })
-                }
-              >
-                Plant zone
-              </Button>
-            }
-          >
-            <div
-              ref={tableContainerRef}
-              className="max-h-96 overflow-y-auto rounded-2xl border border-border/30"
-            >
-              <table className="min-w-full divide-y divide-border/30 text-sm">
-                <thead className="sticky top-0 z-10 bg-surface-muted/80 text-xs uppercase tracking-wide text-text-muted">
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th key={header.id} className="px-4 py-3 text-left">
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody
-                  className="relative bg-surface-elevated/40"
-                  style={
-                    shouldVirtualize ? { height: `${rowVirtualizer.getTotalSize()}px` } : undefined
-                  }
-                >
-                  {shouldVirtualize
-                    ? virtualRows.map((virtualRow) => {
-                        const row = rows[virtualRow.index];
-                        return (
-                          <tr
-                            key={row.id}
-                            className="divide-x divide-border/10"
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              transform: `translateY(${virtualRow.start}px)`,
-                            }}
-                          >
-                            {row.getVisibleCells().map((cell) => (
-                              <td key={cell.id} className="px-4 py-3">
-                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                              </td>
-                            ))}
-                          </tr>
-                        );
-                      })
-                    : rows.map((row) => (
-                        <tr key={row.id} className="divide-x divide-border/10">
-                          {row.getVisibleCells().map((cell) => (
-                            <td key={cell.id} className="px-4 py-3">
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </td>
-                          ))}
-                        </tr>
-                      ))}
-                </tbody>
-              </table>
+        </div>
+        <Card title="Health" subtitle="Disease & treatment overview">
+          <div className="grid gap-2 text-sm text-text-muted">
+            <div className="flex items-center justify-between">
+              <span>Diseases</span>
+              <Badge tone={zone.health.diseases ? 'warning' : 'success'}>
+                {zone.health.diseases}
+              </Badge>
             </div>
-            {zone.plants.length === 0 ? (
-              <p className="mt-3 text-sm text-text-muted">
-                No plants assigned to this zone yet. Use "Plant zone" to schedule a new batch.
-              </p>
-            ) : null}
-          </Card>
-          <Card title="Health" subtitle="Disease & treatment overview">
-            <div className="grid gap-2 text-sm text-text-muted">
-              <div className="flex items-center justify-between">
-                <span>Diseases</span>
-                <Badge tone={zone.health.diseases ? 'warning' : 'success'}>
-                  {zone.health.diseases}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Pests</span>
-                <Badge tone={zone.health.pests ? 'warning' : 'success'}>{zone.health.pests}</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Pending treatments</span>
-                <Badge tone={zone.health.pendingTreatments ? 'warning' : 'default'}>
-                  {zone.health.pendingTreatments}
-                </Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Applied treatments</span>
-                <Badge tone="default">{zone.health.appliedTreatments}</Badge>
-              </div>
+            <div className="flex items-center justify-between">
+              <span>Pests</span>
+              <Badge tone={zone.health.pests ? 'warning' : 'success'}>{zone.health.pests}</Badge>
             </div>
-          </Card>
-        </section>
-      </div>
+            <div className="flex items-center justify-between">
+              <span>Pending treatments</span>
+              <Badge tone={zone.health.pendingTreatments ? 'warning' : 'default'}>
+                {zone.health.pendingTreatments}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Applied treatments</span>
+              <Badge tone="default">{zone.health.appliedTreatments}</Badge>
+            </div>
+          </div>
+        </Card>
+      </section>
     </div>
   );
 };
