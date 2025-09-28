@@ -321,4 +321,21 @@ describe('EnvironmentPanel', () => {
       value: 27,
     });
   });
+
+  it('renders the embedded variant without the standalone section wrapper', () => {
+    const zone = baseZone();
+    const bridge = buildBridge();
+
+    render(
+      <EnvironmentPanel
+        zone={zone}
+        setpoints={zone.control?.setpoints}
+        bridge={bridge}
+        variant="embedded"
+      />,
+    );
+
+    const roots = screen.getAllByTestId('environment-panel-root');
+    expect(roots.at(-1)?.tagName).toBe('DIV');
+  });
 });
