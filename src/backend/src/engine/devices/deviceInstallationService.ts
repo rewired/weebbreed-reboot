@@ -1,6 +1,7 @@
 import { generateId } from '@/state/initialization/common.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import type { RngService, RngStream } from '@/lib/rng.js';
+import type { EventQueueFunction } from '@/lib/eventBus.js';
 import {
   type CommandExecutionContext,
   type CommandResult,
@@ -89,7 +90,10 @@ export class DeviceInstallationService {
 
     const warnings = result.warnings.map((issue) => issue.message);
 
-    context.events.queue(
+    const queueEvent: EventQueueFunction =
+      context.events?.queue ?? ((() => undefined) as EventQueueFunction);
+
+    queueEvent(
       'device.installed',
       {
         zoneId: lookup.zone.id,

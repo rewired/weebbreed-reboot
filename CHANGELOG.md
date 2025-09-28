@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Prevented `devices.installDevice` from crashing when a command context lacks
+  an event collector and added regression coverage to ensure telemetry still
+  emits when the collector is available, keeping socket intents resilient.
 - Corrected humidity device mass scaling so per-tick rates humidify/dehumidify
   zones consistently regardless of tick length while leaving energy usage tied
   to the simulated duration.
