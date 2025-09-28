@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { ensureSimulationEventId } from '../../../runtime/eventIdentity';
-import type {
-  SimulationEvent,
-  SimulationSnapshot,
-  SimulationTimeStatus,
-  SimulationUpdateEntry,
-  ZoneControlSetpoints,
+import {
+  ZONE_CONTROL_SETPOINT_KEYS,
+  canonicalizeZoneControlSetpoints,
+  type SimulationEvent,
+  type SimulationSnapshot,
+  type SimulationTimeStatus,
+  type SimulationUpdateEntry,
+  type ZoneControlSetpoints,
+  type ZoneControlSetpointKey,
 } from '@/types/simulation';
-import { ZONE_CONTROL_SETPOINT_KEYS, canonicalizeZoneControlSetpoints } from '@/types/simulation';
 
 export interface ZoneHistoryPoint {
   tick: number;
@@ -49,6 +51,40 @@ const MAX_ZONE_HISTORY_POINTS = 5000;
 
 const SETPOINT_KEYS = ZONE_CONTROL_SETPOINT_KEYS;
 
+interface Tolerance {
+  abs: number;
+  rel: number;
+}
+
+const DEFAULT_TOLERANCE: Tolerance = { abs: 1e-6, rel: 1e-6 };
+
+const SETPOINT_TOLERANCES: Record<ZoneControlSetpointKey, Tolerance> = {
+  temperature: { abs: 0.05, rel: 5e-4 },
+  humidity: { abs: 0.001, rel: 5e-3 },
+  co2: { abs: 5, rel: 5e-3 },
+  ppfd: { abs: 2, rel: 5e-3 },
+  vpd: { abs: 0.005, rel: 1e-2 },
+};
+
+const isApproximatelyEqual = (
+  left: number,
+  right: number,
+  tolerance: Tolerance = DEFAULT_TOLERANCE,
+) => {
+  const diff = Math.abs(left - right);
+  if (!Number.isFinite(diff)) {
+    return false;
+  }
+  if (diff <= tolerance.abs) {
+    return true;
+  }
+  const scale = Math.max(Math.abs(left), Math.abs(right));
+  if (scale === 0) {
+    return diff <= tolerance.abs;
+  }
+  return diff <= scale * tolerance.rel;
+};
+
 const shallowEqualSetpoints = (
   a: ZoneControlSetpoints | undefined,
   b: ZoneControlSetpoints | undefined,
@@ -59,7 +95,23 @@ const shallowEqualSetpoints = (
   if (!a || !b) {
     return false;
   }
-  return SETPOINT_KEYS.every((key) => a[key] === b[key]);
+  return SETPOINT_KEYS.every((key) => {
+    const left = a[key];
+    const right = b[key];
+
+    if (left === undefined && right === undefined) {
+      return true;
+    }
+    if (left === undefined || right === undefined) {
+      return false;
+    }
+    if (typeof left !== 'number' || typeof right !== 'number') {
+      return left === right;
+    }
+
+    const tolerance = SETPOINT_TOLERANCES[key] ?? DEFAULT_TOLERANCE;
+    return isApproximatelyEqual(left, right, tolerance);
+  });
 };
 
 const deriveZoneSetpointsFromSnapshot = (
