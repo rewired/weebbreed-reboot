@@ -54,6 +54,8 @@ Common categories are below.
 
 ## 4) Command Surface (categories)
 
+> See [`docs/intents.md`](../intents.md) for the authoritative, per-domain command matrix.
+
 ### 4.1 Time & Simulation Control
 
 - `start({ gameSpeed?, maxTicksPerFrame? })`
@@ -61,20 +63,17 @@ Common categories are below.
 - `step(nTicks = 1)` — advance deterministically by n ticks.
 - `setSpeed(multiplier: number)`
 
-### 4.2 Data Lifecycle
+### 4.2 Session Lifecycle & Blueprints
 
-- `loadBlueprints(blueprintBundle | paths)` — validate then stage.
-- `hotReload(blueprintBundle | paths)` — validate → stage → atomic swap on tick boundary.
-- `newGame(options)` — seed, initial capital, difficulty.
-- `save(): Snapshot` / `load(snapshot)`
-- `exportState()` / `importState(serialized)`
-
-### 4.3 World Building (Structures → Rooms → Zones)
-
+- `newGame({ difficulty?, seed?, modifiers? })` — bootstraps a fresh state with optional tweaks.
+- `resetSession()` — wipes the current run while retaining rented structures for quick restarts.
 - `getStructureBlueprints()` / `getStrainBlueprints()` /
   `getDeviceBlueprints()` — read-only catalogs with IDs, names,
   compatibility hints (room purposes or method affinity), default settings, and
   price hints sourced from the active blueprint repository.
+
+### 4.3 World Building (Structures → Rooms → Zones)
+
 - `rentStructure(structureId: UUID)` — validates availability; applies CapEx/Fixed cost rules.
 - `renameStructure({ structureId, name })` — trims whitespace, preserves determinism, emits rename events.
 - `deleteStructure(structureId)` — enforces empty structure + accounting clean-up.
@@ -85,6 +84,7 @@ Common categories are below.
 - `updateZone(zoneId, patch)` / `deleteZone(zoneId)`
 - `duplicateZone({ zoneId, name? })` — copies cultivation method, automation, and device placement (subject to allowed purposes).
 - `duplicateStructure({ structureId, name? })` — creates a structure-level clone including rooms/zones; returns `{ structureId }`.
+- `resetSession()` and `newGame()` are also exposed under the world domain; see §4.2 for lifecycle semantics.
 - Guards: geometry, purpose bindings, and blueprint availability validated for every mutation.
 
 ### 4.4 Devices
