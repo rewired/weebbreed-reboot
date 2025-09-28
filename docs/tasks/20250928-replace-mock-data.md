@@ -16,6 +16,7 @@ The React dashboard still hydrates several views from hard-coded fixtures (`src/
 1. **Contract Fidelity** – Zustand slices, selectors, and UI components must model the payloads emitted by `buildSimulationSnapshot` and documented telemetry events. Any transformations should be centralized and typed.
 2. **Deterministic Dev Experience** – Where offline or replay modes are required (e.g., storybook, vitest), they should replay captured Socket.IO transcripts or use shared TypeScript fixtures produced from backend snapshots.
 3. **Incremental Migration** – Replace mocks feature-by-feature to keep the UI usable during transition and simplify QA.
+4. Document every task at `/docs/tasks/mock-migration/`
 
 ## Workstreams
 
