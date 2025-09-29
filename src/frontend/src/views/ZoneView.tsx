@@ -983,20 +983,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                   data-testid="plant-harvest-all"
                   disabled={harvestAllDisabled}
                   title={harvestAllTitle ?? undefined}
-                  onClick={() => {
-                    const context: ConfirmPlantActionContext = {
-                      action: 'harvest',
-                      plantIds: harvestablePlantIds,
-                      zoneId: zone.id,
-                      onConfirm: () => handleHarvestAll(harvestablePlantIds),
-                    };
-                    openModal({
-                      id: `confirm-harvest-all-${zone.id}`,
-                      type: 'confirmPlantAction',
-                      title: 'Confirm harvest all',
-                      context,
-                    });
-                  }}
+                  onClick={() => handleHarvestAll(harvestablePlantIds)}
                 >
                   Harvest all
                 </Button>
