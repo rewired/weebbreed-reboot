@@ -144,6 +144,11 @@ export type CultivationMethodBlueprint = CultivationMethodCatalogEntry;
 export type ContainerBlueprint = ContainerCatalogEntry;
 export type SubstrateBlueprint = SubstrateCatalogEntry;
 
+export interface UpdateZoneMethodOptions {
+  zoneId: string;
+  methodId: string;
+}
+
 export interface AddPlantingOptions {
   zoneId: string;
   strainId: string;
@@ -245,6 +250,9 @@ export interface SimulationBridge {
     ) => Promise<CommandResponse<AdjustLightingCycleResult>>;
     moveDevice: (options: MoveDeviceOptions) => Promise<CommandResponse<unknown>>;
     removeDevice: (options: RemoveDeviceOptions) => Promise<CommandResponse<unknown>>;
+  };
+  world: {
+    updateZone: (options: UpdateZoneMethodOptions) => Promise<CommandResponse<unknown>>;
   };
 }
 
@@ -409,6 +417,24 @@ class SocketSystemFacade implements SimulationBridge {
       const intent: FacadeIntentCommand = {
         domain: 'devices',
         action: 'removeDevice',
+        payload,
+      };
+      return this.sendIntent(intent);
+    },
+  };
+
+  readonly world = {
+    updateZone: async (options: UpdateZoneMethodOptions) => {
+      this.requireConnected();
+      const payload = {
+        zoneId: options.zoneId,
+        patch: {
+          methodId: options.methodId,
+        },
+      } satisfies FacadeIntentCommand['payload'];
+      const intent: FacadeIntentCommand = {
+        domain: 'world',
+        action: 'updateZone',
         payload,
       };
       return this.sendIntent(intent);

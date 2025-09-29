@@ -80,6 +80,9 @@ describe('UtilityPricing component', () => {
         moveDevice: async () => ({ ok: true }),
         removeDevice: async () => ({ ok: true }),
       },
+      world: {
+        updateZone: async () => ({ ok: true }),
+      },
     } satisfies SimulationBridge;
     act(() => {
       useSimulationStore.setState({

@@ -255,6 +255,33 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     return buildEnvironmentBadgeDescriptors(zone, setpoints);
   }, [zone, setpoints]);
 
+  const methodName = zone?.cultivationMethodName ?? 'Not assigned';
+  const containerName =
+    zone?.cultivation?.container?.name ??
+    zone?.cultivation?.container?.slug ??
+    zone?.cultivation?.container?.type ??
+    'Not configured';
+  const substrateName =
+    zone?.cultivation?.substrate?.name ??
+    zone?.cultivation?.substrate?.slug ??
+    zone?.cultivation?.substrate?.type ??
+    'Not configured';
+
+  const zoneIdForModal = zone?.id ?? null;
+
+  const handleOpenChangeMethod = useCallback(() => {
+    if (!zoneIdForModal) {
+      return;
+    }
+    openModal({
+      id: `change-method-${zoneIdForModal}`,
+      type: 'changeZoneMethod',
+      title: 'Change cultivation method',
+      subtitle: 'Select a compatible method for this zone.',
+      context: { zoneId: zoneIdForModal },
+    });
+  }, [openModal, zoneIdForModal]);
+
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [showHarvestableOnly, setShowHarvestableOnly] = useState(false);
@@ -892,11 +919,18 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             <span className="text-xs uppercase tracking-wide text-text-muted">Zone</span>
             <h2 className="text-2xl font-semibold text-text">{zone.name}</h2>
             <p className="text-sm text-text-muted">
-              {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³ · cultivation
-              method {zone.cultivationMethodId ?? '—'}
+              {formatNumber(zone.area)} m² · volume {formatNumber(zone.volume)} m³
+            </p>
+            <p className="text-sm text-text-muted">
+              Method: {methodName} · Container: {containerName} · Substrate: {substrateName}
             </p>
           </div>
-          <EnvironmentBadgeRow badges={environmentBadges} className="md:justify-end" />
+          <div className="flex flex-col items-start gap-3 md:items-end">
+            <EnvironmentBadgeRow badges={environmentBadges} className="md:justify-end" />
+            <Button type="button" size="sm" variant="secondary" onClick={handleOpenChangeMethod}>
+              Change method
+            </Button>
+          </div>
         </div>
         <div
           className="grid gap-4 md:grid-cols-2 md:items-start"
@@ -914,7 +948,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
               >
                 Resources
               </h3>
-              <span className="text-xs text-text-muted">Reservoirs &amp; supplies</span>
             </div>
             <dl className="grid gap-3 text-sm text-text-muted">
               <div className="flex items-center justify-between">

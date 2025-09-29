@@ -17,6 +17,9 @@ describe('useDifficultyConfig', () => {
     vi.doMock('@/facade/systemFacade', () => ({
       getSimulationBridge: () => ({
         getDifficultyConfig: getDifficultyConfigMock,
+        world: {
+          updateZone: vi.fn(),
+        },
       }),
     }));
 

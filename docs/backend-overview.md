@@ -138,6 +138,8 @@ Skill definitions list `id`, `name`, `description`, and optional `tags` for clas
 3. **Link cross-references.** Resolve ids across maps (e.g., device prices, strain prices) before the first tick. Missing references are fatal until documented and added to the blueprint set.
 4. **Runtime usage.** Engine subsystems read only from materialized instances, ensuring tick execution cannot mutate shared template data. Derived telemetry must include source blueprint ids for auditability.
 
+- **Zone updates.** `world.updateZone` validates geometry edits and cultivation-method patches against the existing container/substrate setup, applies default consumables when methods declare them, and emits `world.zoneUpdated` telemetry with storage warnings so the UI can prompt for handoffs.【F:src/backend/src/engine/world/worldService.ts†L779-L934】【F:src/backend/src/engine/world/worldService.updateZone.test.ts†L290-L360】
+
 ## 6. Identifier Strategy
 
 Prefer hierarchical addresses for static assets (structure/room/device) built from blueprint slugs or ids to keep telemetry readable. Use UUIDs for mobile entities (plants, employees) where collisions or reassignment are likely. Record remapping events at tick boundaries if identifiers change so downstream consumers can reconcile history.

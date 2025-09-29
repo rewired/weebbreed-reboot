@@ -331,6 +331,9 @@ describe('Plant and Device modals', () => {
         moveDevice: moveDeviceMock as unknown as SimulationBridge['devices']['moveDevice'],
         removeDevice: removeDeviceMock as unknown as SimulationBridge['devices']['removeDevice'],
       },
+      world: {
+        updateZone: vi.fn(async () => ({ ok: true })),
+      },
     } satisfies SimulationBridge;
 
     act(() => {

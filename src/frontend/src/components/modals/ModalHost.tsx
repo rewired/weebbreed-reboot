@@ -18,6 +18,7 @@ import type {
   StructureBlueprint,
   SimulationBridge,
 } from '@/facade/systemFacade';
+import type { CultivationMethodCatalogEntry } from '@/types/blueprints';
 import { HireModal } from '@/components/personnel/HireModal';
 import { FireModal } from '@/components/personnel/FireModal';
 import { useUIStore } from '@/store/ui';
@@ -60,6 +61,30 @@ const ActionFooter = ({
     </Button>
   </div>
 );
+
+export interface StorageHandoffRequest {
+  zoneId: string;
+  zoneName?: string | null;
+  currentMethodId?: string | null;
+  nextMethodId: string;
+  containerName?: string | null;
+  substrateName?: string | null;
+}
+
+type StorageHandoffCallback = (request: StorageHandoffRequest) => Promise<boolean>;
+
+const defaultStorageHandoffCallback: StorageHandoffCallback = async (request) => {
+  console.info('Storage handoff confirmation stub invoked', request);
+  return true;
+};
+
+let storageHandoffCallback: StorageHandoffCallback = defaultStorageHandoffCallback;
+
+export const setStorageHandoffHandler = (callback: StorageHandoffCallback | null) => {
+  storageHandoffCallback = callback ?? defaultStorageHandoffCallback;
+};
+
+const requestStorageHandoff = (request: StorageHandoffRequest) => storageHandoffCallback(request);
 
 const CULTIVATION_METHOD_HINTS: Record<
   string,
@@ -331,6 +356,291 @@ const PlantZoneModal = ({
         onCancel={closeModal}
         onConfirm={handlePlanting}
         confirmLabel={busy ? 'Planting…' : 'Plant zone'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
+const ChangeZoneMethodModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const zoneId = typeof context?.zoneId === 'string' ? context.zoneId : null;
+  const zone = useSimulationStore((state) =>
+    zoneId ? (state.snapshot?.zones.find((item) => item.id === zoneId) ?? null) : null,
+  );
+  const cultivationCatalog = useSimulationStore((state) => state.catalogs.cultivationMethods);
+  const containerCatalog = useSimulationStore((state) => state.catalogs.containers);
+  const substrateCatalog = useSimulationStore((state) => state.catalogs.substrates);
+
+  const [selectedMethodId, setSelectedMethodId] = useState(() => zone?.cultivationMethodId ?? '');
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+
+  const readyMethods = cultivationCatalog.status === 'ready' ? cultivationCatalog.data : [];
+  const containerType = zone?.cultivation?.container?.type ?? null;
+  const substrateType = zone?.cultivation?.substrate?.type ?? null;
+
+  const compatibleMethods = useMemo(() => {
+    const methods: CultivationMethodCatalogEntry[] = [];
+    const seen = new Set<string>();
+
+    const isCompatible = (method: CultivationMethodCatalogEntry) => {
+      const containerList = method.compatibility?.compatibleContainerTypes;
+      const substrateList = method.compatibility?.compatibleSubstrateTypes;
+
+      if (containerType && Array.isArray(containerList) && containerList.length > 0) {
+        if (!containerList.includes(containerType)) {
+          return false;
+        }
+      }
+
+      if (substrateType && Array.isArray(substrateList) && substrateList.length > 0) {
+        if (!substrateList.includes(substrateType)) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    for (const method of readyMethods) {
+      if (!seen.has(method.id) && isCompatible(method)) {
+        methods.push(method);
+        seen.add(method.id);
+      }
+    }
+
+    if (zone?.cultivationMethodId && !seen.has(zone.cultivationMethodId)) {
+      const current = readyMethods.find((item) => item.id === zone.cultivationMethodId);
+      if (current) {
+        methods.push(current);
+      }
+    }
+
+    return methods.sort((a, b) => a.name.localeCompare(b.name));
+  }, [containerType, readyMethods, substrateType, zone?.cultivationMethodId]);
+
+  useEffect(() => {
+    if (!selectedMethodId && compatibleMethods.length > 0) {
+      setSelectedMethodId(compatibleMethods[0]!.id);
+      return;
+    }
+    if (selectedMethodId && compatibleMethods.every((method) => method.id !== selectedMethodId)) {
+      setSelectedMethodId(compatibleMethods[0]?.id ?? zone?.cultivationMethodId ?? '');
+    }
+  }, [compatibleMethods, selectedMethodId, zone?.cultivationMethodId]);
+
+  const selectedMethod = useMemo(() => {
+    if (!selectedMethodId) {
+      return null;
+    }
+    return (
+      compatibleMethods.find((method) => method.id === selectedMethodId) ??
+      readyMethods.find((method) => method.id === selectedMethodId) ??
+      null
+    );
+  }, [compatibleMethods, readyMethods, selectedMethodId]);
+
+  const methodHint = getCultivationMethodHint(selectedMethodId);
+
+  const compatibilitySummary = useMemo(() => {
+    if (!selectedMethod) {
+      return null;
+    }
+    const pieces: string[] = [];
+    if (containerType) {
+      const matchesContainer = selectedMethod.compatibility?.compatibleContainerTypes;
+      if (Array.isArray(matchesContainer) && matchesContainer.length > 0) {
+        pieces.push(`Supports containers: ${matchesContainer.join(', ')}`);
+      }
+    }
+    if (substrateType) {
+      const matchesSubstrate = selectedMethod.compatibility?.compatibleSubstrateTypes;
+      if (Array.isArray(matchesSubstrate) && matchesSubstrate.length > 0) {
+        pieces.push(`Supports substrates: ${matchesSubstrate.join(', ')}`);
+      }
+    }
+    return pieces.length ? pieces.join(' · ') : null;
+  }, [containerType, selectedMethod, substrateType]);
+
+  useEffect(() => {
+    setWarnings([]);
+  }, [selectedMethodId]);
+
+  if (!zone || !zoneId) {
+    return (
+      <p className="text-sm text-text-muted">Zone context unavailable. Select a zone and retry.</p>
+    );
+  }
+
+  if (cultivationCatalog.status === 'error') {
+    return <Feedback message={cultivationCatalog.error ?? 'Failed to load cultivation methods.'} />;
+  }
+
+  if (cultivationCatalog.status !== 'ready') {
+    return <p className="text-sm text-text-muted">Loading cultivation method catalog…</p>;
+  }
+
+  if (!readyMethods.length) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm text-text-muted">
+          No cultivation methods available from the facade catalog.
+        </p>
+        {feedback ? <Feedback message={feedback} /> : null}
+      </div>
+    );
+  }
+
+  if (!compatibleMethods.length) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm text-text-muted">
+          No methods are compatible with the current container/substrate configuration. Move
+          consumables to storage before switching methods.
+        </p>
+        {feedback ? <Feedback message={feedback} /> : null}
+      </div>
+    );
+  }
+
+  const containerName = zone.cultivation?.container?.name ?? null;
+  const substrateName = zone.cultivation?.substrate?.name ?? null;
+  const resolvedContainerName = (() => {
+    if (containerName) {
+      return containerName;
+    }
+    if (zone.cultivation?.container?.slug) {
+      const match = containerCatalog.data.find(
+        (item) => item.slug === zone.cultivation?.container?.slug,
+      );
+      return match?.name ?? zone.cultivation?.container?.slug;
+    }
+    return 'Not configured';
+  })();
+  const resolvedSubstrateName = (() => {
+    if (substrateName) {
+      return substrateName;
+    }
+    if (zone.cultivation?.substrate?.slug) {
+      const match = substrateCatalog.data.find(
+        (item) => item.slug === zone.cultivation?.substrate?.slug,
+      );
+      return match?.name ?? zone.cultivation?.substrate?.slug;
+    }
+    return 'Not configured';
+  })();
+
+  const handleApply = async () => {
+    if (!selectedMethodId) {
+      setFeedback('Select a cultivation method before continuing.');
+      return;
+    }
+
+    setFeedback(null);
+    setWarnings([]);
+
+    try {
+      const confirmed = await requestStorageHandoff({
+        zoneId,
+        zoneName: zone.name,
+        currentMethodId: zone.cultivationMethodId,
+        nextMethodId: selectedMethodId,
+        containerName,
+        substrateName,
+      });
+      if (!confirmed) {
+        setFeedback('Storage handoff must be confirmed before changing the method.');
+        return;
+      }
+    } catch (error) {
+      console.error('Storage handoff confirmation failed', error);
+      setFeedback('Storage confirmation failed. Please retry.');
+      return;
+    }
+
+    setBusy(true);
+    try {
+      const response = await bridge.world.updateZone({ zoneId, methodId: selectedMethodId });
+      if (!response.ok) {
+        const message =
+          response.errors?.[0]?.message ??
+          response.warnings?.[0] ??
+          'Cultivation method update was rejected by the facade.';
+        setFeedback(message);
+        return;
+      }
+      if (response.warnings?.length) {
+        setWarnings(response.warnings);
+        return;
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Failed to update cultivation method', error);
+      setFeedback('Connection error while updating the cultivation method.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-4">
+      <div className="grid gap-2 rounded-xl bg-surface-muted/40 p-3 text-sm">
+        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          Current setup
+        </span>
+        <span className="text-text">Method: {zone.cultivationMethodName ?? 'Not assigned'}</span>
+        <span className="text-text-muted">Container: {resolvedContainerName}</span>
+        <span className="text-text-muted">Substrate: {resolvedSubstrateName}</span>
+      </div>
+      <label className="grid gap-1">
+        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          New method
+        </span>
+        <select
+          value={selectedMethodId}
+          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+            setSelectedMethodId(event.target.value);
+            setFeedback(null);
+          }}
+          className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+        >
+          {compatibleMethods.map((method) => (
+            <option key={method.id} value={method.id}>
+              {method.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      {selectedMethod ? (
+        <div className="grid gap-1 rounded-xl border border-border/40 bg-surface-muted/20 p-3 text-xs text-text-muted">
+          <span className="text-sm font-semibold text-text">{selectedMethod.name}</span>
+          <span>
+            Area per plant {formatNumber(selectedMethod.areaPerPlant, { maximumFractionDigits: 2 })}{' '}
+            m² · Minimum spacing{' '}
+            {formatNumber(selectedMethod.minimumSpacing, { maximumFractionDigits: 2 })} m
+          </span>
+          {methodHint ? <span>{methodHint.description}</span> : null}
+          {compatibilitySummary ? <span>{compatibilitySummary}</span> : null}
+        </div>
+      ) : null}
+      {feedback ? <Feedback message={feedback} /> : null}
+      {warnings.map((warning) => (
+        <Feedback key={warning} message={warning} />
+      ))}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleApply}
+        confirmLabel={busy ? 'Applying…' : 'Apply method'}
         confirmDisabled={busy}
         cancelDisabled={busy}
       />
@@ -2918,6 +3228,9 @@ const modalRenderers: Record<
   ),
   confirmPlantAction: ({ bridge, closeModal, context }) => (
     <ConfirmPlantActionModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
+  changeZoneMethod: ({ bridge, closeModal, context }) => (
+    <ChangeZoneMethodModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
 };
 

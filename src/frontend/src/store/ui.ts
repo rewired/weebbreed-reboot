@@ -26,7 +26,8 @@ type ModalType =
   | 'tuneDevice'
   | 'moveDevice'
   | 'removeDevice'
-  | 'confirmPlantAction';
+  | 'confirmPlantAction'
+  | 'changeZoneMethod';
 
 export interface ModalDescriptor {
   id: string;
