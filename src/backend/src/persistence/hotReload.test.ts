@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EventBus, createEventCollector, type SimulationEvent } from '@/lib/eventBus.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import { BlueprintHotReloadManager } from './hotReload.js';
 import type { DataLoadResult, DataIssue } from '@/data/dataLoader.js';
 import { DataLoaderError as LoaderError } from '@/data/dataLoader.js';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { GameState, HarvestBatch } from '@/state/models.js';
+import type { GameState, HarvestBatch } from '@/state/types.js';
 import { HarvestQualityService } from './harvestQualityService.js';
 
 const createBaseState = (harvest: HarvestBatch[], tickLengthMinutes = 60): GameState => {

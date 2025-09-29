@@ -1,5 +1,5 @@
 import type { SimulationEvent } from '@/lib/eventBus.js';
-import type { PlantStage, PlantState, ZoneEnvironmentState } from '@/state/models.js';
+import type { PlantStage, PlantState, ZoneEnvironmentState } from '@/state/types.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import {
   PLANT_BASE_GROWTH_PER_TICK,

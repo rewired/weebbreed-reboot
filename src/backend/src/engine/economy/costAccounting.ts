@@ -6,7 +6,7 @@ import type {
   LedgerCategory,
   LedgerEntry,
   StructureState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import type { PriceCatalog } from './pricing.js';
 import { DevicePriceRegistry } from './devicePriceRegistry.js';
 

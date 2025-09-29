@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PricingService, type PriceCatalog } from './pricing.js';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
-import type { EconomicsSettings } from '@/state/models.js';
+import type { EconomicsSettings } from '@/state/types.js';
 
 const MARKET_INDEX_MIN = 0.85;
 const MARKET_INDEX_MAX = 1.15;

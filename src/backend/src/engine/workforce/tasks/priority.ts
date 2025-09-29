@@ -1,4 +1,4 @@
-import type { TaskState } from '@/state/models.js';
+import type { TaskState } from '@/state/types.js';
 import { clamp } from '../runtime/math.js';
 
 export const PRIORITY_STEP = 10;

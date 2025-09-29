@@ -11,7 +11,7 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 
 export const deriveDuplicateName = (original: string, fallbackSuffix: string): string => {
   const trimmed = original.trim();

@@ -9,7 +9,7 @@ import type {
   RoomState,
   StructureState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   if (!Number.isFinite(value)) {

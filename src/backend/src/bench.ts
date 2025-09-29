@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import type { DataIssue } from '@/data/index.js';
 import { BlueprintRepository, DataLoaderError } from '@/data/index.js';
 import type { BlueprintRepository as BlueprintRepositoryType } from '@/data/blueprintRepository.js';
-import type { StructureBlueprint } from './state/models.js';
+import type { StructureBlueprint } from './state/types.js';
 import { createInitialState, loadStructureBlueprints } from './stateFactory.js';
 import { EventBus } from './lib/eventBus.js';
 import { SimulationLoop } from './sim/loop.js';

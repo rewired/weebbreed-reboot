@@ -1,6 +1,6 @@
 import { z, ZodError } from 'zod';
 import { createEventCollector, type EventBus, type SimulationEvent } from '@/lib/eventBus.js';
-import type { GameState, SimulationClockState } from '@/state/models.js';
+import type { GameState, SimulationClockState } from '@/state/types.js';
 
 export type ErrorCode =
   | 'ERR_NOT_FOUND'

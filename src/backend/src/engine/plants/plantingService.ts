@@ -5,7 +5,7 @@ import {
   type CommandResult,
   type ErrorCode,
 } from '@/facade/index.js';
-import type { GameState, PlantState, ZoneState, PlantHealthState } from '@/state/models.js';
+import type { GameState, PlantState, ZoneState, PlantHealthState } from '@/state/types.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { CultivationMethodBlueprint } from '@/data/schemas/cultivationMethodSchema.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';

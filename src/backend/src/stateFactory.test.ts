@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_TICK_LENGTH_MINUTES } from '@/constants/time.js';
-import type { TaskDefinitionMap } from './state/models.js';
+import type { TaskDefinitionMap } from './state/types.js';
 import { createInitialState } from './stateFactory.js';
 import {
   createBlueprintRepositoryStub,

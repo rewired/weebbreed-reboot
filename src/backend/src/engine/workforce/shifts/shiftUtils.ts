@@ -1,4 +1,4 @@
-import type { EmployeeState } from '@/state/models.js';
+import type { EmployeeState } from '@/state/types.js';
 import { MINUTES_PER_DAY, normaliseMinuteOfDay } from '../runtime/dayCycle.js';
 
 export const computeShiftStartMinute = (shift: EmployeeState['shift']): number => {

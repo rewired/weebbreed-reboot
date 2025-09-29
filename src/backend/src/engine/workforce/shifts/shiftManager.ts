@@ -1,4 +1,4 @@
-import type { EmployeeState, GameState, TaskLocation, ZoneState } from '@/state/models.js';
+import type { EmployeeState, GameState, TaskLocation, ZoneState } from '@/state/types.js';
 
 export interface ShiftManagerDependencies {
   findZone: (state: GameState, location: TaskLocation | undefined) => ZoneState | undefined;

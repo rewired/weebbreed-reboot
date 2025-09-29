@@ -3,7 +3,7 @@ import path from 'node:path';
 import process from 'node:process';
 
 import { logger } from '@runtime/logger.js';
-import type { PersonnelNameDirectory } from '@/state/models.js';
+import type { PersonnelNameDirectory } from '@/state/types.js';
 import { readJsonFile } from './common.js';
 
 const provisionLogger = logger.child({ component: 'state.personnelProvisioner' });

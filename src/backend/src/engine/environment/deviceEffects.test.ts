@@ -8,7 +8,7 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 
 const createEnvironment = (
   overrides: Partial<ZoneEnvironmentState> = {},

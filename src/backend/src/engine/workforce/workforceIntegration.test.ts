@@ -7,7 +7,7 @@ import type {
   TaskDefinitionMap,
   TaskState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { WorkforceEngine } from './workforceEngine.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';

@@ -7,7 +7,7 @@ import {
 } from './schemas.js';
 
 export { SAVEGAME_KIND } from './schemas.js';
-import type { GameMetadata, GameState } from '@/state/models.js';
+import type { GameMetadata, GameState } from '@/state/types.js';
 import { RngService, type SerializedRngState } from '@/lib/rng.js';
 
 export interface SaveGameHeader {

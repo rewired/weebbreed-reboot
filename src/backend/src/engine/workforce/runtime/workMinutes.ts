@@ -1,4 +1,4 @@
-import type { EmployeeState } from '@/state/models.js';
+import type { EmployeeState } from '@/state/types.js';
 
 export const computeEffectiveWorkMinutesPerTick = (
   employee: EmployeeState,

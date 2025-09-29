@@ -8,7 +8,7 @@ import {
   HarvestQualityService,
   type HarvestQualityOptions,
 } from '@/engine/harvest/harvestQualityService.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
 import {
   EventBus,

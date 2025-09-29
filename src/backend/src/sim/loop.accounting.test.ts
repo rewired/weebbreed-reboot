@@ -13,7 +13,7 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import {
   CostAccountingService,
   type TickAccumulator,

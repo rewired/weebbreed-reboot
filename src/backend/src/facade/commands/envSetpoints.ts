@@ -1,5 +1,5 @@
 import { saturationVaporPressure } from '@/engine/physio/vpd.js';
-import type { ZoneControlState, ZoneState } from '@/state/models.js';
+import type { ZoneControlState, ZoneState } from '@/state/types.js';
 import {
   TEMPERATURE_DEVICE_KINDS,
   HUMIDITY_DEVICE_KINDS,

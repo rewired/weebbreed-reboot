@@ -1,4 +1,4 @@
-import type { TaskState } from '@/state/models.js';
+import type { TaskState } from '@/state/types.js';
 import type { WorkforceTaskMetadata } from '../types.js';
 
 export const getTaskMetadata = (task: TaskState): WorkforceTaskMetadata | undefined => {

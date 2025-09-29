@@ -1,7 +1,7 @@
 import type { EnhancedStrainBlueprint, EnvMetric } from '../strains/enhancedStrainInterface.js';
 import type { CultivationMethodBlueprint } from '@/data/schemas/cultivationMethodSchema.js';
 import { getEnvBand, mapStageToPhase } from '../strains/enhancedStrainInterface.js';
-import type { PlantStage } from '@/state/models.js';
+import type { PlantStage } from '@/state/types.js';
 
 export interface MethodCompatibilityResult {
   overallScore: number;

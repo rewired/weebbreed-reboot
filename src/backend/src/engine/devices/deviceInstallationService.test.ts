@@ -8,7 +8,7 @@ import {
   createRoomPurpose,
 } from '@/testing/fixtures.js';
 import type { CommandExecutionContext } from '@/facade/index.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 
 const ROOM_PURPOSE_ID = 'room-purpose-test';
 const STRUCTURE_ID = 'structure-test';

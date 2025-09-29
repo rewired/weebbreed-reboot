@@ -1,7 +1,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
-import type { DifficultyLevel } from '@/state/models.js';
+import type { DifficultyLevel } from '@/state/types.js';
 
 const difficultyModifiersSchema = z
   .object({

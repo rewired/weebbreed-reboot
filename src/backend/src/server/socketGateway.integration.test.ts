@@ -5,7 +5,7 @@ import { createUiStream } from '@runtime/eventBus.js';
 import { EventBus } from '@/lib/eventBus.js';
 import { SimulationFacade, type CommandResult } from '@/facade/index.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { TimeStatus } from '@/facade/commands/time.js';
 import type { SimulationLoop } from '@/sim/loop.js';

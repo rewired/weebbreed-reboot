@@ -1,6 +1,6 @@
 import type { CommandExecutionContext, CommandResult, ErrorCode } from '@/facade/index.js';
 import { findZone } from '@/engine/world/stateSelectors.js';
-import type { GameState, ZoneLightingState } from '@/state/models.js';
+import type { GameState, ZoneLightingState } from '@/state/types.js';
 
 export interface AdjustLightingCycleResult {
   photoperiodHours: { on: number; off: number };

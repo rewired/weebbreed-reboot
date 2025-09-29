@@ -2,14 +2,14 @@ import { promises as fs } from 'node:fs';
 import os from 'os';
 import path from 'path';
 import { describe, expect, it } from 'vitest';
+import type { ApplicantState } from './types.js';
+import { getApplicantPersonalSeed } from './personnel/applicants.js';
 import {
-  getApplicantPersonalSeed,
   getEmployeeSkillNames,
   isKnownSkillName,
   loadPersonnelSkillBlueprints,
   resetPersonnelSkillBlueprints,
-  type ApplicantState,
-} from './models.js';
+} from './personnel/skillBlueprints.js';
 
 describe('getApplicantPersonalSeed', () => {
   const baseApplicant: ApplicantState = {

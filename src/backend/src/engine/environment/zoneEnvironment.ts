@@ -4,7 +4,7 @@ import {
   type ClimateControllerOptions,
   type ClimateControlSetpoints,
 } from './climateController.js';
-import type { GameState, RoomState, StructureState, ZoneState } from '@/state/models.js';
+import type { GameState, RoomState, StructureState, ZoneState } from '@/state/types.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
 import { approachTemperature } from '@/engine/physio/temp.js';
 import { approachRelativeHumidity } from '@/engine/physio/rh.js';

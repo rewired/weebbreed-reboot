@@ -108,7 +108,7 @@ import {
   type DomainCommandRegistryMap,
   type MissingCommandHandler,
 } from './commands/commandRegistry.js';
-import type { GameState, StructureBlueprint } from '@/state/models.js';
+import type { GameState, StructureBlueprint } from '@/state/types.js';
 import type {
   DeviceBlueprintCatalogEntry,
   StrainBlueprintCatalogEntry,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
-import type { DeviceInstanceState, EmployeeState, GameState, LedgerEntry } from '@/state/models.js';
+import type { DeviceInstanceState, EmployeeState, GameState, LedgerEntry } from '@/state/types.js';
 import { DeviceDegradationService } from '@/engine/environment/deviceDegradation.js';
 import { CostAccountingService } from './costAccounting.js';
 import { MissingDevicePriceError } from './devicePriceRegistry.js';

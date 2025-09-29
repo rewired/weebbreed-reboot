@@ -12,18 +12,18 @@ import type {
   PersonnelRoleSkillRoll,
   PersonnelRoleSkillTemplate,
   SkillName,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import {
   DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
-  DEFAULT_PERSONNEL_SKILL_BLUEPRINTS,
-  getEmployeeSkillNames,
-} from '@/state/models.js';
-import { generateId } from '@/state/initialization/common.js';
-import {
-  loadPersonnelDirectory,
   loadPersonnelRoleBlueprints,
   normalizePersonnelRoleBlueprints,
-} from '@/state/initialization/personnel.js';
+} from '@/state/personnel/roleBlueprints.js';
+import {
+  DEFAULT_PERSONNEL_SKILL_BLUEPRINTS,
+  getEmployeeSkillNames,
+} from '@/state/personnel/skillBlueprints.js';
+import { generateId } from '@/state/initialization/common.js';
+import { loadPersonnelDirectory } from '@/state/initialization/personnel.js';
 import type {
   CommandExecutionContext,
   CommandResult,

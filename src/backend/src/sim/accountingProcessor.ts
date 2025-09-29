@@ -4,7 +4,7 @@ import {
   type UtilityConsumption,
 } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import type { EventCollector } from '@/lib/eventBus.js';
 
 interface UtilityTotals {

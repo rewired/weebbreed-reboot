@@ -9,7 +9,7 @@ import type {
   TaskState,
   TaskSystemState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { clamp } from '../runtime/math.js';
 import type {
   TaskGenerationPolicy,

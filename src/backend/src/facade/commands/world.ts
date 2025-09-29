@@ -6,7 +6,7 @@ import type {
   DuplicateStructureResult,
   DuplicateZoneResult,
 } from '@/engine/world/worldService.js';
-import type { StructureBlueprint } from '@/state/models.js';
+import type { StructureBlueprint } from '@/state/types.js';
 import type {
   DeviceBlueprintCatalogEntry,
   CultivationMethodBlueprintCatalogEntry,

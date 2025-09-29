@@ -12,7 +12,7 @@ import {
   createSubstrateBlueprint,
 } from '@/testing/fixtures.js';
 import type { CommandExecutionContext } from '@/facade/index.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 
 const STRUCTURE_ID = 'structure-test';
 const ROOM_ID = 'room-test';

@@ -11,12 +11,9 @@ import type {
   PersonnelRoleBlueprint,
   SimulationClockState,
   SimulationNote,
-} from '@/state/models.js';
-import {
-  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
-  getEmployeeSkillNames,
-  resetPersonnelSkillBlueprints,
-} from '@/state/models.js';
+} from '@/state/types.js';
+import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS } from '@/state/personnel/roleBlueprints.js';
+import { getEmployeeSkillNames, resetPersonnelSkillBlueprints } from '@/state/personnel/skillBlueprints.js';
 import { JobMarketService } from '../jobMarketService.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
 
