@@ -218,7 +218,7 @@ export const DashboardHeader = ({ bridge }: DashboardHeaderProps) => {
             <div className="relative">
               <Icon name="notifications" />
               {notificationsUnread ? (
-                <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-black">
+                <span className="absolute -right-1 -top-1 inline-flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-text">
                   {notificationsUnread}
                 </span>
               ) : null}

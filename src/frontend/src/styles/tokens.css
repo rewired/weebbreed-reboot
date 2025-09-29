@@ -1,35 +1,51 @@
 :root {
   color-scheme: dark;
-  --color-surface: 17 24 39;
-  --color-surface-muted: 30 41 59;
-  --color-surface-elevated: 43 55 77;
-  --color-border: 71 85 105;
-  --color-primary: 132 204 22;
-  --color-primary-strong: 101 163 13;
-  --color-accent: 34 197 94;
-  --color-text: 226 232 240;
-  --color-text-muted: 148 163 184;
-  --color-success: 22 163 74;
-  --color-warning: 202 138 4;
-  --color-danger: 239 68 68;
+  --color-surface: 7 20 15;
+  --color-surface-muted: 13 33 25;
+  --color-surface-elevated: 20 48 38;
+  --color-border: 39 85 71;
+  --color-primary: 4 122 23;
+  --color-primary-strong: 3 99 18;
+  --color-accent: 3 122 69;
+  --color-text: 233 247 239;
+  --color-text-muted: 156 166 162;
+  --color-success: 15 157 88;
+  --color-warning: 255 131 0;
+  --color-danger: 255 25 30;
   --radius-box: 1rem;
   --radius-button: 0.5rem;
   --radius-badge: 1.9rem;
   --sidebar-width: 280px;
 }
 
+.theme-forest {
+  color-scheme: dark;
+  --color-surface: 7 20 15;
+  --color-surface-muted: 13 33 25;
+  --color-surface-elevated: 20 48 38;
+  --color-border: 39 85 71;
+  --color-primary: 4 122 23;
+  --color-primary-strong: 3 99 18;
+  --color-accent: 3 122 69;
+  --color-text: 233 247 239;
+  --color-text-muted: 156 166 162;
+  --color-success: 15 157 88;
+  --color-warning: 255 131 0;
+  --color-danger: 255 25 30;
+}
+
 .theme-light {
   color-scheme: light;
-  --color-surface: 248 250 252;
-  --color-surface-muted: 241 245 249;
-  --color-surface-elevated: 226 232 240;
-  --color-border: 203 213 225;
-  --color-primary: 132 204 22;
-  --color-primary-strong: 101 163 13;
-  --color-accent: 34 197 94;
-  --color-text: 17 24 39;
-  --color-text-muted: 71 85 105;
-  --color-success: 21 128 61;
+  --color-surface: 242 251 246;
+  --color-surface-muted: 223 243 232;
+  --color-surface-elevated: 203 232 219;
+  --color-border: 129 169 150;
+  --color-primary: 4 122 23;
+  --color-primary-strong: 3 99 18;
+  --color-accent: 15 157 88;
+  --color-text: 5 32 21;
+  --color-text-muted: 60 84 74;
+  --color-success: 11 125 77;
   --color-warning: 217 119 6;
   --color-danger: 220 38 38;
 }

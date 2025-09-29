@@ -34,6 +34,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Adopted the forest evergreen palette across CSS tokens, added a `.theme-forest`
+  override, and updated the UI store toggle plus design documentation to match
+  the new dark/light contrasts.【F:src/frontend/src/styles/tokens.css†L1-L51】【F:src/frontend/src/store/ui.ts†L1-L111】【F:docs/ui/themes/theme-baseline.md†L1-L48】【F:docs/ui/themes/forest-diff.md†L1-L65】【F:docs/ui/ui-components-desciption.md†L540-L648】
 - Collapsed zone device groups by default behind accessible toggle buttons in
   `ZoneView`, surfacing icons and coverage for the expanded state while
   extending Vitest coverage for the new behaviour.

@@ -119,8 +119,8 @@ append them here.
 4. Verify that dark/light theme overrides exist where contrast requires it.
 5. Note the change in `CHANGELOG.md` and surface it to the UI team.
 
-Keeping this loop tight ensures every theme tweak is deterministic and auditable.
-=======
+# Keeping this loop tight ensures every theme tweak is deterministic and auditable.
+
 # Forest Theme Integration Plan
 
 ## Decision Summary
@@ -129,7 +129,7 @@ Keeping this loop tight ensures every theme tweak is deterministic and auditable
 - **Rationale:**
   - Keeps the Tailwind configuration lean and focused on build tooling while the theme data lives alongside other runtime UI assets, allowing React components and feature toggles to consume the same source of truth as the build step.【F:src/frontend/src/themes/forest.ts†L1-L86】
   - The strongly typed export shields both Tailwind and runtime consumers from accidental drift in CSS custom property names, which is harder to enforce when the theme is copied into the config file as an inline literal.【F:src/frontend/src/themes/forest.ts†L1-L86】
-  - Consolidating the theme into an importable module mirrors how we already centralize color tokens for the default and `theme-light` schemes inside CSS, keeping future dark/light/forest switches symmetrical and easier to test.【F:src/frontend/src/styles/tokens.css†L1-L33】
+- Consolidating the theme into an importable module mirrors how we already centralize color tokens for the default and `theme-light` schemes inside CSS, keeping future dark/light/forest switches symmetrical and easier to test.【F:src/frontend/src/styles/tokens.css†L1-L46】
 
 ## Type & Module Sketch
 
@@ -139,10 +139,10 @@ Keeping this loop tight ensures every theme tweak is deterministic and auditable
 
 ## Coexistence with Existing Toggles
 
-- The current theme system defaults to the dark palette in `:root` and enables the light palette by toggling the `theme-light` class on `<html>`.【F:src/frontend/src/styles/tokens.css†L1-L33】【F:src/frontend/src/store/ui.ts†L89-L103】
+- The current theme system defaults to the dark palette in `:root` and enables the light palette by toggling the `theme-light` class on `<html>`.【F:src/frontend/src/styles/tokens.css†L1-L46】【F:src/frontend/src/store/ui.ts†L89-L109】
 - We will extend the toggle logic to support `theme-forest` by:
-  1. Adding a new branch that removes both `theme-light` and `theme-forest` before applying the selected theme, keeping mutual exclusivity explicit.【F:src/frontend/src/store/ui.ts†L89-L103】
-  2. Mirroring the CSS variable overrides from `forestTheme.cssVariables` into a `.theme-forest { ... }` block (either generated at build-time or authored once), matching how `.theme-light` is layered today.【F:src/frontend/src/styles/tokens.css†L1-L33】
+  1. ✅ Adding a new branch that removes both `theme-light` and `theme-forest` before applying the selected theme, keeping mutual exclusivity explicit.【F:src/frontend/src/store/ui.ts†L89-L109】
+  2. ✅ Mirroring the CSS variable overrides from `forestTheme.cssVariables` into a `.theme-forest { ... }` block (either generated at build-time or authored once), matching how `.theme-light` is layered today.【F:src/frontend/src/styles/tokens.css†L1-L46】
   3. Ensuring the default (`:root`) remains a dark-first palette so toggling back from forest/light does not require a dedicated class.
 - Because `forestTheme` carries both `className` and `colorScheme`, runtime logic can set `document.documentElement.dataset.colorScheme` or adjust `color-scheme` values to align with accessibility requirements when the forest theme is active.
 
