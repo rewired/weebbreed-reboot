@@ -261,6 +261,25 @@ export interface ZoneHealthState {
   preHarvestRestrictedUntilTick?: number;
 }
 
+export interface ZoneContainerSetup {
+  blueprintId: string;
+  slug: string;
+  type: string;
+  count: number;
+}
+
+export interface ZoneSubstrateSetup {
+  blueprintId: string;
+  slug: string;
+  type: string;
+  totalVolumeLiters: number;
+}
+
+export interface ZoneCultivationSetup {
+  container?: ZoneContainerSetup;
+  substrate?: ZoneSubstrateSetup;
+}
+
 export interface ZoneState {
   id: string;
   roomId: string;
@@ -280,6 +299,7 @@ export interface ZoneState {
   health: ZoneHealthState;
   activeTaskIds: string[];
   plantingPlan?: ZonePlantingPlanState | null;
+  cultivation?: ZoneCultivationSetup;
 }
 
 export type PlantStage =

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
 import { cleanup, render, act, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ModalHost } from './ModalHost';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
@@ -31,6 +32,80 @@ const baseSnapshot: SimulationSnapshot = {
   },
 };
 
+const baseStructure = {
+  id: 'structure-1',
+  name: 'Structure One',
+  status: 'active' as const,
+  footprint: {
+    length: 10,
+    width: 10,
+    height: 5,
+    area: 100,
+    volume: 500,
+  },
+  rentPerTick: 0,
+  roomIds: ['room-1'],
+};
+
+const baseRoom = {
+  id: 'room-1',
+  name: 'Room One',
+  structureId: baseStructure.id,
+  structureName: baseStructure.name,
+  purposeId: 'veg',
+  purposeKind: 'vegetative',
+  purposeName: 'Vegetative Room',
+  purposeFlags: {} as Record<string, boolean>,
+  area: 20,
+  height: 4,
+  volume: 80,
+  cleanliness: 1,
+  maintenanceLevel: 1,
+  zoneIds: [] as string[],
+};
+
+const buildSnapshotWithRoom = (): SimulationSnapshot => ({
+  ...structuredClone(baseSnapshot),
+  structures: [structuredClone(baseStructure)],
+  rooms: [structuredClone(baseRoom)],
+  zones: [],
+});
+
+const buildMethodBlueprint = () => ({
+  id: 'method-1',
+  name: 'Method One',
+  laborIntensity: 1,
+  areaPerPlant: 1,
+  minimumSpacing: 1,
+  compatibility: {
+    compatibleContainerTypes: ['tray'],
+    compatibleSubstrateTypes: ['soil'],
+  },
+  metadata: { description: 'Method description' },
+  price: { setupCost: 120 },
+});
+
+const buildContainerBlueprint = () => ({
+  id: 'container-1',
+  slug: 'container-1',
+  name: 'Tray Container',
+  type: 'tray',
+  volumeInLiters: 5,
+  footprintArea: 0.5,
+  packingDensity: 2,
+  metadata: { description: 'Container description' },
+  price: { costPerUnit: 10 },
+});
+
+const buildSubstrateBlueprint = () => ({
+  id: 'substrate-1',
+  slug: 'substrate-1',
+  name: 'Soil Mix',
+  type: 'soil',
+  metadata: { description: 'Substrate description' },
+  price: { costPerLiter: 1.5 },
+});
+
 const pausedStatus: SimulationTimeStatus = {
   running: false,
   paused: true,
@@ -41,20 +116,25 @@ const pausedStatus: SimulationTimeStatus = {
 
 describe('ModalHost', () => {
   let sendControlMock: ReturnType<typeof vi.fn>;
+  let sendIntentMock: ReturnType<typeof vi.fn>;
   let bridge: SimulationBridge;
 
   beforeEach(() => {
     sendControlMock = vi.fn(async () => ({ ok: true }));
+    sendIntentMock = vi.fn(async () => ({ ok: true }));
     bridge = {
       connect: vi.fn(),
       loadQuickStart: vi.fn(async () => ({ ok: true })),
       getStructureBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
       getStrainBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
       getDeviceBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
+      getCultivationMethodBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
+      getContainerBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
+      getSubstrateBlueprints: vi.fn(async () => ({ ok: true, data: [] })),
       getDifficultyConfig: vi.fn(async () => ({ ok: true })),
       sendControl: sendControlMock as unknown as SimulationBridge['sendControl'],
       sendConfigUpdate: vi.fn(async () => ({ ok: true })),
-      sendIntent: vi.fn(async () => ({ ok: true })),
+      sendIntent: sendIntentMock as unknown as SimulationBridge['sendIntent'],
       subscribeToUpdates: (_handler: Parameters<SimulationBridge['subscribeToUpdates']>[0]) => {
         void _handler;
         return () => undefined;
@@ -157,6 +237,116 @@ describe('ModalHost', () => {
     });
 
     expect(sendControlMock).not.toHaveBeenCalled();
+  });
+
+  it('prevents container overfill beyond computed capacity', async () => {
+    const snapshot = buildSnapshotWithRoom();
+    const method = buildMethodBlueprint();
+    const container = buildContainerBlueprint();
+    const substrate = buildSubstrateBlueprint();
+
+    act(() => {
+      useSimulationStore.setState({
+        snapshot,
+        catalogs: {
+          cultivationMethods: { status: 'ready', data: [method], error: null },
+          containers: { status: 'ready', data: [container], error: null },
+          substrates: { status: 'ready', data: [substrate], error: null },
+        },
+      });
+    });
+
+    render(<ModalHost bridge={bridge} />);
+    const user = userEvent.setup();
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'create-zone',
+        type: 'createZone',
+        title: 'Create Zone',
+        context: { roomId: snapshot.rooms[0]!.id },
+      });
+    });
+
+    const areaInput = await screen.findByLabelText(/Area \(m²\)/i);
+    await user.clear(areaInput);
+    await user.type(areaInput, '2');
+
+    const containerInput = await screen.findByLabelText(/Container count/i);
+    await user.clear(containerInput);
+    await user.type(containerInput, '9');
+
+    expect(
+      screen.getByText(/Container count exceeds the supported capacity for this area/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create zone/i })).toBeDisabled();
+    expect(sendIntentMock).not.toHaveBeenCalled();
+  });
+
+  it('submits createZone intents with blueprint selections and quantities', async () => {
+    const snapshot = buildSnapshotWithRoom();
+    const method = buildMethodBlueprint();
+    const container = buildContainerBlueprint();
+    const substrate = buildSubstrateBlueprint();
+
+    act(() => {
+      useSimulationStore.setState({
+        snapshot,
+        catalogs: {
+          cultivationMethods: { status: 'ready', data: [method], error: null },
+          containers: { status: 'ready', data: [container], error: null },
+          substrates: { status: 'ready', data: [substrate], error: null },
+        },
+      });
+    });
+
+    render(<ModalHost bridge={bridge} />);
+    const user = userEvent.setup();
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'create-zone',
+        type: 'createZone',
+        title: 'Create Zone',
+        context: { roomId: snapshot.rooms[0]!.id },
+      });
+    });
+
+    const nameInput = await screen.findByLabelText(/Zone name/i);
+    await user.type(nameInput, 'Propagation Bay');
+
+    const areaInput = screen.getByLabelText(/Area \(m²\)/i);
+    await user.clear(areaInput);
+    await user.type(areaInput, '4');
+
+    const containerInput = screen.getByLabelText(/Container count/i);
+    await user.clear(containerInput);
+    await user.type(containerInput, '4');
+
+    await user.click(screen.getByRole('button', { name: /Create zone/i }));
+
+    expect(sendIntentMock).toHaveBeenCalledWith({
+      domain: 'world',
+      action: 'createZone',
+      payload: {
+        roomId: snapshot.rooms[0]!.id,
+        zone: {
+          name: 'Propagation Bay',
+          area: 4,
+          methodId: method.id,
+          container: {
+            blueprintId: container.id,
+            type: container.type,
+            count: 4,
+          },
+          substrate: {
+            blueprintId: substrate.id,
+            type: substrate.type,
+            volumeLiters: container.volumeInLiters! * 4,
+          },
+        },
+      },
+    });
   });
 
   it('renders the tune device modal when requested', async () => {

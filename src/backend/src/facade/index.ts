@@ -112,6 +112,9 @@ import type { GameState, StructureBlueprint } from '@/state/models.js';
 import type {
   DeviceBlueprintCatalogEntry,
   StrainBlueprintCatalogEntry,
+  CultivationMethodBlueprintCatalogEntry,
+  ContainerBlueprintCatalogEntry,
+  SubstrateBlueprintCatalogEntry,
 } from './blueprintCatalog.js';
 import { SimulationLoop, type SimulationLoopAccountingOptions } from '@/sim/loop.js';
 import { SimulationScheduler } from '@/sim/simScheduler.js';
@@ -157,6 +160,9 @@ export type {
   GetStructureBlueprintsIntent,
   GetStrainBlueprintsIntent,
   GetDeviceBlueprintsIntent,
+  GetCultivationMethodBlueprintsIntent,
+  GetContainerBlueprintsIntent,
+  GetSubstrateBlueprintsIntent,
   CreateRoomIntent,
   UpdateRoomIntent,
   DeleteRoomIntent,
@@ -175,6 +181,9 @@ export type {
 export type {
   StrainBlueprintCatalogEntry,
   DeviceBlueprintCatalogEntry,
+  CultivationMethodBlueprintCatalogEntry,
+  ContainerBlueprintCatalogEntry,
+  SubstrateBlueprintCatalogEntry,
 } from './blueprintCatalog.js';
 export type {
   InstallDeviceIntent,
@@ -282,6 +291,15 @@ export interface WorldIntentAPI {
   getDeviceBlueprints(
     intent?: GetDeviceBlueprintsIntent,
   ): Promise<CommandResult<DeviceBlueprintCatalogEntry[]>>;
+  getCultivationMethodBlueprints(
+    intent?: GetCultivationMethodBlueprintsIntent,
+  ): Promise<CommandResult<CultivationMethodBlueprintCatalogEntry[]>>;
+  getContainerBlueprints(
+    intent?: GetContainerBlueprintsIntent,
+  ): Promise<CommandResult<ContainerBlueprintCatalogEntry[]>>;
+  getSubstrateBlueprints(
+    intent?: GetSubstrateBlueprintsIntent,
+  ): Promise<CommandResult<SubstrateBlueprintCatalogEntry[]>>;
   createRoom(intent: CreateRoomIntent): Promise<CommandResult>;
   updateRoom(intent: UpdateRoomIntent): Promise<CommandResult>;
   deleteRoom(intent: DeleteRoomIntent): Promise<CommandResult>;

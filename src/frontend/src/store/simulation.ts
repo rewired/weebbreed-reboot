@@ -10,6 +10,12 @@ import {
   type ZoneControlSetpoints,
   type ZoneControlSetpointKey,
 } from '@/types/simulation';
+import type {
+  CatalogStatus,
+  CultivationMethodCatalogEntry,
+  ContainerCatalogEntry,
+  SubstrateCatalogEntry,
+} from '@/types/blueprints';
 
 export interface ZoneHistoryPoint {
   tick: number;
@@ -22,6 +28,20 @@ export interface ZoneHistoryPoint {
 
 type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting';
 
+type CatalogKey = 'cultivationMethods' | 'containers' | 'substrates';
+
+interface CatalogSlice<T> {
+  status: CatalogStatus;
+  data: T[];
+  error: string | null;
+}
+
+type CatalogStateMap = {
+  cultivationMethods: CatalogSlice<CultivationMethodCatalogEntry>;
+  containers: CatalogSlice<ContainerCatalogEntry>;
+  substrates: CatalogSlice<SubstrateCatalogEntry>;
+};
+
 interface SimulationState {
   snapshot: SimulationSnapshot | null;
   events: SimulationEvent[];
@@ -30,6 +50,7 @@ interface SimulationState {
   zoneHistory: Record<string, ZoneHistoryPoint[]>;
   zoneSetpoints: Record<string, ZoneControlSetpoints>;
   lastTick: number;
+  catalogs: CatalogStateMap;
 }
 
 interface SimulationActions {
@@ -43,6 +64,11 @@ interface SimulationActions {
   recordEvents: (events: SimulationEvent[]) => void;
   setConnectionStatus: (status: ConnectionStatus) => void;
   setTimeStatus: (status: SimulationTimeStatus | null) => void;
+  setCatalogStatus: <K extends CatalogKey>(
+    catalog: K,
+    status: CatalogStatus,
+    payload?: { data?: CatalogStateMap[K]['data']; error?: string | null },
+  ) => void;
   reset: () => void;
 }
 
@@ -67,6 +93,14 @@ const SETPOINT_TOLERANCES: Record<ZoneControlSetpointKey, Tolerance> = {
 };
 
 const PHOTOPERIOD_TOLERANCE: Tolerance = { abs: 0.05, rel: 5e-3 };
+
+const createCatalogSlice = <T>(): CatalogSlice<T> => ({ status: 'idle', data: [], error: null });
+
+const createInitialCatalogState = (): CatalogStateMap => ({
+  cultivationMethods: createCatalogSlice<CultivationMethodCatalogEntry>(),
+  containers: createCatalogSlice<ContainerCatalogEntry>(),
+  substrates: createCatalogSlice<SubstrateCatalogEntry>(),
+});
 
 const isApproximatelyEqual = (
   left: number,
@@ -489,6 +523,7 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
   zoneHistory: {},
   zoneSetpoints: {},
   lastTick: 0,
+  catalogs: createInitialCatalogState(),
   hydrate: ({ snapshot, updates = [], events = [], time }) => {
     const previousSnapshot = get().snapshot;
     const snapshotWithLedger = preserveFinanceLedger(snapshot, previousSnapshot);
@@ -578,6 +613,28 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
     }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
   setTimeStatus: (status) => set({ timeStatus: status }),
+  setCatalogStatus: (catalog, status, payload) =>
+    set((state) => {
+      const currentSlice = state.catalogs[catalog];
+      const nextSlice: CatalogSlice<unknown> = {
+        ...currentSlice,
+        status,
+        error: payload?.error ?? null,
+      };
+      if (payload?.data) {
+        nextSlice.data = [...payload.data];
+      } else if (status === 'idle') {
+        nextSlice.data = currentSlice.data;
+      } else if (status === 'loading' && currentSlice.data.length > 0) {
+        nextSlice.data = currentSlice.data;
+      }
+      return {
+        catalogs: {
+          ...state.catalogs,
+          [catalog]: nextSlice as CatalogSlice<(typeof currentSlice.data)[number]>,
+        },
+      };
+    }),
   reset: () =>
     set({
       snapshot: null,
@@ -587,5 +644,6 @@ export const useSimulationStore = create<SimulationState & SimulationActions>((s
       zoneHistory: {},
       zoneSetpoints: {},
       lastTick: 0,
+      catalogs: createInitialCatalogState(),
     }),
 }));

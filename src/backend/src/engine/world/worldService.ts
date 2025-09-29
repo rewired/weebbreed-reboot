@@ -32,6 +32,7 @@ import { validateStructureGeometry } from '@/state/geometry.js';
 import { findStructure, findRoom, findZone, type ZoneLookupResult } from './stateSelectors.js';
 import { type RoomPurposeSource, resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
+import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 
 const deriveDuplicateName = (original: string, fallbackSuffix: string): string => {
   const trimmed = original.trim();
@@ -52,6 +53,23 @@ const cloneMetrics = (source: ZoneMetricState, tick: number): ZoneMetricState =>
   stressLevel: source.stressLevel,
   lastUpdatedTick: tick,
 });
+
+const cloneCultivation = (
+  cultivation: ZoneState['cultivation'] | undefined,
+): ZoneState['cultivation'] | undefined => {
+  if (!cultivation) {
+    return undefined;
+  }
+
+  const cloned: ZoneState['cultivation'] = {};
+  if (cultivation.container) {
+    cloned.container = { ...cultivation.container };
+  }
+  if (cultivation.substrate) {
+    cloned.substrate = { ...cultivation.substrate };
+  }
+  return cloned;
+};
 
 const createDefaultResources = (): ZoneResourceState => ({
   waterLiters: DEFAULT_ZONE_WATER_LITERS,
@@ -140,6 +158,28 @@ export interface CreateRoomResult {
 
 export interface CreateZoneResult {
   zoneId: string;
+  method: {
+    blueprintId: string;
+    setupCost?: number;
+  };
+  container: {
+    blueprintId: string;
+    slug: string;
+    type: string;
+    count: number;
+    maxSupported: number;
+    unitCost?: number;
+    totalCost?: number;
+  };
+  substrate: {
+    blueprintId: string;
+    slug: string;
+    type: string;
+    totalVolumeLiters: number;
+    unitCost?: number;
+    totalCost?: number;
+  };
+  totalCost?: number;
 }
 
 export interface DuplicateZoneResult {
@@ -153,6 +193,7 @@ export interface WorldServiceOptions {
   structureBlueprints?: StructureBlueprint[];
   roomPurposeSource?: RoomPurposeSource;
   difficultyConfig?: DifficultyConfig;
+  repository: BlueprintRepository;
 }
 
 export class WorldService {
@@ -168,6 +209,8 @@ export class WorldService {
 
   private readonly difficultyConfig?: DifficultyConfig;
 
+  private readonly repository: BlueprintRepository;
+
   constructor(options: WorldServiceOptions) {
     this.state = options.state;
     this.costAccounting = options.costAccounting;
@@ -175,6 +218,7 @@ export class WorldService {
     this.structureBlueprints = options.structureBlueprints;
     this.roomPurposeSource = options.roomPurposeSource;
     this.difficultyConfig = options.difficultyConfig;
+    this.repository = options.repository;
   }
 
   private resolveEconomicsPreset(level: DifficultyLevel): EconomicsSettings {
@@ -449,27 +493,192 @@ export class WorldService {
       ]);
     }
 
-    // Create the new zone with default values
+    const method = this.repository.getCultivationMethod(zone.methodId);
+    if (!method) {
+      return this.failure('ERR_NOT_FOUND', `Cultivation method ${zone.methodId} was not found.`, [
+        'world.createZone',
+        'zone.methodId',
+      ]);
+    }
+
+    const { container, substrate } = zone;
+
+    const containerBlueprint = this.repository.getContainer(container.blueprintId);
+    if (!containerBlueprint) {
+      return this.failure(
+        'ERR_NOT_FOUND',
+        `Container blueprint ${container.blueprintId} was not found.`,
+        ['world.createZone', 'zone.container.blueprintId'],
+      );
+    }
+
+    const containerType = containerBlueprint.type;
+    if (containerType !== container.type) {
+      return this.failure('ERR_VALIDATION', 'Container type does not match blueprint metadata.', [
+        'world.createZone',
+        'zone.container.type',
+      ]);
+    }
+
+    if (
+      Array.isArray(method.compatibleContainerTypes) &&
+      method.compatibleContainerTypes.length > 0 &&
+      !method.compatibleContainerTypes.includes(containerType)
+    ) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        `Container type '${containerType}' is incompatible with cultivation method '${method.name}'.`,
+        ['world.createZone', 'zone.container.type'],
+      );
+    }
+
+    const footprintArea = containerBlueprint.footprintArea;
+    if (!Number.isFinite(footprintArea) || footprintArea === undefined || footprintArea <= 0) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        `Container blueprint '${containerBlueprint.slug}' is missing a valid footprint area.`,
+        ['world.createZone', 'zone.container.blueprintId'],
+      );
+    }
+
+    const packingDensity = Number.isFinite(containerBlueprint.packingDensity)
+      ? Math.max(containerBlueprint.packingDensity ?? 0, 0)
+      : 1;
+    const effectiveDensity = packingDensity > 0 ? packingDensity : 1;
+    const theoreticalCapacity = (zone.area / footprintArea) * effectiveDensity;
+    const maxContainers = Number.isFinite(theoreticalCapacity)
+      ? Math.floor(Math.max(theoreticalCapacity, 0))
+      : 0;
+
+    if (maxContainers <= 0) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        `Zone area ${zone.area.toFixed(2)} m² cannot support container footprint ${footprintArea.toFixed(2)} m².`,
+        ['world.createZone', 'zone.container.count'],
+      );
+    }
+
+    if (container.count > maxContainers) {
+      return this.failure(
+        'ERR_CONFLICT',
+        `Requested ${container.count} containers exceeds maximum supported count of ${maxContainers}.`,
+        ['world.createZone', 'zone.container.count'],
+      );
+    }
+
+    const substrateBlueprint = this.repository.getSubstrate(substrate.blueprintId);
+    if (!substrateBlueprint) {
+      return this.failure(
+        'ERR_NOT_FOUND',
+        `Substrate blueprint ${substrate.blueprintId} was not found.`,
+        ['world.createZone', 'zone.substrate.blueprintId'],
+      );
+    }
+
+    const substrateType = substrateBlueprint.type;
+    if (substrateType !== substrate.type) {
+      return this.failure('ERR_VALIDATION', 'Substrate type does not match blueprint metadata.', [
+        'world.createZone',
+        'zone.substrate.type',
+      ]);
+    }
+
+    if (
+      Array.isArray(method.compatibleSubstrateTypes) &&
+      method.compatibleSubstrateTypes.length > 0 &&
+      !method.compatibleSubstrateTypes.includes(substrateType)
+    ) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        `Substrate type '${substrateType}' is incompatible with cultivation method '${method.name}'.`,
+        ['world.createZone', 'zone.substrate.type'],
+      );
+    }
+
+    const containerVolume = containerBlueprint.volumeInLiters;
+    if (
+      !Number.isFinite(containerVolume) ||
+      containerVolume === undefined ||
+      containerVolume <= 0
+    ) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        `Container blueprint '${containerBlueprint.slug}' is missing a valid volumeInLiters value.`,
+        ['world.createZone', 'zone.container.blueprintId'],
+      );
+    }
+
+    const requiredSubstrateVolume = containerVolume * container.count;
+    const warnings: string[] = [];
+
+    if (substrate.volumeLiters !== undefined) {
+      const providedVolume = substrate.volumeLiters;
+      if (!Number.isFinite(providedVolume) || providedVolume <= 0) {
+        warnings.push('Provided substrate volume was non-positive and has been ignored.');
+      } else {
+        const tolerance = Math.max(requiredSubstrateVolume * 0.05, 1);
+        if (Math.abs(providedVolume - requiredSubstrateVolume) > tolerance) {
+          warnings.push(
+            `Submitted substrate volume (${providedVolume.toFixed(2)} L) differs from the required ${requiredSubstrateVolume.toFixed(2)} L.`,
+          );
+        }
+      }
+    }
+
+    const methodPrice = this.repository.getCultivationMethodPrice(method.id);
+    const containerPrice = this.repository.getContainerPrice(containerBlueprint.slug);
+    const substratePrice = this.repository.getSubstratePrice(substrateBlueprint.slug);
+    const multiplier = this.state.metadata.economics.itemPriceMultiplier ?? 1;
+
+    const adjustedMethodCost =
+      methodPrice && Number.isFinite(methodPrice.setupCost)
+        ? Math.max(methodPrice.setupCost, 0) * multiplier
+        : undefined;
+    const adjustedContainerCost =
+      containerPrice && Number.isFinite(containerPrice.costPerUnit)
+        ? Math.max(containerPrice.costPerUnit, 0) * container.count * multiplier
+        : undefined;
+    const adjustedSubstrateCost =
+      substratePrice && Number.isFinite(substratePrice.costPerLiter)
+        ? Math.max(substratePrice.costPerLiter, 0) * requiredSubstrateVolume * multiplier
+        : undefined;
+
+    const totalCostCandidate = [
+      adjustedMethodCost,
+      adjustedContainerCost,
+      adjustedSubstrateCost,
+    ].reduce(
+      (sum, value) => sum + (typeof value === 'number' && Number.isFinite(value) ? value : 0),
+      0,
+    );
+    const totalCost =
+      totalCostCandidate > 0 &&
+      [adjustedMethodCost, adjustedContainerCost, adjustedSubstrateCost].some(
+        (value) => typeof value === 'number' && Number.isFinite(value) && value > 0,
+      )
+        ? totalCostCandidate
+        : undefined;
+
     const ceilingHeight = room.height || 2.5;
     const newZone: ZoneState = {
       id: this.createId('zone'),
       roomId,
       name: zone.name.trim(),
       cultivationMethodId: zone.methodId,
-      strainId: undefined, // No strain assigned initially
+      strainId: undefined,
       area: zone.area,
       ceilingHeight,
       volume: zone.area * ceilingHeight,
       environment: {
-        temperature: 22, // Default temperature
-        relativeHumidity: 0.6, // Default humidity
-        co2: 400, // Default CO2
-        ppfd: 0, // No light initially
-        vpd: 1.2, // Will be computed based on temp/humidity
+        temperature: 22,
+        relativeHumidity: 0.6,
+        co2: 400,
+        ppfd: 0,
+        vpd: 1.2,
       },
       resources: createDefaultResources(),
-      plants: [], // Start with no plants
-      devices: [], // Start with no devices
+      plants: [],
+      devices: [],
       metrics: {
         averageTemperature: 22,
         averageHumidity: 0.6,
@@ -478,29 +687,71 @@ export class WorldService {
         stressLevel: 0,
         lastUpdatedTick: context.tick,
       },
-      control: { setpoints: {} }, // Default control state
+      control: { setpoints: {} },
       health: createEmptyHealth(),
       activeTaskIds: [],
-      plantingPlan: undefined, // No planting plan initially
+      plantingPlan: undefined,
+      cultivation: {
+        container: {
+          blueprintId: containerBlueprint.id,
+          slug: containerBlueprint.slug,
+          type: containerBlueprint.type,
+          count: container.count,
+        },
+        substrate: {
+          blueprintId: substrateBlueprint.id,
+          slug: substrateBlueprint.slug,
+          type: substrateBlueprint.type,
+          totalVolumeLiters: requiredSubstrateVolume,
+        },
+      },
     } satisfies ZoneState;
 
-    // Add the zone to the room
     room.zones.push(newZone);
-
-    // Validate the structure geometry
     validateStructureGeometry(structure);
 
-    // Queue an event
     context.events.queue(
       'world.zoneCreated',
-      { zoneId: newZone.id, roomId, structureId: structure.id, name: newZone.name },
+      {
+        zoneId: newZone.id,
+        roomId,
+        structureId: structure.id,
+        name: newZone.name,
+        container: { slug: containerBlueprint.slug, count: container.count },
+        substrate: { slug: substrateBlueprint.slug, totalVolumeLiters: requiredSubstrateVolume },
+      },
       context.tick,
       'info',
     );
 
     return {
       ok: true,
-      data: { zoneId: newZone.id },
+      data: {
+        zoneId: newZone.id,
+        method: {
+          blueprintId: method.id,
+          setupCost: adjustedMethodCost,
+        },
+        container: {
+          blueprintId: containerBlueprint.id,
+          slug: containerBlueprint.slug,
+          type: containerBlueprint.type,
+          count: container.count,
+          maxSupported: maxContainers,
+          unitCost: containerPrice?.costPerUnit,
+          totalCost: adjustedContainerCost,
+        },
+        substrate: {
+          blueprintId: substrateBlueprint.id,
+          slug: substrateBlueprint.slug,
+          type: substrateBlueprint.type,
+          totalVolumeLiters: requiredSubstrateVolume,
+          unitCost: substratePrice?.costPerLiter,
+          totalCost: adjustedSubstrateCost,
+        },
+        totalCost,
+      },
+      warnings: warnings.length > 0 ? warnings : undefined,
     } satisfies CommandResult<CreateZoneResult>;
   }
 
@@ -956,6 +1207,7 @@ export class WorldService {
       health: createEmptyHealth(),
       activeTaskIds: [],
       plantingPlan: undefined,
+      cultivation: cloneCultivation(zone.cultivation),
     } satisfies ZoneState;
   }
 

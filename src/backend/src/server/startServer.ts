@@ -22,6 +22,9 @@ import {
 import {
   buildDeviceBlueprintCatalog,
   buildStrainBlueprintCatalog,
+  buildCultivationMethodBlueprintCatalog,
+  buildContainerBlueprintCatalog,
+  buildSubstrateBlueprintCatalog,
 } from '@/facade/blueprintCatalog.js';
 import { SocketGateway } from '@/server/socketGateway.js';
 import { SseGateway } from '@/server/sseGateway.js';
@@ -333,6 +336,7 @@ export const startBackendServer = async (
     structureBlueprints,
     roomPurposeSource: repository,
     difficultyConfig,
+    repository,
   });
   const deviceGroupService = new DeviceGroupService({ state, rng });
   const deviceInstallationService = new DeviceInstallationService({
@@ -366,6 +370,21 @@ export const startBackendServer = async (
           ok: true,
           data: buildDeviceBlueprintCatalog(repository),
         }) satisfies CommandResult<ReturnType<typeof buildDeviceBlueprintCatalog>>,
+      getCultivationMethodBlueprints: () =>
+        ({
+          ok: true,
+          data: buildCultivationMethodBlueprintCatalog(repository),
+        }) satisfies CommandResult<ReturnType<typeof buildCultivationMethodBlueprintCatalog>>,
+      getContainerBlueprints: () =>
+        ({
+          ok: true,
+          data: buildContainerBlueprintCatalog(repository),
+        }) satisfies CommandResult<ReturnType<typeof buildContainerBlueprintCatalog>>,
+      getSubstrateBlueprints: () =>
+        ({
+          ok: true,
+          data: buildSubstrateBlueprintCatalog(repository),
+        }) satisfies CommandResult<ReturnType<typeof buildSubstrateBlueprintCatalog>>,
       createRoom: (intent, context) => worldService.createRoom(intent, context),
       createZone: (intent, context) => worldService.createZone(intent, context),
       renameStructure: (intent, context) =>

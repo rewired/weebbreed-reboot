@@ -10,6 +10,11 @@ import type {
 } from '@/types/simulation';
 import { useSimulationStore } from '@/store/simulation';
 import type { DifficultyConfig } from '@/types/difficulty';
+import type {
+  CultivationMethodCatalogEntry,
+  ContainerCatalogEntry,
+  SubstrateCatalogEntry,
+} from '@/types/blueprints';
 
 type CommandError = {
   code?: string;
@@ -135,6 +140,10 @@ export interface DeviceBlueprint {
   settings?: Record<string, unknown>;
 }
 
+export type CultivationMethodBlueprint = CultivationMethodCatalogEntry;
+export type ContainerBlueprint = ContainerCatalogEntry;
+export type SubstrateBlueprint = SubstrateCatalogEntry;
+
 export interface AddPlantingOptions {
   zoneId: string;
   strainId: string;
@@ -210,6 +219,9 @@ export interface SimulationBridge {
   getStructureBlueprints: () => Promise<CommandResponse<StructureBlueprint[]>>;
   getStrainBlueprints: () => Promise<CommandResponse<StrainBlueprint[]>>;
   getDeviceBlueprints: () => Promise<CommandResponse<DeviceBlueprint[]>>;
+  getCultivationMethodBlueprints: () => Promise<CommandResponse<CultivationMethodBlueprint[]>>;
+  getContainerBlueprints: () => Promise<CommandResponse<ContainerBlueprint[]>>;
+  getSubstrateBlueprints: () => Promise<CommandResponse<SubstrateBlueprint[]>>;
   getDifficultyConfig: () => Promise<CommandResponse<DifficultyConfig>>;
   sendControl: (
     command: SimulationControlCommand,
@@ -268,6 +280,43 @@ class SocketSystemFacade implements SimulationBridge {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   private isConnecting = false;
+
+  private async refreshCatalogs(): Promise<void> {
+    const store = useSimulationStore.getState();
+    const updateCatalog = store.setCatalogStatus;
+
+    const loaders: Array<
+      [
+        'cultivationMethods' | 'containers' | 'substrates',
+        () => Promise<
+          CommandResponse<
+            CultivationMethodBlueprint[] | ContainerBlueprint[] | SubstrateBlueprint[]
+          >
+        >,
+      ]
+    > = [
+      ['cultivationMethods', () => this.getCultivationMethodBlueprints()],
+      ['containers', () => this.getContainerBlueprints()],
+      ['substrates', () => this.getSubstrateBlueprints()],
+    ];
+
+    for (const [catalog, loader] of loaders) {
+      updateCatalog(catalog, 'loading');
+      try {
+        const response = await loader();
+        if (response.ok && Array.isArray(response.data)) {
+          updateCatalog(catalog, 'ready', { data: response.data, error: null });
+        } else {
+          const message =
+            response.errors?.[0]?.message ?? response.warnings?.[0] ?? 'Failed to load catalog.';
+          updateCatalog(catalog, 'error', { error: message });
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        updateCatalog(catalog, 'error', { error: message });
+      }
+    }
+  }
 
   readonly plants = {
     addPlanting: async (options: AddPlantingOptions) => {
@@ -388,6 +437,7 @@ class SocketSystemFacade implements SimulationBridge {
       this.isConnecting = false;
       this.reconnectDelay = INITIAL_RECONNECT_DELAY;
       store.setConnectionStatus('connected');
+      void this.refreshCatalogs();
     });
 
     socket.on('disconnect', () => {
@@ -527,6 +577,36 @@ class SocketSystemFacade implements SimulationBridge {
       payload: {},
     };
     return this.sendIntent<DeviceBlueprint[]>(intent);
+  }
+
+  async getCultivationMethodBlueprints(): Promise<CommandResponse<CultivationMethodBlueprint[]>> {
+    this.requireConnected();
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'getCultivationMethodBlueprints',
+      payload: {},
+    };
+    return this.sendIntent<CultivationMethodBlueprint[]>(intent);
+  }
+
+  async getContainerBlueprints(): Promise<CommandResponse<ContainerBlueprint[]>> {
+    this.requireConnected();
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'getContainerBlueprints',
+      payload: {},
+    };
+    return this.sendIntent<ContainerBlueprint[]>(intent);
+  }
+
+  async getSubstrateBlueprints(): Promise<CommandResponse<SubstrateBlueprint[]>> {
+    this.requireConnected();
+    const intent: FacadeIntentCommand = {
+      domain: 'world',
+      action: 'getSubstrateBlueprints',
+      payload: {},
+    };
+    return this.sendIntent<SubstrateBlueprint[]>(intent);
   }
 
   async getDifficultyConfig(): Promise<CommandResponse<DifficultyConfig>> {
