@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Enabled the DaisyUI plugin with the forest theme as the default and dark
+  palette for the dashboard Tailwind pipeline.
 - Documented the current Tailwind baseline (plugins, dark mode, CSS tokens) in
   `docs/ui/themes/tailwind-baseline.md` to support upcoming theme work.
 - Dokumentiert den Umsetzungsplan für die Irrigation-&-Nutrient-Überarbeitung unter
