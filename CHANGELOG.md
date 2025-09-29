@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Documented the current Tailwind baseline (plugins, dark mode, CSS tokens) in
+  `docs/ui/themes/tailwind-baseline.md` to support upcoming theme work.
 - Dokumentiert den Umsetzungsplan für die Irrigation-&-Nutrient-Überarbeitung unter
   `docs/tasks/20250928-irrgitation-nutrient-overhaul.md`.
 - Implemented a device removal engine service that clears unsupported zone setpoints, emits
