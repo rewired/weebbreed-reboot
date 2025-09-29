@@ -288,7 +288,7 @@ export const createBlueprintRepositoryStub = (
     new Map<string, SubstratePriceEntry>(
       substrates.map((substrate, index) => [
         substrate.slug,
-        { costPerSquareMeter: 2 + index * 0.5 },
+        { costPerLiter: 0.02 + index * 0.005 },
       ]),
     );
 

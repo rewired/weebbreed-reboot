@@ -177,13 +177,13 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "version": "2024-09-01",
   "substrates": {
     "soil-single-cycle": {
-      "costPerSquareMeter": 2.5
+      "costPerLiter": 0.025
     },
     "soil-multi-cycle": {
-      "costPerSquareMeter": 3.5
+      "costPerLiter": 0.035
     },
     "coco-coir": {
-      "costPerLiter": 0.6
+      "costPerLiter": 0.55
     }
   },
   "containers": {
