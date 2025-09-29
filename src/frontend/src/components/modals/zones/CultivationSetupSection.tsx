@@ -120,7 +120,11 @@ export const useCultivationSetup = ({
   const [areaInput, setAreaInput] = useState(() => computeClampedArea(initialArea).toString());
 
   useEffect(() => {
-    setArea((current) => computeClampedArea(current));
+    setArea((current) => {
+      const normalized = computeClampedArea(current);
+      setAreaInput(normalized.toString());
+      return normalized;
+    });
   }, [availableArea, computeClampedArea]);
 
   const updateArea = useCallback(
