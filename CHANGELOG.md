@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Documented the refactoring roadmap covering world service, state model, and modal host decompositions under `docs/tasks/20250929-refactoring-roadmap.md`.
+- Captured refactoring governance thresholds and reuse triggers in ADR 0012.
 - Documented the cultivation setup UI consolidation in ADR 0011, covering the shared
   hook/component contract for zone modals.【F:docs/system/adr/0011-cultivation-setup-sharing.md†L1-L50】
 - Dokumentiert den Umsetzungsplan für die Irrigation-&-Nutrient-Überarbeitung unter
