@@ -502,6 +502,8 @@ Maintain consistent icon weights (default Material weight) and avoid scaling on 
 
 ### Dark Theme Tokens
 
+> Refer to the consolidated [Theme Baseline](./themes/theme-baseline.md) for the canonical token names, CSS variable values, and light/dark parity expectations shared across DaisyUI themes.
+
 - Background: `bg-stone-900`.
 - Text: primary `text-stone-100/200`, secondary `text-stone-400/500`.
 - Panels/cards: `bg-stone-800/30` with `border-stone-700`.
