@@ -5,6 +5,8 @@ import type {
   StrainBlueprint,
   StrainPriceEntry,
   UtilityPrices,
+  SubstrateBlueprint,
+  ContainerBlueprint,
 } from '@/data/schemas/index.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { StructureBlueprint } from '@/state/models.js';
@@ -102,6 +104,33 @@ export const createStrainBlueprint = (
   ...overrides,
 });
 
+export const createSubstrateBlueprint = (
+  overrides: Partial<SubstrateBlueprint> = {},
+): SubstrateBlueprint => ({
+  id: '55555555-5555-4555-8555-555555555555',
+  slug: 'test-substrate',
+  kind: 'Substrate',
+  name: 'Test Substrate',
+  type: 'soil',
+  maxCycles: 2,
+  ...overrides,
+});
+
+export const createContainerBlueprint = (
+  overrides: Partial<ContainerBlueprint> = {},
+): ContainerBlueprint => ({
+  id: '66666666-6666-4666-8666-666666666666',
+  slug: 'test-container',
+  kind: 'Container',
+  name: 'Test Container',
+  type: 'pot',
+  volumeInLiters: 12,
+  footprintArea: 0.3,
+  reusableCycles: 5,
+  packingDensity: 0.9,
+  ...overrides,
+});
+
 export const createCultivationMethodBlueprint = (
   overrides: Partial<CultivationMethodBlueprint> = {},
 ): CultivationMethodBlueprint => ({
@@ -112,7 +141,10 @@ export const createCultivationMethodBlueprint = (
   laborIntensity: 0.6,
   areaPerPlant: 1.6,
   minimumSpacing: 0.4,
-  containerSpec: { type: 'pot', volumeInLiters: 12 },
+  compatibleSubstrateSlugs: ['test-substrate'],
+  compatibleContainerSlugs: ['test-container'],
+  substrateCostPerSquareMeter: 2.5,
+  containerCostPerUnit: 8.5,
   meta: {},
   ...overrides,
 });
@@ -180,6 +212,8 @@ interface RepositoryStubOptions {
   strains?: StrainBlueprint[];
   cultivationMethods?: CultivationMethodBlueprint[];
   devices?: DeviceBlueprint[];
+  substrates?: SubstrateBlueprint[];
+  containers?: ContainerBlueprint[];
   devicePrices?: Map<string, DevicePriceEntry>;
   strainPrices?: Map<string, StrainPriceEntry>;
   utilityPrices?: UtilityPrices;
@@ -197,6 +231,8 @@ export const createBlueprintRepositoryStub = (
 ): BlueprintRepository => {
   const strains = options.strains ?? [createStrainBlueprint()];
   const methods = options.cultivationMethods ?? [createCultivationMethodBlueprint()];
+  const substrates = options.substrates ?? [createSubstrateBlueprint()];
+  const containers = options.containers ?? [createContainerBlueprint()];
   const devices = options.devices ?? [
     createDeviceBlueprint({ kind: 'Lamp' }),
     createDeviceBlueprint({ kind: 'ClimateUnit', settings: { coverageArea: 12 } }),
@@ -244,10 +280,16 @@ export const createBlueprintRepositoryStub = (
     getStrain: (id: string) => strains.find((strain) => strain.id === id),
     getDevice: (id: string) => devices.find((device) => device.id === id),
     getCultivationMethod: (id: string) => methods.find((method) => method.id === id),
+    getSubstrate: (id: string) => substrates.find((substrate) => substrate.id === id),
+    getSubstrateBySlug: (slug: string) => substrates.find((substrate) => substrate.slug === slug),
+    getContainer: (id: string) => containers.find((container) => container.id === id),
+    getContainerBySlug: (slug: string) => containers.find((container) => container.slug === slug),
     getRoomPurpose: (id: string) => roomPurposes.find((purpose) => purpose.id === id),
     listStrains: () => strains.map((strain) => clone(strain)),
     listDevices: () => devices.map((device) => clone(device)),
     listCultivationMethods: () => methods.map((method) => clone(method)),
+    listSubstrates: () => substrates.map((substrate) => clone(substrate)),
+    listContainers: () => containers.map((container) => clone(container)),
     listRoomPurposes: () => roomPurposes.map((purpose) => clone(purpose)),
     getDevicePrice: (id: string) => devicePrices.get(id),
     getStrainPrice: (id: string) => strainPrices.get(id),

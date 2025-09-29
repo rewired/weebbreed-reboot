@@ -10,19 +10,10 @@
   "areaPerPlant": 0.5,
   "minimumSpacing": 0.5,
   "maxCycles": 1,
-  "substrate": {
-    "type": "soil",
-    "costPerSquareMeter": 2.5,
-    "maxCycles": 1
-  },
-  "containerSpec": {
-    "type": "pot",
-    "volumeInLiters": 10,
-    "footprintArea": 0.25,
-    "reusableCycles": 3,
-    "costPerUnit": 1.5,
-    "packingDensity": 0.9
-  },
+  "compatibleSubstrateSlugs": ["soil-single-cycle"],
+  "substrateCostPerSquareMeter": 2.5,
+  "compatibleContainerSlugs": ["pot-10l"],
+  "containerCostPerUnit": 1.5,
   "strainTraitCompatibility": {},
   "envBias": {},
   "capacityHints": {

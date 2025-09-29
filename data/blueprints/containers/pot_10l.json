@@ -1,0 +1,11 @@
+{
+  "id": "0c48f3e3-2c19-4be4-86ea-4de97f5aa51e",
+  "slug": "pot-10l",
+  "kind": "Container",
+  "name": "10 L Pot",
+  "type": "pot",
+  "volumeInLiters": 10,
+  "footprintArea": 0.25,
+  "reusableCycles": 3,
+  "packingDensity": 0.9
+}

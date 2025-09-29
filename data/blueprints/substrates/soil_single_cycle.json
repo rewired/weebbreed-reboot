@@ -1,0 +1,8 @@
+{
+  "id": "04c8b1a5-09cc-4d86-8dc6-9007a64de6f2",
+  "slug": "soil-single-cycle",
+  "kind": "Substrate",
+  "name": "Single-Cycle Soil Mix",
+  "type": "soil",
+  "maxCycles": 1
+}
