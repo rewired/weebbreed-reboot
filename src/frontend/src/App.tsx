@@ -9,6 +9,7 @@ import { ZoneView } from '@/views/ZoneView';
 import { PersonnelView } from '@/views/PersonnelView';
 import { FinanceView } from '@/views/FinanceView';
 import { ModalHost } from '@/components/modals/ModalHost';
+import { ToastViewport } from '@/components/feedback/ToastViewport';
 import { useSimulationBridge } from '@/hooks/useSimulationBridge';
 import { useNavigationStore } from '@/store/navigation';
 import { useSimulationStore } from '@/store/simulation';
@@ -51,6 +52,7 @@ const App = () => {
       <>
         <StartScreen bridge={bridge} />
         <ModalHost bridge={bridge} />
+        <ToastViewport />
       </>
     );
   }
@@ -60,6 +62,7 @@ const App = () => {
       <>
         <NewGameView bridge={bridge} />
         <ModalHost bridge={bridge} />
+        <ToastViewport />
       </>
     );
   }
@@ -68,6 +71,7 @@ const App = () => {
     <>
       <DashboardShell bridge={bridge}>{content}</DashboardShell>
       <ModalHost bridge={bridge} />
+      <ToastViewport />
     </>
   );
 };

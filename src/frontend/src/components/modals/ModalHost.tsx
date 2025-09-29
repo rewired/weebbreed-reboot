@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } 
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { ModalFrame } from '@/components/modals/ModalFrame';
+import { ConfirmPlantActionModal } from './ConfirmPlantActionModal';
 import type {
   DeviceBlueprint,
   InstallDeviceOptions,
@@ -2430,6 +2431,9 @@ const modalRenderers: Record<
   ),
   tuneDevice: ({ bridge, closeModal, context }) => (
     <TuneDeviceModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
+  confirmPlantAction: ({ bridge, closeModal, context }) => (
+    <ConfirmPlantActionModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
 };
 

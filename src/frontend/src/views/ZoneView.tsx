@@ -23,6 +23,7 @@ import type { SimulationBridge } from '@/facade/systemFacade';
 import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
 import { EnvironmentBadgeRow } from '@/components/zone/EnvironmentBadgeRow';
 import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentBadges';
+import type { ConfirmPlantActionContext } from '@/components/modals/ConfirmPlantActionModal';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -122,6 +123,34 @@ const STRESS_FILTER_OPTIONS = [
   { value: 'high', label: 'High (≥ 66%)' },
 ];
 
+type ActionStatusTone = 'success' | 'warning' | 'error';
+
+interface ActionStatus {
+  tone: ActionStatusTone;
+  message: string;
+}
+
+const ACTION_STATUS_STYLES: Record<
+  ActionStatusTone,
+  { container: string; icon: string; iconName: string }
+> = {
+  success: {
+    container: 'border-success/50 bg-success/10 text-success',
+    icon: 'text-success',
+    iconName: 'check_circle',
+  },
+  warning: {
+    container: 'border-warning/50 bg-warning/10 text-warning',
+    icon: 'text-warning',
+    iconName: 'report',
+  },
+  error: {
+    container: 'border-danger/60 bg-danger/10 text-danger',
+    icon: 'text-danger',
+    iconName: 'error',
+  },
+};
+
 const plantColumns = [
   columnHelper.accessor('strainName', {
     header: 'Strain',
@@ -215,6 +244,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     selectedStructureId: state.selectedStructureId,
   }));
   const openModal = useUIStore((state) => state.openModal);
+  const pushToast = useUIStore((state) => state.pushToast);
 
   const zone = snapshot?.zones.find((item) => item.id === selectedZoneId);
   const setpoints = zone ? zoneSetpoints[zone.id] : undefined;
@@ -231,6 +261,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
   const [pendingPlantActions, setPendingPlantActions] = useState<
     Record<string, 'harvest' | 'cull' | undefined>
   >({});
+  const [lastActionStatus, setLastActionStatus] = useState<ActionStatus | null>(null);
   const [harvestAllBusy, setHarvestAllBusy] = useState(false);
 
   useEffect(() => {
@@ -239,6 +270,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     setShowHarvestableOnly(false);
     setPendingPlantActions({});
     setHarvestAllBusy(false);
+    setLastActionStatus(null);
   }, [zone?.id]);
 
   const stageOptions = useMemo(() => {
@@ -300,54 +332,79 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
     }
     return zone.plants.filter((plant) => plant.isHarvestable);
   }, [zone, showHarvestableOnly]);
-
-  const applyLocalPlantRemoval = useCallback(
-    (removedIds: string[]) => {
-      const zoneId = zone?.id;
-      if (!removedIds.length || !zoneId) {
-        return;
+  const getPlantDetails = useCallback(
+    (plantId: string): { plant: PlantSnapshot; zoneName: string } | null => {
+      const snapshotState = useSimulationStore.getState().snapshot;
+      if (!snapshotState) {
+        return null;
       }
-      const idSet = new Set(removedIds);
-      useSimulationStore.setState((state) => {
-        const snapshotState = state.snapshot;
-        if (!snapshotState) {
-          return state;
+      for (const zoneSnapshot of snapshotState.zones) {
+        const match = zoneSnapshot.plants.find((entry) => entry.id === plantId);
+        if (match) {
+          return { plant: match, zoneName: zoneSnapshot.name };
         }
-        const zoneIndex = snapshotState.zones.findIndex((entry) => entry.id === zoneId);
-        if (zoneIndex === -1) {
-          return state;
-        }
-        const targetZone = snapshotState.zones[zoneIndex]!;
-        const nextPlants = targetZone.plants.filter((plant) => !idSet.has(plant.id));
-        if (nextPlants.length === targetZone.plants.length) {
-          return state;
-        }
-        const nextZones = [...snapshotState.zones];
-        nextZones[zoneIndex] = { ...targetZone, plants: nextPlants };
-        return { snapshot: { ...snapshotState, zones: nextZones } };
-      });
+      }
+      return null;
     },
-    [zone?.id],
+    [],
   );
 
   const handleHarvest = useCallback(
     async (plantId: string) => {
       if (!plantId) {
-        return;
+        return false;
       }
       setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'harvest' }));
       try {
         const response = await bridge.plants.harvestPlant({ plantId });
         if (!response.ok) {
-          console.warn('Harvest plant command failed', response.errors ?? response.warnings);
-          return;
+          const message =
+            response.errors?.[0]?.message ??
+            response.warnings?.[0] ??
+            'Harvest command was rejected.';
+          setLastActionStatus({ tone: 'error', message: `Harvest failed — ${message}` });
+          pushToast({
+            tone: 'error',
+            title: 'Harvest failed',
+            description: message,
+          });
+          return false;
         }
+        const details = getPlantDetails(plantId);
+        const label = details?.plant.strainName || details?.plant.id || plantId;
+        const successMessage = label
+          ? `Harvest command accepted — Queued harvest for ${label}.`
+          : 'Harvest command accepted.';
+        setLastActionStatus({ tone: 'success', message: successMessage });
+        pushToast({
+          tone: 'success',
+          title: 'Harvest command accepted',
+          description: label ? `Queued harvest for ${label}.` : undefined,
+        });
         if (response.warnings?.length) {
-          console.warn('Harvest plant command warnings:', response.warnings);
+          const warningMessage = response.warnings.join(' ');
+          setLastActionStatus({
+            tone: 'warning',
+            message: `Harvest accepted with warnings — ${warningMessage}`,
+          });
+          pushToast({
+            tone: 'warning',
+            title: 'Harvest warnings',
+            description: warningMessage,
+            durationMs: 8000,
+          });
         }
-        applyLocalPlantRemoval([plantId]);
+        return true;
       } catch (error) {
-        console.error('Failed to harvest plant', error);
+        const message =
+          error instanceof Error ? error.message : 'Connection error while harvesting this plant.';
+        setLastActionStatus({ tone: 'error', message: `Harvest failed — ${message}` });
+        pushToast({
+          tone: 'error',
+          title: 'Harvest failed',
+          description: message,
+        });
+        return false;
       } finally {
         setPendingPlantActions((previous) => {
           const next = { ...previous };
@@ -356,27 +413,65 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
         });
       }
     },
-    [applyLocalPlantRemoval, bridge.plants],
+    [bridge.plants, getPlantDetails, pushToast],
   );
 
   const handleCull = useCallback(
     async (plantId: string) => {
       if (!plantId) {
-        return;
+        return false;
       }
       setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'cull' }));
       try {
         const response = await bridge.plants.cullPlant({ plantId });
         if (!response.ok) {
-          console.warn('Cull plant command failed', response.errors ?? response.warnings);
-          return;
+          const message =
+            response.errors?.[0]?.message ??
+            response.warnings?.[0] ??
+            'Trash command was rejected.';
+          setLastActionStatus({ tone: 'error', message: `Trash failed — ${message}` });
+          pushToast({
+            tone: 'error',
+            title: 'Trash failed',
+            description: message,
+          });
+          return false;
         }
+        const details = getPlantDetails(plantId);
+        const label = details?.plant.strainName || details?.plant.id || plantId;
+        const successMessage = label
+          ? `Plant trashed — Removed ${label} from the zone.`
+          : 'Plant trashed — Command accepted.';
+        setLastActionStatus({ tone: 'success', message: successMessage });
+        pushToast({
+          tone: 'success',
+          title: 'Plant trashed',
+          description: label ? `Removed ${label} from the zone.` : undefined,
+        });
         if (response.warnings?.length) {
-          console.warn('Cull plant command warnings:', response.warnings);
+          const warningMessage = response.warnings.join(' ');
+          setLastActionStatus({
+            tone: 'warning',
+            message: `Trash accepted with warnings — ${warningMessage}`,
+          });
+          pushToast({
+            tone: 'warning',
+            title: 'Cull warnings',
+            description: warningMessage,
+            durationMs: 8000,
+          });
         }
-        applyLocalPlantRemoval([plantId]);
+        return true;
       } catch (error) {
-        console.error('Failed to cull plant', error);
+        const message =
+          error instanceof Error ? error.message : 'Connection error while removing this plant.';
+        setLastActionStatus({ tone: 'error', message: `Trash failed — ${message}` });
+        pushToast({
+          tone: 'error',
+          title: 'Trash failed',
+          description: message,
+        });
+        return false;
       } finally {
         setPendingPlantActions((previous) => {
           const next = { ...previous };
@@ -385,45 +480,106 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
         });
       }
     },
-    [applyLocalPlantRemoval, bridge.plants],
+    [bridge.plants, getPlantDetails, pushToast],
   );
 
-  const handleHarvestAll = useCallback(async () => {
-    if (!harvestablePlantIds.length) {
-      return;
-    }
-    setHarvestAllBusy(true);
-    const succeeded: string[] = [];
-    try {
-      for (const plantId of harvestablePlantIds) {
-        setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'harvest' }));
-        try {
-          const response = await bridge.plants.harvestPlant({ plantId });
-          if (!response.ok) {
-            console.warn('Harvest plant command failed', response.errors ?? response.warnings);
-            continue;
+  const handleHarvestAll = useCallback(
+    async (plantIds: string[]) => {
+      if (!plantIds.length) {
+        return false;
+      }
+      setHarvestAllBusy(true);
+      const succeeded: string[] = [];
+      const warnings = new Set<string>();
+      const failures: { id: string; message: string }[] = [];
+      try {
+        for (const plantId of plantIds) {
+          setPendingPlantActions((previous) => ({ ...previous, [plantId]: 'harvest' }));
+          try {
+            const response = await bridge.plants.harvestPlant({ plantId });
+            if (!response.ok) {
+              const message =
+                response.errors?.[0]?.message ??
+                response.warnings?.[0] ??
+                'Harvest command was rejected.';
+              failures.push({ id: plantId, message });
+              continue;
+            }
+            succeeded.push(plantId);
+            if (response.warnings?.length) {
+              for (const warning of response.warnings) {
+                warnings.add(warning);
+              }
+            }
+          } catch (error) {
+            failures.push({
+              id: plantId,
+              message:
+                error instanceof Error
+                  ? error.message
+                  : 'Connection error while harvesting this plant.',
+            });
+          } finally {
+            setPendingPlantActions((previous) => {
+              const next = { ...previous };
+              delete next[plantId];
+              return next;
+            });
           }
-          if (response.warnings?.length) {
-            console.warn('Harvest plant command warnings:', response.warnings);
-          }
-          succeeded.push(plantId);
-        } catch (error) {
-          console.error('Failed to harvest plant', error);
-        } finally {
-          setPendingPlantActions((previous) => {
-            const next = { ...previous };
-            delete next[plantId];
-            return next;
-          });
         }
+      } finally {
+        setHarvestAllBusy(false);
       }
+
       if (succeeded.length) {
-        applyLocalPlantRemoval(succeeded);
+        const quantityLabel = succeeded.length === 1 ? '1 plant' : `${succeeded.length} plants`;
+        const description = `Queued harvest for ${quantityLabel}.`;
+        setLastActionStatus({
+          tone: 'success',
+          message: `Harvest command accepted — ${description}`,
+        });
+        pushToast({
+          tone: 'success',
+          title: 'Harvest command accepted',
+          description,
+        });
       }
-    } finally {
-      setHarvestAllBusy(false);
-    }
-  }, [applyLocalPlantRemoval, bridge.plants, harvestablePlantIds]);
+      if (warnings.size) {
+        const warningMessage = Array.from(warnings).join(' ');
+        setLastActionStatus({
+          tone: 'warning',
+          message: `Harvest accepted with warnings — ${warningMessage}`,
+        });
+        pushToast({
+          tone: 'warning',
+          title: 'Harvest warnings',
+          description: warningMessage,
+          durationMs: 8000,
+        });
+      }
+      if (failures.length) {
+        const summary = failures.slice(0, 3).map((entry) => {
+          const details = getPlantDetails(entry.id);
+          const label = details?.plant.strainName || entry.id;
+          return `${label}: ${entry.message}`;
+        });
+        const summaryText = summary.join(' ');
+        setLastActionStatus({
+          tone: 'error',
+          message: `Harvest failed — ${summaryText}`,
+        });
+        pushToast({
+          tone: 'error',
+          title: failures.length === 1 ? '1 harvest failed' : `${failures.length} harvests failed`,
+          description: summaryText,
+          durationMs: 8000,
+        });
+      }
+
+      return failures.length === 0;
+    },
+    [bridge.plants, getPlantDetails, pushToast],
+  );
 
   const tableColumns = useMemo(() => {
     const currentTick = snapshot?.tick ?? snapshot?.clock.tick ?? 0;
@@ -469,7 +625,18 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 disabled={harvestDisabled}
                 title={harvestTitle}
                 onClick={() => {
-                  void handleHarvest(plant.id);
+                  const context: ConfirmPlantActionContext = {
+                    action: 'harvest',
+                    plantIds: [plant.id],
+                    zoneId: zone?.id,
+                    onConfirm: () => handleHarvest(plant.id),
+                  };
+                  openModal({
+                    id: `confirm-harvest-${plant.id}`,
+                    type: 'confirmPlantAction',
+                    title: 'Confirm harvest',
+                    context,
+                  });
                 }}
               >
                 Harvest
@@ -482,7 +649,18 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 disabled={cullDisabled}
                 title={cullTitle}
                 onClick={() => {
-                  void handleCull(plant.id);
+                  const context: ConfirmPlantActionContext = {
+                    action: 'cull',
+                    plantIds: [plant.id],
+                    zoneId: zone?.id,
+                    onConfirm: () => handleCull(plant.id),
+                  };
+                  openModal({
+                    id: `confirm-cull-${plant.id}`,
+                    type: 'confirmPlantAction',
+                    title: 'Confirm trash',
+                    context,
+                  });
                 }}
               >
                 Trash
@@ -819,7 +997,18 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                   disabled={harvestAllDisabled}
                   title={harvestAllTitle ?? undefined}
                   onClick={() => {
-                    void handleHarvestAll();
+                    const context: ConfirmPlantActionContext = {
+                      action: 'harvest',
+                      plantIds: harvestablePlantIds,
+                      zoneId: zone.id,
+                      onConfirm: () => handleHarvestAll(harvestablePlantIds),
+                    };
+                    openModal({
+                      id: `confirm-harvest-all-${zone.id}`,
+                      type: 'confirmPlantAction',
+                      title: 'Confirm harvest all',
+                      context,
+                    });
                   }}
                 >
                   Harvest all
@@ -828,6 +1017,23 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
             }
             data-testid="zone-plants-card"
           >
+            {lastActionStatus ? (
+              <div
+                className={cx(
+                  'mb-4 flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm',
+                  ACTION_STATUS_STYLES[lastActionStatus.tone].container,
+                )}
+                data-testid="zone-plants-action-status"
+                role="status"
+              >
+                <Icon
+                  name={ACTION_STATUS_STYLES[lastActionStatus.tone].iconName}
+                  size={18}
+                  className={ACTION_STATUS_STYLES[lastActionStatus.tone].icon}
+                />
+                <span className="text-sm font-medium">{lastActionStatus.message}</span>
+              </div>
+            ) : null}
             <div
               className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border/30 bg-surface-muted/60 px-4 py-3"
               data-testid="zone-plants-filters"

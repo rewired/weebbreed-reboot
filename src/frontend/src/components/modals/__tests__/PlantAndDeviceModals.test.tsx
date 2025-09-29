@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, beforeAll, vi } from 'vite
 import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ModalHost } from '../ModalHost';
+import { ToastViewport } from '@/components/feedback/ToastViewport';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
 import { useNavigationStore } from '@/store/navigation';
@@ -342,7 +343,7 @@ describe('Plant and Device modals', () => {
         zoneSetpoints: {},
         lastTick: 0,
       });
-      useUIStore.setState({ activeModal: null, modalQueue: [] });
+      useUIStore.setState({ activeModal: null, modalQueue: [], toasts: [] });
       useNavigationStore.setState({
         currentView: 'zone',
         selectedStructureId: 'structure-1',
@@ -358,14 +359,19 @@ describe('Plant and Device modals', () => {
     vi.clearAllMocks();
     act(() => {
       useSimulationStore.getState().reset();
-      useUIStore.setState({ activeModal: null, modalQueue: [] });
+      useUIStore.setState({ activeModal: null, modalQueue: [], toasts: [] });
       useNavigationStore.getState().reset();
     });
     modalRoot.remove();
   });
 
   it('surfaces planting capacity hints and warnings', async () => {
-    render(<ModalHost bridge={bridge} />);
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ToastViewport />
+      </>,
+    );
 
     act(() => {
       useUIStore.getState().openModal({
@@ -477,6 +483,151 @@ describe('Plant and Device modals', () => {
       });
     }
     expect(screen.getAllByText('Device load near limit.')).toHaveLength(1);
+  });
+
+  it('lists selected plants and dispatches the provided harvest handler', async () => {
+    const harvestPlantMock = vi.fn(async () => ({ ok: true }));
+    bridge.plants.harvestPlant =
+      harvestPlantMock as unknown as SimulationBridge['plants']['harvestPlant'];
+
+    act(() => {
+      useSimulationStore.setState((state) => {
+        const snapshot = structuredClone(state.snapshot!);
+        snapshot.zones = snapshot.zones.map((zone) =>
+          zone.id === 'zone-1'
+            ? {
+                ...zone,
+                plants: [
+                  {
+                    id: 'plant-modal',
+                    strainId: 'strain-1',
+                    strainName: 'Confirm Harvest',
+                    stage: 'flowering',
+                    health: 0.92,
+                    stress: 0.18,
+                    biomassDryGrams: 120,
+                    yieldDryGrams: 85,
+                    hasDiseases: false,
+                    hasPests: false,
+                    hasPendingTreatments: false,
+                    isHarvestable: true,
+                    zoneId: 'zone-1',
+                    structureId: 'structure-1',
+                    roomId: 'room-1',
+                  },
+                ],
+              }
+            : zone,
+        );
+        return { snapshot };
+      });
+    });
+
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ToastViewport />
+      </>,
+    );
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'confirm-harvest',
+        type: 'confirmPlantAction',
+        title: 'Harvest plant',
+        context: {
+          action: 'harvest',
+          plantIds: ['plant-modal'],
+          zoneId: 'zone-1',
+          onConfirm: () =>
+            bridge.plants.harvestPlant({ plantId: 'plant-modal' }).then((response) => response.ok),
+        },
+      });
+    });
+
+    expect(await screen.findByTestId('confirm-plant-action-list')).toHaveTextContent(
+      'Confirm Harvest',
+    );
+    expect(screen.getByTestId('confirm-plant-action-list')).toHaveTextContent('flowering');
+
+    const confirmButton = await screen.findByTestId('confirm-plant-action-confirm');
+    await act(async () => {
+      confirmButton.click();
+    });
+
+    await waitFor(() => {
+      expect(harvestPlantMock).toHaveBeenCalledWith({ plantId: 'plant-modal' });
+    });
+
+    expect(useUIStore.getState().activeModal).toBeNull();
+  });
+
+  it('shows inline feedback when the confirm handler rejects', async () => {
+    act(() => {
+      useSimulationStore.setState((state) => {
+        const snapshot = structuredClone(state.snapshot!);
+        snapshot.zones = snapshot.zones.map((zone) =>
+          zone.id === 'zone-1'
+            ? {
+                ...zone,
+                plants: [
+                  {
+                    id: 'plant-modal-fail',
+                    strainId: 'strain-1',
+                    strainName: 'Cull Target',
+                    stage: 'vegetation',
+                    health: 0.8,
+                    stress: 0.3,
+                    biomassDryGrams: 60,
+                    yieldDryGrams: 20,
+                    hasDiseases: false,
+                    hasPests: false,
+                    hasPendingTreatments: false,
+                    isHarvestable: false,
+                    zoneId: 'zone-1',
+                    structureId: 'structure-1',
+                    roomId: 'room-1',
+                  },
+                ],
+              }
+            : zone,
+        );
+        return { snapshot };
+      });
+    });
+
+    render(
+      <>
+        <ModalHost bridge={bridge} />
+        <ToastViewport />
+      </>,
+    );
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'confirm-cull',
+        type: 'confirmPlantAction',
+        title: 'Trash plant',
+        context: {
+          action: 'cull',
+          plantIds: ['plant-modal-fail'],
+          zoneId: 'zone-1',
+          onConfirm: async () => false,
+        },
+      });
+    });
+
+    const confirmButton = await screen.findByTestId('confirm-plant-action-confirm');
+    await act(async () => {
+      confirmButton.click();
+    });
+
+    expect(
+      await screen.findByText(
+        'Action was not accepted. Review the toast notification for details.',
+      ),
+    ).toBeInTheDocument();
+    expect(useUIStore.getState().activeModal).not.toBeNull();
   });
 
   it('displays volume-based coverage and derived area when available', async () => {
