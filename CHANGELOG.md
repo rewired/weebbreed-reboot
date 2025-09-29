@@ -38,8 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extending schemas, repository accessors, loader cross-checks, and docs to surface
   the new price sources.
 
+- Extended the `world.updateZone` intent to accept container and substrate patches, revalidating
+  method compatibility, clamping container capacity, recomputing substrate volume, and persisting
+  consumable metadata with regression coverage and facade bridge support.【F:src/backend/src/facade/commands/world.ts†L109-L133】【F:src/backend/src/engine/world/worldService.ts†L828-L1106】【F:src/backend/src/engine/world/worldService.updateZone.test.ts†L128-L210】【F:src/frontend/src/facade/systemFacade.ts†L440-L456】
+
 - Added cultivation metadata (method, container, substrate) to zone UI snapshots, updating backend tests and frontend types/fixtures to surface the new fields.【F:src/backend/src/lib/uiSnapshot.ts†L102-L178】【F:src/backend/src/lib/uiSnapshot.test.ts†L103-L159】【F:src/frontend/src/types/simulation.ts†L1-L64】【F:src/frontend/src/data/mockTelemetry.ts†L1-L207】
-- Added a "Change cultivation method" flow: the Zone header now surfaces method/container/substrate labels, the new modal filters compatible methods, confirms the storage handoff stub, and dispatches `bridge.world.updateZone`, with RTL coverage exercising the storage prompt and intent payload.【F:src/frontend/src/views/ZoneView.tsx†L332-L370】【F:src/frontend/src/components/modals/ModalHost.tsx†L94-L579】【F:src/frontend/src/components/modals/**tests**/ChangeZoneMethodModal.test.tsx†L1-L176】【F:src/frontend/src/facade/systemFacade.ts†L244-L315】
+- Added a "Change cultivation method" flow: the Zone header surfaces method/container/substrate labels, and the modal now filters compatible methods, constrains consumable catalogs, clamps container counts to the zone capacity while recomputing substrate volume and cost estimates, confirms the storage handoff stub, and dispatches `bridge.world.updateZone` with consumable metadata. RTL coverage exercises the filtering, clamping, and dispatched payload.【F:src/frontend/src/views/ZoneView.tsx†L332-L370】【F:src/frontend/src/components/modals/ModalHost.tsx†L365-L544】【F:src/frontend/src/components/modals/**tests**/ChangeZoneMethodModal.test.tsx†L128-L210】【F:src/frontend/src/facade/systemFacade.ts†L440-L456】
 
 ### Changed
 
@@ -111,6 +115,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   coverage from room height when only volume is supplied) and extending Vitest coverage for both metrics.
 
 - Refreshed the Room view zone cards with cultivation method/substrate labels and icon-only duplicate/delete actions wired to the new zone modals, retiring the reservoir row and extending coverage/documentation for the updated flow.【F:src/frontend/src/views/RoomView.tsx†L1-L139】【F:src/frontend/src/views/**tests**/RoomView.test.tsx†L1-L68】【F:src/frontend/src/components/modals/ModalHost.tsx†L1635-L1727】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L381-L434】【F:docs/ui/ui-components-desciption.md†L20-L22】【F:docs/ui/ui-components-desciption.md†L506-L516】
+- Documented the expanded Change Method modal flow with consumable selectors,
+  capacity-aware clamping, and price estimates in the UI component guide.【F:docs/ui/ui-components-desciption.md†L45-L58】【F:docs/ui/ui-components-desciption.md†L532-L540】
 
 ### Fixed
 

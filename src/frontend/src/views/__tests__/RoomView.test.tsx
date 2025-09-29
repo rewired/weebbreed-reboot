@@ -55,8 +55,8 @@ describe('RoomView', () => {
   it('renders duplicate and delete zone icon buttons', () => {
     render(<RoomView />);
 
-    expect(screen.getByLabelText(/Duplicate Zone Alpha/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Delete Zone Alpha/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Duplicate North Canopy/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Delete North Canopy/i)).toBeInTheDocument();
   });
 
   it('omits reservoir status rows from zone cards', () => {

@@ -329,17 +329,27 @@ describe('ModalHost', () => {
       });
     });
 
+    const methodSelect = await screen.findByLabelText(/Cultivation Method/i);
+    await user.selectOptions(methodSelect, method.id);
+
+    const containerSelect = screen.getByLabelText(/Container Blueprint/i);
+    await user.selectOptions(containerSelect, container.id);
+
+    const nameInput = await screen.findByLabelText(/Zone name/i);
+    await user.type(nameInput, 'Propagation Bay');
+
     const areaInput = await screen.findByLabelText(/Area \(m²\)/i);
     await user.clear(areaInput);
     await user.type(areaInput, '2');
 
     const containerInput = await screen.findByLabelText(/Container count/i);
-    expect(containerInput).toHaveValue(8);
+    await waitFor(() => expect(containerInput).not.toBeDisabled());
+    await waitFor(() => expect(containerInput).toHaveValue(8));
 
     await user.clear(containerInput);
     await user.type(containerInput, '9');
 
-    expect(containerInput).toHaveValue(8);
+    await waitFor(() => expect(containerInput).toHaveValue(8));
     expect(
       screen.queryByText(/Container count exceeds the supported capacity for this area/i),
     ).not.toBeInTheDocument();
@@ -376,12 +386,19 @@ describe('ModalHost', () => {
       });
     });
 
+    const methodSelect = await screen.findByLabelText(/Cultivation Method/i);
+    await user.selectOptions(methodSelect, method.id);
+
+    const containerSelect = screen.getByLabelText(/Container Blueprint/i);
+    await user.selectOptions(containerSelect, container.id);
+
     const nameInput = await screen.findByLabelText(/Zone name/i);
     await user.type(nameInput, 'Propagation Bay');
 
     const areaInput = screen.getByLabelText(/Area \(m²\)/i);
     const containerInput = screen.getByLabelText(/Container count/i);
-    expect(containerInput).toHaveValue(40);
+    await waitFor(() => expect(containerInput).not.toBeDisabled());
+    await waitFor(() => expect(containerInput).toHaveValue(40));
 
     await user.clear(areaInput);
     await user.type(areaInput, '4');

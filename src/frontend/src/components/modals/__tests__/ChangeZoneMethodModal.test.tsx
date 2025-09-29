@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ModalHost, setStorageHandoffHandler } from '../ModalHost';
 import { useSimulationStore } from '@/store/simulation';
 import { useUIStore } from '@/store/ui';
@@ -36,12 +36,18 @@ const containerCatalog = [
     slug: 'ebb-flow-tray',
     name: 'Flood Table',
     type: 'ebbFlowTable',
+    footprintArea: 1.2,
+    packingDensity: 1,
+    volumeInLiters: 25,
   },
   {
     id: 'container-pot-10l',
     slug: 'pot-10l',
     name: '10 L Pot',
     type: 'pot',
+    footprintArea: 0.3,
+    packingDensity: 0.9,
+    volumeInLiters: 10,
   },
 ];
 
@@ -137,30 +143,43 @@ describe('ChangeZoneMethodModal', () => {
     });
 
     const methodSelect = await screen.findByRole('combobox', { name: 'New method' });
-    fireEvent.change(methodSelect, { target: { value: 'method-scrog' } });
+    fireEvent.change(methodSelect, { target: { value: 'method-sog' } });
 
-    const confirmButton = screen.getByRole('button', { name: 'Apply method' });
-    fireEvent.click(confirmButton);
+    const containerSelect = await screen.findByRole('combobox', { name: 'Container' });
+    const containerOptions = within(containerSelect).getAllByRole('option');
+    expect(containerOptions).toHaveLength(1);
+    expect(containerOptions[0]).toHaveTextContent('Flood Table');
 
-    await waitFor(() => {
-      expect(updateZone).toHaveBeenCalledWith({ zoneId: 'zone-c', methodId: 'method-scrog' });
-    });
+    const substrateSelect = screen.getByRole('combobox', { name: 'Substrate' });
+    const substrateOptions = within(substrateSelect).getAllByRole('option');
+    expect(substrateOptions).toHaveLength(1);
+    expect(substrateOptions[0]).toHaveTextContent('Coco Blend');
 
-    expect(storageStub).toHaveBeenCalledTimes(1);
-    expect(storageStub).toHaveBeenCalledWith({
-      zoneId: 'zone-c',
-      zoneName: 'South Canopy',
-      currentMethodId: 'method-basic-pot',
-      nextMethodId: 'method-scrog',
-      containerName: '10 L Pot',
-      substrateName: 'Single-Cycle Soil',
-    });
+    expect(storageStub).not.toHaveBeenCalled();
   });
 
-  it('aborts the update when storage confirmation is declined', async () => {
+  it('clamps container count to the calculated maximum and submits consumable payload', async () => {
     const updateZone = vi.fn(async () => ({ ok: true }));
     const bridge = buildBridge({ world: { updateZone } } as Partial<SimulationBridge>);
-    setStorageHandoffHandler(async () => false);
+    setStorageHandoffHandler(async () => true);
+
+    useSimulationStore.setState((state) => ({
+      catalogs: state.catalogs,
+      snapshot: state.snapshot
+        ? {
+            ...state.snapshot,
+            zones: state.snapshot.zones.map((zone) =>
+              zone.id === 'zone-c' ? { ...zone, area: 5 } : zone,
+            ),
+          }
+        : state.snapshot,
+      events: state.events,
+      timeStatus: state.timeStatus,
+      connectionStatus: state.connectionStatus,
+      zoneHistory: state.zoneHistory,
+      zoneSetpoints: state.zoneSetpoints,
+      lastTick: state.lastTick,
+    }));
 
     render(<ModalHost bridge={bridge} />);
 
@@ -173,15 +192,62 @@ describe('ChangeZoneMethodModal', () => {
       });
     });
 
-    const confirmButton = await screen.findByRole('button', { name: 'Apply method' });
-    fireEvent.click(confirmButton);
+    const methodSelect = await screen.findByRole('combobox', { name: 'New method' });
+    fireEvent.change(methodSelect, { target: { value: 'method-scrog' } });
+
+    const countInput = await screen.findByRole('spinbutton', { name: 'Container count' });
+    fireEvent.change(countInput, { target: { value: '50' } });
+    expect(countInput).toHaveValue(15);
+
+    const applyButton = screen.getByRole('button', { name: 'Apply changes' });
+    fireEvent.click(applyButton);
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Storage handoff must be confirmed before changing the method.'),
-      ).toBeVisible();
+      expect(updateZone).toHaveBeenCalledWith({
+        zoneId: 'zone-c',
+        methodId: 'method-scrog',
+        container: { blueprintId: 'container-pot-10l', type: 'pot', count: 15 },
+        substrate: { blueprintId: 'substrate-soil-single', type: 'soil', volumeLiters: 150 },
+      });
+    });
+  });
+
+  it('disables confirmation when the container cannot fit within the zone area', async () => {
+    setStorageHandoffHandler(async () => true);
+
+    useSimulationStore.setState((state) => ({
+      catalogs: state.catalogs,
+      snapshot: state.snapshot
+        ? {
+            ...state.snapshot,
+            zones: state.snapshot.zones.map((zone) =>
+              zone.id === 'zone-c' ? { ...zone, area: 0.1 } : zone,
+            ),
+          }
+        : state.snapshot,
+      events: state.events,
+      timeStatus: state.timeStatus,
+      connectionStatus: state.connectionStatus,
+      zoneHistory: state.zoneHistory,
+      zoneSetpoints: state.zoneSetpoints,
+      lastTick: state.lastTick,
+    }));
+
+    render(<ModalHost bridge={buildBridge()} />);
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'change-method-zone-c',
+        type: 'changeZoneMethod',
+        title: 'Change method',
+        context: { zoneId: 'zone-c' },
+      });
     });
 
-    expect(updateZone).not.toHaveBeenCalled();
+    const warning = await screen.findByText(/Selected container cannot fit/);
+    expect(warning).toBeVisible();
+
+    const applyButton = screen.getByRole('button', { name: 'Apply changes' });
+    expect(applyButton).toBeDisabled();
   });
 });

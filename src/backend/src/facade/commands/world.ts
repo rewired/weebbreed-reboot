@@ -114,6 +114,22 @@ const updateZoneSchema = z
         name: nonEmptyString.optional(),
         area: positiveNumber.optional(),
         methodId: uuid.optional(),
+        container: z
+          .object({
+            blueprintId: uuid,
+            type: nonEmptyString,
+            count: positiveInteger,
+          })
+          .strict()
+          .optional(),
+        substrate: z
+          .object({
+            blueprintId: uuid,
+            type: nonEmptyString,
+            volumeLiters: positiveNumber.optional(),
+          })
+          .strict()
+          .optional(),
         targetPlantCount: positiveInteger.optional(),
       })
       .strict()

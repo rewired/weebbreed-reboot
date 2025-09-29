@@ -825,103 +825,308 @@ export class WorldService {
       geometryChanged = true;
     }
 
-    if (typeof patch.methodId === 'string') {
-      const method = this.repository.getCultivationMethod(patch.methodId);
-      if (!method) {
+    const targetArea = zone.area;
+    const previousContainerSlug = zone.cultivation?.container?.slug;
+    const previousSubstrateSlug = zone.cultivation?.substrate?.slug;
+
+    const requestedMethodId =
+      typeof patch.methodId === 'string' ? patch.methodId : zone.cultivationMethodId;
+    const methodChanged =
+      typeof patch.methodId === 'string' && patch.methodId !== zone.cultivationMethodId;
+
+    const method = requestedMethodId
+      ? this.repository.getCultivationMethod(requestedMethodId)
+      : undefined;
+    if (requestedMethodId && !method) {
+      return this.failure(
+        'ERR_NOT_FOUND',
+        `Cultivation method ${requestedMethodId} was not found.`,
+        typeof patch.methodId === 'string'
+          ? ['world.updateZone', 'patch.methodId']
+          : ['world.updateZone', 'zone.cultivationMethodId'],
+      );
+    }
+
+    if (!zone.cultivation) {
+      zone.cultivation = {};
+    }
+
+    let nextContainer = zone.cultivation.container ? { ...zone.cultivation.container } : undefined;
+    let containerBlueprint = nextContainer?.blueprintId
+      ? this.repository.getContainer(nextContainer.blueprintId)
+      : undefined;
+
+    if (patch.container) {
+      const blueprint = this.repository.getContainer(patch.container.blueprintId);
+      if (!blueprint) {
         return this.failure(
           'ERR_NOT_FOUND',
-          `Cultivation method ${patch.methodId} was not found.`,
-          ['world.updateZone', 'patch.methodId'],
+          `Container blueprint ${patch.container.blueprintId} was not found.`,
+          ['world.updateZone', 'patch.container.blueprintId'],
         );
       }
+      if (blueprint.type !== patch.container.type) {
+        return this.failure('ERR_VALIDATION', 'Container type does not match blueprint metadata.', [
+          'world.updateZone',
+          'patch.container.type',
+        ]);
+      }
+      containerBlueprint = blueprint;
+      nextContainer = {
+        blueprintId: blueprint.id,
+        slug: blueprint.slug,
+        type: blueprint.type,
+        count: patch.container.count,
+        name: blueprint.name,
+      };
+    } else if (nextContainer && !containerBlueprint) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        `Container blueprint ${nextContainer.blueprintId} was not found.`,
+        ['world.updateZone', 'zone.cultivation.container.blueprintId'],
+      );
+    }
 
-      const currentContainerType = zone.cultivation?.container?.type;
+    let nextSubstrate = zone.cultivation.substrate ? { ...zone.cultivation.substrate } : undefined;
+
+    if (patch.substrate) {
+      if (!nextContainer && !patch.container && !zone.cultivation.container) {
+        return this.failure(
+          'ERR_INVALID_STATE',
+          'Container configuration must be provided before updating substrate.',
+          ['world.updateZone', 'patch.substrate.blueprintId'],
+        );
+      }
+      const blueprint = this.repository.getSubstrate(patch.substrate.blueprintId);
+      if (!blueprint) {
+        return this.failure(
+          'ERR_NOT_FOUND',
+          `Substrate blueprint ${patch.substrate.blueprintId} was not found.`,
+          ['world.updateZone', 'patch.substrate.blueprintId'],
+        );
+      }
+      if (blueprint.type !== patch.substrate.type) {
+        return this.failure('ERR_VALIDATION', 'Substrate type does not match blueprint metadata.', [
+          'world.updateZone',
+          'patch.substrate.type',
+        ]);
+      }
+      nextSubstrate = {
+        blueprintId: blueprint.id,
+        slug: blueprint.slug,
+        type: blueprint.type,
+        totalVolumeLiters: patch.substrate.volumeLiters ?? nextSubstrate?.totalVolumeLiters ?? 0,
+        name: blueprint.name,
+      };
+    }
+
+    if (method && nextContainer?.type) {
       if (
-        currentContainerType &&
         Array.isArray(method.compatibleContainerTypes) &&
         method.compatibleContainerTypes.length > 0 &&
-        !method.compatibleContainerTypes.includes(currentContainerType)
+        !method.compatibleContainerTypes.includes(nextContainer.type)
       ) {
         return this.failure(
           'ERR_INVALID_STATE',
-          `Container type '${currentContainerType}' is incompatible with cultivation method '${method.name}'.`,
-          ['world.updateZone', 'patch.methodId'],
+          `Container type '${nextContainer.type}' is incompatible with cultivation method '${method.name}'.`,
+          patch.container
+            ? ['world.updateZone', 'patch.container.type']
+            : ['world.updateZone', 'patch.methodId'],
         );
       }
+    }
 
-      const currentSubstrateType = zone.cultivation?.substrate?.type;
+    if (method && nextSubstrate?.type) {
       if (
-        currentSubstrateType &&
         Array.isArray(method.compatibleSubstrateTypes) &&
         method.compatibleSubstrateTypes.length > 0 &&
-        !method.compatibleSubstrateTypes.includes(currentSubstrateType)
+        !method.compatibleSubstrateTypes.includes(nextSubstrate.type)
       ) {
         return this.failure(
           'ERR_INVALID_STATE',
-          `Substrate type '${currentSubstrateType}' is incompatible with cultivation method '${method.name}'.`,
-          ['world.updateZone', 'patch.methodId'],
+          `Substrate type '${nextSubstrate.type}' is incompatible with cultivation method '${method.name}'.`,
+          patch.substrate
+            ? ['world.updateZone', 'patch.substrate.type']
+            : ['world.updateZone', 'patch.methodId'],
+        );
+      }
+    }
+
+    if (methodChanged && method) {
+      const defaults = this.resolveMethodDefaults(method);
+
+      if (!patch.container && defaults.containerSlug) {
+        const containerFromDefaults = this.repository.getContainerBySlug(defaults.containerSlug);
+        if (containerFromDefaults) {
+          const count = nextContainer?.count ?? zone.cultivation.container?.count ?? 0;
+          nextContainer = {
+            blueprintId: containerFromDefaults.id,
+            slug: containerFromDefaults.slug,
+            type: containerFromDefaults.type,
+            count,
+            name: containerFromDefaults.name,
+          };
+          containerBlueprint = containerFromDefaults;
+          if (previousContainerSlug && previousContainerSlug !== containerFromDefaults.slug) {
+            warnings.push(
+              `Existing containers were moved to storage (stub). Install ${containerFromDefaults.name} before planting.`,
+            );
+          }
+        }
+      }
+
+      if (!patch.substrate && defaults.substrateSlug) {
+        const substrateFromDefaults = this.repository.getSubstrateBySlug(defaults.substrateSlug);
+        if (substrateFromDefaults) {
+          nextSubstrate = {
+            blueprintId: substrateFromDefaults.id,
+            slug: substrateFromDefaults.slug,
+            type: substrateFromDefaults.type,
+            totalVolumeLiters: nextSubstrate?.totalVolumeLiters ?? 0,
+            name: substrateFromDefaults.name,
+          };
+          if (previousSubstrateSlug && previousSubstrateSlug !== substrateFromDefaults.slug) {
+            warnings.push(
+              `Existing substrate was routed to storage (stub). Restock with ${substrateFromDefaults.name} before planting.`,
+            );
+          }
+        }
+      }
+    }
+
+    if (patch.substrate && !nextSubstrate) {
+      return this.failure(
+        'ERR_INVALID_STATE',
+        'Substrate configuration could not be resolved for the update.',
+        ['world.updateZone', 'patch.substrate.blueprintId'],
+      );
+    }
+
+    if (nextContainer && containerBlueprint) {
+      const footprintArea = containerBlueprint.footprintArea;
+      if (!Number.isFinite(footprintArea) || footprintArea === undefined || footprintArea <= 0) {
+        return this.failure(
+          'ERR_INVALID_STATE',
+          `Container blueprint '${containerBlueprint.slug}' is missing a valid footprint area.`,
+          patch.container
+            ? ['world.updateZone', 'patch.container.blueprintId']
+            : ['world.updateZone', 'zone.cultivation.container.blueprintId'],
         );
       }
 
-      const previousContainerSlug = zone.cultivation?.container?.slug;
-      const previousSubstrateSlug = zone.cultivation?.substrate?.slug;
+      const packingDensity = Number.isFinite(containerBlueprint.packingDensity)
+        ? Math.max(containerBlueprint.packingDensity ?? 0, 0)
+        : 1;
+      const effectiveDensity = packingDensity > 0 ? packingDensity : 1;
+      const theoreticalCapacity = (targetArea / footprintArea) * effectiveDensity;
+      const maxContainers = Number.isFinite(theoreticalCapacity)
+        ? Math.floor(Math.max(theoreticalCapacity, 0))
+        : 0;
 
+      if (maxContainers <= 0) {
+        return this.failure(
+          'ERR_INVALID_STATE',
+          `Zone area ${targetArea.toFixed(2)} m² cannot support container footprint ${footprintArea.toFixed(2)} m².`,
+          patch.container
+            ? ['world.updateZone', 'patch.container.count']
+            : ['world.updateZone', 'zone.cultivation.container.count'],
+        );
+      }
+
+      const requestedCount = patch.container ? patch.container.count : nextContainer.count;
+      if (!Number.isFinite(requestedCount) || requestedCount <= 0) {
+        return this.failure('ERR_VALIDATION', 'Container count must be a positive integer.', [
+          'world.updateZone',
+          patch.container ? 'patch.container.count' : 'zone.cultivation.container.count',
+        ]);
+      }
+
+      const clampedCount = Math.min(requestedCount, maxContainers);
+      if (clampedCount !== requestedCount) {
+        warnings.push(
+          `Container count has been clamped to ${clampedCount} to fit the zone capacity (${maxContainers}).`,
+        );
+      }
+      nextContainer.count = clampedCount;
+    }
+
+    let requiredSubstrateVolume: number | null = null;
+    if (nextContainer && containerBlueprint) {
+      const containerVolume = containerBlueprint.volumeInLiters;
+      if (
+        !Number.isFinite(containerVolume) ||
+        containerVolume === undefined ||
+        containerVolume <= 0
+      ) {
+        return this.failure(
+          'ERR_INVALID_STATE',
+          `Container blueprint '${containerBlueprint.slug}' is missing a valid volumeInLiters value.`,
+          patch.container
+            ? ['world.updateZone', 'patch.container.blueprintId']
+            : ['world.updateZone', 'zone.cultivation.container.blueprintId'],
+        );
+      }
+      requiredSubstrateVolume = containerVolume * nextContainer.count;
+    }
+
+    if (nextSubstrate && requiredSubstrateVolume !== null) {
+      if (patch.substrate?.volumeLiters !== undefined) {
+        const providedVolume = patch.substrate.volumeLiters;
+        if (!Number.isFinite(providedVolume) || providedVolume <= 0) {
+          warnings.push('Provided substrate volume was non-positive and has been ignored.');
+        } else {
+          const tolerance = Math.max(requiredSubstrateVolume * 0.05, 1);
+          if (Math.abs(providedVolume - requiredSubstrateVolume) > tolerance) {
+            warnings.push(
+              `Submitted substrate volume (${providedVolume.toFixed(2)} L) differs from the required ${requiredSubstrateVolume.toFixed(2)} L.`,
+            );
+          }
+        }
+      }
+      nextSubstrate.totalVolumeLiters = requiredSubstrateVolume;
+    }
+
+    const originalContainer = zone.cultivation.container;
+    const originalSubstrate = zone.cultivation.substrate;
+
+    if (methodChanged && typeof patch.methodId === 'string') {
       zone.cultivationMethodId = patch.methodId;
+    }
 
-      const defaults = this.resolveMethodDefaults(method);
-      if (!zone.cultivation) {
-        zone.cultivation = {};
+    if (nextContainer) {
+      zone.cultivation.container = nextContainer;
+    }
+    if (nextSubstrate) {
+      zone.cultivation.substrate = nextSubstrate;
+    }
+
+    const containerChanged = (() => {
+      if (!originalContainer && !nextContainer) {
+        return false;
       }
-
-      if (defaults.containerSlug) {
-        const containerBlueprint = this.repository.getContainerBySlug(defaults.containerSlug);
-        if (containerBlueprint) {
-          const count = zone.cultivation.container?.count ?? 0;
-          zone.cultivation.container = {
-            blueprintId: containerBlueprint.id,
-            slug: containerBlueprint.slug,
-            type: containerBlueprint.type,
-            count,
-            name: containerBlueprint.name,
-          };
-          if (previousContainerSlug && previousContainerSlug !== containerBlueprint.slug) {
-            warnings.push(
-              `Existing containers were moved to storage (stub). Install ${containerBlueprint.name} before planting.`,
-            );
-          }
-        }
+      if (!originalContainer || !nextContainer) {
+        return true;
       }
+      return (
+        originalContainer.blueprintId !== nextContainer.blueprintId ||
+        originalContainer.count !== nextContainer.count
+      );
+    })();
 
-      if (defaults.substrateSlug) {
-        const substrateBlueprint = this.repository.getSubstrateBySlug(defaults.substrateSlug);
-        if (substrateBlueprint) {
-          const totalVolume = (() => {
-            const container = zone.cultivation?.container;
-            if (!container) {
-              return zone.cultivation?.substrate?.totalVolumeLiters ?? 0;
-            }
-            const blueprint = this.repository.getContainer(container.blueprintId);
-            if (!blueprint || !Number.isFinite(blueprint.volumeInLiters)) {
-              return zone.cultivation?.substrate?.totalVolumeLiters ?? 0;
-            }
-            return Math.max(0, blueprint.volumeInLiters ?? 0) * Math.max(0, container.count);
-          })();
-
-          zone.cultivation.substrate = {
-            blueprintId: substrateBlueprint.id,
-            slug: substrateBlueprint.slug,
-            type: substrateBlueprint.type,
-            totalVolumeLiters: totalVolume,
-            name: substrateBlueprint.name,
-          };
-          if (previousSubstrateSlug && previousSubstrateSlug !== substrateBlueprint.slug) {
-            warnings.push(
-              `Existing substrate was routed to storage (stub). Restock with ${substrateBlueprint.name} before planting.`,
-            );
-          }
-        }
+    const substrateChanged = (() => {
+      if (!originalSubstrate && !nextSubstrate) {
+        return false;
       }
+      if (!originalSubstrate || !nextSubstrate) {
+        return true;
+      }
+      return (
+        originalSubstrate.blueprintId !== nextSubstrate.blueprintId ||
+        originalSubstrate.totalVolumeLiters !== nextSubstrate.totalVolumeLiters
+      );
+    })();
 
+    if (methodChanged || containerChanged || substrateChanged) {
       cultivationChanged = true;
     }
 
