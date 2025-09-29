@@ -26,6 +26,14 @@ describe('loadBlueprintData', () => {
     expect(scrog?.compatibleContainerSlugs).toContain('pot-25l');
     expect(scrog?.compatibleSubstrateSlugs).toContain('soil-multi-cycle');
 
+    const methodPrices = result.data.prices.cultivationMethods;
+    expect(methodPrices.get('41229377-ef2d-4723-931f-72eea87d7a62')?.setupCost).toBe(15);
+
+    const substratePrice = result.data.prices.consumables.substrates.get('soil-multi-cycle');
+    expect(substratePrice?.costPerSquareMeter).toBe(3.5);
+    const containerPrice = result.data.prices.consumables.containers.get('pot-25l');
+    expect(containerPrice?.costPerUnit).toBe(4);
+
     const sog = cultivationMethods.get('659ba4d7-a5fc-482e-98d4-b614341883ac');
     expect(sog?.strainTraitCompatibility?.preferred?.['photoperiod.vegetationTime']?.max).toBe(
       1_814_400,

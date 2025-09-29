@@ -31,6 +31,42 @@ export const strainPricesSchema = z
 export type StrainPriceEntry = z.infer<typeof strainPriceSchema>;
 export type StrainPriceMap = z.infer<typeof strainPricesSchema>['strainPrices'];
 
+export const cultivationMethodPriceSchema = z.object({
+  setupCost: z.number(),
+});
+
+export const cultivationMethodPricesSchema = z
+  .object({
+    version: z.string().optional(),
+    cultivationMethodPrices: z.record(z.string().uuid(), cultivationMethodPriceSchema),
+  })
+  .passthrough();
+
+export type CultivationMethodPriceEntry = z.infer<typeof cultivationMethodPriceSchema>;
+export type CultivationMethodPriceMap = z.infer<
+  typeof cultivationMethodPricesSchema
+>['cultivationMethodPrices'];
+
+export const substratePriceSchema = z.object({
+  costPerSquareMeter: z.number(),
+});
+
+export const containerPriceSchema = z.object({
+  costPerUnit: z.number(),
+});
+
+export const consumablePricesSchema = z
+  .object({
+    version: z.string().optional(),
+    substrates: z.record(z.string().min(1), substratePriceSchema),
+    containers: z.record(z.string().min(1), containerPriceSchema),
+  })
+  .passthrough();
+
+export type SubstratePriceEntry = z.infer<typeof substratePriceSchema>;
+export type ContainerPriceEntry = z.infer<typeof containerPriceSchema>;
+export type ConsumablePriceLedger = z.infer<typeof consumablePricesSchema>;
+
 export const utilityPricesSchema = z
   .object({
     version: z.string().optional(),

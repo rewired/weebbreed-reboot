@@ -21,15 +21,12 @@ export const cultivationMethodSchema = z
     id: z.string().uuid(),
     kind: z.string().default('CultivationMethod'),
     name: z.string().min(1),
-    setupCost: z.number(),
     laborIntensity: z.number(),
     areaPerPlant: z.number(),
     minimumSpacing: z.number(),
     maxCycles: z.number().int().min(0).optional(),
     compatibleSubstrateSlugs: z.array(z.string().min(1)).optional(),
     compatibleContainerSlugs: z.array(z.string().min(1)).optional(),
-    substrateCostPerSquareMeter: z.number().optional(),
-    containerCostPerUnit: z.number().optional(),
     strainTraitCompatibility: strainTraitCompatibilitySchema.optional(),
     envBias: z
       .object({

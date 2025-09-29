@@ -10,6 +10,8 @@ import {
   devicePricesSchema,
   strainPricesSchema,
   utilityPricesSchema,
+  cultivationMethodPricesSchema,
+  consumablePricesSchema,
   substrateBlueprintSchema,
   containerBlueprintSchema,
 } from './schemas/index.js';
@@ -23,6 +25,9 @@ import type {
   UtilityPrices,
   SubstrateBlueprint,
   ContainerBlueprint,
+  CultivationMethodPriceEntry,
+  SubstratePriceEntry,
+  ContainerPriceEntry,
 } from './schemas/index.js';
 
 export type IssueLevel = 'error' | 'warning';
@@ -50,6 +55,11 @@ export interface BlueprintData {
   prices: {
     devices: Map<string, DevicePriceEntry>;
     strains: Map<string, StrainPriceEntry>;
+    cultivationMethods: Map<string, CultivationMethodPriceEntry>;
+    consumables: {
+      substrates: Map<string, SubstratePriceEntry>;
+      containers: Map<string, ContainerPriceEntry>;
+    };
     utility: UtilityPrices;
   };
 }
@@ -325,6 +335,8 @@ const runCrossChecks = (
 
   const strainPriceFile = 'prices/strainPrices.json';
   const devicePriceFile = 'prices/devicePrices.json';
+  const cultivationMethodPriceFile = 'prices/cultivationMethodPrices.json';
+  const consumablePriceFile = 'prices/consumablePrices.json';
 
   for (const id of data.prices.strains.keys()) {
     if (!data.strains.has(id)) {
@@ -342,6 +354,16 @@ const runCrossChecks = (
         level: 'error',
         message: `Device price references unknown device '${id}'`,
         file: devicePriceFile,
+      });
+    }
+  }
+
+  for (const id of data.prices.cultivationMethods.keys()) {
+    if (!data.cultivationMethods.has(id)) {
+      issues.push({
+        level: 'error',
+        message: `Cultivation method price references unknown method '${id}'`,
+        file: cultivationMethodPriceFile,
       });
     }
   }
@@ -366,8 +388,38 @@ const runCrossChecks = (
     }
   }
 
+  for (const [id] of data.cultivationMethods) {
+    if (!data.prices.cultivationMethods.has(id)) {
+      issues.push({
+        level: 'warning',
+        message: `Cultivation method '${id}' has no price entry`,
+        file: cultivationMethodPriceFile,
+      });
+    }
+  }
+
   const substrateSlugs = new Set(context.substrateEntries.map((entry) => entry.data.slug));
   const containerSlugs = new Set(context.containerEntries.map((entry) => entry.data.slug));
+
+  for (const slug of data.prices.consumables.substrates.keys()) {
+    if (!substrateSlugs.has(slug)) {
+      issues.push({
+        level: 'error',
+        message: `Substrate price references unknown substrate slug '${slug}'`,
+        file: consumablePriceFile,
+      });
+    }
+  }
+
+  for (const slug of data.prices.consumables.containers.keys()) {
+    if (!containerSlugs.has(slug)) {
+      issues.push({
+        level: 'error',
+        message: `Container price references unknown container slug '${slug}'`,
+        file: consumablePriceFile,
+      });
+    }
+  }
 
   for (const entry of context.cultivationEntries) {
     const { compatibleSubstrateSlugs = [], compatibleContainerSlugs = [] } = entry.data;
@@ -379,6 +431,13 @@ const runCrossChecks = (
           file: entry.file,
         });
       }
+      if (!data.prices.consumables.substrates.has(slug)) {
+        issues.push({
+          level: 'warning',
+          message: `Substrate slug '${slug}' used by cultivation method '${entry.data.id}' has no price entry`,
+          file: consumablePriceFile,
+        });
+      }
     }
     for (const slug of compatibleContainerSlugs) {
       if (!containerSlugs.has(slug)) {
@@ -386,6 +445,13 @@ const runCrossChecks = (
           level: 'error',
           message: `Cultivation method '${entry.data.id}' references unknown container slug '${slug}'`,
           file: entry.file,
+        });
+      }
+      if (!data.prices.consumables.containers.has(slug)) {
+        issues.push({
+          level: 'warning',
+          message: `Container slug '${slug}' used by cultivation method '${entry.data.id}' has no price entry`,
+          file: consumablePriceFile,
         });
       }
     }
@@ -516,6 +582,14 @@ export const loadBlueprintData = async (
 
   const devicePricePayload = await loadPriceFile('devicePrices.json', devicePricesSchema);
   const strainPricePayload = await loadPriceFile('strainPrices.json', strainPricesSchema);
+  const cultivationMethodPricePayload = await loadPriceFile(
+    'cultivationMethodPrices.json',
+    cultivationMethodPricesSchema,
+  );
+  const consumablePricePayload = await loadPriceFile(
+    'consumablePrices.json',
+    consumablePricesSchema,
+  );
   const utilityPricePayload = await loadPriceFile('utilityPrices.json', utilityPricesSchema);
 
   const devicePrices: Map<string, DevicePriceEntry> = devicePricePayload
@@ -523,6 +597,28 @@ export const loadBlueprintData = async (
     : new Map();
   const strainPrices: Map<string, StrainPriceEntry> = strainPricePayload
     ? buildPriceMap(strainPricePayload.strainPrices, 'prices/strainPrices.json', issues)
+    : new Map();
+  const cultivationMethodPrices: Map<string, CultivationMethodPriceEntry> =
+    cultivationMethodPricePayload
+      ? buildPriceMap(
+          cultivationMethodPricePayload.cultivationMethodPrices,
+          'prices/cultivationMethodPrices.json',
+          issues,
+        )
+      : new Map();
+  const substratePrices: Map<string, SubstratePriceEntry> = consumablePricePayload
+    ? buildPriceMap(
+        consumablePricePayload.substrates,
+        'prices/consumablePrices.json#substrates',
+        issues,
+      )
+    : new Map();
+  const containerPrices: Map<string, ContainerPriceEntry> = consumablePricePayload
+    ? buildPriceMap(
+        consumablePricePayload.containers,
+        'prices/consumablePrices.json#containers',
+        issues,
+      )
     : new Map();
   const utilityPrices: UtilityPrices =
     utilityPricePayload ??
@@ -542,6 +638,11 @@ export const loadBlueprintData = async (
     prices: {
       devices: devicePrices,
       strains: strainPrices,
+      cultivationMethods: cultivationMethodPrices,
+      consumables: {
+        substrates: substratePrices,
+        containers: containerPrices,
+      },
       utility: utilityPrices,
     },
   };

@@ -73,7 +73,9 @@ The engine core owns the tick scheduler, orchestrates subsystem execution, and k
 
 ### 4.2 Cultivation Methods
 
-Cultivation method templates include `id`, `kind`, `name`, `setupCost` (EUR per installation), `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and `maxCycles` (count). Media and container options are declared via `compatibleSubstrateSlugs` and `compatibleContainerSlugs`, referencing the dedicated consumable blueprints, while `substrateCostPerSquareMeter` and `containerCostPerUnit` record the baseline economics for the default pairing. Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
+Cultivation method templates include `id`, `kind`, `name`, `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and optional `maxCycles`. Media and container options are declared via `compatibleSubstrateSlugs` and `compatibleContainerSlugs`, referencing the dedicated consumable blueprints. Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
+
+Upfront economics are externalized: `data/prices/cultivationMethodPrices.json` maps method ids to `{ "setupCost" }`, while `data/prices/consumablePrices.json` exposes nested `substrates` and `containers` price tables keyed by slug with `costPerSquareMeter` and `costPerUnit` respectively.【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L17】 Designers select compatible consumables in the blueprint and tune the actual ledger entries centrally, keeping balancing data separate from structural definitions.
 
 #### Substrate Blueprints
 

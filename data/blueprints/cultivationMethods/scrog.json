@@ -2,7 +2,6 @@
   "id": "41229377-ef2d-4723-931f-72eea87d7a62",
   "kind": "CultivationMethod",
   "name": "Screen of Green",
-  "setupCost": 15.0,
   "laborIntensity": 0.7,
   "laborProfile": {
     "hoursPerPlantPerWeek": 1.2
@@ -11,9 +10,7 @@
   "minimumSpacing": 0.8,
   "maxCycles": 4,
   "compatibleSubstrateSlugs": ["soil-multi-cycle"],
-  "substrateCostPerSquareMeter": 3.5,
   "compatibleContainerSlugs": ["pot-25l"],
-  "containerCostPerUnit": 4.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.sativa": {

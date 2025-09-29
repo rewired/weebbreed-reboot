@@ -2,7 +2,6 @@
   "id": "85cc0916-0e8a-495e-af8f-50291abe6855",
   "kind": "CultivationMethod",
   "name": "Basic Soil Pot",
-  "setupCost": 2.0,
   "laborIntensity": 0.1,
   "laborProfile": {
     "hoursPerPlantPerWeek": 0.35
@@ -11,9 +10,7 @@
   "minimumSpacing": 0.5,
   "maxCycles": 1,
   "compatibleSubstrateSlugs": ["soil-single-cycle"],
-  "substrateCostPerSquareMeter": 2.5,
   "compatibleContainerSlugs": ["pot-10l"],
-  "containerCostPerUnit": 1.5,
   "strainTraitCompatibility": {},
   "envBias": {},
   "capacityHints": {
