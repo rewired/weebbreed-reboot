@@ -1248,43 +1248,6 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 No plants assigned to this zone yet. Use "Plant zone" to schedule a new batch.
               </p>
             ) : null}
-            <div
-              className="mt-4 grid gap-3 rounded-2xl border border-border/30 bg-surface-muted/40 p-4"
-              data-testid="zone-health-summary"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-xs uppercase tracking-wide text-text-muted">Health</span>
-                  <span className="text-sm font-semibold text-text">
-                    Disease &amp; treatment overview
-                  </span>
-                </div>
-              </div>
-              <div className="grid gap-2 text-sm text-text-muted">
-                <div className="flex items-center justify-between">
-                  <span>Diseases</span>
-                  <Badge tone={zone.health.diseases ? 'warning' : 'success'}>
-                    {zone.health.diseases}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Pests</span>
-                  <Badge tone={zone.health.pests ? 'warning' : 'success'}>
-                    {zone.health.pests}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Pending treatments</span>
-                  <Badge tone={zone.health.pendingTreatments ? 'warning' : 'default'}>
-                    {zone.health.pendingTreatments}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Applied treatments</span>
-                  <Badge tone="default">{zone.health.appliedTreatments}</Badge>
-                </div>
-              </div>
-            </div>
           </Card>
           <Card
             title="Devices"

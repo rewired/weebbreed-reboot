@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Removed the zone "Health" summary card from the Zone Detail view to declutter the
+  plants panel.
 - Collapsed zone device groups by default behind accessible toggle buttons in
   `ZoneView`, surfacing icons and coverage for the expanded state while
   extending Vitest coverage for the new behaviour.

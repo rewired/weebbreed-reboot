@@ -846,7 +846,7 @@ describe('ZoneView', () => {
     expect(trashButton).toBeDisabled();
   });
 
-  it('renders health summary within the plants card and removes the standalone health card', async () => {
+  it('does not render the health summary card', async () => {
     const bridge = buildBridge();
 
     act(() => {
@@ -862,35 +862,10 @@ describe('ZoneView', () => {
 
     render(<ZoneView bridge={bridge} />);
 
-    const summaryHeadings = await screen.findAllByText('Disease & treatment overview');
-    const summaryHeading = summaryHeadings[0]!;
-    const healthSummary = summaryHeading.closest('div[data-testid="zone-health-summary"]');
-    expect(healthSummary).not.toBeNull();
+    await screen.findByTestId('zone-plants-card');
 
-    const plantsCard = summaryHeading.closest('[data-testid="zone-plants-card"]');
-    expect(plantsCard).not.toBeNull();
-    expect(
-      within(plantsCard as HTMLElement).getByRole('heading', { name: 'Plants' }),
-    ).toBeInTheDocument();
-
-    const labels = ['Diseases', 'Pests', 'Pending treatments', 'Applied treatments'];
-    for (const label of labels) {
-      expect(within(healthSummary as HTMLElement).getByText(label)).toBeInTheDocument();
-    }
-
-    const expectRowValue = (label: string, value: string) => {
-      const row = within(healthSummary as HTMLElement)
-        .getByText(label)
-        .closest('div');
-      expect(row).not.toBeNull();
-      expect(row).toHaveTextContent(value);
-    };
-
-    expectRowValue('Diseases', String(zone.health.diseases));
-    expectRowValue('Pests', String(zone.health.pests));
-    expectRowValue('Pending treatments', String(zone.health.pendingTreatments));
-    expectRowValue('Applied treatments', String(zone.health.appliedTreatments));
-
+    expect(screen.queryByTestId('zone-health-summary')).not.toBeInTheDocument();
+    expect(screen.queryByText('Disease & treatment overview')).not.toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Health' })).not.toBeInTheDocument();
   });
 
