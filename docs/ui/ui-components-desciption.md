@@ -296,9 +296,12 @@ These components define the content for various modals used for user input and i
 
 ### `CreateZoneModal.tsx`
 
-- **Purpose:** Allocates footprint within a room, selects a cultivation method, and relays the intent to `world.createZone` with the trimmed name, method UUID, and optional plant count.【F:src/frontend/src/views/world/modals/CreateZoneModal.tsx†L9-L145】【F:src/frontend/src/components/ModalHost.tsx†L198-L222】
+- **Purpose:** Allocates footprint within a room, selects a cultivation method, and relays the intent to `world.createZone` with the trimmed name, method UUID, and consumable selections while clamping the zone area via the inline "Max" shortcut for the remaining room footprint.【F:src/frontend/src/components/modals/ModalHost.tsx†L2003-L2145】
 - **Props:** `room`, `existingZones`, `availableMethods?`, `onSubmit`, `onCancel`, `title?`, `description?`.
-- **Usage Context:** Launched from room-level actions when expanding a grow area. The ModalHost regression test submits the default form state to verify the `createZone` intent wiring and modal dismissal.【F:src/frontend/src/components/ModalHost.test.tsx†L144-L184】
+- **Notable Controls:**
+  - The area input sits beside a secondary **Max** button that snaps the value to the available room area (with a 0.1 m² floor) and immediately recomputes container capacity.【F:src/frontend/src/components/modals/ModalHost.tsx†L2073-L2145】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L332-L363】
+  - Container counts are parsed through helpers that reject `NaN`, clamp to `[0, maxContainers]`, and reset to the blueprint’s current maximum whenever the area or container selection changes, preventing stale overfill states.【F:src/frontend/src/components/modals/ModalHost.tsx†L2045-L2095】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L331】
+- **Usage Context:** Launched from room-level actions when expanding a grow area. The ModalHost regression suite now covers both the default submission path and the Max-area workflow to prove the recalculated container counts are sent with the intent payload.【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L363】
 
 ### `RentStructureModal.tsx`
 
