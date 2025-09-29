@@ -239,7 +239,7 @@ describe('ModalHost', () => {
     expect(sendControlMock).not.toHaveBeenCalled();
   });
 
-  it('prevents container overfill beyond computed capacity', async () => {
+  it('clamps container count to the computed capacity', async () => {
     const snapshot = buildSnapshotWithRoom();
     const method = buildMethodBlueprint();
     const container = buildContainerBlueprint();
@@ -273,13 +273,16 @@ describe('ModalHost', () => {
     await user.type(areaInput, '2');
 
     const containerInput = await screen.findByLabelText(/Container count/i);
+    expect(containerInput).toHaveValue(8);
+
     await user.clear(containerInput);
     await user.type(containerInput, '9');
 
+    expect(containerInput).toHaveValue(8);
     expect(
-      screen.getByText(/Container count exceeds the supported capacity for this area/i),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Create zone/i })).toBeDisabled();
+      screen.queryByText(/Container count exceeds the supported capacity for this area/i),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create zone/i })).toBeEnabled();
     expect(sendIntentMock).not.toHaveBeenCalled();
   });
 
@@ -316,10 +319,12 @@ describe('ModalHost', () => {
     await user.type(nameInput, 'Propagation Bay');
 
     const areaInput = screen.getByLabelText(/Area \(m²\)/i);
+    const containerInput = screen.getByLabelText(/Container count/i);
+    expect(containerInput).toHaveValue(40);
+
     await user.clear(areaInput);
     await user.type(areaInput, '4');
 
-    const containerInput = screen.getByLabelText(/Container count/i);
     await user.clear(containerInput);
     await user.type(containerInput, '4');
 
@@ -343,6 +348,76 @@ describe('ModalHost', () => {
             blueprintId: substrate.id,
             type: substrate.type,
             volumeLiters: container.volumeInLiters! * 4,
+          },
+        },
+      },
+    });
+  });
+
+  it('applies the maximum area shortcut and recalculates container capacity', async () => {
+    const snapshot = buildSnapshotWithRoom();
+    const method = buildMethodBlueprint();
+    const container = buildContainerBlueprint();
+    const substrate = buildSubstrateBlueprint();
+
+    act(() => {
+      useSimulationStore.setState({
+        snapshot,
+        catalogs: {
+          cultivationMethods: { status: 'ready', data: [method], error: null },
+          containers: { status: 'ready', data: [container], error: null },
+          substrates: { status: 'ready', data: [substrate], error: null },
+        },
+      });
+    });
+
+    render(<ModalHost bridge={bridge} />);
+    const user = userEvent.setup();
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'create-zone',
+        type: 'createZone',
+        title: 'Create Zone',
+        context: { roomId: snapshot.rooms[0]!.id },
+      });
+    });
+
+    const zoneNameInput = await screen.findByLabelText(/Zone name/i);
+    const areaInput = screen.getByLabelText(/Area \(m²\)/i);
+    const containerInput = screen.getByLabelText(/Container count/i);
+
+    await user.type(zoneNameInput, 'Max Capacity Bay');
+    await user.click(screen.getByRole('button', { name: /Max/i }));
+
+    const expectedArea = snapshot.rooms[0]!.area;
+    const expectedMaxContainers = Math.floor(
+      (expectedArea / container.footprintArea!) * (container.packingDensity ?? 1),
+    );
+
+    expect(areaInput).toHaveValue(expectedArea);
+    expect(containerInput).toHaveValue(expectedMaxContainers);
+
+    await user.click(screen.getByRole('button', { name: /Create zone/i }));
+
+    expect(sendIntentMock).toHaveBeenCalledWith({
+      domain: 'world',
+      action: 'createZone',
+      payload: {
+        roomId: snapshot.rooms[0]!.id,
+        zone: {
+          name: 'Max Capacity Bay',
+          area: expectedArea,
+          methodId: method.id,
+          container: {
+            blueprintId: container.id,
+            type: container.type,
+            count: expectedMaxContainers,
+          },
+          substrate: {
+            blueprintId: substrate.id,
+            type: substrate.type,
+            volumeLiters: container.volumeInLiters! * expectedMaxContainers,
           },
         },
       },

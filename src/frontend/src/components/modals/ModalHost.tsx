@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type ReactElement,
+} from 'react';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { ModalFrame } from '@/components/modals/ModalFrame';
@@ -1948,12 +1956,9 @@ const CreateZoneModal = ({
   const [containerCount, setContainerCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-
-  if (!room || !roomId) {
-    return (
-      <p className="text-sm text-text-muted">Room data unavailable. Select a room to add zone.</p>
-    );
-  }
+  const previousAreaRef = useRef(area);
+  const previousMaxContainersRef = useRef(0);
+  const previousContainerIdRef = useRef<string | null>(null);
 
   const methodOptions = catalogs.cultivationMethods.data;
   const methodStatus = catalogs.cultivationMethods.status;
@@ -2078,7 +2083,7 @@ const CreateZoneModal = ({
   };
 
   const existingArea = zones.reduce((sum, zone) => sum + zone.area, 0);
-  const availableArea = Math.max(0, room.area - existingArea);
+  const availableArea = Math.max(0, (room?.area ?? 0) - existingArea);
 
   const maxContainers = useMemo(() => {
     if (!selectedContainer || !selectedContainer.footprintArea) {
@@ -2101,25 +2106,81 @@ const CreateZoneModal = ({
     return Math.max(Math.floor(rawCapacity), 0);
   }, [selectedContainer, area]);
 
-  useEffect(() => {
-    if (!selectedContainer) {
-      setContainerCount(0);
-      return;
-    }
-    if (maxContainers <= 0) {
-      setContainerCount(0);
-      return;
-    }
-    setContainerCount((current) => {
-      if (current <= 0) {
-        return maxContainers;
+  const normalizeArea = useCallback(
+    (value: number) => {
+      if (!Number.isFinite(value)) {
+        return;
       }
-      if (current > maxContainers) {
+      const minArea = 0.1;
+      const maxAreaBound = Math.max(availableArea, minArea);
+      const clamped = Math.min(Math.max(value, minArea), maxAreaBound);
+      setArea(Number(clamped.toFixed(2)));
+    },
+    [availableArea],
+  );
+
+  const handleAreaInputChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const parsedValue = Number(event.target.value);
+      if (Number.isNaN(parsedValue)) {
+        return;
+      }
+      normalizeArea(parsedValue);
+    },
+    [normalizeArea],
+  );
+
+  const handleApplyMaxArea = useCallback(() => {
+    const target = Math.max(availableArea, 0.1);
+    normalizeArea(target);
+  }, [availableArea, normalizeArea]);
+
+  const handleContainerCountInputChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const parsedValue = Number(event.target.value);
+      if (Number.isNaN(parsedValue)) {
+        return;
+      }
+      const minCount = 0;
+      const maxCount = Math.max(maxContainers, 0);
+      const clamped = Math.min(Math.max(parsedValue, minCount), maxCount);
+      setContainerCount(Math.floor(clamped));
+    },
+    [maxContainers],
+  );
+
+  useEffect(() => {
+    const currentContainerId = selectedContainer?.id ?? null;
+
+    if (!selectedContainer || maxContainers <= 0) {
+      setContainerCount(0);
+      previousAreaRef.current = area;
+      previousMaxContainersRef.current = maxContainers;
+      previousContainerIdRef.current = currentContainerId;
+      return;
+    }
+
+    const areaChanged = previousAreaRef.current !== area;
+    const maxChanged = previousMaxContainersRef.current !== maxContainers;
+    const containerChanged = previousContainerIdRef.current !== currentContainerId;
+
+    setContainerCount((current) => {
+      if (
+        containerChanged ||
+        areaChanged ||
+        maxChanged ||
+        current <= 0 ||
+        current > maxContainers
+      ) {
         return maxContainers;
       }
       return current;
     });
-  }, [selectedContainer?.id, maxContainers]);
+
+    previousAreaRef.current = area;
+    previousMaxContainersRef.current = maxContainers;
+    previousContainerIdRef.current = currentContainerId;
+  }, [area, maxContainers, selectedContainer]);
 
   const containerOverfill = maxContainers > 0 && containerCount > maxContainers;
   const substrateVolumeLiters = selectedContainer?.volumeInLiters
@@ -2153,6 +2214,12 @@ const CreateZoneModal = ({
       zoneName.trim() &&
       area > 0,
   );
+
+  if (!room || !roomId) {
+    return (
+      <p className="text-sm text-text-muted">Room data unavailable. Select a room to add zone.</p>
+    );
+  }
 
   return (
     <div className="grid gap-4">
@@ -2240,17 +2307,22 @@ const CreateZoneModal = ({
           <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
             Area (m²)
           </span>
-          <input
-            type="number"
-            value={area}
-            onChange={(event) => setArea(Number(event.target.value))}
-            min="0.1"
-            max={availableArea}
-            step="0.1"
-            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={area}
+              onChange={handleAreaInputChange}
+              min={0.1}
+              max={Math.max(availableArea, 0.1)}
+              step="0.1"
+              className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+            />
+            <Button type="button" variant="secondary" onClick={handleApplyMaxArea}>
+              Max
+            </Button>
+          </div>
           <span className="text-xs text-text-muted">
-            Available: {formatNumber(availableArea, { maximumFractionDigits: 1 })} m² (room area:{' '}
+            Available: {formatNumber(availableArea, { maximumFractionDigits: 1 })} m² (room area{' '}
             {formatNumber(room.area)} m²)
           </span>
         </label>
@@ -2261,9 +2333,9 @@ const CreateZoneModal = ({
           <input
             type="number"
             value={containerCount}
-            onChange={(event) => setContainerCount(Number(event.target.value))}
-            min={maxContainers > 0 ? 1 : 0}
-            max={maxContainers > 0 ? maxContainers : undefined}
+            onChange={handleContainerCountInputChange}
+            min={0}
+            max={maxContainers > 0 ? maxContainers : 0}
             disabled={!selectedContainer || maxContainers <= 0}
             className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           />

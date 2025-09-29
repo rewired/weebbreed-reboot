@@ -40,6 +40,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refined the Create Zone modal with a Max area shortcut, stricter numeric clamps,
+  and automatic container-capacity recalculation, refreshing docs and regression
+  coverage for the updated workflow.【F:src/frontend/src/components/modals/ModalHost.tsx†L2045-L2145】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L363】【F:docs/ui/ui-components-desciption.md†L297-L304】
 - Renamed the substrate and container schema modules to `substrateSchema` and
   `containerSchema`, updating imports to follow the shared schema naming
   convention and documenting the decision in ADR 0010.
