@@ -15,6 +15,14 @@ export const containerSchema = z
     footprintArea: z.number().positive().optional(),
     reusableCycles: z.number().int().min(0).optional(),
     packingDensity: z.number().positive().optional(),
+    meta: z
+      .object({
+        description: z.string().optional(),
+        advantages: z.array(z.string()).optional(),
+        disadvantages: z.array(z.string()).optional(),
+      })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 

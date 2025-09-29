@@ -33,11 +33,20 @@ describe('loadBlueprintData', () => {
     expect(cocoSubstrates?.map((entry) => entry.slug)).toContain('coco-coir');
     const cocoCoir = Array.from(substrates.values()).find((entry) => entry.slug === 'coco-coir');
     expect(cocoCoir?.type).toBe('coco');
+    expect(cocoCoir?.meta?.description).toContain('coco coir blend');
+    expect(cocoCoir?.meta?.advantages).toContain(
+      'Excellent aeration drives rapid root development',
+    );
 
     const potContainers = containersByType.get('pot');
     expect(potContainers).toBeDefined();
     expect(potContainers?.map((entry) => entry.slug)).toEqual(
       expect.arrayContaining(['pot-10l', 'pot-11l', 'pot-25l']),
+    );
+    const pot10l = Array.from(containers.values()).find((entry) => entry.slug === 'pot-10l');
+    expect(pot10l?.meta?.advantages).toContain('Small footprint keeps canopy layouts tight');
+    expect(pot10l?.meta?.disadvantages).toContain(
+      'Limited root volume for extended vegetative phases',
     );
 
     const scrog = cultivationMethods.get('41229377-ef2d-4723-931f-72eea87d7a62');

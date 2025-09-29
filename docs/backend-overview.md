@@ -80,11 +80,11 @@ Upfront economics are externalized: `data/prices/cultivationMethodPrices.json` m
 
 #### Substrate Blueprints
 
-`/data/blueprints/substrates` holds reusable media definitions with stable `id`/`slug` pairs, media `type`, and optional `maxCycles`. Cultivation methods now reference these by type, while the loader builds a type index to validate compatibility lists and flag missing priced options. The catalog currently offers single-cycle soil, multi-cycle soil, and coco coir blueprints for reuse-friendly grow plans.【F:data/blueprints/substrates/soil_single_cycle.json†L1-L7】【F:data/blueprints/substrates/soil_multi_cycle.json†L1-L7】【F:data/blueprints/substrates/coco_coir.json†L1-L7】
+`/data/blueprints/substrates` holds reusable media definitions with stable `id`/`slug` pairs, media `type`, and optional `maxCycles`. Cultivation methods now reference these by type, while the loader builds a type index to validate compatibility lists and flag missing priced options. Each substrate blueprint also exposes a `meta` block with `description`, `advantages`, and `disadvantages` so UI tooling can surface qualitative trade-offs alongside numeric specs. The catalog currently offers single-cycle soil, multi-cycle soil, and coco coir blueprints for reuse-friendly grow plans.【F:data/blueprints/substrates/soil_single_cycle.json†L1-L19】【F:data/blueprints/substrates/soil_multi_cycle.json†L1-L19】【F:data/blueprints/substrates/coco_coir.json†L1-L19】
 
 #### Container Blueprints
 
-`/data/blueprints/containers` captures reusable vessel geometries (`volumeInLiters`, `footprintArea`, `reusableCycles`, `packingDensity`) with slug identifiers and a `type` category so cultivation methods can reference compatible families via `compatibleContainerTypes`. The loader builds a `containersByType` index and warns when a referenced type lacks priced slugs.【F:data/blueprints/containers/pot_25l.json†L1-L9】
+`/data/blueprints/containers` captures reusable vessel geometries (`volumeInLiters`, `footprintArea`, `reusableCycles`, `packingDensity`) with slug identifiers and a `type` category so cultivation methods can reference compatible families via `compatibleContainerTypes`. Each container blueprint mirrors cultivation-method metadata with a `meta` block for descriptive copy and advantage/disadvantage lists, and the loader builds a `containersByType` index while warning when a referenced type lacks priced slugs.【F:data/blueprints/containers/pot_25l.json†L1-L19】
 
 ### 4.3 Strain Blueprints
 

@@ -4,5 +4,17 @@
   "kind": "Substrate",
   "name": "Coco Coir",
   "type": "coco",
-  "maxCycles": 4
+  "maxCycles": 4,
+  "meta": {
+    "description": "Buffered coco coir blend optimized for drain-to-waste or recirculating fertigation systems with multiple reuse cycles.",
+    "advantages": [
+      "Excellent aeration drives rapid root development",
+      "Handles high-frequency fertigation without compaction",
+      "Reusable across four cycles with proper flushing"
+    ],
+    "disadvantages": [
+      "Demands precise nutrient and EC management",
+      "Dries quickly without automated irrigation"
+    ]
+  }
 }
