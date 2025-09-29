@@ -17,7 +17,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "areaPerPlant": 0.5,
   "minimumSpacing": 0.5,
   "maxCycles": 1,
-  "compatibleSubstrateSlugs": ["soil-single-cycle"],
+  "compatibleSubstrateTypes": ["soil", "coco"],
   "compatibleContainerSlugs": ["pot-10l"],
   "strainTraitCompatibility": {},
   "envBias": {},
@@ -51,7 +51,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "areaPerPlant": 1.0,
   "minimumSpacing": 0.8,
   "maxCycles": 4,
-  "compatibleSubstrateSlugs": ["soil-multi-cycle"],
+  "compatibleSubstrateTypes": ["soil", "coco"],
   "compatibleContainerSlugs": ["pot-25l"],
   "strainTraitCompatibility": {
     "preferred": {
@@ -107,7 +107,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "areaPerPlant": 0.25,
   "minimumSpacing": 0.25,
   "maxCycles": 2,
-  "compatibleSubstrateSlugs": ["soil-multi-cycle"],
+  "compatibleSubstrateTypes": ["soil", "coco"],
   "compatibleContainerSlugs": ["pot-11l"],
   "strainTraitCompatibility": {
     "preferred": {

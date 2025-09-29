@@ -143,7 +143,7 @@ export const createCultivationMethodBlueprint = (
   laborIntensity: 0.6,
   areaPerPlant: 1.6,
   minimumSpacing: 0.4,
-  compatibleSubstrateSlugs: ['test-substrate'],
+  compatibleSubstrateTypes: ['soil'],
   compatibleContainerSlugs: ['test-container'],
   meta: {},
   ...overrides,

@@ -25,7 +25,7 @@ export const cultivationMethodSchema = z
     areaPerPlant: z.number(),
     minimumSpacing: z.number(),
     maxCycles: z.number().int().min(0).optional(),
-    compatibleSubstrateSlugs: z.array(z.string().min(1)).optional(),
+    compatibleSubstrateTypes: z.array(z.string().min(1)).optional(),
     compatibleContainerSlugs: z.array(z.string().min(1)).optional(),
     strainTraitCompatibility: strainTraitCompatibilitySchema.optional(),
     envBias: z

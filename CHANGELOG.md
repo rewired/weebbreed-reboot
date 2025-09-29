@@ -37,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Shifted cultivation method media compatibility to `compatibleSubstrateTypes`,
+  teaching the loader to index substrates by type, validate referenced media,
+  warn when pricing is missing, and refreshing documentation plus blueprints to
+  list both soil and coco support.
 - Removed the zone "Health" summary card from the Zone Detail view to declutter the
   plants panel.
 - Collapsed zone device groups by default behind accessible toggle buttons in
