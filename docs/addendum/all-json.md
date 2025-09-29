@@ -181,6 +181,9 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
     },
     "soil-multi-cycle": {
       "costPerSquareMeter": 3.5
+    },
+    "coco-coir": {
+      "costPerLiter": 0.6
     }
   },
   "containers": {
@@ -220,6 +223,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Multi-Cycle Soil Mix",
   "type": "soil",
   "maxCycles": 2
+}
+```
+
+## /data/blueprints/substrates/coco_coir.json
+
+```json
+{
+  "id": "285041f1-9586-4b43-b55c-0cb76f343037",
+  "slug": "coco-coir",
+  "kind": "Substrate",
+  "name": "Coco Coir",
+  "type": "coco",
+  "maxCycles": 4
 }
 ```
 

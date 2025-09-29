@@ -174,7 +174,7 @@ Defines planting density, compatible substrate/container blueprints, setup costs
 - `recommendedPhases?: string[]`
 - `meta?: object`
 
-> Pricing lives in `/data/prices/cultivationMethodPrices.json` (method `setupCost`) and `/data/prices/consumablePrices.json` (slug-keyed `substrates.costPerSquareMeter` and `containers.costPerUnit`).【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L17】
+> Pricing lives in `/data/prices/cultivationMethodPrices.json` (method `setupCost`) and `/data/prices/consumablePrices.json` (slug-keyed substrate entries expose `costPerSquareMeter` for area-based mixes or `costPerLiter` for volume-based media, and containers use `costPerUnit`).【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L21】
 
 ---
 
@@ -183,6 +183,8 @@ Defines planting density, compatible substrate/container blueprints, setup costs
 ### Purpose
 
 Declares reusable substrate/media options that cultivation methods can reference by slug.
+
+Current library entries cover single-cycle soil, multi-cycle soil, and a reusable coco coir mix so designers can pick a medium aligned with their cultivation method’s reuse expectations.【F:data/blueprints/substrates/soil_single_cycle.json†L1-L7】【F:data/blueprints/substrates/soil_multi_cycle.json†L1-L7】【F:data/blueprints/substrates/coco_coir.json†L1-L7】
 
 ### Schema
 

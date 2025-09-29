@@ -6,6 +6,9 @@
     },
     "soil-multi-cycle": {
       "costPerSquareMeter": 3.5
+    },
+    "coco-coir": {
+      "costPerLiter": 0.6
     }
   },
   "containers": {
