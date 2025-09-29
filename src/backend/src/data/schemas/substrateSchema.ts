@@ -12,6 +12,14 @@ export const substrateSchema = z
     name: z.string().min(1),
     type: z.string().min(1),
     maxCycles: z.number().int().min(0).optional(),
+    meta: z
+      .object({
+        description: z.string().optional(),
+        advantages: z.array(z.string()).optional(),
+        disadvantages: z.array(z.string()).optional(),
+      })
+      .passthrough()
+      .optional(),
   })
   .passthrough();
 

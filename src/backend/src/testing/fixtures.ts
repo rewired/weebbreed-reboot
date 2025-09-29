@@ -116,6 +116,11 @@ export const createSubstrateBlueprint = (
   name: 'Test Substrate',
   type: 'soil',
   maxCycles: 2,
+  meta: {
+    description: 'Test substrate description',
+    advantages: ['Test substrate advantage'],
+    disadvantages: ['Test substrate disadvantage'],
+  },
   ...overrides,
 });
 
@@ -131,6 +136,11 @@ export const createContainerBlueprint = (
   footprintArea: 0.3,
   reusableCycles: 5,
   packingDensity: 0.9,
+  meta: {
+    description: 'Test container description',
+    advantages: ['Test container advantage'],
+    disadvantages: ['Test container disadvantage'],
+  },
   ...overrides,
 });
 

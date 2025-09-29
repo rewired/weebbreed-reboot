@@ -4,5 +4,17 @@
   "kind": "Substrate",
   "name": "Multi-Cycle Soil Mix",
   "type": "soil",
-  "maxCycles": 2
+  "maxCycles": 2,
+  "meta": {
+    "description": "Reconditionable soil blend that survives two full runs with proper amendment and sterilization between crops.",
+    "advantages": [
+      "Supports two reuse cycles with consistent structure",
+      "Balanced water retention keeps irrigation predictable",
+      "Cation exchange capacity stabilizes nutrient delivery"
+    ],
+    "disadvantages": [
+      "Needs re-amendment between harvests",
+      "Heavier medium increases handling effort"
+    ]
+  }
 }

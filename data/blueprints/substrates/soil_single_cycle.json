@@ -4,5 +4,17 @@
   "kind": "Substrate",
   "name": "Single-Cycle Soil Mix",
   "type": "soil",
-  "maxCycles": 1
+  "maxCycles": 1,
+  "meta": {
+    "description": "Pre-charged soil mix formulated for one-and-done harvests; ideal when designers prefer a fresh medium each run.",
+    "advantages": [
+      "Arrives with a balanced nutrient charge",
+      "High buffering capacity smooths pH swings",
+      "Familiar handling for soil-focused operators"
+    ],
+    "disadvantages": [
+      "Needs full replacement after a single cycle",
+      "Spent media can harbor pests if disposal is delayed"
+    ]
+  }
 }

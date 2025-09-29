@@ -195,7 +195,7 @@ Current library entries cover single-cycle soil, multi-cycle soil, and a reusabl
 - `name: string`
 - `type: string` — Descriptive category (e.g., `"soil"`, `"coco"`, `"rockwool"`).
 - `maxCycles?: number` — Number of reuse cycles before replacement.
-- `meta?: object`
+- `meta?: { description?: string, advantages?: string[], disadvantages?: string[] }` — Optional designer notes. Advantages/disadvantages capture quick decision aids for the UI; additional keys allowed for future enrichment.
 
 ---
 
@@ -216,7 +216,7 @@ Captures reusable container geometries and limits referenced by cultivation meth
 - `footprintArea?: number (m²)`
 - `reusableCycles?: number`
 - `packingDensity?: number`
-- `meta?: object`
+- `meta?: { description?: string, advantages?: string[], disadvantages?: string[] }` — Optional designer notes describing positioning guidance and trade-offs. Passthrough to allow future extensions.
 
 ---
 

@@ -209,7 +209,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Substrate",
   "name": "Single-Cycle Soil Mix",
   "type": "soil",
-  "maxCycles": 1
+  "maxCycles": 1,
+  "meta": {
+    "description": "Pre-charged soil mix formulated for one-and-done harvests; ideal when designers prefer a fresh medium each run.",
+    "advantages": [
+      "Arrives with a balanced nutrient charge",
+      "High buffering capacity smooths pH swings",
+      "Familiar handling for soil-focused operators"
+    ],
+    "disadvantages": [
+      "Needs full replacement after a single cycle",
+      "Spent media can harbor pests if disposal is delayed"
+    ]
+  }
 }
 ```
 
@@ -222,7 +234,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Substrate",
   "name": "Multi-Cycle Soil Mix",
   "type": "soil",
-  "maxCycles": 2
+  "maxCycles": 2,
+  "meta": {
+    "description": "Reconditionable soil blend that survives two full runs with proper amendment and sterilization between crops.",
+    "advantages": [
+      "Supports two reuse cycles with consistent structure",
+      "Balanced water retention keeps irrigation predictable",
+      "Cation exchange capacity stabilizes nutrient delivery"
+    ],
+    "disadvantages": [
+      "Needs re-amendment between harvests",
+      "Heavier medium increases handling effort"
+    ]
+  }
 }
 ```
 
@@ -235,7 +259,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "kind": "Substrate",
   "name": "Coco Coir",
   "type": "coco",
-  "maxCycles": 4
+  "maxCycles": 4,
+  "meta": {
+    "description": "Buffered coco coir blend optimized for drain-to-waste or recirculating fertigation systems with multiple reuse cycles.",
+    "advantages": [
+      "Excellent aeration drives rapid root development",
+      "Handles high-frequency fertigation without compaction",
+      "Reusable across four cycles with proper flushing"
+    ],
+    "disadvantages": [
+      "Demands precise nutrient and EC management",
+      "Dries quickly without automated irrigation"
+    ]
+  }
 }
 ```
 
@@ -251,7 +287,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "volumeInLiters": 10,
   "footprintArea": 0.25,
   "reusableCycles": 3,
-  "packingDensity": 0.9
+  "packingDensity": 0.9,
+  "meta": {
+    "description": "Compact 10 L pot tuned for short-cycle soil or coco runs where designers want dense spacing without root binding surprises.",
+    "advantages": [
+      "Small footprint keeps canopy layouts tight",
+      "Lightweight shell is easy to reposition",
+      "Medium warms quickly under indoor lighting"
+    ],
+    "disadvantages": [
+      "Limited root volume for extended vegetative phases",
+      "Requires tighter irrigation cadence to avoid drybacks"
+    ]
+  }
 }
 ```
 
@@ -267,7 +315,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "volumeInLiters": 11,
   "footprintArea": 0.2,
   "reusableCycles": 6,
-  "packingDensity": 0.95
+  "packingDensity": 0.95,
+  "meta": {
+    "description": "Balanced 11 L container sized for standard indoor runs; pairs with ebb-and-flow trays or benches without sacrificing root stability.",
+    "advantages": [
+      "Supports moderate root mass for full-cycle plants",
+      "Fits common flood tables and rolling benches",
+      "Durable enough for multiple sanitization cycles"
+    ],
+    "disadvantages": [
+      "Heavier to maneuver when saturated",
+      "Still undersized for very long veg or mother plants"
+    ]
+  }
 }
 ```
 
@@ -283,7 +343,19 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "volumeInLiters": 25,
   "footprintArea": 0.3,
   "reusableCycles": 6,
-  "packingDensity": 0.9
+  "packingDensity": 0.9,
+  "meta": {
+    "description": "Large 25 L pot for flagship plants or extended veg; gives roots the headroom needed for heavy-feeding cultivars.",
+    "advantages": [
+      "High volume supports vigorous, tall plants",
+      "Moisture buffer stretches irrigation intervals",
+      "Wide base resists tipping in high-canopy rooms"
+    ],
+    "disadvantages": [
+      "Consumes more floor area per plant",
+      "Longer dry-down can slow reset between cycles"
+    ]
+  }
 }
 ```
 
