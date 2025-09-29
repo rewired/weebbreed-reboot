@@ -52,6 +52,7 @@ export interface BlueprintData {
   substrates: Map<string, SubstrateBlueprint>;
   substratesByType: Map<string, SubstrateBlueprint[]>;
   containers: Map<string, ContainerBlueprint>;
+  containersByType: Map<string, ContainerBlueprint[]>;
   roomPurposes: Map<string, RoomPurposeBlueprint>;
   prices: {
     devices: Map<string, DevicePriceEntry>;
@@ -410,6 +411,15 @@ const runCrossChecks = (
     }
   }
   const containerSlugs = new Set(context.containerEntries.map((entry) => entry.data.slug));
+  const containerTypes = context.containerEntries.reduce<Map<string, Set<string>>>((acc, entry) => {
+    const existing = acc.get(entry.data.type);
+    if (existing) {
+      existing.add(entry.data.slug);
+    } else {
+      acc.set(entry.data.type, new Set([entry.data.slug]));
+    }
+    return acc;
+  }, new Map());
 
   for (const slug of data.prices.consumables.substrates.keys()) {
     if (!substrateSlugs.has(slug)) {
@@ -432,7 +442,7 @@ const runCrossChecks = (
   }
 
   for (const entry of context.cultivationEntries) {
-    const { compatibleSubstrateTypes = [], compatibleContainerSlugs = [] } = entry.data;
+    const { compatibleSubstrateTypes = [], compatibleContainerTypes = [] } = entry.data;
     for (const type of compatibleSubstrateTypes) {
       const slugsForType = substrateTypes.get(type);
       if (!slugsForType || slugsForType.size === 0) {
@@ -454,18 +464,23 @@ const runCrossChecks = (
         });
       }
     }
-    for (const slug of compatibleContainerSlugs) {
-      if (!containerSlugs.has(slug)) {
+    for (const type of compatibleContainerTypes) {
+      const slugsForType = containerTypes.get(type);
+      if (!slugsForType || slugsForType.size === 0) {
         issues.push({
           level: 'error',
-          message: `Cultivation method '${entry.data.id}' references unknown container slug '${slug}'`,
+          message: `Cultivation method '${entry.data.id}' references unknown container type '${type}'`,
           file: entry.file,
         });
+        continue;
       }
-      if (!data.prices.consumables.containers.has(slug)) {
+      const hasPricedSlug = Array.from(slugsForType).some((slug) =>
+        data.prices.consumables.containers.has(slug),
+      );
+      if (!hasPricedSlug) {
         issues.push({
           level: 'warning',
-          message: `Container slug '${slug}' used by cultivation method '${entry.data.id}' has no price entry`,
+          message: `Container type '${type}' used by cultivation method '${entry.data.id}' has no priced container slug`,
           file: consumablePriceFile,
         });
       }
@@ -539,6 +554,18 @@ export const loadBlueprintData = async (
   const cultivationMethods = toMapWithDuplicateCheck(cultivationEntries, issues);
   const substrates = toMapWithDuplicateCheck(substrateEntries, issues);
   const containers = toMapWithDuplicateCheck(containerEntries, issues);
+  const containersByType = containerEntries.reduce<Map<string, ContainerBlueprint[]>>(
+    (acc, entry) => {
+      const existing = acc.get(entry.data.type);
+      if (existing) {
+        existing.push(entry.data);
+      } else {
+        acc.set(entry.data.type, [entry.data]);
+      }
+      return acc;
+    },
+    new Map(),
+  );
   const substratesByType = substrateEntries.reduce<Map<string, SubstrateBlueprint[]>>(
     (acc, entry) => {
       const existing = acc.get(entry.data.type);
@@ -650,6 +677,7 @@ export const loadBlueprintData = async (
     substrates,
     substratesByType,
     containers,
+    containersByType,
     roomPurposes,
     prices: {
       devices: devicePrices,

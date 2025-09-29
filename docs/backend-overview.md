@@ -73,8 +73,8 @@ The engine core owns the tick scheduler, orchestrates subsystem execution, and k
 
 ### 4.2 Cultivation Methods
 
-Cultivation method templates include `id`, `kind`, `name`, `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and optional `maxCycles`. Media options are declared via `compatibleSubstrateTypes` (category names such as `"soil"` and `"coco"`, resolved against the substrate library) and container options continue to use `compatibleContainerSlugs`. Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
-The baseline cultivation methods (`basic_soil_pot`, `scrog`, `sog`) each enumerate both substrate types so either soil mixes or coco coir consumables can be paired with their unchanged container lists.【F:data/blueprints/cultivationMethods/basic_soil_pot.json†L1-L29】【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】【F:data/blueprints/cultivationMethods/sog.json†L1-L46】
+Cultivation method templates include `id`, `kind`, `name`, `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and optional `maxCycles`. Media options are declared via `compatibleSubstrateTypes` (category names such as `"soil"` and `"coco"`, resolved against the substrate library) and container options point to category names via `compatibleContainerTypes`. Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
+The baseline cultivation methods (`basic_soil_pot`, `scrog`, `sog`) each enumerate both substrate types so either soil mixes or coco coir consumables can be paired with their shared `pot` container category.【F:data/blueprints/cultivationMethods/basic_soil_pot.json†L1-L29】【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】【F:data/blueprints/cultivationMethods/sog.json†L1-L46】
 
 Upfront economics are externalized: `data/prices/cultivationMethodPrices.json` maps method ids to `{ "setupCost" }`, while `data/prices/consumablePrices.json` exposes nested `substrates` and `containers` price tables keyed by slug. Substrate entries now declare `costPerLiter`, and containers track `costPerUnit`.【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L21】 Designers select compatible consumables in the blueprint and tune the actual ledger entries centrally, keeping balancing data separate from structural definitions.
 
@@ -84,7 +84,7 @@ Upfront economics are externalized: `data/prices/cultivationMethodPrices.json` m
 
 #### Container Blueprints
 
-`/data/blueprints/containers` captures reusable vessel geometries (`volumeInLiters`, `footprintArea`, `reusableCycles`, `packingDensity`) with slug identifiers, allowing consistent reuse while keeping per-method pricing separate.【F:data/blueprints/containers/pot_25l.json†L1-L9】
+`/data/blueprints/containers` captures reusable vessel geometries (`volumeInLiters`, `footprintArea`, `reusableCycles`, `packingDensity`) with slug identifiers and a `type` category so cultivation methods can reference compatible families via `compatibleContainerTypes`. The loader builds a `containersByType` index and warns when a referenced type lacks priced slugs.【F:data/blueprints/containers/pot_25l.json†L1-L9】
 
 ### 4.3 Strain Blueprints
 

@@ -170,7 +170,7 @@ Defines planting density, compatible substrate/container blueprints, setup costs
 - `laborIntensity?: number (0–1)` — Affects labor time multipliers.
 - `compatibleSubstrateTypes?: string[]` — Media categories (e.g., `"soil"`, `"coco"`) resolved against `/data/blueprints/substrates`.
 - Loader cross-checks ensure each referenced type is defined and warns when no priced substrate slug exists for that type.
-- `compatibleContainerSlugs?: string[]` — Slug references into `/data/blueprints/containers`.
+- `compatibleContainerTypes?: string[]` — Container categories (e.g., `"pot"`) resolved against `/data/blueprints/containers`. Loader cross-checks ensure each referenced type exists and warns when none of its slugs carry pricing.
 - `compatibility?: { strainTags?: string[] }`
 - `recommendedPhases?: string[]`
 - `meta?: object`
