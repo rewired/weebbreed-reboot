@@ -7,6 +7,12 @@
 - Manuelle Methoden erzeugen `water_fertilize_plants` Aufgaben; automatisierte Systeme laufen deterministisch und benötigen planbare Wartung & Inspektionen.
 - Kosten verbuchen sich über **Wasserzähler (m³)** und **Nährstoffinventar (kg)**.
 
+> **Current State**
+>
+> - Die Phase `irrigationAndNutrients` im [`SimulationLoop`](../../src/backend/src/sim/loop.ts) fällt derzeit auf einen No-Op zurück, sobald keine expliziten Handler übergeben werden. Damit laufen Phase 1 und Phase 3 im Tick zwar formal durch, führen aber keine Ressourcenmutationen aus.
+> - Gleichzeitig entzieht der [`TranspirationFeedbackService`](../../src/backend/src/engine/environment/transpirationFeedback.ts) den Zonen weiterhin Wasser- und Nährstoffvolumen aus dem bestehenden Reservoirmodell (`waterLiters`, `nutrientSolutionLiters`, `reservoirLevel`) und verbucht Verbräuche im Accounting.
+> - Die aktiven Felder in [`ZoneResourceState`](../../src/backend/src/state/models.ts) spiegeln dieses Reservoirmodell wider und müssen bei der Migration gezielt ersetzt bzw. migriert werden, damit sich keine alten Restwerte in die neue Infrastruktur schleppen.
+
 ## Phasenplan
 
 ### Phase 0 – Vorbereitung & Alignment
