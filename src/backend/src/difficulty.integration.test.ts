@@ -92,6 +92,7 @@ describe('Difficulty presets sync with JSON config', () => {
       structureBlueprints: context.structureBlueprints ?? [],
       roomPurposeSource: repository,
       difficultyConfig: TEST_CONFIG,
+      repository,
     });
 
     const buffer: SimulationEvent[] = [];
@@ -132,6 +133,7 @@ describe('Difficulty presets sync with JSON config', () => {
       structureBlueprints: context.structureBlueprints ?? [],
       roomPurposeSource: repository,
       difficultyConfig: TEST_CONFIG,
+      repository,
     });
 
     const custom = {

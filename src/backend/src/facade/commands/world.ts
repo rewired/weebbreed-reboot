@@ -9,6 +9,9 @@ import type {
 import type { StructureBlueprint } from '@/state/models.js';
 import type {
   DeviceBlueprintCatalogEntry,
+  CultivationMethodBlueprintCatalogEntry,
+  ContainerBlueprintCatalogEntry,
+  SubstrateBlueprintCatalogEntry,
   StrainBlueprintCatalogEntry,
 } from '@/facade/blueprintCatalog.js';
 import {
@@ -35,6 +38,9 @@ const rentStructureSchema = z
 const getStructureBlueprintsSchema = emptyObjectSchema;
 const getStrainBlueprintsSchema = emptyObjectSchema;
 const getDeviceBlueprintsSchema = emptyObjectSchema;
+const getCultivationMethodBlueprintsSchema = emptyObjectSchema;
+const getContainerBlueprintsSchema = emptyObjectSchema;
+const getSubstrateBlueprintsSchema = emptyObjectSchema;
 const createRoomSchema = z
   .object({
     structureId: entityIdentifier,
@@ -80,6 +86,20 @@ const createZoneSchema = z
         name: nonEmptyString,
         area: positiveNumber,
         methodId: uuid,
+        container: z
+          .object({
+            blueprintId: uuid,
+            type: nonEmptyString,
+            count: positiveInteger,
+          })
+          .strict(),
+        substrate: z
+          .object({
+            blueprintId: uuid,
+            type: nonEmptyString,
+            volumeLiters: positiveNumber.optional(),
+          })
+          .strict(),
         targetPlantCount: positiveInteger.optional(),
       })
       .strict(),
@@ -181,6 +201,11 @@ export type RentStructureIntent = z.infer<typeof rentStructureSchema>;
 export type GetStructureBlueprintsIntent = z.infer<typeof getStructureBlueprintsSchema>;
 export type GetStrainBlueprintsIntent = z.infer<typeof getStrainBlueprintsSchema>;
 export type GetDeviceBlueprintsIntent = z.infer<typeof getDeviceBlueprintsSchema>;
+export type GetCultivationMethodBlueprintsIntent = z.infer<
+  typeof getCultivationMethodBlueprintsSchema
+>;
+export type GetContainerBlueprintsIntent = z.infer<typeof getContainerBlueprintsSchema>;
+export type GetSubstrateBlueprintsIntent = z.infer<typeof getSubstrateBlueprintsSchema>;
 export type CreateRoomIntent = z.infer<typeof createRoomSchema>;
 export type UpdateRoomIntent = z.infer<typeof updateRoomSchema>;
 export type DeleteRoomIntent = z.infer<typeof deleteRoomSchema>;
@@ -205,6 +230,18 @@ export interface WorldIntentHandlers {
   getDeviceBlueprints: ServiceCommandHandler<
     GetDeviceBlueprintsIntent,
     DeviceBlueprintCatalogEntry[]
+  >;
+  getCultivationMethodBlueprints: ServiceCommandHandler<
+    GetCultivationMethodBlueprintsIntent,
+    CultivationMethodBlueprintCatalogEntry[]
+  >;
+  getContainerBlueprints: ServiceCommandHandler<
+    GetContainerBlueprintsIntent,
+    ContainerBlueprintCatalogEntry[]
+  >;
+  getSubstrateBlueprints: ServiceCommandHandler<
+    GetSubstrateBlueprintsIntent,
+    SubstrateBlueprintCatalogEntry[]
   >;
   createRoom: ServiceCommandHandler<CreateRoomIntent, CreateRoomResult>;
   updateRoom: ServiceCommandHandler<UpdateRoomIntent>;
@@ -231,6 +268,18 @@ export interface WorldCommandRegistry {
   getDeviceBlueprints: CommandRegistration<
     GetDeviceBlueprintsIntent,
     DeviceBlueprintCatalogEntry[]
+  >;
+  getCultivationMethodBlueprints: CommandRegistration<
+    GetCultivationMethodBlueprintsIntent,
+    CultivationMethodBlueprintCatalogEntry[]
+  >;
+  getContainerBlueprints: CommandRegistration<
+    GetContainerBlueprintsIntent,
+    ContainerBlueprintCatalogEntry[]
+  >;
+  getSubstrateBlueprints: CommandRegistration<
+    GetSubstrateBlueprintsIntent,
+    SubstrateBlueprintCatalogEntry[]
   >;
   createRoom: CommandRegistration<CreateRoomIntent>;
   updateRoom: CommandRegistration<UpdateRoomIntent>;
@@ -278,6 +327,24 @@ export const buildWorldCommands = ({
     'world.getDeviceBlueprints',
     getDeviceBlueprintsSchema,
     () => services().getDeviceBlueprints,
+    onMissingHandler,
+  ),
+  getCultivationMethodBlueprints: createServiceCommand(
+    'world.getCultivationMethodBlueprints',
+    getCultivationMethodBlueprintsSchema,
+    () => services().getCultivationMethodBlueprints,
+    onMissingHandler,
+  ),
+  getContainerBlueprints: createServiceCommand(
+    'world.getContainerBlueprints',
+    getContainerBlueprintsSchema,
+    () => services().getContainerBlueprints,
+    onMissingHandler,
+  ),
+  getSubstrateBlueprints: createServiceCommand(
+    'world.getSubstrateBlueprints',
+    getSubstrateBlueprintsSchema,
+    () => services().getSubstrateBlueprints,
     onMissingHandler,
   ),
   createRoom: createServiceCommand<CreateRoomIntent, CreateRoomResult>(
@@ -367,6 +434,9 @@ export const schemas = {
   getStructureBlueprintsSchema,
   getStrainBlueprintsSchema,
   getDeviceBlueprintsSchema,
+  getCultivationMethodBlueprintsSchema,
+  getContainerBlueprintsSchema,
+  getSubstrateBlueprintsSchema,
   createRoomSchema,
   updateRoomSchema,
   deleteRoomSchema,

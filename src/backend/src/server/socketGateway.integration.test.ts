@@ -23,6 +23,9 @@ import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 import {
   buildDeviceBlueprintCatalog,
   buildStrainBlueprintCatalog,
+  buildCultivationMethodBlueprintCatalog,
+  buildContainerBlueprintCatalog,
+  buildSubstrateBlueprintCatalog,
 } from '@/facade/blueprintCatalog.js';
 import {
   createBlueprintRepositoryStub,
@@ -407,6 +410,9 @@ describe('SocketGateway facade intents integration', () => {
   let repository: ReturnType<typeof createBlueprintRepositoryStub>;
   let expectedStrainCatalog: ReturnType<typeof buildStrainBlueprintCatalog>;
   let expectedDeviceCatalog: ReturnType<typeof buildDeviceBlueprintCatalog>;
+  let expectedMethodCatalog: ReturnType<typeof buildCultivationMethodBlueprintCatalog>;
+  let expectedContainerCatalog: ReturnType<typeof buildContainerBlueprintCatalog>;
+  let expectedSubstrateCatalog: ReturnType<typeof buildSubstrateBlueprintCatalog>;
   let structureBlueprints: ReturnType<typeof createStructureBlueprint>[];
 
   beforeEach(async () => {
@@ -479,6 +485,9 @@ describe('SocketGateway facade intents integration', () => {
     });
     expectedStrainCatalog = buildStrainBlueprintCatalog(repository);
     expectedDeviceCatalog = buildDeviceBlueprintCatalog(repository);
+    expectedMethodCatalog = buildCultivationMethodBlueprintCatalog(repository);
+    expectedContainerCatalog = buildContainerBlueprintCatalog(repository);
+    expectedSubstrateCatalog = buildSubstrateBlueprintCatalog(repository);
     structureBlueprints = [
       createStructureBlueprint({ id: STRUCTURE_BLUEPRINT_ID, name: 'Gateway Test Campus' }),
     ];
@@ -491,6 +500,7 @@ describe('SocketGateway facade intents integration', () => {
       rng,
       costAccounting,
       structureBlueprints,
+      repository,
     });
     const deviceService = new DeviceGroupService({ state, rng });
     const deviceInstallationService = new DeviceInstallationService({ state, rng, repository });
@@ -502,6 +512,18 @@ describe('SocketGateway facade intents integration', () => {
         getStructureBlueprints: () => ({ ok: true, data: structureBlueprints }),
         getStrainBlueprints: () => ({ ok: true, data: buildStrainBlueprintCatalog(repository) }),
         getDeviceBlueprints: () => ({ ok: true, data: buildDeviceBlueprintCatalog(repository) }),
+        getCultivationMethodBlueprints: () => ({
+          ok: true,
+          data: buildCultivationMethodBlueprintCatalog(repository),
+        }),
+        getContainerBlueprints: () => ({
+          ok: true,
+          data: buildContainerBlueprintCatalog(repository),
+        }),
+        getSubstrateBlueprints: () => ({
+          ok: true,
+          data: buildSubstrateBlueprintCatalog(repository),
+        }),
         renameStructure: (intent, context) =>
           worldService.renameStructure(intent.structureId, intent.name, context),
         deleteStructure: (intent, context) =>
@@ -662,6 +684,24 @@ describe('SocketGateway facade intents integration', () => {
     const response = await emitIntent('world', 'getDeviceBlueprints', {});
     expect(response.ok).toBe(true);
     expect(response.data).toEqual(expectedDeviceCatalog);
+  });
+
+  it('handles getCultivationMethodBlueprints intent', async () => {
+    const response = await emitIntent('world', 'getCultivationMethodBlueprints', {});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedMethodCatalog);
+  });
+
+  it('handles getContainerBlueprints intent', async () => {
+    const response = await emitIntent('world', 'getContainerBlueprints', {});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedContainerCatalog);
+  });
+
+  it('handles getSubstrateBlueprints intent', async () => {
+    const response = await emitIntent('world', 'getSubstrateBlueprints', {});
+    expect(response.ok).toBe(true);
+    expect(response.data).toEqual(expectedSubstrateCatalog);
   });
 
   it('handles duplicateStructure intent', async () => {

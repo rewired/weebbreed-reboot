@@ -18,6 +18,9 @@ import { RngService } from '@/lib/rng.js';
 import {
   buildDeviceBlueprintCatalog,
   buildStrainBlueprintCatalog,
+  buildCultivationMethodBlueprintCatalog,
+  buildContainerBlueprintCatalog,
+  buildSubstrateBlueprintCatalog,
 } from '@/facade/blueprintCatalog.js';
 import {
   createBlueprintRepositoryStub,
@@ -332,6 +335,7 @@ describe('SimulationFacade new intents', () => {
       rng,
       costAccounting,
       structureBlueprints,
+      repository,
     });
     const deviceService = new DeviceGroupService({ state, rng });
     const deviceInstallationService = new DeviceInstallationService({
@@ -349,6 +353,18 @@ describe('SimulationFacade new intents', () => {
         getStructureBlueprints: () => ({ ok: true, data: structureBlueprints }),
         getStrainBlueprints: () => ({ ok: true, data: buildStrainBlueprintCatalog(repository) }),
         getDeviceBlueprints: () => ({ ok: true, data: buildDeviceBlueprintCatalog(repository) }),
+        getCultivationMethodBlueprints: () => ({
+          ok: true,
+          data: buildCultivationMethodBlueprintCatalog(repository),
+        }),
+        getContainerBlueprints: () => ({
+          ok: true,
+          data: buildContainerBlueprintCatalog(repository),
+        }),
+        getSubstrateBlueprints: () => ({
+          ok: true,
+          data: buildSubstrateBlueprintCatalog(repository),
+        }),
         renameStructure: (intent, context) =>
           worldService.renameStructure(intent.structureId, intent.name, context),
         deleteStructure: (intent, context) =>
