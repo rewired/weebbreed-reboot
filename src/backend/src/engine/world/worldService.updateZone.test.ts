@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
+import type { SimulationEvent } from '@/lib/eventBus.js';
 import { RngService } from '@/lib/rng.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import { WorldService } from './worldService.js';
@@ -24,6 +25,7 @@ const METHOD_DELTA_ID = 'method-delta';
 const CONTAINER_ALPHA_ID = 'container-alpha';
 const CONTAINER_BETA_ID = 'container-beta';
 const CONTAINER_GAMMA_ID = 'container-gamma';
+const CONTAINER_DELTA_ID = 'container-delta';
 
 const SUBSTRATE_ALPHA_ID = 'substrate-alpha';
 const SUBSTRATE_BETA_ID = 'substrate-beta';
@@ -242,6 +244,15 @@ const createRepository = () => {
     footprintArea: 0.3,
     type: 'pot',
   });
+  const containerDelta = createContainerBlueprint({
+    id: CONTAINER_DELTA_ID,
+    slug: 'ebb-flow-table',
+    name: 'Ebb Flow Table',
+    volumeInLiters: 40,
+    footprintArea: 2,
+    type: 'ebbFlowTable',
+    packingDensity: 1,
+  });
 
   const substrateAlpha = createSubstrateBlueprint({
     id: SUBSTRATE_ALPHA_ID,
@@ -264,7 +275,7 @@ const createRepository = () => {
 
   return createBlueprintRepositoryStub({
     cultivationMethods: [methodAlpha, methodBeta, methodGamma, methodDelta],
-    containers: [containerAlpha, containerBeta, containerGamma],
+    containers: [containerAlpha, containerBeta, containerGamma, containerDelta],
     substrates: [substrateAlpha, substrateBeta, substrateGamma],
   });
 };
@@ -277,13 +288,20 @@ const createCostAccounting = () =>
   });
 
 const createContext = (state: GameState): CommandExecutionContext => {
-  const collector = createEventCollector([], state.clock.tick);
+  const buffer: SimulationEvent[] = [];
+  const collector = createEventCollector(buffer, state.clock.tick);
   return {
     command: 'world.updateZone',
     state,
     clock: state.clock,
     tick: state.clock.tick,
-    events: collector,
+    events: Object.assign(collector, {
+      flush: () => {
+        const events = [...buffer];
+        buffer.length = 0;
+        return events;
+      },
+    }),
   } satisfies CommandExecutionContext;
 };
 
@@ -316,9 +334,9 @@ describe('WorldService.updateZone', () => {
 
     const zone = state.structures[0]!.rooms[0]!.zones[0]!;
     expect(zone.cultivationMethodId).toBe(METHOD_BETA_ID);
-    expect(zone.cultivation?.container?.slug).toBe('pot-11l');
-    expect(zone.cultivation?.container?.name).toBe('11 L Pot');
-    expect(zone.cultivation?.substrate?.slug).toBe('soil-multi-cycle');
+    expect(zone.cultivation?.container?.slug).toBe('pot-10l');
+    expect(zone.cultivation?.container?.name).toBe('10 L Pot');
+    expect(zone.cultivation?.substrate?.slug).toBe('soil-single-cycle');
 
     const events = context.events.flush();
     expect(events).toHaveLength(1);
@@ -371,5 +389,95 @@ describe('WorldService.updateZone', () => {
     expect(updated.cultivation?.substrate?.slug).toBe('soil-multi-cycle');
     const totalVolume = updated.cultivation?.substrate?.totalVolumeLiters ?? 0;
     expect(totalVolume).toBeCloseTo(200, 5);
+  });
+
+  it('updates container and substrate consumables while clamping count to capacity', () => {
+    const context = createContext(state);
+    const result = world.updateZone(
+      {
+        zoneId: ZONE_ID,
+        patch: {
+          container: { blueprintId: CONTAINER_BETA_ID, type: 'pot', count: 150 },
+          substrate: { blueprintId: SUBSTRATE_BETA_ID, type: 'soil' },
+        },
+      },
+      context,
+    );
+
+    expect(result.ok).toBe(true);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([
+        'Container count has been clamped to 108 to fit the zone capacity (108).',
+      ]),
+    );
+
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    expect(zone.cultivation?.container?.blueprintId).toBe(CONTAINER_BETA_ID);
+    expect(zone.cultivation?.container?.count).toBe(108);
+    expect(zone.cultivation?.substrate?.blueprintId).toBe(SUBSTRATE_BETA_ID);
+    expect(zone.cultivation?.substrate?.totalVolumeLiters).toBeCloseTo(1188, 5);
+
+    const events = context.events.flush();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      type: 'world.zoneUpdated',
+      payload: expect.objectContaining({
+        container: { slug: 'pot-11l', count: 108 },
+        substrate: { slug: 'soil-multi-cycle', totalVolumeLiters: 1188 },
+      }),
+    });
+  });
+
+  it('rejects container updates when the zone cannot support the footprint', () => {
+    const context = createContext(state);
+    const result = world.updateZone(
+      {
+        zoneId: ZONE_ID,
+        patch: {
+          area: 0.1,
+          container: { blueprintId: CONTAINER_GAMMA_ID, type: 'pot', count: 1 },
+          substrate: { blueprintId: SUBSTRATE_BETA_ID, type: 'soil' },
+        },
+      },
+      context,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+    expect(result.errors?.[0]?.path).toEqual(['world.updateZone', 'patch.container.count']);
+  });
+
+  it('rejects container updates that are incompatible with the cultivation method', () => {
+    const context = createContext(state);
+    const result = world.updateZone(
+      {
+        zoneId: ZONE_ID,
+        patch: {
+          container: { blueprintId: CONTAINER_DELTA_ID, type: 'ebbFlowTable', count: 2 },
+        },
+      },
+      context,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+    expect(result.errors?.[0]?.path).toEqual(['world.updateZone', 'patch.container.type']);
+  });
+
+  it('rejects substrate updates that conflict with the cultivation method', () => {
+    const context = createContext(state);
+    const result = world.updateZone(
+      {
+        zoneId: ZONE_ID,
+        patch: {
+          substrate: { blueprintId: SUBSTRATE_GAMMA_ID, type: 'coco' },
+        },
+      },
+      context,
+    );
+
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]?.code).toBe('ERR_INVALID_STATE');
+    expect(result.errors?.[0]?.path).toEqual(['world.updateZone', 'patch.substrate.type']);
   });
 });

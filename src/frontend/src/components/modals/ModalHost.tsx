@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -18,7 +19,6 @@ import type {
   StructureBlueprint,
   SimulationBridge,
 } from '@/facade/systemFacade';
-import type { CultivationMethodCatalogEntry } from '@/types/blueprints';
 import { HireModal } from '@/components/personnel/HireModal';
 import { FireModal } from '@/components/personnel/FireModal';
 import { useUIStore } from '@/store/ui';
@@ -380,75 +380,208 @@ const ChangeZoneMethodModal = ({
   const containerCatalog = useSimulationStore((state) => state.catalogs.containers);
   const substrateCatalog = useSimulationStore((state) => state.catalogs.substrates);
 
+  const readyMethods = cultivationCatalog.status === 'ready' ? cultivationCatalog.data : [];
+  const readyContainers = containerCatalog.status === 'ready' ? containerCatalog.data : [];
+  const readySubstrates = substrateCatalog.status === 'ready' ? substrateCatalog.data : [];
+
+  const zoneContainer = zone?.cultivation?.container ?? null;
+  const zoneSubstrate = zone?.cultivation?.substrate ?? null;
+
   const [selectedMethodId, setSelectedMethodId] = useState(() => zone?.cultivationMethodId ?? '');
+  const [selectedContainerId, setSelectedContainerId] = useState<string | null>(
+    () => zoneContainer?.blueprintId ?? null,
+  );
+  const [selectedSubstrateId, setSelectedSubstrateId] = useState<string | null>(
+    () => zoneSubstrate?.blueprintId ?? null,
+  );
+  const [containerCount, setContainerCount] = useState<number>(() => zoneContainer?.count ?? 0);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const methodSelectId = useId();
+  const containerSelectId = useId();
+  const substrateSelectId = useId();
+  const containerCountInputId = useId();
+  const containerCountHelperId = `${containerCountInputId}-helper`;
+  const containerCountWarningId = `${containerCountInputId}-warning`;
 
-  const readyMethods = cultivationCatalog.status === 'ready' ? cultivationCatalog.data : [];
-  const containerType = zone?.cultivation?.container?.type ?? null;
-  const substrateType = zone?.cultivation?.substrate?.type ?? null;
-
-  const compatibleMethods = useMemo(() => {
-    const methods: CultivationMethodCatalogEntry[] = [];
-    const seen = new Set<string>();
-
-    const isCompatible = (method: CultivationMethodCatalogEntry) => {
-      const containerList = method.compatibility?.compatibleContainerTypes;
-      const substrateList = method.compatibility?.compatibleSubstrateTypes;
-
-      if (containerType && Array.isArray(containerList) && containerList.length > 0) {
-        if (!containerList.includes(containerType)) {
-          return false;
-        }
-      }
-
-      if (substrateType && Array.isArray(substrateList) && substrateList.length > 0) {
-        if (!substrateList.includes(substrateType)) {
-          return false;
-        }
-      }
-
-      return true;
-    };
-
-    for (const method of readyMethods) {
-      if (!seen.has(method.id) && isCompatible(method)) {
-        methods.push(method);
-        seen.add(method.id);
-      }
-    }
-
-    if (zone?.cultivationMethodId && !seen.has(zone.cultivationMethodId)) {
-      const current = readyMethods.find((item) => item.id === zone.cultivationMethodId);
-      if (current) {
-        methods.push(current);
-      }
-    }
-
-    return methods.sort((a, b) => a.name.localeCompare(b.name));
-  }, [containerType, readyMethods, substrateType, zone?.cultivationMethodId]);
+  const methodOptions = useMemo(
+    () => [...readyMethods].sort((a, b) => a.name.localeCompare(b.name)),
+    [readyMethods],
+  );
 
   useEffect(() => {
-    if (!selectedMethodId && compatibleMethods.length > 0) {
-      setSelectedMethodId(compatibleMethods[0]!.id);
+    if (!selectedMethodId && methodOptions.length > 0) {
+      setSelectedMethodId(methodOptions[0]!.id);
       return;
     }
-    if (selectedMethodId && compatibleMethods.every((method) => method.id !== selectedMethodId)) {
-      setSelectedMethodId(compatibleMethods[0]?.id ?? zone?.cultivationMethodId ?? '');
+    if (selectedMethodId && !methodOptions.some((method) => method.id === selectedMethodId)) {
+      const fallback =
+        methodOptions.find((method) => method.id === zone?.cultivationMethodId) ??
+        methodOptions[0] ??
+        null;
+      setSelectedMethodId(fallback?.id ?? '');
     }
-  }, [compatibleMethods, selectedMethodId, zone?.cultivationMethodId]);
+  }, [methodOptions, selectedMethodId, zone?.cultivationMethodId]);
 
   const selectedMethod = useMemo(() => {
     if (!selectedMethodId) {
       return null;
     }
-    return (
-      compatibleMethods.find((method) => method.id === selectedMethodId) ??
-      readyMethods.find((method) => method.id === selectedMethodId) ??
-      null
-    );
-  }, [compatibleMethods, readyMethods, selectedMethodId]);
+    return methodOptions.find((method) => method.id === selectedMethodId) ?? null;
+  }, [methodOptions, selectedMethodId]);
+
+  const compatibleContainerTypes = selectedMethod?.compatibility?.compatibleContainerTypes;
+  const containerOptions = useMemo(() => {
+    if (!compatibleContainerTypes || compatibleContainerTypes.length === 0) {
+      return readyContainers;
+    }
+    return readyContainers.filter((entry) => compatibleContainerTypes.includes(entry.type));
+  }, [readyContainers, compatibleContainerTypes]);
+
+  useEffect(() => {
+    if (containerOptions.length === 0) {
+      setSelectedContainerId(null);
+      return;
+    }
+    if (
+      !selectedContainerId ||
+      !containerOptions.some((entry) => entry.id === selectedContainerId)
+    ) {
+      const fallbackFromZone =
+        zoneContainer && containerOptions.find((entry) => entry.id === zoneContainer.blueprintId);
+      setSelectedContainerId((fallbackFromZone ?? containerOptions[0]!).id);
+    }
+  }, [containerOptions, selectedContainerId, zoneContainer]);
+
+  const selectedContainer = useMemo(
+    () => containerOptions.find((entry) => entry.id === selectedContainerId) ?? null,
+    [containerOptions, selectedContainerId],
+  );
+
+  const compatibleSubstrateTypes = selectedMethod?.compatibility?.compatibleSubstrateTypes;
+  const substrateOptions = useMemo(() => {
+    if (!compatibleSubstrateTypes || compatibleSubstrateTypes.length === 0) {
+      return readySubstrates;
+    }
+    return readySubstrates.filter((entry) => compatibleSubstrateTypes.includes(entry.type));
+  }, [readySubstrates, compatibleSubstrateTypes]);
+
+  useEffect(() => {
+    if (substrateOptions.length === 0) {
+      setSelectedSubstrateId(null);
+      return;
+    }
+    if (
+      !selectedSubstrateId ||
+      !substrateOptions.some((entry) => entry.id === selectedSubstrateId)
+    ) {
+      const fallbackFromZone =
+        zoneSubstrate && substrateOptions.find((entry) => entry.id === zoneSubstrate.blueprintId);
+      setSelectedSubstrateId((fallbackFromZone ?? substrateOptions[0]!).id);
+    }
+  }, [substrateOptions, selectedSubstrateId, zoneSubstrate]);
+
+  const selectedSubstrate = useMemo(
+    () => substrateOptions.find((entry) => entry.id === selectedSubstrateId) ?? null,
+    [substrateOptions, selectedSubstrateId],
+  );
+
+  const zoneArea = zone?.area ?? 0;
+  const previousContainerRef = useRef<string | null>(null);
+  const previousMaxRef = useRef<number>(0);
+
+  const maxContainers = useMemo(() => {
+    if (!zone || !selectedContainer) {
+      return 0;
+    }
+    const footprint = selectedContainer.footprintArea;
+    if (!footprint || !Number.isFinite(footprint) || footprint <= 0) {
+      return 0;
+    }
+    const densityRaw = selectedContainer.packingDensity;
+    const density = densityRaw && Number.isFinite(densityRaw) && densityRaw > 0 ? densityRaw : 1;
+    const theoretical = (zone.area / footprint) * density;
+    if (!Number.isFinite(theoretical) || theoretical <= 0) {
+      return 0;
+    }
+    return Math.floor(theoretical);
+  }, [selectedContainer, zone]);
+
+  useEffect(() => {
+    const currentContainerId = selectedContainer?.id ?? null;
+    const max = maxContainers;
+
+    if (!selectedContainer || max <= 0) {
+      setContainerCount(0);
+      previousContainerRef.current = currentContainerId;
+      previousMaxRef.current = max;
+      return;
+    }
+
+    setContainerCount((current) => {
+      const containerChanged = previousContainerRef.current !== currentContainerId;
+      const maxChanged = previousMaxRef.current !== max;
+      if (containerChanged || maxChanged || current <= 0) {
+        const existing =
+          zoneContainer && zoneContainer.blueprintId === currentContainerId
+            ? zoneContainer.count
+            : 0;
+        if (existing > 0 && existing <= max) {
+          return existing;
+        }
+        return max;
+      }
+      if (current > max) {
+        return max;
+      }
+      return current;
+    });
+
+    previousContainerRef.current = currentContainerId;
+    previousMaxRef.current = max;
+  }, [selectedContainer, maxContainers, zoneContainer]);
+
+  const handleContainerCountChange = useCallback(
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const parsed = Number(event.target.value);
+      if (Number.isNaN(parsed)) {
+        return;
+      }
+      const max = maxContainers;
+      if (max <= 0) {
+        setContainerCount(0);
+        return;
+      }
+      const clamped = Math.min(Math.max(Math.floor(parsed), 1), max);
+      setContainerCount(clamped);
+      setFeedback(null);
+    },
+    [maxContainers],
+  );
+
+  const containerOverCapacity = maxContainers > 0 && containerCount > maxContainers;
+
+  const substrateVolumeLiters = useMemo(() => {
+    if (!selectedContainer || containerCount <= 0) {
+      return null;
+    }
+    const volume = selectedContainer.volumeInLiters;
+    if (!volume || !Number.isFinite(volume) || volume <= 0) {
+      return null;
+    }
+    return volume * containerCount;
+  }, [selectedContainer, containerCount]);
+
+  const methodSetupCost = selectedMethod?.price?.setupCost ?? 0;
+  const containerUnitCost = selectedContainer?.price?.costPerUnit ?? 0;
+  const containerTotalCost = containerCount > 0 ? containerUnitCost * containerCount : 0;
+  const substrateUnitCost = selectedSubstrate?.price?.costPerLiter ?? 0;
+  const substrateTotalCost =
+    substrateVolumeLiters && substrateVolumeLiters > 0
+      ? substrateUnitCost * substrateVolumeLiters
+      : 0;
+  const estimatedTotalCost = methodSetupCost + containerTotalCost + substrateTotalCost;
 
   const methodHint = getCultivationMethodHint(selectedMethodId);
 
@@ -457,24 +590,33 @@ const ChangeZoneMethodModal = ({
       return null;
     }
     const pieces: string[] = [];
-    if (containerType) {
-      const matchesContainer = selectedMethod.compatibility?.compatibleContainerTypes;
-      if (Array.isArray(matchesContainer) && matchesContainer.length > 0) {
-        pieces.push(`Supports containers: ${matchesContainer.join(', ')}`);
-      }
+    const containerList = selectedMethod.compatibility?.compatibleContainerTypes;
+    if (Array.isArray(containerList) && containerList.length > 0) {
+      pieces.push(`Supports containers: ${containerList.join(', ')}`);
     }
-    if (substrateType) {
-      const matchesSubstrate = selectedMethod.compatibility?.compatibleSubstrateTypes;
-      if (Array.isArray(matchesSubstrate) && matchesSubstrate.length > 0) {
-        pieces.push(`Supports substrates: ${matchesSubstrate.join(', ')}`);
-      }
+    const substrateList = selectedMethod.compatibility?.compatibleSubstrateTypes;
+    if (Array.isArray(substrateList) && substrateList.length > 0) {
+      pieces.push(`Supports substrates: ${substrateList.join(', ')}`);
     }
     return pieces.length ? pieces.join(' · ') : null;
-  }, [containerType, selectedMethod, substrateType]);
+  }, [selectedMethod]);
+
+  const methodStatus = cultivationCatalog.status;
+  const containerStatus = containerCatalog.status;
+  const substrateStatus = substrateCatalog.status;
+
+  const catalogError =
+    (methodStatus === 'error' && cultivationCatalog.error) ||
+    (containerStatus === 'error' && containerCatalog.error) ||
+    (substrateStatus === 'error' && substrateCatalog.error) ||
+    null;
+
+  const isCatalogLoading =
+    methodStatus === 'loading' || containerStatus === 'loading' || substrateStatus === 'loading';
 
   useEffect(() => {
     setWarnings([]);
-  }, [selectedMethodId]);
+  }, [selectedMethodId, selectedContainerId, selectedSubstrateId, containerCount]);
 
   if (!zone || !zoneId) {
     return (
@@ -482,15 +624,15 @@ const ChangeZoneMethodModal = ({
     );
   }
 
-  if (cultivationCatalog.status === 'error') {
-    return <Feedback message={cultivationCatalog.error ?? 'Failed to load cultivation methods.'} />;
+  if (catalogError) {
+    return <Feedback message={catalogError} />;
   }
 
-  if (cultivationCatalog.status !== 'ready') {
-    return <p className="text-sm text-text-muted">Loading cultivation method catalog…</p>;
+  if (isCatalogLoading) {
+    return <p className="text-sm text-text-muted">Loading cultivation catalogs…</p>;
   }
 
-  if (!readyMethods.length) {
+  if (!methodOptions.length) {
     return (
       <div className="grid gap-3">
         <p className="text-sm text-text-muted">
@@ -501,48 +643,72 @@ const ChangeZoneMethodModal = ({
     );
   }
 
-  if (!compatibleMethods.length) {
+  if (containerOptions.length === 0) {
     return (
       <div className="grid gap-3">
         <p className="text-sm text-text-muted">
-          No methods are compatible with the current container/substrate configuration. Move
-          consumables to storage before switching methods.
+          No containers are compatible with the selected method. Update the catalog or choose a
+          different method.
         </p>
         {feedback ? <Feedback message={feedback} /> : null}
       </div>
     );
   }
 
-  const containerName = zone.cultivation?.container?.name ?? null;
-  const substrateName = zone.cultivation?.substrate?.name ?? null;
+  if (substrateOptions.length === 0) {
+    return (
+      <div className="grid gap-3">
+        <p className="text-sm text-text-muted">
+          No substrates are compatible with the selected method. Update the catalog or choose a
+          different method.
+        </p>
+        {feedback ? <Feedback message={feedback} /> : null}
+      </div>
+    );
+  }
+
   const resolvedContainerName = (() => {
-    if (containerName) {
-      return containerName;
+    if (zoneContainer?.name) {
+      return zoneContainer.name;
     }
-    if (zone.cultivation?.container?.slug) {
-      const match = containerCatalog.data.find(
-        (item) => item.slug === zone.cultivation?.container?.slug,
-      );
-      return match?.name ?? zone.cultivation?.container?.slug;
-    }
-    return 'Not configured';
-  })();
-  const resolvedSubstrateName = (() => {
-    if (substrateName) {
-      return substrateName;
-    }
-    if (zone.cultivation?.substrate?.slug) {
-      const match = substrateCatalog.data.find(
-        (item) => item.slug === zone.cultivation?.substrate?.slug,
-      );
-      return match?.name ?? zone.cultivation?.substrate?.slug;
+    if (zoneContainer?.slug) {
+      const match = readyContainers.find((item) => item.slug === zoneContainer.slug);
+      return match?.name ?? zoneContainer.slug;
     }
     return 'Not configured';
   })();
 
+  const resolvedSubstrateName = (() => {
+    if (zoneSubstrate?.name) {
+      return zoneSubstrate.name;
+    }
+    if (zoneSubstrate?.slug) {
+      const match = readySubstrates.find((item) => item.slug === zoneSubstrate.slug);
+      return match?.name ?? zoneSubstrate.slug;
+    }
+    return 'Not configured';
+  })();
+
+  const canSubmit =
+    !busy &&
+    !containerOverCapacity &&
+    selectedMethod &&
+    selectedContainer &&
+    selectedSubstrate &&
+    maxContainers > 0 &&
+    containerCount > 0;
+
   const handleApply = async () => {
-    if (!selectedMethodId) {
-      setFeedback('Select a cultivation method before continuing.');
+    if (!selectedMethod || !selectedContainer || !selectedSubstrate) {
+      setFeedback('Select a method, container, and substrate before continuing.');
+      return;
+    }
+    if (maxContainers <= 0) {
+      setFeedback('Selected container cannot be packed into this zone area.');
+      return;
+    }
+    if (containerCount <= 0 || containerCount > maxContainers) {
+      setFeedback('Container count exceeds the supported capacity.');
       return;
     }
 
@@ -554,9 +720,9 @@ const ChangeZoneMethodModal = ({
         zoneId,
         zoneName: zone.name,
         currentMethodId: zone.cultivationMethodId,
-        nextMethodId: selectedMethodId,
-        containerName,
-        substrateName,
+        nextMethodId: selectedMethod.id,
+        containerName: resolvedContainerName,
+        substrateName: resolvedSubstrateName,
       });
       if (!confirmed) {
         setFeedback('Storage handoff must be confirmed before changing the method.');
@@ -570,7 +736,20 @@ const ChangeZoneMethodModal = ({
 
     setBusy(true);
     try {
-      const response = await bridge.world.updateZone({ zoneId, methodId: selectedMethodId });
+      const response = await bridge.world.updateZone({
+        zoneId,
+        methodId: selectedMethod.id,
+        container: {
+          blueprintId: selectedContainer.id,
+          type: selectedContainer.type,
+          count: containerCount,
+        },
+        substrate: {
+          blueprintId: selectedSubstrate.id,
+          type: selectedSubstrate.type,
+          volumeLiters: substrateVolumeLiters ?? undefined,
+        },
+      });
       if (!response.ok) {
         const message =
           response.errors?.[0]?.message ??
@@ -599,14 +778,26 @@ const ChangeZoneMethodModal = ({
           Current setup
         </span>
         <span className="text-text">Method: {zone.cultivationMethodName ?? 'Not assigned'}</span>
-        <span className="text-text-muted">Container: {resolvedContainerName}</span>
-        <span className="text-text-muted">Substrate: {resolvedSubstrateName}</span>
-      </div>
-      <label className="grid gap-1">
-        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          New method
+        <span className="text-text-muted">
+          Container: {resolvedContainerName}
+          {zoneContainer?.count ? ` · ${zoneContainer.count} units` : ''}
         </span>
+        <span className="text-text-muted">
+          Substrate: {resolvedSubstrateName}
+          {zoneSubstrate?.totalVolumeLiters
+            ? ` · ${formatNumber(zoneSubstrate.totalVolumeLiters, { maximumFractionDigits: 1 })} L`
+            : ''}
+        </span>
+      </div>
+      <div className="grid gap-1">
+        <label
+          className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+          htmlFor={methodSelectId}
+        >
+          New method
+        </label>
         <select
+          id={methodSelectId}
           value={selectedMethodId}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => {
             setSelectedMethodId(event.target.value);
@@ -614,13 +805,13 @@ const ChangeZoneMethodModal = ({
           }}
           className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
         >
-          {compatibleMethods.map((method) => (
+          {methodOptions.map((method) => (
             <option key={method.id} value={method.id}>
               {method.name}
             </option>
           ))}
         </select>
-      </label>
+      </div>
       {selectedMethod ? (
         <div className="grid gap-1 rounded-xl border border-border/40 bg-surface-muted/20 p-3 text-xs text-text-muted">
           <span className="text-sm font-semibold text-text">{selectedMethod.name}</span>
@@ -633,6 +824,145 @@ const ChangeZoneMethodModal = ({
           {compatibilitySummary ? <span>{compatibilitySummary}</span> : null}
         </div>
       ) : null}
+      <div className="grid gap-3 rounded-xl border border-border/40 bg-surface-muted/20 p-3 text-sm">
+        <div className="grid gap-1">
+          <label
+            className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            htmlFor={containerSelectId}
+          >
+            Container
+          </label>
+          <select
+            id={containerSelectId}
+            value={selectedContainerId ?? ''}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              setSelectedContainerId(event.target.value || null);
+              setFeedback(null);
+            }}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          >
+            {containerOptions.map((container) => (
+              <option key={container.id} value={container.id}>
+                {container.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {selectedContainer ? (
+          <div className="grid gap-1 text-xs text-text-muted">
+            <span>Type: {selectedContainer.type}</span>
+            {selectedContainer.footprintArea ? (
+              <span>
+                Footprint:{' '}
+                {formatNumber(selectedContainer.footprintArea, { maximumFractionDigits: 2 })} m²
+              </span>
+            ) : null}
+            {selectedContainer.packingDensity ? (
+              <span>
+                Packing density:{' '}
+                {formatNumber(selectedContainer.packingDensity, { maximumFractionDigits: 2 })}
+              </span>
+            ) : null}
+            {selectedContainer.volumeInLiters ? (
+              <span>
+                Volume:{' '}
+                {formatNumber(selectedContainer.volumeInLiters, { maximumFractionDigits: 1 })} L per
+                unit
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        <div className="grid gap-1">
+          <label
+            className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            htmlFor={containerCountInputId}
+          >
+            Container count
+          </label>
+          <input
+            id={containerCountInputId}
+            type="number"
+            min={1}
+            max={maxContainers > 0 ? maxContainers : undefined}
+            value={containerCount}
+            onChange={handleContainerCountChange}
+            disabled={!selectedContainer || maxContainers <= 0}
+            aria-describedby={
+              maxContainers > 0
+                ? containerCountHelperId
+                : selectedContainer
+                  ? containerCountWarningId
+                  : undefined
+            }
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          {maxContainers > 0 ? (
+            <span id={containerCountHelperId} className="text-xs text-text-muted">
+              Max supported: {formatNumber(maxContainers, { maximumFractionDigits: 0 })} containers
+              · Zone area {formatNumber(zoneArea, { maximumFractionDigits: 1 })} m²
+            </span>
+          ) : (
+            <span id={containerCountWarningId} className="text-xs text-warning">
+              Selected container cannot fit into{' '}
+              {formatNumber(zoneArea, { maximumFractionDigits: 1 })} m².
+            </span>
+          )}
+        </div>
+        <div className="grid gap-1">
+          <label
+            className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            htmlFor={substrateSelectId}
+          >
+            Substrate
+          </label>
+          <select
+            id={substrateSelectId}
+            value={selectedSubstrateId ?? ''}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+              setSelectedSubstrateId(event.target.value || null);
+              setFeedback(null);
+            }}
+            className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+          >
+            {substrateOptions.map((substrate) => (
+              <option key={substrate.id} value={substrate.id}>
+                {substrate.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        {selectedSubstrate ? (
+          <div className="grid gap-1 text-xs text-text-muted">
+            <span>Type: {selectedSubstrate.type}</span>
+          </div>
+        ) : null}
+        <div className="grid gap-1 text-xs text-text-muted">
+          <span>
+            Estimated substrate volume:{' '}
+            {substrateVolumeLiters
+              ? `${formatNumber(substrateVolumeLiters, { maximumFractionDigits: 1 })} L`
+              : '—'}
+          </span>
+          <span>
+            Method setup cost: €{formatNumber(methodSetupCost, { maximumFractionDigits: 0 })}
+          </span>
+          <span>
+            Container cost: €{formatNumber(containerTotalCost, { maximumFractionDigits: 0 })}
+            {containerUnitCost > 0
+              ? ` (${formatNumber(containerUnitCost, { maximumFractionDigits: 0 })} each)`
+              : ''}
+          </span>
+          <span>
+            Substrate cost: €{formatNumber(substrateTotalCost, { maximumFractionDigits: 0 })}
+            {substrateVolumeLiters
+              ? ` (${formatNumber(substrateUnitCost, { maximumFractionDigits: 2 })} €/L)`
+              : ''}
+          </span>
+          <span className="text-text">
+            Estimated total: €{formatNumber(estimatedTotalCost, { maximumFractionDigits: 0 })}
+          </span>
+        </div>
+      </div>
       {feedback ? <Feedback message={feedback} /> : null}
       {warnings.map((warning) => (
         <Feedback key={warning} message={warning} />
@@ -640,8 +970,8 @@ const ChangeZoneMethodModal = ({
       <ActionFooter
         onCancel={closeModal}
         onConfirm={handleApply}
-        confirmLabel={busy ? 'Applying…' : 'Apply method'}
-        confirmDisabled={busy}
+        confirmLabel={busy ? 'Applying…' : 'Apply changes'}
+        confirmDisabled={!canSubmit || busy}
         cancelDisabled={busy}
       />
     </div>
@@ -2423,12 +2753,15 @@ const CreateZoneModal = ({
   const [containerId, setContainerId] = useState<string | null>(null);
   const [substrateId, setSubstrateId] = useState<string | null>(null);
   const [area, setArea] = useState(10);
+  const [areaInput, setAreaInput] = useState('10');
   const [containerCount, setContainerCount] = useState(0);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const previousAreaRef = useRef(area);
   const previousMaxContainersRef = useRef(0);
   const previousContainerIdRef = useRef<string | null>(null);
+  const containerCountInputId = useId();
+  const containerCountHelperId = `${containerCountInputId}-helper`;
 
   const methodOptions = catalogs.cultivationMethods.data;
   const methodStatus = catalogs.cultivationMethods.status;
@@ -2576,7 +2909,7 @@ const CreateZoneModal = ({
     return Math.max(Math.floor(rawCapacity), 0);
   }, [selectedContainer, area]);
 
-  const normalizeArea = useCallback(
+  const updateArea = useCallback(
     (value: number) => {
       if (!Number.isFinite(value)) {
         return;
@@ -2584,26 +2917,34 @@ const CreateZoneModal = ({
       const minArea = 0.1;
       const maxAreaBound = Math.max(availableArea, minArea);
       const clamped = Math.min(Math.max(value, minArea), maxAreaBound);
-      setArea(Number(clamped.toFixed(2)));
+      const normalized = Number(clamped.toFixed(2));
+      setArea(normalized);
+      setAreaInput(normalized.toString());
     },
     [availableArea],
   );
 
   const handleAreaInputChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
-      const parsedValue = Number(event.target.value);
+      const { value } = event.target;
+      setAreaInput(value);
+      if (value === '') {
+        setArea(0);
+        return;
+      }
+      const parsedValue = Number(value);
       if (Number.isNaN(parsedValue)) {
         return;
       }
-      normalizeArea(parsedValue);
+      updateArea(parsedValue);
     },
-    [normalizeArea],
+    [updateArea],
   );
 
   const handleApplyMaxArea = useCallback(() => {
     const target = Math.max(availableArea, 0.1);
-    normalizeArea(target);
-  }, [availableArea, normalizeArea]);
+    updateArea(target);
+  }, [availableArea, updateArea]);
 
   const handleContainerCountInputChange = useCallback(
     (event: ChangeEvent<HTMLInputElement>) => {
@@ -2780,7 +3121,7 @@ const CreateZoneModal = ({
           <div className="flex items-center gap-2">
             <input
               type="number"
-              value={area}
+              value={areaInput}
               onChange={handleAreaInputChange}
               min={0.1}
               max={Math.max(availableArea, 0.1)}
@@ -2796,25 +3137,30 @@ const CreateZoneModal = ({
             {formatNumber(room.area)} m²)
           </span>
         </label>
-        <label className="grid gap-1 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+        <div className="grid gap-1 text-sm">
+          <label
+            className="text-xs font-semibold uppercase tracking-wide text-text-muted"
+            htmlFor={containerCountInputId}
+          >
             Container count
-          </span>
+          </label>
           <input
+            id={containerCountInputId}
             type="number"
             value={containerCount}
             onChange={handleContainerCountInputChange}
             min={0}
-            max={maxContainers > 0 ? maxContainers : 0}
+            max={maxContainers > 0 ? maxContainers : undefined}
             disabled={!selectedContainer || maxContainers <= 0}
+            aria-describedby={containerCountHelperId}
             className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
           />
-          <span className="text-xs text-text-muted">
+          <span id={containerCountHelperId} className="text-xs text-text-muted">
             {maxContainers > 0
               ? `Maximum supported: ${formatNumber(maxContainers, { maximumFractionDigits: 0 })} containers`
               : 'Container footprint metadata required to compute capacity.'}
           </span>
-        </label>
+        </div>
       </div>
       {catalogError ? <Feedback message={catalogError} /> : null}
       {containerOverfill ? (

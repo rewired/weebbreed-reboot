@@ -144,9 +144,23 @@ export type CultivationMethodBlueprint = CultivationMethodCatalogEntry;
 export type ContainerBlueprint = ContainerCatalogEntry;
 export type SubstrateBlueprint = SubstrateCatalogEntry;
 
+export interface UpdateZoneContainerSelection {
+  blueprintId: string;
+  type: string;
+  count: number;
+}
+
+export interface UpdateZoneSubstrateSelection {
+  blueprintId: string;
+  type: string;
+  volumeLiters?: number;
+}
+
 export interface UpdateZoneMethodOptions {
   zoneId: string;
   methodId: string;
+  container?: UpdateZoneContainerSelection;
+  substrate?: UpdateZoneSubstrateSelection;
 }
 
 export interface AddPlantingOptions {
@@ -426,11 +440,19 @@ class SocketSystemFacade implements SimulationBridge {
   readonly world = {
     updateZone: async (options: UpdateZoneMethodOptions) => {
       this.requireConnected();
+      const patch: Record<string, unknown> = {
+        methodId: options.methodId,
+      };
+      if (options.container) {
+        patch.container = options.container;
+      }
+      if (options.substrate) {
+        patch.substrate = options.substrate;
+      }
+
       const payload = {
         zoneId: options.zoneId,
-        patch: {
-          methodId: options.methodId,
-        },
+        patch,
       } satisfies FacadeIntentCommand['payload'];
       const intent: FacadeIntentCommand = {
         domain: 'world',
