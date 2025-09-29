@@ -1,0 +1,115 @@
+{
+  "name": "forest",
+  "source": "daisyUI packages/daisyui/src/themes/forest.css",
+  "properties": {
+    "color-scheme": "dark",
+    "--color-base-100": {
+      "oklch": "oklch(20.84% 0.008 17.911)",
+      "rgb": [3, 2, 2],
+      "hex": "#030202"
+    },
+    "--color-base-200": {
+      "oklch": "oklch(18.522% 0.007 17.911)",
+      "rgb": [2, 1, 1],
+      "hex": "#020101"
+    },
+    "--color-base-300": {
+      "oklch": "oklch(16.203% 0.007 17.911)",
+      "rgb": [1, 1, 1],
+      "hex": "#010101"
+    },
+    "--color-base-content": {
+      "oklch": "oklch(83.768% 0.001 17.911)",
+      "rgb": [151, 150, 149],
+      "hex": "#979695"
+    },
+    "--color-primary": {
+      "oklch": "oklch(68.628% 0.185 148.958)",
+      "rgb": [4, 122, 23],
+      "hex": "#047a17"
+    },
+    "--color-primary-content": {
+      "oklch": "oklch(0% 0 0)",
+      "rgb": [0, 0, 0],
+      "hex": "#000000"
+    },
+    "--color-secondary": {
+      "oklch": "oklch(69.776% 0.135 168.327)",
+      "rgb": [3, 122, 69],
+      "hex": "#037a45"
+    },
+    "--color-secondary-content": {
+      "oklch": "oklch(13.955% 0.027 168.327)",
+      "rgb": [0, 1, 1],
+      "hex": "#000101"
+    },
+    "--color-accent": {
+      "oklch": "oklch(70.628% 0.119 185.713)",
+      "rgb": [3, 122, 104],
+      "hex": "#037a68"
+    },
+    "--color-accent-content": {
+      "oklch": "oklch(14.125% 0.023 185.713)",
+      "rgb": [0, 1, 1],
+      "hex": "#000101"
+    },
+    "--color-neutral": {
+      "oklch": "oklch(30.698% 0.039 171.364)",
+      "rgb": [2, 9, 7],
+      "hex": "#020907"
+    },
+    "--color-neutral-content": {
+      "oklch": "oklch(86.139% 0.007 171.364)",
+      "rgb": [156, 166, 162],
+      "hex": "#9ca6a2"
+    },
+    "--color-info": {
+      "oklch": "oklch(72.06% 0.191 231.6)",
+      "rgb": [0, 119, 255],
+      "hex": "#0077ff"
+    },
+    "--color-info-content": {
+      "oklch": "oklch(0% 0 0)",
+      "rgb": [0, 0, 0],
+      "hex": "#000000"
+    },
+    "--color-success": {
+      "oklch": "oklch(64.8% 0.15 160)",
+      "rgb": [0, 102, 40],
+      "hex": "#006628"
+    },
+    "--color-success-content": {
+      "oklch": "oklch(0% 0 0)",
+      "rgb": [0, 0, 0],
+      "hex": "#000000"
+    },
+    "--color-warning": {
+      "oklch": "oklch(84.71% 0.199 83.87)",
+      "rgb": [255, 131, 0],
+      "hex": "#ff8300"
+    },
+    "--color-warning-content": {
+      "oklch": "oklch(0% 0 0)",
+      "rgb": [0, 0, 0],
+      "hex": "#000000"
+    },
+    "--color-error": {
+      "oklch": "oklch(71.76% 0.221 22.18)",
+      "rgb": [255, 25, 30],
+      "hex": "#ff191e"
+    },
+    "--color-error-content": {
+      "oklch": "oklch(0% 0 0)",
+      "rgb": [0, 0, 0],
+      "hex": "#000000"
+    },
+    "--radius-selector": "1rem",
+    "--radius-field": "2rem",
+    "--radius-box": "1rem",
+    "--size-selector": "0.25rem",
+    "--size-field": "0.25rem",
+    "--border": "1px",
+    "--depth": "0",
+    "--noise": "0"
+  }
+}
