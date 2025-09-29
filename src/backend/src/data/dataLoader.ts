@@ -12,8 +12,8 @@ import {
   utilityPricesSchema,
   cultivationMethodPricesSchema,
   consumablePricesSchema,
-  substrateBlueprintSchema,
-  containerBlueprintSchema,
+  substrateSchema,
+  containerSchema,
 } from './schemas/index.js';
 import type {
   StrainBlueprint,
@@ -517,24 +517,12 @@ export const loadBlueprintData = async (
     issues,
   );
   const substrateEntries = filterDuplicateSlugs(
-    await loadDirectoryCollection(
-      substrateDir,
-      substrateBlueprintSchema,
-      absoluteDataDir,
-      summary,
-      issues,
-    ),
+    await loadDirectoryCollection(substrateDir, substrateSchema, absoluteDataDir, summary, issues),
     issues,
     'substrate',
   );
   const containerEntries = filterDuplicateSlugs(
-    await loadDirectoryCollection(
-      containerDir,
-      containerBlueprintSchema,
-      absoluteDataDir,
-      summary,
-      issues,
-    ),
+    await loadDirectoryCollection(containerDir, containerSchema, absoluteDataDir, summary, issues),
     issues,
     'container',
   );

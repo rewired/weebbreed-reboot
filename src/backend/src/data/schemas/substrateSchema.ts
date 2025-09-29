@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export const substrateBlueprintSchema = z
+export const substrateSchema = z
   .object({
     id: z.string().uuid(),
     slug: z.string().min(1).regex(slugPattern, {
@@ -15,4 +15,4 @@ export const substrateBlueprintSchema = z
   })
   .passthrough();
 
-export type SubstrateBlueprint = z.infer<typeof substrateBlueprintSchema>;
+export type SubstrateBlueprint = z.infer<typeof substrateSchema>;
