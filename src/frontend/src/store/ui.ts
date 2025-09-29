@@ -14,6 +14,7 @@ type ModalType =
   | 'duplicateRoom'
   | 'deleteRoom'
   | 'createZone'
+  | 'duplicateZone'
   | 'deleteZone'
   | 'recruitStaff'
   | 'hireApplicant'

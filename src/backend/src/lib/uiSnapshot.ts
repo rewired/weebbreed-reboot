@@ -10,6 +10,7 @@ import {
   type PlantState,
   type StructureState,
   type ZoneControlState,
+  type ZoneCultivationSetup,
   type ZoneEnvironmentState,
   type ZoneMetricState,
   type ZonePlantingPlanState,
@@ -109,6 +110,8 @@ export interface ZoneSnapshot {
   area: number;
   ceilingHeight: number;
   volume: number;
+  cultivationMethodId: string;
+  cultivation?: ZoneCultivationSnapshot;
   environment: ZoneEnvironmentState;
   resources: ZoneResourceState;
   metrics: ZoneMetricState;
@@ -118,6 +121,11 @@ export interface ZoneSnapshot {
   health: ZoneHealthSnapshot;
   lighting?: ZoneLightingSnapshot;
   plantingPlan?: ZonePlantingPlanSnapshot | null;
+}
+
+export interface ZoneCultivationSnapshot {
+  container?: ZoneCultivationSetup['container'];
+  substrate?: ZoneCultivationSetup['substrate'];
 }
 
 export interface EmployeeSnapshot {
@@ -304,6 +312,23 @@ const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
   lastTranspirationLiters: resources.lastTranspirationLiters,
 });
 
+const cloneCultivation = (
+  cultivation?: ZoneCultivationSetup,
+): ZoneCultivationSnapshot | undefined => {
+  if (!cultivation) {
+    return undefined;
+  }
+
+  const container = cultivation.container ? { ...cultivation.container } : undefined;
+  const substrate = cultivation.substrate ? { ...cultivation.substrate } : undefined;
+
+  if (!container && !substrate) {
+    return undefined;
+  }
+
+  return { container, substrate };
+};
+
 const cloneControl = (control: ZoneControlState): ZoneControlState => ({
   setpoints: {
     temperature: control.setpoints.temperature,
@@ -364,6 +389,8 @@ export const buildSimulationSnapshot = (
           area: zone.area,
           ceilingHeight: zone.ceilingHeight,
           volume: zone.volume,
+          cultivationMethodId: zone.cultivationMethodId,
+          cultivation: cloneCultivation(zone.cultivation),
           environment: { ...zone.environment },
           resources: cloneResources(zone.resources),
           metrics: { ...zone.metrics },

@@ -1732,6 +1732,166 @@ const DuplicateRoomModal = ({
   );
 };
 
+const DuplicateZoneModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const zoneId = typeof context?.zoneId === 'string' ? context.zoneId : null;
+  const zone = useSimulationStore((state) =>
+    zoneId ? (state.snapshot?.zones.find((item) => item.id === zoneId) ?? null) : null,
+  );
+  const openZone = useNavigationStore((state) => state.openZone);
+  const [nameOverride, setNameOverride] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  if (!zone || !zoneId) {
+    return (
+      <p className="text-sm text-text-muted">Zone data unavailable. Select a zone to clone.</p>
+    );
+  }
+
+  const handleDuplicate = async () => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const payload: Record<string, unknown> = { zoneId };
+      if (nameOverride.trim()) {
+        payload.name = nameOverride.trim();
+      }
+      const response = await bridge.sendIntent<{ zoneId?: string }>({
+        domain: 'world',
+        action: 'duplicateZone',
+        payload,
+      });
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Duplication rejected by facade.');
+        return;
+      }
+      const newZoneId = response.data?.zoneId;
+      if (newZoneId) {
+        openZone(zone.structureId, zone.roomId, newZoneId);
+      }
+      closeModal();
+    } catch (error) {
+      console.error('Failed to duplicate zone', error);
+      setFeedback('Connection error while duplicating zone.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-text-muted">
+        Duplicate <span className="font-semibold text-text">{zone.name}</span> including devices and
+        cultivation setup. Provide a new name if desired.
+      </p>
+      <label className="grid gap-1 text-sm">
+        <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
+          Zone name
+        </span>
+        <input
+          type="text"
+          value={nameOverride}
+          onChange={(event) => setNameOverride(event.target.value)}
+          placeholder={`${zone.name} Copy`}
+          className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+        />
+      </label>
+      {feedback ? <Feedback message={feedback} /> : null}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleDuplicate}
+        confirmLabel={busy ? 'Duplicating…' : 'Duplicate zone'}
+        confirmDisabled={busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
+const DeleteZoneModal = ({
+  bridge,
+  closeModal,
+  context,
+}: {
+  bridge: SimulationBridge;
+  closeModal: () => void;
+  context?: Record<string, unknown>;
+}) => {
+  const zoneId = typeof context?.zoneId === 'string' ? context.zoneId : null;
+  const zone = useSimulationStore((state) =>
+    zoneId ? (state.snapshot?.zones.find((item) => item.id === zoneId) ?? null) : null,
+  );
+  const openRoom = useNavigationStore((state) => state.openRoom);
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  if (!zone || !zoneId) {
+    return (
+      <p className="text-sm text-text-muted">Zone data unavailable. Select a zone to remove.</p>
+    );
+  }
+
+  const handleDelete = async () => {
+    setBusy(true);
+    setFeedback(null);
+    try {
+      const response = await bridge.sendIntent({
+        domain: 'world',
+        action: 'deleteZone',
+        payload: { zoneId },
+      });
+      if (!response.ok) {
+        const warning = response.errors?.[0]?.message ?? response.warnings?.[0];
+        setFeedback(warning ?? 'Deletion rejected by facade.');
+        return;
+      }
+      openRoom(zone.structureId, zone.roomId);
+      closeModal();
+    } catch (error) {
+      console.error('Failed to delete zone', error);
+      setFeedback('Connection error while deleting zone.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmMatches = confirmation.trim() === zone.name;
+
+  return (
+    <div className="grid gap-4">
+      <p className="text-sm text-text-muted">
+        Removing <span className="font-semibold text-text">{zone.name}</span> deletes plants,
+        devices, and cultivation history. Type the zone name to confirm.
+      </p>
+      <input
+        type="text"
+        value={confirmation}
+        onChange={(event) => setConfirmation(event.target.value)}
+        placeholder={zone.name}
+        className="w-full rounded-lg border border-border/60 bg-surface-muted/50 px-3 py-2 text-sm text-text focus:border-primary focus:outline-none"
+      />
+      {feedback ? <Feedback message={feedback} /> : null}
+      <ActionFooter
+        onCancel={closeModal}
+        onConfirm={handleDelete}
+        confirmLabel={busy ? 'Removing…' : 'Remove zone'}
+        confirmDisabled={!confirmMatches || busy}
+        cancelDisabled={busy}
+      />
+    </div>
+  );
+};
+
 const RecruitStaffModal = ({
   bridge,
   closeModal,
@@ -2720,13 +2880,14 @@ const modalRenderers: Record<
   createZone: ({ bridge, closeModal, context }) => (
     <CreateZoneModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
+  duplicateZone: ({ bridge, closeModal, context }) => (
+    <DuplicateZoneModal bridge={bridge} closeModal={closeModal} context={context} />
+  ),
   plantZone: ({ bridge, closeModal, context }) => (
     <PlantZoneModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
-  deleteZone: () => (
-    <p className="text-sm text-text-muted">
-      Zone deletion flow will be wired once zone intent schemas land in the facade.
-    </p>
+  deleteZone: ({ bridge, closeModal, context }) => (
+    <DeleteZoneModal bridge={bridge} closeModal={closeModal} context={context} />
   ),
   recruitStaff: ({ bridge, closeModal }) => (
     <RecruitStaffModal bridge={bridge} closeModal={closeModal} />

@@ -15,6 +15,25 @@ export interface ZoneResourceSnapshot {
   lastTranspirationLiters: number;
 }
 
+export interface ZoneCultivationContainerSnapshot {
+  blueprintId: string;
+  slug: string;
+  type: string;
+  count: number;
+}
+
+export interface ZoneCultivationSubstrateSnapshot {
+  blueprintId: string;
+  slug: string;
+  type: string;
+  totalVolumeLiters: number;
+}
+
+export interface ZoneCultivationSnapshot {
+  container?: ZoneCultivationContainerSnapshot;
+  substrate?: ZoneCultivationSubstrateSnapshot;
+}
+
 export interface ZoneControlSetpoints {
   temperature?: number;
   humidity?: number;
@@ -142,7 +161,8 @@ export interface ZoneSnapshot {
   area: number;
   ceilingHeight: number;
   volume: number;
-  cultivationMethodId?: string;
+  cultivationMethodId: string;
+  cultivation?: ZoneCultivationSnapshot;
   environment: SimulationEnvironmentState;
   resources: ZoneResourceSnapshot;
   metrics: {
