@@ -10,7 +10,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "id": "85cc0916-0e8a-495e-af8f-50291abe6855",
   "kind": "CultivationMethod",
   "name": "Basic Soil Pot",
-  "setupCost": 2.0,
   "laborIntensity": 0.1,
   "laborProfile": {
     "hoursPerPlantPerWeek": 0.35
@@ -19,9 +18,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "minimumSpacing": 0.5,
   "maxCycles": 1,
   "compatibleSubstrateSlugs": ["soil-single-cycle"],
-  "substrateCostPerSquareMeter": 2.5,
   "compatibleContainerSlugs": ["pot-10l"],
-  "containerCostPerUnit": 1.5,
   "strainTraitCompatibility": {},
   "envBias": {},
   "capacityHints": {
@@ -47,7 +44,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "id": "41229377-ef2d-4723-931f-72eea87d7a62",
   "kind": "CultivationMethod",
   "name": "Screen of Green",
-  "setupCost": 15.0,
   "laborIntensity": 0.7,
   "laborProfile": {
     "hoursPerPlantPerWeek": 1.2
@@ -56,9 +52,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "minimumSpacing": 0.8,
   "maxCycles": 4,
   "compatibleSubstrateSlugs": ["soil-multi-cycle"],
-  "substrateCostPerSquareMeter": 3.5,
   "compatibleContainerSlugs": ["pot-25l"],
-  "containerCostPerUnit": 4.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.sativa": {
@@ -106,7 +100,6 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "id": "659ba4d7-a5fc-482e-98d4-b614341883ac",
   "kind": "CultivationMethod",
   "name": "Sea of Green",
-  "setupCost": 10.0,
   "laborIntensity": 0.4,
   "laborProfile": {
     "hoursPerPlantPerWeek": 0.65
@@ -115,9 +108,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "minimumSpacing": 0.25,
   "maxCycles": 2,
   "compatibleSubstrateSlugs": ["soil-multi-cycle"],
-  "substrateCostPerSquareMeter": 3.5,
   "compatibleContainerSlugs": ["pot-11l"],
-  "containerCostPerUnit": 2.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.indica": {
@@ -156,6 +147,52 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Legal limitations in plant count (IRL)",
       "Not suitable for large or tall plants"
     ]
+  }
+}
+```
+
+## /data/prices/cultivationMethodPrices.json
+
+```json
+{
+  "version": "2024-09-01",
+  "cultivationMethodPrices": {
+    "85cc0916-0e8a-495e-af8f-50291abe6855": {
+      "setupCost": 2
+    },
+    "41229377-ef2d-4723-931f-72eea87d7a62": {
+      "setupCost": 15
+    },
+    "659ba4d7-a5fc-482e-98d4-b614341883ac": {
+      "setupCost": 10
+    }
+  }
+}
+```
+
+## /data/prices/consumablePrices.json
+
+```json
+{
+  "version": "2024-09-01",
+  "substrates": {
+    "soil-single-cycle": {
+      "costPerSquareMeter": 2.5
+    },
+    "soil-multi-cycle": {
+      "costPerSquareMeter": 3.5
+    }
+  },
+  "containers": {
+    "pot-10l": {
+      "costPerUnit": 1.5
+    },
+    "pot-11l": {
+      "costPerUnit": 2
+    },
+    "pot-25l": {
+      "costPerUnit": 4
+    }
   }
 }
 ```

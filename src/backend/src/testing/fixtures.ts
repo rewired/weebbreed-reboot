@@ -7,6 +7,9 @@ import type {
   UtilityPrices,
   SubstrateBlueprint,
   ContainerBlueprint,
+  CultivationMethodPriceEntry,
+  SubstratePriceEntry,
+  ContainerPriceEntry,
 } from '@/data/schemas/index.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import type { StructureBlueprint } from '@/state/models.js';
@@ -137,14 +140,11 @@ export const createCultivationMethodBlueprint = (
   id: '22222222-2222-4222-8222-222222222222',
   kind: 'CultivationMethod',
   name: 'Method Alpha',
-  setupCost: 1200,
   laborIntensity: 0.6,
   areaPerPlant: 1.6,
   minimumSpacing: 0.4,
   compatibleSubstrateSlugs: ['test-substrate'],
   compatibleContainerSlugs: ['test-container'],
-  substrateCostPerSquareMeter: 2.5,
-  containerCostPerUnit: 8.5,
   meta: {},
   ...overrides,
 });
@@ -216,6 +216,9 @@ interface RepositoryStubOptions {
   containers?: ContainerBlueprint[];
   devicePrices?: Map<string, DevicePriceEntry>;
   strainPrices?: Map<string, StrainPriceEntry>;
+  cultivationMethodPrices?: Map<string, CultivationMethodPriceEntry>;
+  substratePrices?: Map<string, SubstratePriceEntry>;
+  containerPrices?: Map<string, ContainerPriceEntry>;
   utilityPrices?: UtilityPrices;
   roomPurposes?: RoomPurpose[];
 }
@@ -274,6 +277,27 @@ export const createBlueprintRepositoryStub = (
       [strains[0].id, { seedPrice: 0.6, harvestPricePerGram: 4.2 }],
     ]);
 
+  const cultivationMethodPrices =
+    options.cultivationMethodPrices ??
+    new Map<string, CultivationMethodPriceEntry>(
+      methods.map((method, index) => [method.id, { setupCost: 500 + index * 125 }]),
+    );
+
+  const substratePrices =
+    options.substratePrices ??
+    new Map<string, SubstratePriceEntry>(
+      substrates.map((substrate, index) => [
+        substrate.slug,
+        { costPerSquareMeter: 2 + index * 0.5 },
+      ]),
+    );
+
+  const containerPrices =
+    options.containerPrices ??
+    new Map<string, ContainerPriceEntry>(
+      containers.map((container, index) => [container.slug, { costPerUnit: 7 + index * 1.5 }]),
+    );
+
   const utilityPrices = options.utilityPrices ?? DEFAULT_UTILITY_PRICES;
 
   const repo = {
@@ -293,9 +317,15 @@ export const createBlueprintRepositoryStub = (
     listRoomPurposes: () => roomPurposes.map((purpose) => clone(purpose)),
     getDevicePrice: (id: string) => devicePrices.get(id),
     getStrainPrice: (id: string) => strainPrices.get(id),
+    getCultivationMethodPrice: (id: string) => cultivationMethodPrices.get(id),
+    getSubstratePrice: (slug: string) => substratePrices.get(slug),
+    getContainerPrice: (slug: string) => containerPrices.get(slug),
     getUtilityPrices: () => ({ ...utilityPrices }),
     listDevicePrices: () => Array.from(devicePrices.entries()),
     listStrainPrices: () => Array.from(strainPrices.entries()),
+    listCultivationMethodPrices: () => Array.from(cultivationMethodPrices.entries()),
+    listSubstratePrices: () => Array.from(substratePrices.entries()),
+    listContainerPrices: () => Array.from(containerPrices.entries()),
   } satisfies Partial<BlueprintRepository>;
 
   return repo as unknown as BlueprintRepository;
@@ -328,3 +358,18 @@ export const createDevicePriceMap = (
 export const createStrainPriceMap = (
   entries: Array<[string, StrainPriceEntry]>,
 ): Map<string, StrainPriceEntry> => new Map(entries.map(([id, entry]) => [id, clone(entry)]));
+
+export const createCultivationMethodPriceMap = (
+  entries: Array<[string, CultivationMethodPriceEntry]>,
+): Map<string, CultivationMethodPriceEntry> =>
+  new Map(entries.map(([id, entry]) => [id, clone(entry)]));
+
+export const createSubstratePriceMap = (
+  entries: Array<[string, SubstratePriceEntry]>,
+): Map<string, SubstratePriceEntry> =>
+  new Map(entries.map(([slug, entry]) => [slug, clone(entry)]));
+
+export const createContainerPriceMap = (
+  entries: Array<[string, ContainerPriceEntry]>,
+): Map<string, ContainerPriceEntry> =>
+  new Map(entries.map(([slug, entry]) => [slug, clone(entry)]));

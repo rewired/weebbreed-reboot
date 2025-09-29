@@ -255,7 +255,7 @@ The application follows a structure → room → zone drill-down supported by pe
 - **InstallDeviceModal/UpdateDeviceModal/MoveDeviceModal**: manage device lifecycle (install JSON validation, patch existing settings, relocate hardware) through zone-store helpers and `SimulationFacade` intents.【F:docs/ui/ui-components-desciption.md†L440-L533】
 - **Device removal confirmation**: reuses confirmation modal to call `devices.removeDevice` via zone store helper.【F:docs/ui/ui-components-desciption.md†L440-L533】
 - **RentStructureModal**: rents new structure with affordability gating; uses forms primitives.【F:docs/ui/ui-components-desciption.md†L533-L540】
-- **Duplicate flows** described above require inline cost previews and compliance with `allowedRoomPurposes` for devices.【F:docs/ui/ui-components-desciption.md†L360-L533】【F:docs/ui/ui_interactions_spec.md†L27-L54】 Cost tooltips break totals into Rooms, Zones, Devices (count × individual CapEx via `devicePrices.json`), Setup (method/container/substrate), and Other, summing capital and setup costs while reminding players that maintenance remains separate.
+- **Duplicate flows** described above require inline cost previews and compliance with `allowedRoomPurposes` for devices.【F:docs/ui/ui-components-desciption.md†L360-L533】【F:docs/ui/ui_interactions_spec.md†L27-L54】 Cost tooltips break totals into Rooms, Zones, Devices (count × individual CapEx via `devicePrices.json`), Setup (method/container/substrate sourced from `cultivationMethodPrices.json` + `consumablePrices.json`), and Other, summing capital and setup costs while reminding players that maintenance remains separate.
 
 ### Simulation Components
 

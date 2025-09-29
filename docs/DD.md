@@ -168,14 +168,13 @@ Defines planting density, compatible substrate/container blueprints, setup costs
 - `areaPerPlant: number (m²)` — Max plant count = `floor(zoneArea / areaPerPlant)`.
 - `minimumSpacing?: number (m)` — Optional geometric limit.
 - `laborIntensity?: number (0–1)` — Affects labor time multipliers.
-- `setupCost?: number` — Currency-neutral.
 - `compatibleSubstrateSlugs?: string[]` — Slug references into `/data/blueprints/substrates`.
-- `substrateCostPerSquareMeter?: number` — Baseline media cost for the default substrate option.
 - `compatibleContainerSlugs?: string[]` — Slug references into `/data/blueprints/containers`.
-- `containerCostPerUnit?: number` — Baseline container cost for the default container option.
 - `compatibility?: { strainTags?: string[] }`
 - `recommendedPhases?: string[]`
 - `meta?: object`
+
+> Pricing lives in `/data/prices/cultivationMethodPrices.json` (method `setupCost`) and `/data/prices/consumablePrices.json` (slug-keyed `substrates.costPerSquareMeter` and `containers.costPerUnit`).【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L17】
 
 ---
 

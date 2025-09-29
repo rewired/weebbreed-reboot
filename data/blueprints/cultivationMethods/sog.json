@@ -2,7 +2,6 @@
   "id": "659ba4d7-a5fc-482e-98d4-b614341883ac",
   "kind": "CultivationMethod",
   "name": "Sea of Green",
-  "setupCost": 10.0,
   "laborIntensity": 0.4,
   "laborProfile": {
     "hoursPerPlantPerWeek": 0.65
@@ -11,9 +10,7 @@
   "minimumSpacing": 0.25,
   "maxCycles": 2,
   "compatibleSubstrateSlugs": ["soil-multi-cycle"],
-  "substrateCostPerSquareMeter": 3.5,
   "compatibleContainerSlugs": ["pot-11l"],
-  "containerCostPerUnit": 2.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.indica": {

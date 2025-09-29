@@ -7,6 +7,9 @@ import type {
   StrainPriceEntry,
   SubstrateBlueprint,
   ContainerBlueprint,
+  CultivationMethodPriceEntry,
+  SubstratePriceEntry,
+  ContainerPriceEntry,
 } from './schemas/index.js';
 
 export type HotReloadDisposition = 'commit' | 'defer';
@@ -116,6 +119,18 @@ export class BlueprintRepository {
     return this.data.prices.strains.get(id);
   }
 
+  getCultivationMethodPrice(id: string) {
+    return this.data.prices.cultivationMethods.get(id);
+  }
+
+  getSubstratePrice(slug: string) {
+    return this.data.prices.consumables.substrates.get(slug);
+  }
+
+  getContainerPrice(slug: string) {
+    return this.data.prices.consumables.containers.get(slug);
+  }
+
   getUtilityPrices() {
     return this.data.prices.utility;
   }
@@ -126,6 +141,18 @@ export class BlueprintRepository {
 
   listStrainPrices(): Array<[string, StrainPriceEntry]> {
     return Array.from(this.data.prices.strains.entries());
+  }
+
+  listCultivationMethodPrices(): Array<[string, CultivationMethodPriceEntry]> {
+    return Array.from(this.data.prices.cultivationMethods.entries());
+  }
+
+  listSubstratePrices(): Array<[string, SubstratePriceEntry]> {
+    return Array.from(this.data.prices.consumables.substrates.entries());
+  }
+
+  listContainerPrices(): Array<[string, ContainerPriceEntry]> {
+    return Array.from(this.data.prices.consumables.containers.entries());
   }
 
   getSummary(): DataLoadSummary {

@@ -30,6 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added substrate and container blueprint collections with dedicated schemas, loader
   cross-checks, repository helpers, and documentation updates so cultivation methods
   reference shared consumables by slug instead of embedding media/container payloads.
+- Externalized cultivation method setup costs and consumable pricing into dedicated
+  ledgers (`data/prices/cultivationMethodPrices.json`, `data/prices/consumablePrices.json`),
+  extending schemas, repository accessors, loader cross-checks, and docs to surface
+  the new price sources.
 
 ### Changed
 

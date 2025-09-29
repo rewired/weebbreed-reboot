@@ -1,0 +1,22 @@
+{
+  "version": "2024-09-01",
+  "substrates": {
+    "soil-single-cycle": {
+      "costPerSquareMeter": 2.5
+    },
+    "soil-multi-cycle": {
+      "costPerSquareMeter": 3.5
+    }
+  },
+  "containers": {
+    "pot-10l": {
+      "costPerUnit": 1.5
+    },
+    "pot-11l": {
+      "costPerUnit": 2
+    },
+    "pot-25l": {
+      "costPerUnit": 4
+    }
+  }
+}
