@@ -43,9 +43,9 @@ describe('loadBlueprintData', () => {
     expect(methodPrices.get('41229377-ef2d-4723-931f-72eea87d7a62')?.setupCost).toBe(15);
 
     const substratePrice = result.data.prices.consumables.substrates.get('soil-multi-cycle');
-    expect(substratePrice?.costPerSquareMeter).toBe(3.5);
+    expect(substratePrice?.costPerLiter).toBe(0.035);
     const cocoPrice = result.data.prices.consumables.substrates.get('coco-coir');
-    expect(cocoPrice?.costPerLiter).toBe(0.6);
+    expect(cocoPrice?.costPerLiter).toBe(0.55);
     const containerPrice = result.data.prices.consumables.containers.get('pot-25l');
     expect(containerPrice?.costPerUnit).toBe(4);
 

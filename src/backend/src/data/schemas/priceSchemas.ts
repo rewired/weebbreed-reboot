@@ -47,14 +47,9 @@ export type CultivationMethodPriceMap = z.infer<
   typeof cultivationMethodPricesSchema
 >['cultivationMethodPrices'];
 
-export const substratePriceSchema = z
-  .object({
-    costPerSquareMeter: z.number().optional(),
-    costPerLiter: z.number().optional(),
-  })
-  .refine((value) => value.costPerSquareMeter !== undefined || value.costPerLiter !== undefined, {
-    message: 'substrate price must include costPerSquareMeter or costPerLiter',
-  });
+export const substratePriceSchema = z.object({
+  costPerLiter: z.number(),
+});
 
 export const containerPriceSchema = z.object({
   costPerUnit: z.number(),

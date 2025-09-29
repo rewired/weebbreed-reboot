@@ -175,7 +175,7 @@ Defines planting density, compatible substrate/container blueprints, setup costs
 - `recommendedPhases?: string[]`
 - `meta?: object`
 
-> Pricing lives in `/data/prices/cultivationMethodPrices.json` (method `setupCost`) and `/data/prices/consumablePrices.json` (slug-keyed substrate entries expose `costPerSquareMeter` for area-based mixes or `costPerLiter` for volume-based media, and containers use `costPerUnit`).【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L21】
+> Pricing lives in `/data/prices/cultivationMethodPrices.json` (method `setupCost`) and `/data/prices/consumablePrices.json` (slug-keyed substrate entries expose `costPerLiter`, and containers use `costPerUnit`).【F:data/prices/cultivationMethodPrices.json†L1-L13】【F:data/prices/consumablePrices.json†L1-L21】
 
 ---
 
