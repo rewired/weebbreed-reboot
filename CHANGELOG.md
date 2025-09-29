@@ -38,6 +38,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extending schemas, repository accessors, loader cross-checks, and docs to surface
   the new price sources.
 
+### Changed
+
+- Replaced the monolithic world service with dedicated structure/room/zone collaborators,
+  extracted cloning helpers, and completed the `ZoneService.updateZone` migration so
+  cultivation defaults, validations, and telemetry align with the refactored delegates.
+
 - Extended the `world.updateZone` intent to accept container and substrate patches, revalidating
   method compatibility, clamping container capacity, recomputing substrate volume, and persisting
   consumable metadata with regression coverage and facade bridge support.【F:src/backend/src/facade/commands/world.ts†L109-L133】【F:src/backend/src/engine/world/worldService.ts†L828-L1106】【F:src/backend/src/engine/world/worldService.updateZone.test.ts†L128-L210】【F:src/frontend/src/facade/systemFacade.ts†L440-L456】

@@ -3,7 +3,8 @@ import { createEventCollector } from '@/lib/eventBus.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import { RngService } from '@/lib/rng.js';
 import { CostAccountingService } from '@/engine/economy/costAccounting.js';
-import { WorldService } from './worldService.js';
+import { createZoneService, type ZoneService, type FailureFactory } from './zoneService.js';
+import { generateId } from '@/state/initialization/common.js';
 import {
   createBlueprintRepositoryStub,
   createContainerBlueprint,
@@ -305,26 +306,53 @@ const createContext = (state: GameState): CommandExecutionContext => {
   } satisfies CommandExecutionContext;
 };
 
-describe('WorldService.updateZone', () => {
+describe('ZoneService.updateZone', () => {
   let state: GameState;
-  let world: WorldService;
+  let zoneService: ZoneService;
 
   beforeEach(() => {
     state = createBaseState();
     const repository = createRepository();
     const rng = new RngService('world-update-zone-tests');
     const costAccounting = createCostAccounting();
-    world = new WorldService({
+    const idStream = rng.getStream('world.structures');
+    const createId = (prefix: string) => generateId(idStream, prefix);
+    const applyAccumulator = (
+      accumulator: ReturnType<CostAccountingService['createAccumulator']>,
+    ) => {
+      const summary = state.finances.summary;
+      summary.totalRevenue += accumulator.revenue;
+      summary.totalExpenses += accumulator.expenses;
+      summary.totalMaintenance += accumulator.maintenance;
+      summary.totalPayroll += accumulator.payroll;
+      summary.lastTickRevenue = accumulator.revenue;
+      summary.lastTickExpenses = accumulator.expenses;
+      summary.netIncome = summary.totalRevenue - summary.totalExpenses;
+    };
+    const failure: FailureFactory = (code, message, path) => ({
+      ok: false as const,
+      errors: [
+        {
+          code,
+          message,
+          path,
+        },
+      ],
+    });
+
+    zoneService = createZoneService({
       state,
-      rng,
-      costAccounting,
       repository,
+      costAccounting,
+      createId,
+      applyAccumulator,
+      failure,
     });
   });
 
   it('updates the cultivation method and emits an event when compatible', () => {
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       { zoneId: ZONE_ID, patch: { methodId: METHOD_BETA_ID } },
       context,
     );
@@ -352,7 +380,7 @@ describe('WorldService.updateZone', () => {
 
   it('rejects method updates that conflict with existing container type', () => {
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       { zoneId: ZONE_ID, patch: { methodId: METHOD_GAMMA_ID } },
       context,
     );
@@ -370,7 +398,7 @@ describe('WorldService.updateZone', () => {
     }
 
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       { zoneId: ZONE_ID, patch: { methodId: METHOD_DELTA_ID } },
       context,
     );
@@ -393,7 +421,7 @@ describe('WorldService.updateZone', () => {
 
   it('updates container and substrate consumables while clamping count to capacity', () => {
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       {
         zoneId: ZONE_ID,
         patch: {
@@ -430,7 +458,7 @@ describe('WorldService.updateZone', () => {
 
   it('rejects container updates when the zone cannot support the footprint', () => {
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       {
         zoneId: ZONE_ID,
         patch: {
@@ -449,7 +477,7 @@ describe('WorldService.updateZone', () => {
 
   it('rejects container updates that are incompatible with the cultivation method', () => {
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       {
         zoneId: ZONE_ID,
         patch: {
@@ -466,7 +494,7 @@ describe('WorldService.updateZone', () => {
 
   it('rejects substrate updates that conflict with the cultivation method', () => {
     const context = createContext(state);
-    const result = world.updateZone(
+    const result = zoneService.updateZone(
       {
         zoneId: ZONE_ID,
         patch: {
