@@ -298,12 +298,18 @@ These components define the content for various modals used for user input and i
 
 ### `CreateZoneModal.tsx`
 
-- **Purpose:** Allocates footprint within a room, selects a cultivation method, and relays the intent to `world.createZone` with the trimmed name, method UUID, and consumable selections while clamping the zone area via the inline "Max" shortcut for the remaining room footprint.【F:src/frontend/src/components/modals/ModalHost.tsx†L2003-L2145】
-- **Props:** `room`, `existingZones`, `availableMethods?`, `onSubmit`, `onCancel`, `title?`, `description?`.
+- **Purpose:** Allocates footprint within a room, captures the zone name, and relays the `world.createZone` intent with the shared cultivation setup selection (method, container, substrate, costs). The dialog renders the reusable `CultivationSetupSection` below the name input so the Add/Change flows stay visually aligned.【F:src/frontend/src/components/modals/zones/CreateZoneModal.tsx†L1-L159】【F:src/frontend/src/components/modals/zones/CultivationSetupSection.tsx†L180-L430】
+- **Props:** `bridge`, `closeModal`, `context?` (expects `roomId`). Catalog data, area clamps, and container counts are managed through the shared hook instead of bespoke local state.【F:src/frontend/src/components/modals/zones/CreateZoneModal.tsx†L1-L159】
 - **Notable Controls:**
-  - The area input sits beside a secondary **Max** button that snaps the value to the available room area (with a 0.1 m² floor) and immediately recomputes container capacity.【F:src/frontend/src/components/modals/ModalHost.tsx†L2073-L2145】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L332-L363】
-  - Container counts are parsed through helpers that reject `NaN`, clamp to `[0, maxContainers]`, and reset to the blueprint’s current maximum whenever the area or container selection changes, preventing stale overfill states.【F:src/frontend/src/components/modals/ModalHost.tsx†L2045-L2095】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L331】
-- **Usage Context:** Launched from room-level actions when expanding a grow area. The ModalHost regression suite now covers both the default submission path and the Max-area workflow to prove the recalculated container counts are sent with the intent payload.【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L363】
+  - The area input sits beside a secondary **Max** button that snaps the value to the available room area (with a 0.1 m² floor) and immediately recomputes container capacity via `useCultivationSetup`.
+  - Container counts are parsed through helpers inside the hook that reject `NaN`, clamp to `[min, max]`, and repopulate from existing selections when possible, preventing stale overfill states.
+- **Usage Context:** Launched from room-level actions when expanding a grow area. The ModalHost regression suite still covers both the default submission path and the Max-area workflow to prove the recalculated container counts are sent with the intent payload.【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L363】
+
+### `CultivationSetupSection.tsx`
+
+- **Purpose:** Houses the shared method/container/substrate selectors, area controls, container capacity logic, and cost breakdown used by both the Create Zone and Change Method dialogs. The companion `useCultivationSetup` hook centralises catalog readiness checks, compatibility filtering, capacity calculation, and consumable price totals.【F:src/frontend/src/components/modals/zones/CultivationSetupSection.tsx†L1-L430】
+- **Props:** Accepts a `setup` state bag from the hook, flags for area editability, optional helper copy, capacity message overrides, and label overrides so hosting modals can tailor copy without reimplementing layout.【F:src/frontend/src/components/modals/zones/CultivationSetupSection.tsx†L180-L430】
+- **Usage Context:** Embedded by `CreateZoneModal` and `ChangeZoneMethodModal` to ensure both dialogs render identical controls, catalog loading states, and cost summaries while only leaving modal-specific chrome (zone name, current setup, warnings) in the hosts.【F:src/frontend/src/components/modals/zones/CreateZoneModal.tsx†L95-L139】【F:src/frontend/src/components/modals/zones/ChangeZoneMethodModal.tsx†L120-L208】
 
 ### `RentStructureModal.tsx`
 

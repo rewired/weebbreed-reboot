@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Documented the cultivation setup UI consolidation in ADR 0011, covering the shared
+  hook/component contract for zone modals.【F:docs/system/adr/0011-cultivation-setup-sharing.md†L1-L50】
 - Dokumentiert den Umsetzungsplan für die Irrigation-&-Nutrient-Überarbeitung unter
   `docs/tasks/20250928-irrgitation-nutrient-overhaul.md`.
 - Implemented a device removal engine service that clears unsupported zone setpoints, emits
@@ -53,13 +55,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumable metadata with regression coverage and facade bridge support.【F:src/backend/src/facade/commands/world.ts†L109-L133】【F:src/backend/src/engine/world/worldService.ts†L828-L1106】【F:src/backend/src/engine/world/worldService.updateZone.test.ts†L128-L210】【F:src/frontend/src/facade/systemFacade.ts†L440-L456】
 
 - Added cultivation metadata (method, container, substrate) to zone UI snapshots, updating backend tests and frontend types/fixtures to surface the new fields.【F:src/backend/src/lib/uiSnapshot.ts†L102-L178】【F:src/backend/src/lib/uiSnapshot.test.ts†L103-L159】【F:src/frontend/src/types/simulation.ts†L1-L64】【F:src/frontend/src/data/mockTelemetry.ts†L1-L207】
-- Added a "Change cultivation method" flow: the Zone header surfaces method/container/substrate labels, and the modal now filters compatible methods, constrains consumable catalogs, clamps container counts to the zone capacity while recomputing substrate volume and cost estimates, confirms the storage handoff stub, and dispatches `bridge.world.updateZone` with consumable metadata. RTL coverage exercises the filtering, clamping, and dispatched payload.【F:src/frontend/src/views/ZoneView.tsx†L332-L370】【F:src/frontend/src/components/modals/ModalHost.tsx†L365-L544】【F:src/frontend/src/components/modals/**tests**/ChangeZoneMethodModal.test.tsx†L128-L210】【F:src/frontend/src/facade/systemFacade.ts†L440-L456】
+- Added a "Change cultivation method" flow and consolidated its UI with the Add Zone dialog by reusing the shared cultivation setup section/hook. The Zone header surfaces method/container/substrate labels, the dialog filters compatible catalogs, clamps container capacity, recomputes substrate estimates, reuses the storage handoff stub, and dispatches `bridge.world.updateZone` with consumable metadata while leveraging the shared layout for visual parity. RTL coverage exercises the filtering, clamping, and dispatched payload.【F:src/frontend/src/views/ZoneView.tsx†L332-L370】【F:src/frontend/src/components/modals/ModalHost.tsx†L365-L544】【F:src/frontend/src/components/modals/zones/CultivationSetupSection.tsx†L1-L635】【F:src/frontend/src/components/modals/zones/ChangeZoneMethodModal.tsx†L1-L352】【F:src/frontend/src/components/modals/**tests**/ChangeZoneMethodModal.test.tsx†L1-L210】【F:src/frontend/src/facade/systemFacade.ts†L440-L456】
 
 ### Changed
 
 - Refined the Create Zone modal with a Max area shortcut, stricter numeric clamps,
-  and automatic container-capacity recalculation, refreshing docs and regression
-  coverage for the updated workflow.【F:src/frontend/src/components/modals/ModalHost.tsx†L2045-L2145】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L363】【F:docs/ui/ui-components-desciption.md†L297-L304】
+  and automatic container-capacity recalculation while delegating catalog and cost
+  logic to the shared cultivation setup hook/section for parity with the change
+  modal. Updated docs capture the shared contract and regression coverage keeps
+  the workflow green.【F:src/frontend/src/components/modals/ModalHost.tsx†L2003-L2145】【F:src/frontend/src/components/modals/zones/CultivationSetupSection.tsx†L1-L635】【F:src/frontend/src/components/modals/zones/CreateZoneModal.tsx†L1-L165】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L288-L363】【F:docs/ui/ui-components-desciption.md†L301-L312】
 - Renamed the substrate and container schema modules to `substrateSchema` and
   `containerSchema`, updating imports to follow the shared schema naming
   convention and documenting the decision in ADR 0010.
