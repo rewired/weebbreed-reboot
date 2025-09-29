@@ -220,18 +220,30 @@ export const ProfitChart = ({
           )}
 
           {/* Revenue line */}
-          <path d={revenuePath} fill="none" stroke="#10b981" strokeWidth="0.5" opacity="0.8" />
+          <path
+            d={revenuePath}
+            fill="none"
+            stroke="rgb(var(--color-success))"
+            strokeWidth="0.5"
+            opacity="0.8"
+          />
 
           {/* Expenses line */}
-          <path d={expensePath} fill="none" stroke="#ef4444" strokeWidth="0.5" opacity="0.8" />
+          <path
+            d={expensePath}
+            fill="none"
+            stroke="rgb(var(--color-danger))"
+            strokeWidth="0.5"
+            opacity="0.8"
+          />
 
           {/* Profit line */}
-          <path d={profitPath} fill="none" stroke="#3b82f6" strokeWidth="0.8" />
+          <path d={profitPath} fill="none" stroke="rgb(var(--color-primary))" strokeWidth="0.8" />
 
           {/* Profit area fill */}
           <path
             d={`${profitPath} L 100 ${chartHeight} L 0 ${chartHeight} Z`}
-            fill="#3b82f6"
+            fill="rgb(var(--color-primary))"
             opacity="0.1"
           />
         </svg>
