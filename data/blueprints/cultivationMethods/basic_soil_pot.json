@@ -9,7 +9,7 @@
   "areaPerPlant": 0.5,
   "minimumSpacing": 0.5,
   "maxCycles": 1,
-  "compatibleSubstrateSlugs": ["soil-single-cycle"],
+  "compatibleSubstrateTypes": ["soil", "coco"],
   "compatibleContainerSlugs": ["pot-10l"],
   "strainTraitCompatibility": {},
   "envBias": {},

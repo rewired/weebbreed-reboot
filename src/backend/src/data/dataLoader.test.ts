@@ -15,6 +15,7 @@ describe('loadBlueprintData', () => {
 
     const cultivationMethods = result.data.cultivationMethods;
     const substrates = result.data.substrates;
+    const substratesByType = result.data.substratesByType;
     const containers = result.data.containers;
     expect(cultivationMethods.size).toBeGreaterThan(0);
     expect(substrates.size).toBeGreaterThan(0);
@@ -22,6 +23,12 @@ describe('loadBlueprintData', () => {
 
     const substrateSlugs = Array.from(substrates.values()).map((entry) => entry.slug);
     expect(substrateSlugs).toContain('coco-coir');
+    const soilSubstrates = substratesByType.get('soil');
+    const cocoSubstrates = substratesByType.get('coco');
+    expect(soilSubstrates).toBeDefined();
+    expect(cocoSubstrates).toBeDefined();
+    expect(soilSubstrates?.map((entry) => entry.slug)).toContain('soil-multi-cycle');
+    expect(cocoSubstrates?.map((entry) => entry.slug)).toContain('coco-coir');
     const cocoCoir = Array.from(substrates.values()).find((entry) => entry.slug === 'coco-coir');
     expect(cocoCoir?.type).toBe('coco');
 
@@ -29,7 +36,8 @@ describe('loadBlueprintData', () => {
     expect(scrog?.strainTraitCompatibility?.preferred?.['genotype.sativa']?.min).toBe(0.5);
     expect(scrog?.strainTraitCompatibility?.conflicting?.['genotype.indica']?.min).toBe(0.7);
     expect(scrog?.compatibleContainerSlugs).toContain('pot-25l');
-    expect(scrog?.compatibleSubstrateSlugs).toContain('soil-multi-cycle');
+    expect(scrog?.compatibleSubstrateTypes).toContain('soil');
+    expect(scrog?.compatibleSubstrateTypes).toContain('coco');
 
     const methodPrices = result.data.prices.cultivationMethods;
     expect(methodPrices.get('41229377-ef2d-4723-931f-72eea87d7a62')?.setupCost).toBe(15);
@@ -49,6 +57,7 @@ describe('loadBlueprintData', () => {
       2_419_200,
     );
     expect(sog?.compatibleContainerSlugs).toContain('pot-11l');
-    expect(sog?.compatibleSubstrateSlugs).toContain('soil-multi-cycle');
+    expect(sog?.compatibleSubstrateTypes).toContain('soil');
+    expect(sog?.compatibleSubstrateTypes).toContain('coco');
   });
 });

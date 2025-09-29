@@ -50,6 +50,7 @@ export interface BlueprintData {
   devices: Map<string, DeviceBlueprint>;
   cultivationMethods: Map<string, CultivationMethodBlueprint>;
   substrates: Map<string, SubstrateBlueprint>;
+  substratesByType: Map<string, SubstrateBlueprint[]>;
   containers: Map<string, ContainerBlueprint>;
   roomPurposes: Map<string, RoomPurposeBlueprint>;
   prices: {
@@ -399,6 +400,15 @@ const runCrossChecks = (
   }
 
   const substrateSlugs = new Set(context.substrateEntries.map((entry) => entry.data.slug));
+  const substrateTypes = new Map<string, Set<string>>();
+  for (const entry of context.substrateEntries) {
+    const list = substrateTypes.get(entry.data.type);
+    if (list) {
+      list.add(entry.data.slug);
+    } else {
+      substrateTypes.set(entry.data.type, new Set([entry.data.slug]));
+    }
+  }
   const containerSlugs = new Set(context.containerEntries.map((entry) => entry.data.slug));
 
   for (const slug of data.prices.consumables.substrates.keys()) {
@@ -422,19 +432,24 @@ const runCrossChecks = (
   }
 
   for (const entry of context.cultivationEntries) {
-    const { compatibleSubstrateSlugs = [], compatibleContainerSlugs = [] } = entry.data;
-    for (const slug of compatibleSubstrateSlugs) {
-      if (!substrateSlugs.has(slug)) {
+    const { compatibleSubstrateTypes = [], compatibleContainerSlugs = [] } = entry.data;
+    for (const type of compatibleSubstrateTypes) {
+      const slugsForType = substrateTypes.get(type);
+      if (!slugsForType || slugsForType.size === 0) {
         issues.push({
           level: 'error',
-          message: `Cultivation method '${entry.data.id}' references unknown substrate slug '${slug}'`,
+          message: `Cultivation method '${entry.data.id}' references unknown substrate type '${type}'`,
           file: entry.file,
         });
+        continue;
       }
-      if (!data.prices.consumables.substrates.has(slug)) {
+      const hasPricedSlug = Array.from(slugsForType).some((slug) =>
+        data.prices.consumables.substrates.has(slug),
+      );
+      if (!hasPricedSlug) {
         issues.push({
           level: 'warning',
-          message: `Substrate slug '${slug}' used by cultivation method '${entry.data.id}' has no price entry`,
+          message: `Substrate type '${type}' used by cultivation method '${entry.data.id}' has no priced substrate slug`,
           file: consumablePriceFile,
         });
       }
@@ -536,6 +551,18 @@ export const loadBlueprintData = async (
   const cultivationMethods = toMapWithDuplicateCheck(cultivationEntries, issues);
   const substrates = toMapWithDuplicateCheck(substrateEntries, issues);
   const containers = toMapWithDuplicateCheck(containerEntries, issues);
+  const substratesByType = substrateEntries.reduce<Map<string, SubstrateBlueprint[]>>(
+    (acc, entry) => {
+      const existing = acc.get(entry.data.type);
+      if (existing) {
+        existing.push(entry.data);
+      } else {
+        acc.set(entry.data.type, [entry.data]);
+      }
+      return acc;
+    },
+    new Map(),
+  );
   const filteredRoomPurposeEntries = filterDuplicateRoomPurposeKinds(
     filterDuplicateRoomPurposeNames(
       filterDuplicateRoomPurposeIds(roomPurposeEntries, issues),
@@ -633,6 +660,7 @@ export const loadBlueprintData = async (
     devices,
     cultivationMethods,
     substrates,
+    substratesByType,
     containers,
     roomPurposes,
     prices: {

@@ -168,7 +168,8 @@ Defines planting density, compatible substrate/container blueprints, setup costs
 - `areaPerPlant: number (m²)` — Max plant count = `floor(zoneArea / areaPerPlant)`.
 - `minimumSpacing?: number (m)` — Optional geometric limit.
 - `laborIntensity?: number (0–1)` — Affects labor time multipliers.
-- `compatibleSubstrateSlugs?: string[]` — Slug references into `/data/blueprints/substrates`.
+- `compatibleSubstrateTypes?: string[]` — Media categories (e.g., `"soil"`, `"coco"`) resolved against `/data/blueprints/substrates`.
+- Loader cross-checks ensure each referenced type is defined and warns when no priced substrate slug exists for that type.
 - `compatibleContainerSlugs?: string[]` — Slug references into `/data/blueprints/containers`.
 - `compatibility?: { strainTags?: string[] }`
 - `recommendedPhases?: string[]`
