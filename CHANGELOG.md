@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Renamed the substrate and container schema modules to `substrateSchema` and
+  `containerSchema`, updating imports to follow the shared schema naming
+  convention and documenting the decision in ADR 0010.
 - Shifted cultivation method media compatibility to `compatibleSubstrateTypes`,
   teaching the loader to index substrates by type, validate referenced media,
   warn when pricing is missing, and refreshing documentation plus blueprints to
