@@ -12,6 +12,9 @@
   --color-success: 22 163 74;
   --color-warning: 202 138 4;
   --color-danger: 239 68 68;
+  --radius-box: 1rem;
+  --radius-button: 0.5rem;
+  --radius-badge: 1.9rem;
   --sidebar-width: 280px;
 }
 
