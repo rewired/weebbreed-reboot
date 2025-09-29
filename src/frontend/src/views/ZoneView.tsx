@@ -648,20 +648,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 icon={<Icon name="delete" size={16} />}
                 disabled={cullDisabled}
                 title={cullTitle}
-                onClick={() => {
-                  const context: ConfirmPlantActionContext = {
-                    action: 'cull',
-                    plantIds: [plant.id],
-                    zoneId: zone?.id,
-                    onConfirm: () => handleCull(plant.id),
-                  };
-                  openModal({
-                    id: `confirm-cull-${plant.id}`,
-                    type: 'confirmPlantAction',
-                    title: 'Confirm trash',
-                    context,
-                  });
-                }}
+                onClick={() => handleCull(plant.id)}
               >
                 Trash
               </Button>
