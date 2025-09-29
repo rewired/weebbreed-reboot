@@ -2,6 +2,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import '@testing-library/jest-dom/vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { ZoneView } from '../ZoneView';
+import { ModalHost } from '@/components/modals/ModalHost';
+import { ToastViewport } from '@/components/feedback/ToastViewport';
 import { quickstartSnapshot } from '@/data/mockTelemetry';
 import { useSimulationStore } from '@/store/simulation';
 import { useNavigationStore } from '@/store/navigation';
@@ -32,6 +34,15 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
   },
   ...overrides,
 });
+
+const renderZoneViewWithUI = (bridge: SimulationBridge) =>
+  render(
+    <>
+      <ZoneView bridge={bridge} />
+      <ModalHost bridge={bridge} />
+      <ToastViewport />
+    </>,
+  );
 
 describe('ZoneView', () => {
   const zone = quickstartSnapshot.zones[0];
@@ -79,6 +90,7 @@ describe('ZoneView', () => {
   beforeEach(() => {
     useSimulationStore.getState().reset();
     useNavigationStore.getState().reset();
+    useUIStore.setState({ activeModal: null, modalQueue: [], toasts: [] });
   });
 
   afterEach(() => {
@@ -86,6 +98,7 @@ describe('ZoneView', () => {
     act(() => {
       useSimulationStore.getState().reset();
       useNavigationStore.getState().reset();
+      useUIStore.setState({ activeModal: null, modalQueue: [], toasts: [] });
     });
   });
 
@@ -550,6 +563,124 @@ describe('ZoneView', () => {
     expect(within(plantsCard).queryByText('Growing Plant')).not.toBeInTheDocument();
   });
 
+  it('requires confirmation before harvesting a plant', async () => {
+    const harvestPlant = vi.fn(async () => ({ ok: true }));
+    const bridge = buildBridge({
+      plants: {
+        addPlanting: vi.fn(async () => ({ ok: true })),
+        harvestPlant,
+        cullPlant: vi.fn(async () => ({ ok: true })),
+      },
+    });
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-ready',
+        strainName: 'Ready Plant',
+        isHarvestable: true,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    renderZoneViewWithUI(bridge);
+
+    const plantsCard = await screen.findByTestId('zone-plants-card');
+    const harvestButton = within(plantsCard).getByTestId('plant-action-harvest-plant-ready');
+
+    await act(async () => {
+      fireEvent.click(harvestButton);
+    });
+
+    expect(await screen.findByTestId('confirm-plant-action-list')).toHaveTextContent('Ready Plant');
+
+    const confirmButton = await screen.findByTestId('confirm-plant-action-confirm');
+
+    await act(async () => {
+      confirmButton.click();
+    });
+
+    await waitFor(() => {
+      expect(harvestPlant).toHaveBeenCalledWith({ plantId: 'plant-ready' });
+    });
+
+    expect(await screen.findByText('Harvest command accepted')).toBeInTheDocument();
+    expect(await screen.findByTestId('zone-plants-action-status')).toHaveTextContent(
+      'Harvest command accepted — Queued harvest for Ready Plant.',
+    );
+  });
+
+  it('requires confirmation before culling a plant', async () => {
+    const cullPlant = vi.fn(async () => ({ ok: true }));
+    const bridge = buildBridge({
+      plants: {
+        addPlanting: vi.fn(async () => ({ ok: true })),
+        harvestPlant: vi.fn(async () => ({ ok: true })),
+        cullPlant,
+      },
+    });
+
+    const snapshot = JSON.parse(JSON.stringify(quickstartSnapshot)) as typeof quickstartSnapshot;
+    const zoneSnapshot = snapshot.zones[0]!;
+    zoneSnapshot.plants = [
+      {
+        ...zoneSnapshot.plants[0]!,
+        id: 'plant-cull',
+        strainName: 'Cull Plant',
+        isHarvestable: false,
+      },
+    ];
+
+    act(() => {
+      useSimulationStore.getState().hydrate({ snapshot });
+      useNavigationStore.setState({
+        currentView: 'zone',
+        selectedStructureId: snapshot.structures[0]!.id,
+        selectedRoomId: snapshot.rooms[0]!.id,
+        selectedZoneId: zoneSnapshot.id,
+        isSidebarOpen: false,
+      });
+    });
+
+    renderZoneViewWithUI(bridge);
+
+    const plantsCard = await screen.findByTestId('zone-plants-card');
+    const cullButton = within(plantsCard).getByTestId('plant-action-cull-plant-cull');
+
+    await act(async () => {
+      fireEvent.click(cullButton);
+    });
+
+    expect(await screen.findByTestId('confirm-plant-action-list')).toHaveTextContent('Cull Plant');
+
+    const confirmButton = await screen.findByTestId('confirm-plant-action-confirm');
+
+    await act(async () => {
+      confirmButton.click();
+    });
+
+    await waitFor(() => {
+      expect(cullPlant).toHaveBeenCalledWith({ plantId: 'plant-cull' });
+    });
+
+    expect(await screen.findByText('Plant trashed')).toBeInTheDocument();
+    expect(await screen.findByTestId('zone-plants-action-status')).toHaveTextContent(
+      'Plant trashed — Removed Cull Plant from the zone.',
+    );
+  });
+
   it('disables the Harvest all button when no plants are harvestable or the zone is restricted', async () => {
     const bridge = buildBridge();
 
@@ -605,7 +736,7 @@ describe('ZoneView', () => {
     expect(harvestAllButton).toBeDisabled();
   });
 
-  it('harvests all ready plants when the Harvest all button is pressed', async () => {
+  it('confirms harvest all before dispatching commands', async () => {
     const harvestPlant = vi.fn(async () => ({ ok: true }));
     const bridge = buildBridge({
       plants: {
@@ -643,7 +774,7 @@ describe('ZoneView', () => {
       });
     });
 
-    render(<ZoneView bridge={bridge} />);
+    renderZoneViewWithUI(bridge);
 
     const plantsCard = await screen.findByTestId('zone-plants-card');
     const harvestAllButton = within(plantsCard).getByTestId('plant-harvest-all');
@@ -653,16 +784,27 @@ describe('ZoneView', () => {
       fireEvent.click(harvestAllButton);
     });
 
-    await waitFor(() => {
-      expect(harvestPlant).toHaveBeenCalledTimes(2);
-      expect(harvestPlant).toHaveBeenCalledWith({ plantId: 'plant-harvest-1' });
-      expect(harvestPlant).toHaveBeenCalledWith({ plantId: 'plant-harvest-2' });
+    const confirmButton = await screen.findByTestId('confirm-plant-action-confirm');
+    const selectionList = screen.getByTestId('confirm-plant-action-list');
+    expect(selectionList).toHaveTextContent('Harvest One');
+    expect(selectionList).toHaveTextContent('Harvest Two');
+
+    await act(async () => {
+      confirmButton.click();
     });
 
     await waitFor(() => {
-      expect(within(plantsCard).queryByText('Harvest One')).not.toBeInTheDocument();
-      expect(within(plantsCard).queryByText('Harvest Two')).not.toBeInTheDocument();
+      expect(harvestPlant).toHaveBeenCalledTimes(2);
+      expect(harvestPlant).toHaveBeenNthCalledWith(1, { plantId: 'plant-harvest-1' });
+      expect(harvestPlant).toHaveBeenNthCalledWith(2, { plantId: 'plant-harvest-2' });
     });
+
+    await screen.findByText('Harvest command accepted');
+    expect(await screen.findByTestId('zone-plants-action-status')).toHaveTextContent(
+      'Harvest command accepted — Queued harvest for 2 plants.',
+    );
+
+    expect(screen.queryByTestId('confirm-plant-action-confirm')).not.toBeInTheDocument();
   });
 
   it('disables harvest and trash actions when zone restrictions apply', async () => {

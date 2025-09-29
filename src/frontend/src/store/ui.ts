@@ -24,7 +24,8 @@ type ModalType =
   | 'installDevice'
   | 'tuneDevice'
   | 'moveDevice'
-  | 'removeDevice';
+  | 'removeDevice'
+  | 'confirmPlantAction';
 
 export interface ModalDescriptor {
   id: string;
@@ -39,6 +40,7 @@ interface UIState {
   modalQueue: ModalDescriptor[];
   notificationsUnread: number;
   theme: 'dark' | 'light';
+  toasts: ToastDescriptor[];
 }
 
 interface UIActions {
@@ -47,13 +49,26 @@ interface UIActions {
   markNotificationsRead: () => void;
   incrementNotifications: (count?: number) => void;
   setTheme: (theme: UIState['theme']) => void;
+  pushToast: (toast: ToastInput) => string;
+  dismissToast: (id: string) => void;
 }
+
+export interface ToastDescriptor {
+  id: string;
+  tone: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  description?: string;
+  durationMs?: number;
+}
+
+type ToastInput = Omit<ToastDescriptor, 'id'> & { id?: string };
 
 export const useUIStore = create<UIState & UIActions>((set) => ({
   activeModal: null,
   modalQueue: [],
   notificationsUnread: 0,
   theme: 'dark',
+  toasts: [],
   openModal: (modal) =>
     set((state) => {
       if (state.activeModal) {
@@ -83,4 +98,15 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
       }
       return { theme };
     }),
+  pushToast: (toast) => {
+    const id =
+      toast.id ??
+      (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `toast_${Date.now()}`);
+    set((state) => ({ toasts: [...state.toasts, { ...toast, id }] }));
+    return id;
+  },
+  dismissToast: (id) =>
+    set((state) => ({ toasts: state.toasts.filter((toast) => toast.id !== id) })),
 }));

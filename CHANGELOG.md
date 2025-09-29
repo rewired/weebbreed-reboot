@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Introduced zone plant-table harvest management: a harvestable-only filter, per-plant
   harvest/cull controls, and a batch "Harvest all" action that respects zone safety
   restrictions, invokes the bridge intents, and keeps the list in sync.
+- Added a harvest/cull confirmation modal with toast feedback, wiring ZoneView actions,
+  facade mocks, and Vitest coverage to require confirmation and surface command
+  success or failure states.
 
 ### Changed
 
