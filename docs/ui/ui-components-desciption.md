@@ -120,7 +120,7 @@ These are generic, reusable components used throughout the application.
 
 - **Purpose:** Provides standardized, pre-styled button components to ensure UI consistency.
 - **Components:**
-  - `PrimaryButton`: A lime-green button for primary, positive actions (e.g., "Create", "Submit", "Confirm"). Includes a disabled state.
+  - `PrimaryButton`: An evergreen-toned button (`bg-primary` / `bg-primary-strong`) for primary, positive actions (e.g., "Create", "Submit", "Confirm"). Includes a disabled state that keeps the moss palette consistent with the rest of the theme.【F:src/frontend/src/components/primitives/Button.tsx†L9-L33】
   - `DangerButton`: A red button for destructive actions (e.g., "Delete", "Fire").
 - **Props:** Standard HTML button attributes.
 - **Icons Used:** None.
@@ -553,19 +553,19 @@ The application is styled exclusively with **Tailwind CSS**. There is no separat
 
 ### Color Palette (Dark Theme)
 
-The UI uses a consistent dark theme based on the Tailwind `stone` color family, with `lime` as the primary accent color for interactive elements.
+The UI now leans on the forest palette backed by CSS tokens. Tailwind maps each token to semantic utilities, so components prefer `bg-surface`, `text-text`, and `bg-primary` instead of raw `stone`/`lime` classes.【F:src/frontend/src/styles/tokens.css†L1-L46】【F:src/frontend/tailwind.config.ts†L16-L33】
 
-- **Background:** `bg-stone-900`
-- **Text (Primary):** `text-stone-200` / `text-stone-100`
-- **Text (Secondary/Muted):** `text-stone-400` / `text-stone-500`
-- **Panels & Cards:** `bg-stone-800/30` (a semi-transparent dark gray for a layered effect)
-- **Borders & Dividers:** `border-stone-700`
-- **Primary Accent (Buttons, Highlights):** `bg-lime-600`, `text-lime-400`
+- **Background:** `bg-surface` → `rgb(7 20 15)`
+- **Text (Primary):** `text-text` → `rgb(233 247 239)`
+- **Text (Secondary/Muted):** `text-text-muted` → `rgb(156 166 162)`
+- **Panels & Cards:** `bg-surface-elevated` / `bg-surface-muted`
+- **Borders & Dividers:** `border-border`
+- **Primary Accent (Buttons, Highlights):** `bg-primary`, `hover:bg-primary-strong`, `text-text`
 - **Status Colors:**
-  - **Success/Optimal:** `text-green-400`, `bg-green-600`
-  - **Warning/Attention:** `text-yellow-400`, `bg-yellow-500`
-  - **Danger/Error:** `text-red-400`, `bg-red-600`
-  - **Informational:** `text-blue-400`, `text-cyan-400`
+  - **Success/Optimal:** `bg-success`, `text-success`
+  - **Warning/Attention:** `bg-warning`, `text-warning`
+  - **Danger/Error:** `bg-danger`, `text-danger`
+  - **Informational:** currently reuses cyan/blue utilities until a shared info token ships
 
 ### Typography
 
@@ -580,7 +580,7 @@ Here are examples of the Tailwind classes used for common, repeated UI elements:
 Most content containers share this base style.
 
 ```html
-<div class="bg-stone-800/30 rounded-lg p-6">
+<div class="rounded-lg bg-surface-elevated p-6 border border-border/40">
   <!-- Card content -->
 </div>
 ```
@@ -590,7 +590,7 @@ Used for the main positive action in a form or modal.
 
 ```html
 <button
-  class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-2 px-4 rounded-md transition-colors disabled:bg-stone-600 disabled:cursor-not-allowed"
+  class="w-full rounded-md bg-primary text-text font-semibold py-2 px-4 transition-colors hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-strong disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
 >
   Action
 </button>
@@ -601,9 +601,9 @@ A standard input field with consistent styling.
 
 ```html
 <div>
-  <label class="block text-sm font-medium text-stone-300 mb-1">Label</label>
+  <label class="mb-1 block text-sm font-medium text-text-muted">Label</label>
   <input
-    class="w-full bg-stone-900 border border-stone-700 rounded-md px-3 py-2 text-stone-100 focus:ring-2 focus:ring-lime-500 focus:border-lime-500 outline-none"
+    class="w-full rounded-md border border-border/60 bg-surface-muted px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
   />
 </div>
 ```
@@ -613,8 +613,8 @@ The base classes for the modal overlay and container.
 
 ```html
 <div class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-  <div class="bg-stone-800 border border-stone-700 rounded-lg shadow-xl w-full max-w-md m-4">
-    <header class="flex items-center justify-between p-4 border-b border-stone-700">
+  <div class="m-4 w-full max-w-md rounded-lg border border-border/50 bg-surface-elevated shadow-xl">
+    <header class="flex items-center justify-between border-b border-border/40 p-4">
       <!-- Header content -->
     </header>
     <div class="p-6">
@@ -626,22 +626,20 @@ The base classes for the modal overlay and container.
 
 ### Custom CSS: Scrollbar
 
-The only piece of custom CSS in the entire application is for styling the browser scrollbar to match the dark theme. This is defined in a `<style>` block in `index.html`.
+The only piece of custom CSS in the entire application is for styling the browser scrollbar to match the forest palette. This lives in `src/frontend/src/index.css` and relies on the same muted neutral used for text badges.【F:src/frontend/src/index.css†L31-L42】
 
 ```css
-/* Custom scrollbar for a better dark-mode aesthetic */
+/* Custom scrollbar tuned to the forest palette */
 ::-webkit-scrollbar {
   width: 8px;
-}
-::-webkit-scrollbar-track {
-  background: #1c1917; /* stone-900 */
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #57534e; /* stone-600 */
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #78716c; /* stone-500 */
+  background: rgba(148, 163, 184, 0.4);
 }
 ```
 

@@ -39,7 +39,7 @@ interface UIState {
   activeModal: ModalDescriptor | null;
   modalQueue: ModalDescriptor[];
   notificationsUnread: number;
-  theme: 'dark' | 'light';
+  theme: 'dark' | 'light' | 'forest';
   toasts: ToastDescriptor[];
 }
 
@@ -91,10 +91,12 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
     set((state) => ({ notificationsUnread: Math.max(0, state.notificationsUnread + count) })),
   setTheme: (theme) =>
     set(() => {
+      const { classList } = document.documentElement;
+      classList.remove('theme-light', 'theme-forest');
       if (theme === 'light') {
-        document.documentElement.classList.add('theme-light');
-      } else {
-        document.documentElement.classList.remove('theme-light');
+        classList.add('theme-light');
+      } else if (theme === 'forest') {
+        classList.add('theme-forest');
       }
       return { theme };
     }),

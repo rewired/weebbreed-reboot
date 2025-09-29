@@ -502,19 +502,21 @@ Maintain consistent icon weights (default Material weight) and avoid scaling on 
 
 ### Dark Theme Tokens
 
-> Refer to the consolidated [Theme Baseline](./themes/theme-baseline.md) for the canonical token names, CSS variable values, and light/dark parity expectations shared across DaisyUI themes.
+> Refer to the consolidated [Theme Baseline](./themes/theme-baseline.md) for the canonical token names, CSS variable values, and light/dark parity expectations shared across DaisyUI themes.【F:docs/ui/themes/theme-baseline.md†L1-L48】
 
-- Background: `bg-stone-900`.
-- Text: primary `text-stone-100/200`, secondary `text-stone-400/500`.
-- Panels/cards: `bg-stone-800/30` with `border-stone-700`.
-- Primary accent: `bg-lime-600`, `text-lime-400`; status colors include `text-green-400`, `text-yellow-400`, `text-red-400`, `text-blue-400`, `text-cyan-400` for success/warning/danger/info states.【F:docs/ui/ui-components-desciption.md†L551-L574】
-- Typography: Inter font, headings styled via Tailwind utilities (`text-3xl font-bold`, etc.) instead of default heading tags.【F:docs/ui/ui-components-desciption.md†L551-L574】
-- ### Light Theme Tokens
+- Background: `bg-surface` (`rgb(7 20 15)`).
+- Text: primary `text-text` (`rgb(233 247 239)`), secondary `text-text-muted` (`rgb(156 166 162)`).
+- Panels/cards: `bg-surface-elevated` / `bg-surface-muted` with `border-border` accents.
+- Primary accent: `bg-primary`, hover `bg-primary-strong`, `text-text` for CTA labels.【F:src/frontend/src/components/primitives/Button.tsx†L9-L33】
+- Status colors: `bg-success`, `bg-warning`, `bg-danger` map to forest-success/orange/red tokens; informational states reuse cyan/blue utilities until `--color-info` ships.【F:src/frontend/src/styles/tokens.css†L1-L38】【F:docs/ui/themes/forest-diff.md†L12-L52】
+- Typography: Inter font, headings styled via Tailwind utilities (`text-3xl font-bold`, etc.) instead of default heading tags.【F:docs/ui/ui-components-desciption.md†L551-L607】
 
-- Background: `#fafafa` base with cards at `#ffffff` bordered by `#e5e7eb`.
-- Text: primary `#111827`, secondary `#6b7280` to mirror dark-theme contrast ratios.
-- Accent: lime-600 (`#65a30d`) with hover at `#4d7c0f`; status hues reuse green/yellow/red/blue/cyan 600 shades to keep semantic parity.
-- Buttons maintain AA contrast by pairing dark text with light fills and vice versa, sharing the same component tokens as the dark theme.
+### Light Theme Tokens
+
+- Background: `bg-surface` within `.theme-light` (`rgb(242 251 246)`) with elevated cards at `bg-surface-elevated` (`rgb(203 232 219)`).
+- Text: primary `text-text` (`rgb(5 32 21)`), secondary `text-text-muted` (`rgb(60 84 74)`).
+- Accent: shares the evergreen `bg-primary`/`bg-primary-strong` pairing for CTAs; status utilities reuse the same semantic tokens for consistency.【F:src/frontend/src/styles/tokens.css†L37-L50】
+- Buttons maintain AA contrast by pairing darker text on light fills and vice versa, sharing the same component tokens as the dark theme.【F:docs/ui/themes/theme-baseline.md†L12-L48】
 
 ### Core CSS Snippets
 
@@ -523,10 +525,10 @@ Maintain consistent icon weights (default Material weight) and avoid scaling on 
   transition: stroke-dashoffset 0.3s linear;
 }
 .lighting-ok {
-  color: #18a957;
+  color: rgb(var(--color-success));
 }
 .lighting-insufficient {
-  color: #d8a400;
+  color: rgb(var(--color-warning));
 }
 .device-status-indicator {
   width: 0.6rem;
@@ -534,28 +536,28 @@ Maintain consistent icon weights (default Material weight) and avoid scaling on 
   border-radius: 50%;
 }
 .device-status-indicator.status-on {
-  background: #19b56b;
+  background: rgb(var(--color-success));
 }
 .device-status-indicator.status-off {
-  background: #8b8f97;
+  background: rgb(var(--color-text-muted) / 0.65);
 }
 .device-status-indicator.status-mixed {
-  background: #d8a400;
+  background: rgb(var(--color-warning));
 }
 .device-status-indicator.status-broken {
-  background: #d64545;
+  background: rgb(var(--color-danger));
 }
 ```
 
 ### Tailwind Building Blocks
 
 ```html
-<div class="bg-stone-800/30 rounded-lg p-6">
+<div class="rounded-lg bg-surface-elevated p-6 border border-border/40">
   <!-- Card content -->
 </div>
 
 <button
-  class="w-full bg-lime-600 hover:bg-lime-700 text-white font-semibold py-2 px-4 rounded-md transition-colors disabled:bg-stone-600 disabled:cursor-not-allowed"
+  class="w-full rounded-md bg-primary text-text font-semibold py-2 px-4 transition-colors hover:bg-primary-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-strong disabled:bg-surface-muted disabled:text-text-muted disabled:cursor-not-allowed"
 >
   Action
 </button>
@@ -563,7 +565,7 @@ Maintain consistent icon weights (default Material weight) and avoid scaling on 
 <div>
   <label class="block text-sm font-medium text-stone-300 mb-1">Label</label>
   <input
-    class="w-full bg-stone-900 border border-stone-700 rounded-md px-3 py-2 text-stone-100 focus:ring-2 focus:ring-lime-500 focus:border-lime-500 outline-none"
+    class="w-full rounded-md border border-border/60 bg-surface-muted px-3 py-2 text-text focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
   />
 </div>
 
