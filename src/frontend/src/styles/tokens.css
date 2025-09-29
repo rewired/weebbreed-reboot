@@ -34,6 +34,22 @@
   --color-danger: 255 25 30;
 }
 
+.theme-weedbreed {
+  color-scheme: dark;
+  --color-surface: 7 20 15;
+  --color-surface-muted: 13 33 25;
+  --color-surface-elevated: 20 48 38;
+  --color-border: 39 85 71;
+  --color-primary: 4 122 23;
+  --color-primary-strong: 3 99 18;
+  --color-accent: 3 122 69;
+  --color-text: 233 247 239;
+  --color-text-muted: 156 166 162;
+  --color-success: 15 157 88;
+  --color-warning: 255 131 0;
+  --color-danger: 255 25 30;
+}
+
 .theme-light {
   color-scheme: light;
   --color-surface: 242 251 246;

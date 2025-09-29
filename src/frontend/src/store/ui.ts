@@ -39,7 +39,7 @@ interface UIState {
   activeModal: ModalDescriptor | null;
   modalQueue: ModalDescriptor[];
   notificationsUnread: number;
-  theme: 'dark' | 'light' | 'forest';
+  theme: 'weedbreed' | 'forest' | 'light';
   toasts: ToastDescriptor[];
 }
 
@@ -67,7 +67,7 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   activeModal: null,
   modalQueue: [],
   notificationsUnread: 0,
-  theme: 'dark',
+  theme: 'weedbreed',
   toasts: [],
   openModal: (modal) =>
     set((state) => {
@@ -92,11 +92,13 @@ export const useUIStore = create<UIState & UIActions>((set) => ({
   setTheme: (theme) =>
     set(() => {
       const { classList } = document.documentElement;
-      classList.remove('theme-light', 'theme-forest');
+      classList.remove('theme-light', 'theme-forest', 'theme-weedbreed');
       if (theme === 'light') {
         classList.add('theme-light');
       } else if (theme === 'forest') {
         classList.add('theme-forest');
+      } else {
+        classList.add('theme-weedbreed');
       }
       return { theme };
     }),

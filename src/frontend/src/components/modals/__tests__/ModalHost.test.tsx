@@ -62,7 +62,7 @@ describe('ModalHost pause safety', () => {
       activeModal: null,
       modalQueue: [],
       notificationsUnread: 0,
-      theme: 'dark',
+      theme: 'weedbreed',
     });
     useSimulationStore.getState().reset();
   });
@@ -74,7 +74,7 @@ describe('ModalHost pause safety', () => {
       activeModal: null,
       modalQueue: [],
       notificationsUnread: 0,
-      theme: 'dark',
+      theme: 'weedbreed',
     });
     useSimulationStore.getState().reset();
   });

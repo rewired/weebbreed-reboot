@@ -22,10 +22,14 @@ const App = () => {
   const theme = useUIStore((state) => state.theme);
 
   useEffect(() => {
+    const { classList } = document.documentElement;
+    classList.remove('theme-light', 'theme-forest', 'theme-weedbreed');
     if (theme === 'light') {
-      document.documentElement.classList.add('theme-light');
+      classList.add('theme-light');
+    } else if (theme === 'forest') {
+      classList.add('theme-forest');
     } else {
-      document.documentElement.classList.remove('theme-light');
+      classList.add('theme-weedbreed');
     }
   }, [theme]);
 
