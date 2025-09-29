@@ -2,7 +2,12 @@ import path from 'path';
 import { watchData } from '@runtime/dataWatcher.js';
 import { DataLoaderError, loadBlueprintData } from './dataLoader.js';
 import type { BlueprintData, DataLoadResult, DataLoadSummary } from './dataLoader.js';
-import type { DevicePriceEntry, StrainPriceEntry } from './schemas/index.js';
+import type {
+  DevicePriceEntry,
+  StrainPriceEntry,
+  SubstrateBlueprint,
+  ContainerBlueprint,
+} from './schemas/index.js';
 
 export type HotReloadDisposition = 'commit' | 'defer';
 export type HotReloadHandler = (
@@ -20,6 +25,8 @@ export class BlueprintRepository {
   private summary: DataLoadSummary;
 
   private stagedResult: DataLoadResult | null = null;
+  private substrateSlugIndex = new Map<string, SubstrateBlueprint>();
+  private containerSlugIndex = new Map<string, ContainerBlueprint>();
 
   private constructor(
     private readonly dataDirectory: string,
@@ -27,12 +34,22 @@ export class BlueprintRepository {
   ) {
     this.data = result.data;
     this.summary = result.summary;
+    this.rebuildSlugIndexes();
   }
 
   static async loadFrom(dataDirectory: string): Promise<BlueprintRepository> {
     const absoluteDir = path.resolve(dataDirectory);
     const result = await loadBlueprintData(absoluteDir);
     return new BlueprintRepository(absoluteDir, result);
+  }
+
+  private rebuildSlugIndexes() {
+    this.substrateSlugIndex = new Map(
+      Array.from(this.data.substrates.values()).map((item) => [item.slug, item]),
+    );
+    this.containerSlugIndex = new Map(
+      Array.from(this.data.containers.values()).map((item) => [item.slug, item]),
+    );
   }
 
   getStrain(id: string) {
@@ -45,6 +62,22 @@ export class BlueprintRepository {
 
   getCultivationMethod(id: string) {
     return this.data.cultivationMethods.get(id);
+  }
+
+  getSubstrate(id: string) {
+    return this.data.substrates.get(id);
+  }
+
+  getSubstrateBySlug(slug: string) {
+    return this.substrateSlugIndex.get(slug);
+  }
+
+  getContainer(id: string) {
+    return this.data.containers.get(id);
+  }
+
+  getContainerBySlug(slug: string) {
+    return this.containerSlugIndex.get(slug);
   }
 
   getRoomPurpose(id: string) {
@@ -61,6 +94,14 @@ export class BlueprintRepository {
 
   listCultivationMethods() {
     return Array.from(this.data.cultivationMethods.values());
+  }
+
+  listSubstrates() {
+    return Array.from(this.data.substrates.values());
+  }
+
+  listContainers() {
+    return Array.from(this.data.containers.values());
   }
 
   listRoomPurposes() {
@@ -107,6 +148,7 @@ export class BlueprintRepository {
     }
     this.data = this.stagedResult.data;
     this.summary = this.stagedResult.summary;
+    this.rebuildSlugIndexes();
     const committed = this.stagedResult;
     this.stagedResult = null;
     return committed;

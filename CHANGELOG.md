@@ -27,6 +27,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a harvest/cull confirmation modal with toast feedback, wiring ZoneView actions,
   facade mocks, and Vitest coverage to require confirmation and surface command
   success or failure states.
+- Added substrate and container blueprint collections with dedicated schemas, loader
+  cross-checks, repository helpers, and documentation updates so cultivation methods
+  reference shared consumables by slug instead of embedding media/container payloads.
 
 ### Changed
 

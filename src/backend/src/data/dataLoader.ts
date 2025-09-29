@@ -10,6 +10,8 @@ import {
   devicePricesSchema,
   strainPricesSchema,
   utilityPricesSchema,
+  substrateBlueprintSchema,
+  containerBlueprintSchema,
 } from './schemas/index.js';
 import type {
   StrainBlueprint,
@@ -19,6 +21,8 @@ import type {
   DevicePriceEntry,
   StrainPriceEntry,
   UtilityPrices,
+  SubstrateBlueprint,
+  ContainerBlueprint,
 } from './schemas/index.js';
 
 export type IssueLevel = 'error' | 'warning';
@@ -40,6 +44,8 @@ export interface BlueprintData {
   strains: Map<string, StrainBlueprint>;
   devices: Map<string, DeviceBlueprint>;
   cultivationMethods: Map<string, CultivationMethodBlueprint>;
+  substrates: Map<string, SubstrateBlueprint>;
+  containers: Map<string, ContainerBlueprint>;
   roomPurposes: Map<string, RoomPurposeBlueprint>;
   prices: {
     devices: Map<string, DevicePriceEntry>;
@@ -174,6 +180,33 @@ const filterDuplicateRoomPurposeKinds = (
   return filtered;
 };
 
+const filterDuplicateSlugs = <T extends { slug: string }>(
+  entries: CollectionEntry<T>[],
+  issues: DataIssue[],
+  kind: string,
+): CollectionEntry<T>[] => {
+  const filtered: CollectionEntry<T>[] = [];
+  const seen = new Map<string, string>();
+
+  for (const entry of entries) {
+    const slug = entry.data.slug.toLowerCase();
+    const previousFile = seen.get(slug);
+    if (previousFile) {
+      issues.push({
+        level: 'error',
+        message: `Duplicate ${kind} slug '${entry.data.slug}' detected`,
+        file: entry.file,
+        details: { previousFile },
+      });
+      continue;
+    }
+    seen.set(slug, entry.file);
+    filtered.push(entry);
+  }
+
+  return filtered;
+};
+
 async function loadDirectoryCollection<T>(
   directory: string,
   schema: BlueprintSchema<T>,
@@ -279,7 +312,15 @@ const buildPriceMap = <T>(
   return map;
 };
 
-const runCrossChecks = (data: BlueprintData, summary: DataLoadSummary) => {
+const runCrossChecks = (
+  data: BlueprintData,
+  summary: DataLoadSummary,
+  context: {
+    cultivationEntries: CollectionEntry<CultivationMethodBlueprint>[];
+    substrateEntries: CollectionEntry<SubstrateBlueprint>[];
+    containerEntries: CollectionEntry<ContainerBlueprint>[];
+  },
+) => {
   const issues = summary.issues;
 
   const strainPriceFile = 'prices/strainPrices.json';
@@ -324,6 +365,31 @@ const runCrossChecks = (data: BlueprintData, summary: DataLoadSummary) => {
       });
     }
   }
+
+  const substrateSlugs = new Set(context.substrateEntries.map((entry) => entry.data.slug));
+  const containerSlugs = new Set(context.containerEntries.map((entry) => entry.data.slug));
+
+  for (const entry of context.cultivationEntries) {
+    const { compatibleSubstrateSlugs = [], compatibleContainerSlugs = [] } = entry.data;
+    for (const slug of compatibleSubstrateSlugs) {
+      if (!substrateSlugs.has(slug)) {
+        issues.push({
+          level: 'error',
+          message: `Cultivation method '${entry.data.id}' references unknown substrate slug '${slug}'`,
+          file: entry.file,
+        });
+      }
+    }
+    for (const slug of compatibleContainerSlugs) {
+      if (!containerSlugs.has(slug)) {
+        issues.push({
+          level: 'error',
+          message: `Cultivation method '${entry.data.id}' references unknown container slug '${slug}'`,
+          file: entry.file,
+        });
+      }
+    }
+  }
 };
 
 export const loadBlueprintData = async (
@@ -343,6 +409,8 @@ export const loadBlueprintData = async (
   const strainDir = path.join(blueprintsDir, 'strains');
   const deviceDir = path.join(blueprintsDir, 'devices');
   const cultivationDir = path.join(blueprintsDir, 'cultivationMethods');
+  const substrateDir = path.join(blueprintsDir, 'substrates');
+  const containerDir = path.join(blueprintsDir, 'containers');
   const roomPurposeDir = path.join(blueprintsDir, 'roomPurposes');
   const pricesDir = path.join(absoluteDataDir, 'prices');
 
@@ -367,6 +435,28 @@ export const loadBlueprintData = async (
     summary,
     issues,
   );
+  const substrateEntries = filterDuplicateSlugs(
+    await loadDirectoryCollection(
+      substrateDir,
+      substrateBlueprintSchema,
+      absoluteDataDir,
+      summary,
+      issues,
+    ),
+    issues,
+    'substrate',
+  );
+  const containerEntries = filterDuplicateSlugs(
+    await loadDirectoryCollection(
+      containerDir,
+      containerBlueprintSchema,
+      absoluteDataDir,
+      summary,
+      issues,
+    ),
+    issues,
+    'container',
+  );
   const roomPurposeEntries = await loadDirectoryCollection(
     roomPurposeDir,
     roomPurposeSchema,
@@ -378,6 +468,8 @@ export const loadBlueprintData = async (
   const strains = toMapWithDuplicateCheck(strainEntries, issues);
   const devices = toMapWithDuplicateCheck(deviceEntries, issues);
   const cultivationMethods = toMapWithDuplicateCheck(cultivationEntries, issues);
+  const substrates = toMapWithDuplicateCheck(substrateEntries, issues);
+  const containers = toMapWithDuplicateCheck(containerEntries, issues);
   const filteredRoomPurposeEntries = filterDuplicateRoomPurposeKinds(
     filterDuplicateRoomPurposeNames(
       filterDuplicateRoomPurposeIds(roomPurposeEntries, issues),
@@ -444,6 +536,8 @@ export const loadBlueprintData = async (
     strains,
     devices,
     cultivationMethods,
+    substrates,
+    containers,
     roomPurposes,
     prices: {
       devices: devicePrices,
@@ -452,7 +546,11 @@ export const loadBlueprintData = async (
     },
   };
 
-  runCrossChecks(data, summary);
+  runCrossChecks(data, summary, {
+    cultivationEntries,
+    substrateEntries,
+    containerEntries,
+  });
 
   const blockingIssues = summary.issues.filter((item) => item.level === 'error');
   if (blockingIssues.length > 0 && !allowErrors) {

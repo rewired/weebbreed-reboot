@@ -26,25 +26,10 @@ export const cultivationMethodSchema = z
     areaPerPlant: z.number(),
     minimumSpacing: z.number(),
     maxCycles: z.number().int().min(0).optional(),
-    substrate: z
-      .object({
-        type: z.string(),
-        costPerSquareMeter: z.number().optional(),
-        maxCycles: z.number().optional(),
-      })
-      .passthrough()
-      .optional(),
-    containerSpec: z
-      .object({
-        type: z.string(),
-        volumeInLiters: z.number().optional(),
-        footprintArea: z.number().optional(),
-        reusableCycles: z.number().optional(),
-        costPerUnit: z.number().optional(),
-        packingDensity: z.number().optional(),
-      })
-      .passthrough()
-      .optional(),
+    compatibleSubstrateSlugs: z.array(z.string().min(1)).optional(),
+    compatibleContainerSlugs: z.array(z.string().min(1)).optional(),
+    substrateCostPerSquareMeter: z.number().optional(),
+    containerCostPerUnit: z.number().optional(),
     strainTraitCompatibility: strainTraitCompatibilitySchema.optional(),
     envBias: z
       .object({

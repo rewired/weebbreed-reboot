@@ -73,7 +73,15 @@ The engine core owns the tick scheduler, orchestrates subsystem execution, and k
 
 ### 4.2 Cultivation Methods
 
-Cultivation method templates include `id`, `kind`, `name`, `setupCost` (EUR per installation), `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and `maxCycles` (count). Nested blocks describe `substrate` (type, `costPerSquareMeter`, `maxCycles`) and `containerSpec` (type, `volumeInLiters`, `footprintArea`, `reusableCycles`, `costPerUnit`, `packingDensity`). Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
+Cultivation method templates include `id`, `kind`, `name`, `setupCost` (EUR per installation), `laborIntensity` (0..1), `areaPerPlant` (m²·plant⁻¹), `minimumSpacing` (m), and `maxCycles` (count). Media and container options are declared via `compatibleSubstrateSlugs` and `compatibleContainerSlugs`, referencing the dedicated consumable blueprints, while `substrateCostPerSquareMeter` and `containerCostPerUnit` record the baseline economics for the default pairing. Compatibility rules appear under `strainTraitCompatibility`, and `idealConditions` specify `idealTemperature` (°C) and `idealHumidity` (0..1) ranges. Optional `meta` text documents trade-offs.【F:data/blueprints/cultivationMethods/scrog.json†L1-L47】
+
+#### Substrate Blueprints
+
+`/data/blueprints/substrates` holds reusable media definitions with stable `id`/`slug` pairs, media `type`, and optional `maxCycles`. Cultivation methods reference these via their slug arrays so designers can share a single substrate definition across multiple methods.【F:data/blueprints/substrates/soil_multi_cycle.json†L1-L7】
+
+#### Container Blueprints
+
+`/data/blueprints/containers` captures reusable vessel geometries (`volumeInLiters`, `footprintArea`, `reusableCycles`, `packingDensity`) with slug identifiers, allowing consistent reuse while keeping per-method pricing separate.【F:data/blueprints/containers/pot_25l.json†L1-L9】
 
 ### 4.3 Strain Blueprints
 

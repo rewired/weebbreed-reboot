@@ -158,7 +158,7 @@ Declares physical equipment (lights, HVAC, CO₂, dehumidifiers, fans, furniture
 
 ### Purpose
 
-Defines planting density, substrate/container baseline, setup costs, and phase suitability.
+Defines planting density, compatible substrate/container blueprints, setup costs, and phase suitability.
 
 ### Schema
 
@@ -169,10 +169,51 @@ Defines planting density, substrate/container baseline, setup costs, and phase s
 - `minimumSpacing?: number (m)` — Optional geometric limit.
 - `laborIntensity?: number (0–1)` — Affects labor time multipliers.
 - `setupCost?: number` — Currency-neutral.
-- `substrate?: { type: string, costPerSquareMeter?: number }`
-- `containerSpec?: { volume_L: number, costPerUnit?: number }`
+- `compatibleSubstrateSlugs?: string[]` — Slug references into `/data/blueprints/substrates`.
+- `substrateCostPerSquareMeter?: number` — Baseline media cost for the default substrate option.
+- `compatibleContainerSlugs?: string[]` — Slug references into `/data/blueprints/containers`.
+- `containerCostPerUnit?: number` — Baseline container cost for the default container option.
 - `compatibility?: { strainTags?: string[] }`
 - `recommendedPhases?: string[]`
+- `meta?: object`
+
+---
+
+## 3a) Substrates — `/data/blueprints/substrates/*.json`
+
+### Purpose
+
+Declares reusable substrate/media options that cultivation methods can reference by slug.
+
+### Schema
+
+- `id: string (UUID v4)`
+- `slug: string` — Lowercase `a–z0–9-` slug, stable across releases.
+- `kind?: string` — Defaults to `"Substrate"`.
+- `name: string`
+- `type: string` — Descriptive category (e.g., `"soil"`, `"coco"`, `"rockwool"`).
+- `maxCycles?: number` — Number of reuse cycles before replacement.
+- `meta?: object`
+
+---
+
+## 3b) Containers — `/data/blueprints/containers/*.json`
+
+### Purpose
+
+Captures reusable container geometries and limits referenced by cultivation methods.
+
+### Schema
+
+- `id: string (UUID v4)`
+- `slug: string` — Lowercase `a–z0–9-` slug, stable across releases.
+- `kind?: string` — Defaults to `"Container"`.
+- `name: string`
+- `type: string` — Container form (e.g., `"pot"`, `"tray"`).
+- `volumeInLiters?: number`
+- `footprintArea?: number (m²)`
+- `reusableCycles?: number`
+- `packingDensity?: number`
 - `meta?: object`
 
 ---

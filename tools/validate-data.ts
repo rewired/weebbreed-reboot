@@ -260,6 +260,8 @@ const run = async () => {
     strains: validationResult.data.strains.size,
     devices: validationResult.data.devices.size,
     cultivationMethods: validationResult.data.cultivationMethods.size,
+    substrates: validationResult.data.substrates.size,
+    containers: validationResult.data.containers.size,
     roomPurposes: validationResult.data.roomPurposes.size,
     devicePrices: validationResult.data.prices.devices.size,
     strainPrices: validationResult.data.prices.strains.size,

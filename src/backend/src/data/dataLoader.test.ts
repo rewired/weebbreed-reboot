@@ -14,11 +14,17 @@ describe('loadBlueprintData', () => {
     const result = await loadBlueprintData(fixtureDataDirectory);
 
     const cultivationMethods = result.data.cultivationMethods;
+    const substrates = result.data.substrates;
+    const containers = result.data.containers;
     expect(cultivationMethods.size).toBeGreaterThan(0);
+    expect(substrates.size).toBeGreaterThan(0);
+    expect(containers.size).toBeGreaterThan(0);
 
     const scrog = cultivationMethods.get('41229377-ef2d-4723-931f-72eea87d7a62');
     expect(scrog?.strainTraitCompatibility?.preferred?.['genotype.sativa']?.min).toBe(0.5);
     expect(scrog?.strainTraitCompatibility?.conflicting?.['genotype.indica']?.min).toBe(0.7);
+    expect(scrog?.compatibleContainerSlugs).toContain('pot-25l');
+    expect(scrog?.compatibleSubstrateSlugs).toContain('soil-multi-cycle');
 
     const sog = cultivationMethods.get('659ba4d7-a5fc-482e-98d4-b614341883ac');
     expect(sog?.strainTraitCompatibility?.preferred?.['photoperiod.vegetationTime']?.max).toBe(
@@ -27,5 +33,7 @@ describe('loadBlueprintData', () => {
     expect(sog?.strainTraitCompatibility?.conflicting?.['photoperiod.vegetationTime']?.min).toBe(
       2_419_200,
     );
+    expect(sog?.compatibleContainerSlugs).toContain('pot-11l');
+    expect(sog?.compatibleSubstrateSlugs).toContain('soil-multi-cycle');
   });
 });

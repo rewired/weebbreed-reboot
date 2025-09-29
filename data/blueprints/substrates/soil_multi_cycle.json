@@ -1,0 +1,8 @@
+{
+  "id": "ebdb6d5e-fb3d-4db2-90a4-8e6c5be137f4",
+  "slug": "soil-multi-cycle",
+  "kind": "Substrate",
+  "name": "Multi-Cycle Soil Mix",
+  "type": "soil",
+  "maxCycles": 2
+}

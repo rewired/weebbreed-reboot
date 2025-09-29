@@ -12,23 +12,22 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Basic Soil Pot",
   "setupCost": 2.0,
   "laborIntensity": 0.1,
+  "laborProfile": {
+    "hoursPerPlantPerWeek": 0.35
+  },
   "areaPerPlant": 0.5,
   "minimumSpacing": 0.5,
   "maxCycles": 1,
-  "substrate": {
-    "type": "soil",
-    "costPerSquareMeter": 2.5,
-    "maxCycles": 1
-  },
-  "containerSpec": {
-    "type": "pot",
-    "volumeInLiters": 10,
-    "footprintArea": 0.25,
-    "reusableCycles": 3,
-    "costPerUnit": 1.5,
-    "packingDensity": 0.9
-  },
+  "compatibleSubstrateSlugs": ["soil-single-cycle"],
+  "substrateCostPerSquareMeter": 2.5,
+  "compatibleContainerSlugs": ["pot-10l"],
+  "containerCostPerUnit": 1.5,
   "strainTraitCompatibility": {},
+  "envBias": {},
+  "capacityHints": {
+    "plantsPer_m2": 4,
+    "canopyHeight_m": 1.2
+  },
   "idealConditions": {
     "idealTemperature": [20, 28],
     "idealHumidity": [0.5, 0.7]
@@ -50,22 +49,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Screen of Green",
   "setupCost": 15.0,
   "laborIntensity": 0.7,
+  "laborProfile": {
+    "hoursPerPlantPerWeek": 1.2
+  },
   "areaPerPlant": 1.0,
   "minimumSpacing": 0.8,
   "maxCycles": 4,
-  "substrate": {
-    "type": "soil",
-    "costPerSquareMeter": 3.5,
-    "maxCycles": 2
-  },
-  "containerSpec": {
-    "type": "pot",
-    "volumeInLiters": 25,
-    "footprintArea": 0.3,
-    "reusableCycles": 6,
-    "costPerUnit": 4.0,
-    "packingDensity": 0.9
-  },
+  "compatibleSubstrateSlugs": ["soil-multi-cycle"],
+  "substrateCostPerSquareMeter": 3.5,
+  "compatibleContainerSlugs": ["pot-25l"],
+  "containerCostPerUnit": 4.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.sativa": {
@@ -77,6 +70,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
         "min": 0.7
       }
     }
+  },
+  "envBias": {
+    "temp_C": 0.5,
+    "co2_ppm": 50
+  },
+  "capacityHints": {
+    "plantsPer_m2": 2,
+    "canopyHeight_m": 0.8
   },
   "idealConditions": {
     "idealTemperature": [21, 27],
@@ -107,22 +108,16 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "name": "Sea of Green",
   "setupCost": 10.0,
   "laborIntensity": 0.4,
+  "laborProfile": {
+    "hoursPerPlantPerWeek": 0.65
+  },
   "areaPerPlant": 0.25,
   "minimumSpacing": 0.25,
   "maxCycles": 2,
-  "substrate": {
-    "type": "soil",
-    "costPerSquareMeter": 3.5,
-    "maxCycles": 2
-  },
-  "containerSpec": {
-    "type": "pot",
-    "volumeInLiters": 11,
-    "footprintArea": 0.2,
-    "reusableCycles": 6,
-    "costPerUnit": 2.0,
-    "packingDensity": 0.95
-  },
+  "compatibleSubstrateSlugs": ["soil-multi-cycle"],
+  "substrateCostPerSquareMeter": 3.5,
+  "compatibleContainerSlugs": ["pot-11l"],
+  "containerCostPerUnit": 2.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.indica": {
@@ -141,6 +136,14 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       }
     }
   },
+  "envBias": {
+    "vpd_kPa": 0.1,
+    "rh_frac": -0.05
+  },
+  "capacityHints": {
+    "plantsPer_m2": 18,
+    "canopyHeight_m": 0.6
+  },
   "idealConditions": {
     "idealTemperature": [22, 28],
     "idealHumidity": [0.5, 0.65]
@@ -154,6 +157,80 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
       "Not suitable for large or tall plants"
     ]
   }
+}
+```
+
+## /data/blueprints/substrates/soil_single_cycle.json
+
+```json
+{
+  "id": "04c8b1a5-09cc-4d86-8dc6-9007a64de6f2",
+  "slug": "soil-single-cycle",
+  "kind": "Substrate",
+  "name": "Single-Cycle Soil Mix",
+  "type": "soil",
+  "maxCycles": 1
+}
+```
+
+## /data/blueprints/substrates/soil_multi_cycle.json
+
+```json
+{
+  "id": "ebdb6d5e-fb3d-4db2-90a4-8e6c5be137f4",
+  "slug": "soil-multi-cycle",
+  "kind": "Substrate",
+  "name": "Multi-Cycle Soil Mix",
+  "type": "soil",
+  "maxCycles": 2
+}
+```
+
+## /data/blueprints/containers/pot_10l.json
+
+```json
+{
+  "id": "0c48f3e3-2c19-4be4-86ea-4de97f5aa51e",
+  "slug": "pot-10l",
+  "kind": "Container",
+  "name": "10 L Pot",
+  "type": "pot",
+  "volumeInLiters": 10,
+  "footprintArea": 0.25,
+  "reusableCycles": 3,
+  "packingDensity": 0.9
+}
+```
+
+## /data/blueprints/containers/pot_11l.json
+
+```json
+{
+  "id": "d9267b6f-41f3-4e91-95b8-5bd7be381d3f",
+  "slug": "pot-11l",
+  "kind": "Container",
+  "name": "11 L Pot",
+  "type": "pot",
+  "volumeInLiters": 11,
+  "footprintArea": 0.2,
+  "reusableCycles": 6,
+  "packingDensity": 0.95
+}
+```
+
+## /data/blueprints/containers/pot_25l.json
+
+```json
+{
+  "id": "9fb62d74-df4e-4e74-a0fb-77fa1f21d3ef",
+  "slug": "pot-25l",
+  "kind": "Container",
+  "name": "25 L Pot",
+  "type": "pot",
+  "volumeInLiters": 25,
+  "footprintArea": 0.3,
+  "reusableCycles": 6,
+  "packingDensity": 0.9
 }
 ```
 

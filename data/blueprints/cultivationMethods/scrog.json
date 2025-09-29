@@ -10,19 +10,10 @@
   "areaPerPlant": 1.0,
   "minimumSpacing": 0.8,
   "maxCycles": 4,
-  "substrate": {
-    "type": "soil",
-    "costPerSquareMeter": 3.5,
-    "maxCycles": 2
-  },
-  "containerSpec": {
-    "type": "pot",
-    "volumeInLiters": 25,
-    "footprintArea": 0.3,
-    "reusableCycles": 6,
-    "costPerUnit": 4.0,
-    "packingDensity": 0.9
-  },
+  "compatibleSubstrateSlugs": ["soil-multi-cycle"],
+  "substrateCostPerSquareMeter": 3.5,
+  "compatibleContainerSlugs": ["pot-25l"],
+  "containerCostPerUnit": 4.0,
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.sativa": {
