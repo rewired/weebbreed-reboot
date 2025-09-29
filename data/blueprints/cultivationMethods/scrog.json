@@ -46,6 +46,10 @@
       "Longer vegetative phase required",
       "High training effort (pruning, tucking)",
       "Less suitable for very fast-cycling grows"
-    ]
+    ],
+    "defaults": {
+      "containerSlug": "pot-25l",
+      "substrateSlug": "soil-multi-cycle"
+    }
   }
 }

@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the new price sources.
 
 - Added cultivation metadata (method, container, substrate) to zone UI snapshots, updating backend tests and frontend types/fixtures to surface the new fields.【F:src/backend/src/lib/uiSnapshot.ts†L102-L178】【F:src/backend/src/lib/uiSnapshot.test.ts†L103-L159】【F:src/frontend/src/types/simulation.ts†L1-L64】【F:src/frontend/src/data/mockTelemetry.ts†L1-L207】
+- Added a "Change cultivation method" flow: the Zone header now surfaces method/container/substrate labels, the new modal filters compatible methods, confirms the storage handoff stub, and dispatches `bridge.world.updateZone`, with RTL coverage exercising the storage prompt and intent payload.【F:src/frontend/src/views/ZoneView.tsx†L332-L370】【F:src/frontend/src/components/modals/ModalHost.tsx†L94-L579】【F:src/frontend/src/components/modals/**tests**/ChangeZoneMethodModal.test.tsx†L1-L176】【F:src/frontend/src/facade/systemFacade.ts†L244-L315】
 
 ### Changed
 

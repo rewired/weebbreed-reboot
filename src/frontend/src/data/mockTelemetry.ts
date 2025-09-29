@@ -44,12 +44,14 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
       slug: 'ebb-flow-tray',
       type: 'ebbFlowTable',
       count: 4,
+      name: 'Flood Table',
     },
     substrate: {
       blueprintId: 'substrate-coco-mix',
       slug: 'coco-blend',
       type: 'coco',
       totalVolumeLiters: 320,
+      name: 'Coco Blend',
     },
   };
 
@@ -178,6 +180,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     ceilingHeight: 2.5,
     volume: 50,
     cultivationMethodId: overrides.cultivationMethodId ?? 'method-sog',
+    cultivationMethodName: overrides.cultivationMethodName ?? 'Sea of Green',
     environment,
     resources: {
       waterLiters: 9000,
@@ -322,6 +325,24 @@ export const quickstartSnapshot: SimulationSnapshot = {
     baseZone({
       id: 'zone-b',
       name: 'Central Canopy',
+      cultivationMethodId: 'method-scrog',
+      cultivationMethodName: 'Screen of Green',
+      cultivation: {
+        container: {
+          blueprintId: 'container-trellis-pot',
+          slug: 'trellis-pot',
+          type: 'pot',
+          count: 6,
+          name: 'Trellis Pot',
+        },
+        substrate: {
+          blueprintId: 'substrate-living-soil',
+          slug: 'living-soil',
+          type: 'soil',
+          totalVolumeLiters: 360,
+          name: 'Living Soil Blend',
+        },
+      },
       environment: {
         temperature: 24.6,
         relativeHumidity: 0.6,
@@ -370,6 +391,24 @@ export const quickstartSnapshot: SimulationSnapshot = {
     baseZone({
       id: 'zone-c',
       name: 'South Canopy',
+      cultivationMethodId: 'method-basic-pot',
+      cultivationMethodName: 'Basic Soil Pot',
+      cultivation: {
+        container: {
+          blueprintId: 'container-pot-10l',
+          slug: 'pot-10l',
+          type: 'pot',
+          count: 12,
+          name: '10 L Pot',
+        },
+        substrate: {
+          blueprintId: 'substrate-soil-single',
+          slug: 'soil-single-cycle',
+          type: 'soil',
+          totalVolumeLiters: 120,
+          name: 'Single-Cycle Soil',
+        },
+      },
       environment: {
         temperature: 23.8,
         relativeHumidity: 0.65,

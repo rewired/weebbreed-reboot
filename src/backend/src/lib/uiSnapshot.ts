@@ -111,6 +111,7 @@ export interface ZoneSnapshot {
   ceilingHeight: number;
   volume: number;
   cultivationMethodId: string;
+  cultivationMethodName?: string;
   cultivation?: ZoneCultivationSnapshot;
   environment: ZoneEnvironmentState;
   resources: ZoneResourceState;
@@ -313,14 +314,29 @@ const cloneResources = (resources: ZoneResourceState): ZoneResourceState => ({
 });
 
 const cloneCultivation = (
-  cultivation?: ZoneCultivationSetup,
+  cultivation: ZoneCultivationSetup | undefined,
+  source: SnapshotBlueprintSource,
 ): ZoneCultivationSnapshot | undefined => {
   if (!cultivation) {
     return undefined;
   }
 
-  const container = cultivation.container ? { ...cultivation.container } : undefined;
-  const substrate = cultivation.substrate ? { ...cultivation.substrate } : undefined;
+  const container = cultivation.container
+    ? {
+        ...cultivation.container,
+        name:
+          cultivation.container.name ??
+          source.getContainer?.(cultivation.container.blueprintId)?.name,
+      }
+    : undefined;
+  const substrate = cultivation.substrate
+    ? {
+        ...cultivation.substrate,
+        name:
+          cultivation.substrate.name ??
+          source.getSubstrate?.(cultivation.substrate.blueprintId)?.name,
+      }
+    : undefined;
 
   if (!container && !substrate) {
     return undefined;
@@ -339,7 +355,8 @@ const cloneControl = (control: ZoneControlState): ZoneControlState => ({
   },
 });
 
-export type SnapshotBlueprintSource = RoomPurposeSource & Pick<BlueprintRepository, 'getStrain'>;
+export type SnapshotBlueprintSource = RoomPurposeSource &
+  Pick<BlueprintRepository, 'getStrain' | 'getCultivationMethod' | 'getContainer' | 'getSubstrate'>;
 
 export const buildSimulationSnapshot = (
   state: GameState,
@@ -379,6 +396,7 @@ export const buildSimulationSnapshot = (
             }
           }
         }
+        const method = roomPurposeSource.getCultivationMethod?.(zone.cultivationMethodId);
         zones.push({
           id: zone.id,
           name: zone.name,
@@ -390,7 +408,8 @@ export const buildSimulationSnapshot = (
           ceilingHeight: zone.ceilingHeight,
           volume: zone.volume,
           cultivationMethodId: zone.cultivationMethodId,
-          cultivation: cloneCultivation(zone.cultivation),
+          cultivationMethodName: method?.name,
+          cultivation: cloneCultivation(zone.cultivation, roomPurposeSource),
           environment: { ...zone.environment },
           resources: cloneResources(zone.resources),
           metrics: { ...zone.metrics },

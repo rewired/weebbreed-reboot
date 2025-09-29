@@ -13,6 +13,7 @@ import {
   type ErrorCode,
   type CreateRoomIntent,
   type CreateZoneIntent,
+  type UpdateZoneIntent,
 } from '@/facade/index.js';
 import {
   type DeviceFailureModifiers,
@@ -33,6 +34,7 @@ import { findStructure, findRoom, findZone, type ZoneLookupResult } from './stat
 import { type RoomPurposeSource, resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
+import type { CultivationMethodBlueprint } from '@/data/schemas/index.js';
 
 const deriveDuplicateName = (original: string, fallbackSuffix: string): string => {
   const trimmed = original.trim();
@@ -234,6 +236,26 @@ export class WorldService {
   private resolveDeviceFailurePreset(level: DifficultyLevel): DeviceFailureModifiers {
     const preset = this.difficultyConfig?.[level]?.modifiers.deviceFailure;
     return cloneDeviceFailureModifiers(preset ?? DEFAULT_DEVICE_FAILURE_MODIFIERS);
+  }
+
+  private resolveMethodDefaults(method: CultivationMethodBlueprint): {
+    containerSlug?: string;
+    substrateSlug?: string;
+  } {
+    const meta = method.meta;
+    if (!meta || typeof meta !== 'object') {
+      return {};
+    }
+    const defaultsRaw = (meta as Record<string, unknown>).defaults;
+    if (!defaultsRaw || typeof defaultsRaw !== 'object') {
+      return {};
+    }
+    const defaults = defaultsRaw as Record<string, unknown>;
+    const containerSlug =
+      typeof defaults.containerSlug === 'string' ? defaults.containerSlug : undefined;
+    const substrateSlug =
+      typeof defaults.substrateSlug === 'string' ? defaults.substrateSlug : undefined;
+    return { containerSlug, substrateSlug };
   }
 
   private ensureDifficultyMetadata(): void {
@@ -697,12 +719,14 @@ export class WorldService {
           slug: containerBlueprint.slug,
           type: containerBlueprint.type,
           count: container.count,
+          name: containerBlueprint.name,
         },
         substrate: {
           blueprintId: substrateBlueprint.id,
           slug: substrateBlueprint.slug,
           type: substrateBlueprint.type,
           totalVolumeLiters: requiredSubstrateVolume,
+          name: substrateBlueprint.name,
         },
       },
     } satisfies ZoneState;
@@ -753,6 +777,190 @@ export class WorldService {
       },
       warnings: warnings.length > 0 ? warnings : undefined,
     } satisfies CommandResult<CreateZoneResult>;
+  }
+
+  updateZone(intent: UpdateZoneIntent, context: CommandExecutionContext): CommandResult {
+    const { zoneId, patch } = intent;
+    const lookup = findZone(this.state, zoneId);
+    if (!lookup) {
+      return this.failure('ERR_NOT_FOUND', `Zone ${zoneId} was not found.`, [
+        'world.updateZone',
+        'zoneId',
+      ]);
+    }
+
+    const { zone, room, structure } = lookup;
+    const warnings: string[] = [];
+    let geometryChanged = false;
+    let cultivationChanged = false;
+
+    if (typeof patch.name === 'string') {
+      const trimmed = patch.name.trim();
+      if (trimmed.length > 0) {
+        zone.name = trimmed;
+      }
+    }
+
+    if (typeof patch.area === 'number') {
+      if (!Number.isFinite(patch.area) || patch.area <= 0) {
+        return this.failure('ERR_VALIDATION', 'Zone area must be a positive number.', [
+          'world.updateZone',
+          'patch.area',
+        ]);
+      }
+      const siblingArea = room.zones.reduce((sum, candidate) => {
+        if (candidate.id === zone.id) {
+          return sum;
+        }
+        return sum + candidate.area;
+      }, 0);
+      if (siblingArea + patch.area > room.area + 1e-6) {
+        return this.failure('ERR_CONFLICT', 'Updated zone area would exceed the room capacity.', [
+          'world.updateZone',
+          'patch.area',
+        ]);
+      }
+      zone.area = patch.area;
+      zone.volume = patch.area * zone.ceilingHeight;
+      geometryChanged = true;
+    }
+
+    if (typeof patch.methodId === 'string') {
+      const method = this.repository.getCultivationMethod(patch.methodId);
+      if (!method) {
+        return this.failure(
+          'ERR_NOT_FOUND',
+          `Cultivation method ${patch.methodId} was not found.`,
+          ['world.updateZone', 'patch.methodId'],
+        );
+      }
+
+      const currentContainerType = zone.cultivation?.container?.type;
+      if (
+        currentContainerType &&
+        Array.isArray(method.compatibleContainerTypes) &&
+        method.compatibleContainerTypes.length > 0 &&
+        !method.compatibleContainerTypes.includes(currentContainerType)
+      ) {
+        return this.failure(
+          'ERR_INVALID_STATE',
+          `Container type '${currentContainerType}' is incompatible with cultivation method '${method.name}'.`,
+          ['world.updateZone', 'patch.methodId'],
+        );
+      }
+
+      const currentSubstrateType = zone.cultivation?.substrate?.type;
+      if (
+        currentSubstrateType &&
+        Array.isArray(method.compatibleSubstrateTypes) &&
+        method.compatibleSubstrateTypes.length > 0 &&
+        !method.compatibleSubstrateTypes.includes(currentSubstrateType)
+      ) {
+        return this.failure(
+          'ERR_INVALID_STATE',
+          `Substrate type '${currentSubstrateType}' is incompatible with cultivation method '${method.name}'.`,
+          ['world.updateZone', 'patch.methodId'],
+        );
+      }
+
+      const previousContainerSlug = zone.cultivation?.container?.slug;
+      const previousSubstrateSlug = zone.cultivation?.substrate?.slug;
+
+      zone.cultivationMethodId = patch.methodId;
+
+      const defaults = this.resolveMethodDefaults(method);
+      if (!zone.cultivation) {
+        zone.cultivation = {};
+      }
+
+      if (defaults.containerSlug) {
+        const containerBlueprint = this.repository.getContainerBySlug(defaults.containerSlug);
+        if (containerBlueprint) {
+          const count = zone.cultivation.container?.count ?? 0;
+          zone.cultivation.container = {
+            blueprintId: containerBlueprint.id,
+            slug: containerBlueprint.slug,
+            type: containerBlueprint.type,
+            count,
+            name: containerBlueprint.name,
+          };
+          if (previousContainerSlug && previousContainerSlug !== containerBlueprint.slug) {
+            warnings.push(
+              `Existing containers were moved to storage (stub). Install ${containerBlueprint.name} before planting.`,
+            );
+          }
+        }
+      }
+
+      if (defaults.substrateSlug) {
+        const substrateBlueprint = this.repository.getSubstrateBySlug(defaults.substrateSlug);
+        if (substrateBlueprint) {
+          const totalVolume = (() => {
+            const container = zone.cultivation?.container;
+            if (!container) {
+              return zone.cultivation?.substrate?.totalVolumeLiters ?? 0;
+            }
+            const blueprint = this.repository.getContainer(container.blueprintId);
+            if (!blueprint || !Number.isFinite(blueprint.volumeInLiters)) {
+              return zone.cultivation?.substrate?.totalVolumeLiters ?? 0;
+            }
+            return Math.max(0, blueprint.volumeInLiters ?? 0) * Math.max(0, container.count);
+          })();
+
+          zone.cultivation.substrate = {
+            blueprintId: substrateBlueprint.id,
+            slug: substrateBlueprint.slug,
+            type: substrateBlueprint.type,
+            totalVolumeLiters: totalVolume,
+            name: substrateBlueprint.name,
+          };
+          if (previousSubstrateSlug && previousSubstrateSlug !== substrateBlueprint.slug) {
+            warnings.push(
+              `Existing substrate was routed to storage (stub). Restock with ${substrateBlueprint.name} before planting.`,
+            );
+          }
+        }
+      }
+
+      cultivationChanged = true;
+    }
+
+    if (geometryChanged) {
+      validateStructureGeometry(structure);
+    }
+
+    if (geometryChanged || cultivationChanged) {
+      const payload: Record<string, unknown> = {
+        zoneId: zone.id,
+        roomId: room.id,
+        structureId: structure.id,
+      };
+      if (cultivationChanged) {
+        payload.methodId = zone.cultivationMethodId;
+        if (zone.cultivation?.container) {
+          payload.container = {
+            slug: zone.cultivation.container.slug,
+            count: zone.cultivation.container.count,
+          };
+        }
+        if (zone.cultivation?.substrate) {
+          payload.substrate = {
+            slug: zone.cultivation.substrate.slug,
+            totalVolumeLiters: zone.cultivation.substrate.totalVolumeLiters,
+          };
+        }
+      }
+      if (geometryChanged) {
+        payload.area = zone.area;
+        payload.volume = zone.volume;
+      }
+      context.events.queue('world.zoneUpdated', payload, context.tick, 'info');
+    }
+
+    return {
+      ok: true,
+      warnings: warnings.length > 0 ? Array.from(new Set(warnings)) : undefined,
+    } satisfies CommandResult;
   }
 
   deleteStructure(structureId: string, context: CommandExecutionContext): CommandResult {

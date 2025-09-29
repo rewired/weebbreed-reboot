@@ -524,6 +524,7 @@ describe('SocketGateway facade intents integration', () => {
           ok: true,
           data: buildSubstrateBlueprintCatalog(repository),
         }),
+        updateZone: (intent, context) => worldService.updateZone(intent, context),
         renameStructure: (intent, context) =>
           worldService.renameStructure(intent.structureId, intent.name, context),
         deleteStructure: (intent, context) =>

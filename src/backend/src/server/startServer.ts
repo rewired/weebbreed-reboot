@@ -387,6 +387,7 @@ export const startBackendServer = async (
         }) satisfies CommandResult<ReturnType<typeof buildSubstrateBlueprintCatalog>>,
       createRoom: (intent, context) => worldService.createRoom(intent, context),
       createZone: (intent, context) => worldService.createZone(intent, context),
+      updateZone: (intent, context) => worldService.updateZone(intent, context),
       renameStructure: (intent, context) =>
         worldService.renameStructure(intent.structureId, intent.name, context),
       deleteStructure: (intent, context) =>

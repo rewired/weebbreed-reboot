@@ -48,6 +48,10 @@
       "More plants to manage",
       "Legal limitations in plant count (IRL)",
       "Not suitable for large or tall plants"
-    ]
+    ],
+    "defaults": {
+      "containerSlug": "pot-11l",
+      "substrateSlug": "coco-coir"
+    }
   }
 }

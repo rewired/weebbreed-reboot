@@ -27,6 +27,9 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
     moveDevice: async () => ({ ok: true }),
     removeDevice: async () => ({ ok: true }),
   },
+  world: {
+    updateZone: vi.fn(async () => ({ ok: true })),
+  },
   ...overrides,
 });
 

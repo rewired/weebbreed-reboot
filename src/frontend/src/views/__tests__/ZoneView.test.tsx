@@ -32,6 +32,9 @@ const buildBridge = (overrides: Partial<SimulationBridge> = {}): SimulationBridg
     moveDevice: async () => ({ ok: true }),
     removeDevice: async () => ({ ok: true }),
   },
+  world: {
+    updateZone: vi.fn(async () => ({ ok: true })),
+  },
   ...overrides,
 });
 
@@ -131,7 +134,7 @@ describe('ZoneView', () => {
     expect(within(headerElement).getByText('Temp')).toBeInTheDocument();
   });
 
-  it('positions the resources summary next to environment controls in the header', async () => {
+  it('positions the resources summary next to environment controls and surfaces method metadata', async () => {
     const bridge = buildBridge();
 
     act(() => {
@@ -161,8 +164,17 @@ describe('ZoneView', () => {
     expect(resourcesSummary).toHaveClass('md:h-full');
     expect(environmentControls).toHaveClass('md:h-full');
 
-    const resourceSubtitles = within(header).getAllByText('Reservoirs & supplies');
-    expect(resourceSubtitles.length).toBeGreaterThan(0);
+    const methodLabel = within(header).getByText(
+      'Method: Sea of Green · Container: Flood Table · Substrate: Coco Blend',
+    );
+    expect(methodLabel).toBeInTheDocument();
+
+    const changeButton = within(header).getByRole('button', { name: 'Change method' });
+    expect(changeButton).toBeInTheDocument();
+    fireEvent.click(changeButton);
+    await waitFor(() => {
+      expect(useUIStore.getState().activeModal?.type).toBe('changeZoneMethod');
+    });
   });
 
   it('renders plants and devices cards within a shared responsive row', async () => {

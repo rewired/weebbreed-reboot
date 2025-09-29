@@ -31,6 +31,31 @@ const createBlueprintSource = (): SnapshotBlueprintSource => ({
           SnapshotBlueprintSource['getStrain']
         >)
       : undefined,
+  getCultivationMethod: (id: string) =>
+    id === 'method-1'
+      ? ({
+          id: 'method-1',
+          name: 'Method One',
+        } as unknown as ReturnType<SnapshotBlueprintSource['getCultivationMethod']>)
+      : undefined,
+  getContainer: (id: string) =>
+    id === 'container-1'
+      ? ({
+          id: 'container-1',
+          slug: 'ebb-flow-tray',
+          name: 'Ebb & Flow Tray',
+          type: 'tray',
+        } as unknown as ReturnType<SnapshotBlueprintSource['getContainer']>)
+      : undefined,
+  getSubstrate: (id: string) =>
+    id === 'substrate-1'
+      ? ({
+          id: 'substrate-1',
+          slug: 'coco-blend',
+          name: 'Coco Blend',
+          type: 'coco',
+        } as unknown as ReturnType<SnapshotBlueprintSource['getSubstrate']>)
+      : undefined,
 });
 
 const createEnvironment = (): ZoneEnvironmentState => ({
@@ -110,12 +135,14 @@ const createState = (ledgerEntries: LedgerEntry[]): GameState => ({
                   slug: 'ebb-flow-tray',
                   type: 'tray',
                   count: 4,
+                  name: 'Ebb & Flow Tray',
                 },
                 substrate: {
                   blueprintId: 'substrate-1',
                   slug: 'coco-blend',
                   type: 'coco',
                   totalVolumeLiters: 320,
+                  name: 'Coco Blend',
                 },
               },
               area: 50,
@@ -242,17 +269,20 @@ describe('buildSimulationSnapshot finance ledger', () => {
     const zone = snapshot.zones[0]!;
 
     expect(zone.cultivationMethodId).toBe('method-1');
+    expect(zone.cultivationMethodName).toBe('Method One');
     expect(zone.cultivation?.container).toEqual({
       blueprintId: 'container-1',
       slug: 'ebb-flow-tray',
       type: 'tray',
       count: 4,
+      name: 'Ebb & Flow Tray',
     });
     expect(zone.cultivation?.substrate).toEqual({
       blueprintId: 'substrate-1',
       slug: 'coco-blend',
       type: 'coco',
       totalVolumeLiters: 320,
+      name: 'Coco Blend',
     });
   });
 });

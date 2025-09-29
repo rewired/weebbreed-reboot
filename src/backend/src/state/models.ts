@@ -266,6 +266,7 @@ export interface ZoneContainerSetup {
   slug: string;
   type: string;
   count: number;
+  name?: string;
 }
 
 export interface ZoneSubstrateSetup {
@@ -273,6 +274,7 @@ export interface ZoneSubstrateSetup {
   slug: string;
   type: string;
   totalVolumeLiters: number;
+  name?: string;
 }
 
 export interface ZoneCultivationSetup {

@@ -24,6 +24,10 @@
   "meta": {
     "description": "Simple cultivation method: one plant per pot in soil. Low setup cost, minimal labor, universally compatible.",
     "advantages": ["Very low initial cost", "Compatible with most strains", "Easy to manage"],
-    "disadvantages": ["Moderate space usage", "Lower productivity than advanced methods"]
+    "disadvantages": ["Moderate space usage", "Lower productivity than advanced methods"],
+    "defaults": {
+      "containerSlug": "pot-10l",
+      "substrateSlug": "soil-single-cycle"
+    }
   }
 }

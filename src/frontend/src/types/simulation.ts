@@ -20,6 +20,7 @@ export interface ZoneCultivationContainerSnapshot {
   slug: string;
   type: string;
   count: number;
+  name?: string;
 }
 
 export interface ZoneCultivationSubstrateSnapshot {
@@ -27,6 +28,7 @@ export interface ZoneCultivationSubstrateSnapshot {
   slug: string;
   type: string;
   totalVolumeLiters: number;
+  name?: string;
 }
 
 export interface ZoneCultivationSnapshot {
@@ -162,6 +164,7 @@ export interface ZoneSnapshot {
   ceilingHeight: number;
   volume: number;
   cultivationMethodId: string;
+  cultivationMethodName?: string;
   cultivation?: ZoneCultivationSnapshot;
   environment: SimulationEnvironmentState;
   resources: ZoneResourceSnapshot;
