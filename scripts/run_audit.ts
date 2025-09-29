@@ -13,7 +13,7 @@ import {
   CostAccountingService,
   type UtilityCostBreakdown,
 } from '../src/backend/src/engine/economy/costAccounting.js';
-import type { GameState, PlantState } from '../src/backend/src/state/models.js';
+import type { GameState, PlantState } from '../src/backend/src/state/types.js';
 import {
   createInitialState,
   type StateFactoryContext,

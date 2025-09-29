@@ -5,7 +5,7 @@ import type {
   TaskAssignment,
   TaskState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { ShiftManager } from '../shifts/shiftManager.js';
 
 const createZone = (): ZoneState => ({

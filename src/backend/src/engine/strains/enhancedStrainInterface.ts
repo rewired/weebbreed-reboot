@@ -1,5 +1,5 @@
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
-import type { PlantStage } from '@/state/models.js';
+import type { PlantStage } from '@/state/types.js';
 
 // Environmental metric keys used in bands
 export type EnvMetric = 'temp_C' | 'rh_frac' | 'co2_ppm' | 'ppfd_umol_m2s' | 'vpd_kPa';

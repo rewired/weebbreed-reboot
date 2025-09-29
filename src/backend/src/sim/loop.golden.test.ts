@@ -17,7 +17,7 @@ import {
   createStrainPriceMap,
 } from '@/testing/fixtures.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
-import type { GameState, ZoneState } from '@/state/models.js';
+import type { GameState, ZoneState } from '@/state/types.js';
 import { createPhenologyConfig } from '@/engine/plants/phenology.js';
 import type { PhenologyState } from '@/engine/plants/phenology.js';
 import { updatePlantGrowth } from '@/engine/plants/growthModel.js';

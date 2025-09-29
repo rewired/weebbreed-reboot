@@ -7,7 +7,7 @@ import {
   type CommandResult,
   type ErrorCode,
 } from '@/facade/index.js';
-import type { GameState, DeviceInstanceState, ZoneState } from '@/state/models.js';
+import type { GameState, DeviceInstanceState, ZoneState } from '@/state/types.js';
 import type { DeviceBlueprint } from '@/data/schemas/deviceSchema.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { addDeviceToZone } from '@/state/devices.js';

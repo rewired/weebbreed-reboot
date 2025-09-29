@@ -40,6 +40,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Extracted lightweight state type exports into `src/backend/src/state/types.ts`, split
+  personnel blueprint loaders into dedicated `state/personnel/*` modules, and updated
+  backend imports/tests to rely on the smaller entry points instead of the monolithic
+  `state/models` export.
 - Replaced the monolithic world service with dedicated structure/room/zone collaborators,
   extracted cloning helpers, and completed the `ZoneService.updateZone` migration so
   cultivation defaults, validations, and telemetry align with the refactored delegates.

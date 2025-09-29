@@ -7,7 +7,7 @@ import type { SimulationFacade, TimeStatus } from '@/facade/index.js';
 import { SseGateway } from './sseGateway.js';
 import type { UiStreamPacket } from '@runtime/eventBus.js';
 import type { SimulationSnapshot, SnapshotBlueprintSource } from '@/lib/uiSnapshot.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 
 interface ReceivedEvent {
   event: string;

@@ -8,7 +8,7 @@ import type {
   TaskLocation,
   TaskState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { clamp } from '../runtime/math.js';
 import { computeEffectiveWorkMinutesPerTick } from '../runtime/workMinutes.js';
 import { toNumber } from '../runtime/values.js';

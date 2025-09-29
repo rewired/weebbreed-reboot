@@ -1,5 +1,5 @@
 import { performance } from 'node:perf_hooks';
-import type { SimulationClockState } from '@/state/models.js';
+import type { SimulationClockState } from '@/state/types.js';
 
 export type TickExecutor = () => void | Promise<void>;
 

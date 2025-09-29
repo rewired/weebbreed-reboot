@@ -23,7 +23,7 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import type { AccountingPhaseTools, SimulationPhaseContext } from '@/sim/loop.js';
 
 const diseaseBalancing: DiseaseBalancingConfig = {

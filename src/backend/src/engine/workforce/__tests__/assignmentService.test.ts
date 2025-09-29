@@ -6,7 +6,7 @@ import type {
   TaskDefinitionMap,
   TaskState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import type { EventCollector, SimulationEvent } from '@/lib/eventBus.js';
 import { AssignmentService } from '../tasks/assignmentService.js';
 import type { WorkforcePolicies } from '../types.js';

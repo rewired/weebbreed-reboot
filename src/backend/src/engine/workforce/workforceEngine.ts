@@ -6,7 +6,7 @@ import type {
   TaskDefinitionMap,
   TaskLocation,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import type { SimulationPhaseHandler } from '@/sim/loop.js';
 import {
   type WorkforceEmployeeRuntimeState,

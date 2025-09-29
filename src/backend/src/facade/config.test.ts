@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SimulationFacade } from './index.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import { EventBus } from '@/lib/eventBus.js';
 import type { SimulationLoop } from '@/sim/loop.js';

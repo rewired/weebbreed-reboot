@@ -51,11 +51,8 @@ import {
   selectBlueprint,
 } from './state/initialization/blueprints.js';
 import { createFinanceState } from './state/initialization/finance.js';
-import {
-  createPersonnel,
-  loadPersonnelDirectory,
-  loadPersonnelRoleBlueprints,
-} from './state/initialization/personnel.js';
+import { createPersonnel, loadPersonnelDirectory } from './state/initialization/personnel.js';
+import { loadPersonnelRoleBlueprints } from './state/personnel/roleBlueprints.js';
 import { createTasks, loadTaskDefinitions } from './state/initialization/tasks.js';
 import { resolveRoomPurposeId, requireRoomPurposeByName } from './engine/roomPurposes/index.js';
 import type { RoomPurpose, RoomPurposeSlug } from './engine/roomPurposes/index.js';
@@ -64,10 +61,7 @@ import { addDeviceToZone } from './state/devices.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
-export {
-  loadPersonnelDirectory,
-  loadPersonnelRoleBlueprints,
-} from './state/initialization/personnel.js';
+export { loadPersonnelDirectory } from './state/initialization/personnel.js';
 export { loadTaskDefinitions } from './state/initialization/tasks.js';
 
 const DEFAULT_TARGET_TICK_RATE = 1;

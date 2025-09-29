@@ -1,11 +1,8 @@
 import { z } from 'zod';
 import { utilityPricesSchema } from '@/data/schemas/priceSchemas.js';
-import {
-  DEFAULT_PERSONNEL_ROLE_BLUEPRINTS,
-  getEmployeeSkillNames,
-  isKnownSkillName,
-} from '@/state/models.js';
-import type { EmployeeRole } from '@/state/models.js';
+import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS } from '@/state/personnel/roleBlueprints.js';
+import { getEmployeeSkillNames, isKnownSkillName } from '@/state/personnel/skillBlueprints.js';
+import type { EmployeeRole } from '@/state/types.js';
 
 const isoDateString = z
   .string()

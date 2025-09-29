@@ -34,7 +34,7 @@ import {
   loadPersonnelDirectory,
   type StateFactoryContext,
 } from '@/stateFactory.js';
-import type { GameState, PersonnelNameDirectory } from '@/state/models.js';
+import type { GameState, PersonnelNameDirectory, UtilityPrices } from '@/state/types.js';
 import { provisionPersonnelDirectory } from '@/state/initialization/personnelProvisioner.js';
 import { SimulationLoop, type SimulationPhaseHandler } from '@/sim/loop.js';
 import { BlueprintHotReloadManager } from '@/persistence/hotReload.js';
@@ -47,7 +47,6 @@ import { PlantingPlanService } from '@/engine/plants/plantingPlanService.js';
 import { PlantingService } from '@/engine/plants/plantingService.js';
 import { PlantLifecycleService } from '@/engine/plants/plantLifecycleService.js';
 import { JobMarketService } from '@/engine/workforce/jobMarketService.js';
-import type { UtilityPrices } from '@/data/schemas/index.js';
 
 const DEFAULT_PORT = 7331;
 const DEFAULT_SEED = 'dev-server';

@@ -1,5 +1,5 @@
-import type { DevicePriceEntry, StrainPriceEntry, UtilityPrices } from '@/data/schemas/index.js';
-import type { EconomicsSettings } from '@/state/models.js';
+import type { DevicePriceEntry, StrainPriceEntry } from '@/data/schemas/index.js';
+import type { EconomicsSettings, UtilityPrices } from '@/state/types.js';
 import { RNG_STREAM_IDS } from '@/lib/rng.js';
 import type { RngService } from '@/lib/rng.js';
 

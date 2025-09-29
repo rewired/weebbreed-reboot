@@ -9,7 +9,7 @@ import type {
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { findRoom, findZone } from './stateSelectors.js';
 import { validateStructureGeometry } from '@/state/geometry.js';
-import type { GameState, ZoneState } from '@/state/models.js';
+import type { GameState, ZoneState } from '@/state/types.js';
 import type { CultivationMethodBlueprint } from '@/data/schemas/index.js';
 import {
   cloneControl,

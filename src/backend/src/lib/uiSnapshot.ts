@@ -1,21 +1,21 @@
 import { requireRoomPurpose, type RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
-import {
-  getApplicantPersonalSeed,
-  type ApplicantState,
-  type DeviceInstanceState,
-  type EmployeeState,
-  type GameState,
-  type LedgerEntry,
-  type PlantState,
-  type StructureState,
-  type ZoneControlState,
-  type ZoneCultivationSetup,
-  type ZoneEnvironmentState,
-  type ZoneMetricState,
-  type ZonePlantingPlanState,
-  type ZoneResourceState,
-} from '@/state/models.js';
+import { getApplicantPersonalSeed } from '@/state/personnel/applicants.js';
+import type {
+  ApplicantState,
+  DeviceInstanceState,
+  EmployeeState,
+  GameState,
+  LedgerEntry,
+  PlantState,
+  StructureState,
+  ZoneControlState,
+  ZoneCultivationSetup,
+  ZoneEnvironmentState,
+  ZoneMetricState,
+  ZonePlantingPlanState,
+  ZoneResourceState,
+} from '@/state/types.js';
 
 const LIGHT_DEVICE_KINDS = new Set<string>(['GrowLight', 'Lamp', 'Light']);
 

@@ -1,4 +1,4 @@
-import type { GameState, RoomState, StructureState, ZoneState } from '@/state/models.js';
+import type { GameState, RoomState, StructureState, ZoneState } from '@/state/types.js';
 
 export interface StructureLookupResult {
   structure: StructureState;

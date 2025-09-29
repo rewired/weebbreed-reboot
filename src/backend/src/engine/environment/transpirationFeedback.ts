@@ -5,7 +5,7 @@ import {
 } from '@/constants/environment.js';
 import { computeVpd } from '@/engine/physio/vpd.js';
 import type { AccountingPhaseTools } from '@/sim/loop.js';
-import type { ZoneState } from '@/state/models.js';
+import type { ZoneState } from '@/state/types.js';
 
 const clamp = (value: number, min: number, max: number): number => {
   if (Number.isNaN(value)) {

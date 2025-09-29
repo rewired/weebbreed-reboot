@@ -6,7 +6,7 @@ import type {
   ZoneEnvironmentState,
   ZoneMetricState,
   ZoneResourceState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';

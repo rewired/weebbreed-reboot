@@ -12,7 +12,7 @@ import type {
   ZoneMetricState,
   ZoneResourceState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { SimulationLoop, type SimulationPhaseContext } from './loop.js';
 import { TICK_PHASES, type TickPhase } from './tickPhases.js';
 import { createTickStateMachine } from './tickStateMachine.js';

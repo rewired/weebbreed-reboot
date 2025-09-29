@@ -1,4 +1,4 @@
-import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
+import type { DeviceInstanceState, ZoneEnvironmentState, ZoneState } from '@/state/types.js';
 import type { ZoneGeometry } from '@/state/geometry.js';
 import {
   AMBIENT_CO2_PPM,

@@ -9,7 +9,7 @@ import type {
   TaskState,
   TreatmentCategory,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import { addDeviceToZone } from '@/state/devices.js';
 import { WorkforceEngine } from './workforceEngine.js';
 import { resolveRoomPurposeId } from '../roomPurposes/index.js';

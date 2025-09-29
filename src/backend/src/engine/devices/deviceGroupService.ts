@@ -5,7 +5,7 @@ import {
   type CommandResult,
   type ErrorCode,
 } from '@/facade/index.js';
-import type { GameState, TaskState } from '@/state/models.js';
+import type { GameState, TaskState } from '@/state/types.js';
 import { findZone } from '@/engine/world/stateSelectors.js';
 
 export interface DeviceGroupToggleResult {

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createEventCollector, type SimulationEvent } from '@/lib/eventBus.js';
 import { DeviceRemovalService } from './deviceRemovalService.js';
 import type { CommandExecutionContext } from '@/facade/index.js';
-import type { DeviceInstanceState, GameState } from '@/state/models.js';
+import type { DeviceInstanceState, GameState } from '@/state/types.js';
 import { DEFAULT_MAINTENANCE_INTERVAL_TICKS } from '@/constants/world.js';
 
 const STRUCTURE_ID = 'structure-test';

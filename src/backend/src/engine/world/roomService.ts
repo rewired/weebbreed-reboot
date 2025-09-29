@@ -8,7 +8,7 @@ import type {
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { findRoom, findStructure } from './stateSelectors.js';
 import { validateStructureGeometry } from '@/state/geometry.js';
-import type { GameState, RoomState } from '@/state/models.js';
+import type { GameState, RoomState } from '@/state/types.js';
 import { deriveDuplicateName } from './worldDefaults.js';
 import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import { resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';

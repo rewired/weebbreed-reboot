@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import {
   DEFAULT_SAVEGAME_VERSION,
   SAVEGAME_KIND,

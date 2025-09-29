@@ -3,13 +3,13 @@ import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { RngService, RNG_STREAM_IDS } from '@/lib/rng.js';
-import type { PersonnelNameDirectory, PersonnelRoleBlueprintDraft } from '@/state/models.js';
-import { getEmployeeSkillNames, resetPersonnelSkillBlueprints } from '@/state/models.js';
+import type { PersonnelNameDirectory, PersonnelRoleBlueprintDraft } from '@/state/types.js';
 import {
-  createPersonnel,
-  loadPersonnelDirectory,
-  loadPersonnelRoleBlueprints,
-} from './personnel.js';
+  getEmployeeSkillNames,
+  resetPersonnelSkillBlueprints,
+} from '@/state/personnel/skillBlueprints.js';
+import { createPersonnel, loadPersonnelDirectory } from './personnel.js';
+import { loadPersonnelRoleBlueprints } from '@/state/personnel/roleBlueprints.js';
 
 afterEach(() => {
   resetPersonnelSkillBlueprints();

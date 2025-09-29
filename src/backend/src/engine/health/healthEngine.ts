@@ -11,7 +11,7 @@ import type {
   PlantState,
   ZoneHealthState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import {
   clamp,
   mapStageToHealthPhase,

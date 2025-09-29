@@ -3,7 +3,7 @@ import type { CommandExecutionContext, CommandResult, ErrorCode } from '@/facade
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
 import { findStructure } from './stateSelectors.js';
 import { validateStructureGeometry } from '@/state/geometry.js';
-import type { GameState, StructureBlueprint, StructureState } from '@/state/models.js';
+import type { GameState, StructureBlueprint, StructureState } from '@/state/types.js';
 import { deriveDuplicateName } from './worldDefaults.js';
 import type { RoomService } from './roomService.js';
 import type { DevicePurchaseMap } from './zoneService.js';

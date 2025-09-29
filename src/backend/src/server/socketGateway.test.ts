@@ -15,7 +15,7 @@ import type {
 import type { EventFilter } from '@/lib/eventBus.js';
 import { EventBus, type SimulationEvent, type UiStreamPacket } from '@runtime/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '@/sim/loop.js';
-import type { GameState } from '@/state/models.js';
+import type { GameState } from '@/state/types.js';
 import { SocketGateway, type SimulationSnapshot } from './socketGateway.js';
 import { resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';

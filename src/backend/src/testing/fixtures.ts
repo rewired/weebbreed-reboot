@@ -4,7 +4,6 @@ import type {
   DevicePriceEntry,
   StrainBlueprint,
   StrainPriceEntry,
-  UtilityPrices,
   SubstrateBlueprint,
   ContainerBlueprint,
   CultivationMethodPriceEntry,
@@ -12,7 +11,7 @@ import type {
   ContainerPriceEntry,
 } from '@/data/schemas/index.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
-import type { StructureBlueprint } from '@/state/models.js';
+import type { StructureBlueprint, UtilityPrices } from '@/state/types.js';
 import { RngService } from '@/lib/rng.js';
 import type { StateFactoryContext } from '../stateFactory.js';
 import type { RoomPurpose } from '@/engine/roomPurposes/index.js';

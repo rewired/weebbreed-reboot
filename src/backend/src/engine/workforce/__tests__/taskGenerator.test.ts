@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEventCollector } from '@/lib/eventBus.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
-import type { GameState, TaskDefinitionMap, ZoneState } from '@/state/models.js';
+import type { GameState, TaskDefinitionMap, ZoneState } from '@/state/types.js';
 import { TaskGenerator } from '../tasks/taskGenerator.js';
 
 const basePolicies = {

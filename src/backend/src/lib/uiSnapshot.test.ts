@@ -10,7 +10,7 @@ import type {
   ZoneEnvironmentState,
   ZoneMetricState,
   ZoneResourceState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 
 const createBlueprintSource = (): SnapshotBlueprintSource => ({
   listRoomPurposes: () => [

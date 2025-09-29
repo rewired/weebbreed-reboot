@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { EventBus } from '@/lib/eventBus.js';
 import { SimulationFacade } from '@/facade/index.js';
-import type { DeviceInstanceState, GameState } from '@/state/models.js';
+import type { DeviceInstanceState, GameState } from '@/state/types.js';
 import type { SimulationEvent } from '@/lib/eventBus.js';
 import type { SimulationLoop } from '@/sim/loop.js';
 import { WorldService } from '@/engine/world/worldService.js';

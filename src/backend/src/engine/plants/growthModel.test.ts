@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PlantState, ZoneEnvironmentState, ZoneState } from '@/state/models.js';
+import type { PlantState, ZoneEnvironmentState, ZoneState } from '@/state/types.js';
 import type { StrainBlueprint } from '@/data/schemas/strainsSchema.js';
 import { createInitialPhenologyState, createPhenologyConfig } from './phenology.js';
 import type { PhenologyState } from './phenology.js';

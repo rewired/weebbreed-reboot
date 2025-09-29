@@ -12,7 +12,7 @@ import type {
   StructureState,
   ZoneControlState,
   ZoneState,
-} from '@/state/models.js';
+} from '@/state/types.js';
 
 export interface DeviceRemovalResult {
   deviceId: string;

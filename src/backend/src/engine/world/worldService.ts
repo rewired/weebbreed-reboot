@@ -16,7 +16,7 @@ import {
   type StructureBlueprint,
   type DifficultyLevel,
   type EconomicsSettings,
-} from '@/state/models.js';
+} from '@/state/types.js';
 import type { RoomPurposeSource } from '@/engine/roomPurposes/index.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
