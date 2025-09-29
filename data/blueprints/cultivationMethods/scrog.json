@@ -10,7 +10,7 @@
   "minimumSpacing": 0.8,
   "maxCycles": 4,
   "compatibleSubstrateTypes": ["soil", "coco"],
-  "compatibleContainerSlugs": ["pot-25l"],
+  "compatibleContainerTypes": ["pot"],
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.sativa": {

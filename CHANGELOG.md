@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   teaching the loader to index substrates by type, validate referenced media,
   warn when pricing is missing, and refreshing documentation plus blueprints to
   list both soil and coco support.
+- Switched cultivation method container compatibility to `compatibleContainerTypes`,
+  normalizing existing methods to the shared `pot` category, indexing containers
+  by type in the loader, and extending cross-checks, fixtures, and docs to flag
+  missing container pricing per category.
 - Normalized substrate consumable pricing to `costPerLiter`, updating schemas,
   fixtures, loader expectations, and docs so per-liter figures are enforced in
   validation and surfaced consistently across the toolchain.

@@ -18,7 +18,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "minimumSpacing": 0.5,
   "maxCycles": 1,
   "compatibleSubstrateTypes": ["soil", "coco"],
-  "compatibleContainerSlugs": ["pot-10l"],
+  "compatibleContainerTypes": ["pot"],
   "strainTraitCompatibility": {},
   "envBias": {},
   "capacityHints": {
@@ -52,7 +52,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "minimumSpacing": 0.8,
   "maxCycles": 4,
   "compatibleSubstrateTypes": ["soil", "coco"],
-  "compatibleContainerSlugs": ["pot-25l"],
+  "compatibleContainerTypes": ["pot"],
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.sativa": {
@@ -108,7 +108,7 @@ These files are crucial! The blueprinted Objects will be rehidrated from these c
   "minimumSpacing": 0.25,
   "maxCycles": 2,
   "compatibleSubstrateTypes": ["soil", "coco"],
-  "compatibleContainerSlugs": ["pot-11l"],
+  "compatibleContainerTypes": ["pot"],
   "strainTraitCompatibility": {
     "preferred": {
       "genotype.indica": {

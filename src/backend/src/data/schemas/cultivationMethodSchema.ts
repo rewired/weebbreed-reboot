@@ -26,7 +26,7 @@ export const cultivationMethodSchema = z
     minimumSpacing: z.number(),
     maxCycles: z.number().int().min(0).optional(),
     compatibleSubstrateTypes: z.array(z.string().min(1)).optional(),
-    compatibleContainerSlugs: z.array(z.string().min(1)).optional(),
+    compatibleContainerTypes: z.array(z.string().min(1)).optional(),
     strainTraitCompatibility: strainTraitCompatibilitySchema.optional(),
     envBias: z
       .object({

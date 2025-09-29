@@ -17,9 +17,11 @@ describe('loadBlueprintData', () => {
     const substrates = result.data.substrates;
     const substratesByType = result.data.substratesByType;
     const containers = result.data.containers;
+    const containersByType = result.data.containersByType;
     expect(cultivationMethods.size).toBeGreaterThan(0);
     expect(substrates.size).toBeGreaterThan(0);
     expect(containers.size).toBeGreaterThan(0);
+    expect(containersByType.size).toBeGreaterThan(0);
 
     const substrateSlugs = Array.from(substrates.values()).map((entry) => entry.slug);
     expect(substrateSlugs).toContain('coco-coir');
@@ -32,10 +34,16 @@ describe('loadBlueprintData', () => {
     const cocoCoir = Array.from(substrates.values()).find((entry) => entry.slug === 'coco-coir');
     expect(cocoCoir?.type).toBe('coco');
 
+    const potContainers = containersByType.get('pot');
+    expect(potContainers).toBeDefined();
+    expect(potContainers?.map((entry) => entry.slug)).toEqual(
+      expect.arrayContaining(['pot-10l', 'pot-11l', 'pot-25l']),
+    );
+
     const scrog = cultivationMethods.get('41229377-ef2d-4723-931f-72eea87d7a62');
     expect(scrog?.strainTraitCompatibility?.preferred?.['genotype.sativa']?.min).toBe(0.5);
     expect(scrog?.strainTraitCompatibility?.conflicting?.['genotype.indica']?.min).toBe(0.7);
-    expect(scrog?.compatibleContainerSlugs).toContain('pot-25l');
+    expect(scrog?.compatibleContainerTypes).toContain('pot');
     expect(scrog?.compatibleSubstrateTypes).toContain('soil');
     expect(scrog?.compatibleSubstrateTypes).toContain('coco');
 
@@ -56,7 +64,7 @@ describe('loadBlueprintData', () => {
     expect(sog?.strainTraitCompatibility?.conflicting?.['photoperiod.vegetationTime']?.min).toBe(
       2_419_200,
     );
-    expect(sog?.compatibleContainerSlugs).toContain('pot-11l');
+    expect(sog?.compatibleContainerTypes).toContain('pot');
     expect(sog?.compatibleSubstrateTypes).toContain('soil');
     expect(sog?.compatibleSubstrateTypes).toContain('coco');
   });

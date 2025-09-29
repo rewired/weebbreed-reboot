@@ -10,7 +10,7 @@
   "minimumSpacing": 0.5,
   "maxCycles": 1,
   "compatibleSubstrateTypes": ["soil", "coco"],
-  "compatibleContainerSlugs": ["pot-10l"],
+  "compatibleContainerTypes": ["pot"],
   "strainTraitCompatibility": {},
   "envBias": {},
   "capacityHints": {

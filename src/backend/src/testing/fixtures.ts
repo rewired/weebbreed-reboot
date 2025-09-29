@@ -144,7 +144,7 @@ export const createCultivationMethodBlueprint = (
   areaPerPlant: 1.6,
   minimumSpacing: 0.4,
   compatibleSubstrateTypes: ['soil'],
-  compatibleContainerSlugs: ['test-container'],
+  compatibleContainerTypes: ['pot'],
   meta: {},
   ...overrides,
 });
