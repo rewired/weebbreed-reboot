@@ -614,6 +614,9 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
           const cullTitle = zoneRestricted
             ? 'Zone safety restrictions prevent culling right now.'
             : undefined;
+          const plantLabel = plant.strainName ?? plant.strainId ?? plant.id;
+          const harvestAriaLabel = `Harvest ${plantLabel}`;
+          const cullAriaLabel = `Trash ${plantLabel}`;
 
           return (
             <div className="flex flex-wrap items-center gap-2">
@@ -622,6 +625,7 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                 variant="secondary"
                 data-testid={`plant-action-harvest-${plant.id}`}
                 icon={<Icon name="grass" size={16} />}
+                aria-label={harvestAriaLabel}
                 disabled={harvestDisabled}
                 title={harvestTitle}
                 onClick={() => {
@@ -638,20 +642,30 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                     context,
                   });
                 }}
-              >
-                Harvest
-              </Button>
+              />
               <Button
                 size="sm"
                 variant="ghost"
                 data-testid={`plant-action-cull-${plant.id}`}
                 icon={<Icon name="delete" size={16} />}
+                aria-label={cullAriaLabel}
                 disabled={cullDisabled}
                 title={cullTitle}
-                onClick={() => handleCull(plant.id)}
-              >
-                Trash
-              </Button>
+                onClick={() => {
+                  const context: ConfirmPlantActionContext = {
+                    action: 'cull',
+                    plantIds: [plant.id],
+                    zoneId: zone?.id,
+                    onConfirm: () => handleCull(plant.id),
+                  };
+                  openModal({
+                    id: `confirm-cull-${plant.id}`,
+                    type: 'confirmPlantAction',
+                    title: 'Confirm trash',
+                    context,
+                  });
+                }}
+              />
             </div>
           );
         },
@@ -983,7 +997,20 @@ export const ZoneView = ({ bridge }: { bridge: SimulationBridge }) => {
                   data-testid="plant-harvest-all"
                   disabled={harvestAllDisabled}
                   title={harvestAllTitle ?? undefined}
-                  onClick={() => handleHarvestAll(harvestablePlantIds)}
+                  onClick={() => {
+                    const context: ConfirmPlantActionContext = {
+                      action: 'harvest',
+                      plantIds: harvestablePlantIds,
+                      zoneId: zone?.id,
+                      onConfirm: () => handleHarvestAll(harvestablePlantIds),
+                    };
+                    openModal({
+                      id: `confirm-harvest-all-${zone?.id ?? 'unknown'}`,
+                      type: 'confirmPlantAction',
+                      title: 'Confirm harvest all',
+                      context,
+                    });
+                  }}
                 >
                   Harvest all
                 </Button>
