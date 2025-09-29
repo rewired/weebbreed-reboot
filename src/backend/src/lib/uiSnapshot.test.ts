@@ -104,6 +104,20 @@ const createState = (ledgerEntries: LedgerEntry[]): GameState => ({
               roomId: 'room-1',
               name: 'Zone',
               cultivationMethodId: 'method-1',
+              cultivation: {
+                container: {
+                  blueprintId: 'container-1',
+                  slug: 'ebb-flow-tray',
+                  type: 'tray',
+                  count: 4,
+                },
+                substrate: {
+                  blueprintId: 'substrate-1',
+                  slug: 'coco-blend',
+                  type: 'coco',
+                  totalVolumeLiters: 320,
+                },
+              },
               area: 50,
               ceilingHeight: 3,
               volume: 150,
@@ -221,6 +235,25 @@ describe('buildSimulationSnapshot finance ledger', () => {
     const snapshot = buildSimulationSnapshot(createState([]), blueprintSource);
 
     expect(snapshot.finance.ledger).toBeUndefined();
+  });
+
+  it('includes cultivation metadata for zones', () => {
+    const snapshot = buildSimulationSnapshot(createState([]), blueprintSource);
+    const zone = snapshot.zones[0]!;
+
+    expect(zone.cultivationMethodId).toBe('method-1');
+    expect(zone.cultivation?.container).toEqual({
+      blueprintId: 'container-1',
+      slug: 'ebb-flow-tray',
+      type: 'tray',
+      count: 4,
+    });
+    expect(zone.cultivation?.substrate).toEqual({
+      blueprintId: 'substrate-1',
+      slug: 'coco-blend',
+      type: 'coco',
+      totalVolumeLiters: 320,
+    });
   });
 });
 

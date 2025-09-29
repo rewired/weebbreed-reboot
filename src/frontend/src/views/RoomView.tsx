@@ -1,5 +1,6 @@
+import { useMemo } from 'react';
 import { Card } from '@/components/primitives/Card';
-import { Button } from '@/components/primitives/Button';
+import { Button, IconButton } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { Badge } from '@/components/primitives/Badge';
 import { useSimulationStore } from '@/store/simulation';
@@ -8,13 +9,26 @@ import { useUIStore } from '@/store/ui';
 import { formatNumber } from '@/utils/formatNumber';
 
 export const RoomView = () => {
-  const snapshot = useSimulationStore((state) => state.snapshot);
+  const { snapshot, catalogs } = useSimulationStore((state) => ({
+    snapshot: state.snapshot,
+    catalogs: state.catalogs,
+  }));
   const { selectedRoomId, selectedStructureId, openZone } = useNavigationStore((state) => ({
     selectedRoomId: state.selectedRoomId,
     selectedStructureId: state.selectedStructureId,
     openZone: state.openZone,
   }));
   const openModal = useUIStore((state) => state.openModal);
+
+  const cultivationMethodLookup = useMemo(() => {
+    const entries = catalogs.cultivationMethods.data;
+    return new Map(entries.map((entry) => [entry.id, entry.name]));
+  }, [catalogs.cultivationMethods.data]);
+
+  const substrateLookup = useMemo(() => {
+    const entries = catalogs.substrates.data;
+    return new Map(entries.map((entry) => [entry.id, entry.name]));
+  }, [catalogs.substrates.data]);
 
   if (!snapshot || !selectedRoomId || !selectedStructureId) {
     return null;
@@ -26,6 +40,30 @@ export const RoomView = () => {
   }
 
   const zones = snapshot.zones.filter((zone) => zone.roomId === room.id);
+
+  const resolveMethodLabel = (methodId: string): string => {
+    if (!methodId) {
+      return '—';
+    }
+    const label = cultivationMethodLookup.get(methodId);
+    if (label) {
+      return label;
+    }
+    return catalogs.cultivationMethods.status === 'loading' ? 'Loading method…' : methodId;
+  };
+
+  const resolveSubstrateLabel = (
+    substrate?: NonNullable<(typeof zones)[number]['cultivation']>['substrate'],
+  ): string => {
+    if (!substrate) {
+      return catalogs.substrates.status === 'loading' ? 'Loading substrate…' : '—';
+    }
+    const label = substrateLookup.get(substrate.blueprintId);
+    if (label) {
+      return label;
+    }
+    return substrate.slug ?? substrate.type ?? substrate.blueprintId;
+  };
 
   if (room.purposeKind === 'lab') {
     return (
@@ -94,21 +132,38 @@ export const RoomView = () => {
             title={zone.name}
             subtitle={`${formatNumber(zone.area)} m² · PPFD ${formatNumber(zone.environment.ppfd)} µmol`}
             action={
-              <Button
-                variant="ghost"
-                size="sm"
-                icon={<Icon name="more_horiz" />}
-                onClick={() =>
-                  openModal({
-                    id: `zone-actions-${zone.id}`,
-                    type: 'duplicateRoom',
-                    title: `${zone.name} Actions`,
-                    subtitle: 'Rename, duplicate, or delete zone blueprint',
-                  })
-                }
-              >
-                Actions
-              </Button>
+              <div className="flex items-center gap-2">
+                <IconButton
+                  size="sm"
+                  aria-label={`Duplicate ${zone.name}`}
+                  onClick={() =>
+                    openModal({
+                      id: `duplicate-zone-${zone.id}`,
+                      type: 'duplicateZone',
+                      title: 'Duplicate zone',
+                      subtitle: `Clone ${zone.name} with its cultivation setup`,
+                      context: { zoneId: zone.id },
+                    })
+                  }
+                >
+                  <Icon name="content_copy" />
+                </IconButton>
+                <IconButton
+                  size="sm"
+                  aria-label={`Delete ${zone.name}`}
+                  onClick={() =>
+                    openModal({
+                      id: `delete-zone-${zone.id}`,
+                      type: 'deleteZone',
+                      title: 'Remove zone',
+                      subtitle: `Delete ${zone.name} from ${room.name}`,
+                      context: { zoneId: zone.id },
+                    })
+                  }
+                >
+                  <Icon name="delete" />
+                </IconButton>
+              </div>
             }
           >
             <div className="flex flex-col gap-3 text-sm text-text-muted">
@@ -127,10 +182,10 @@ export const RoomView = () => {
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Icon name="water_drop" size={20} />
-                <span>
-                  Reservoir{' '}
-                  {formatNumber(zone.resources.reservoirLevel * 100, { maximumFractionDigits: 0 })}%
+                <Icon name="science" size={20} />
+                <span className="text-text">
+                  Method {resolveMethodLabel(zone.cultivationMethodId)} · Substrate{' '}
+                  {resolveSubstrateLabel(zone.cultivation?.substrate)}
                 </span>
               </div>
               <div className="flex items-center gap-2">

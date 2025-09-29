@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
-import { cleanup, render, act, screen } from '@testing-library/react';
+import { cleanup, render, act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ModalHost } from './ModalHost';
 import { useSimulationStore } from '@/store/simulation';
@@ -70,6 +70,67 @@ const buildSnapshotWithRoom = (): SimulationSnapshot => ({
   rooms: [structuredClone(baseRoom)],
   zones: [],
 });
+
+const buildSnapshotWithZone = (): SimulationSnapshot => {
+  const snapshot = buildSnapshotWithRoom();
+  const zone: SimulationSnapshot['zones'][number] = {
+    id: 'zone-1',
+    name: 'Zone One',
+    structureId: baseStructure.id,
+    structureName: baseStructure.name,
+    roomId: baseRoom.id,
+    roomName: baseRoom.name,
+    area: 20,
+    ceilingHeight: 3,
+    volume: 60,
+    cultivationMethodId: 'method-1',
+    cultivation: {
+      container: {
+        blueprintId: 'container-1',
+        slug: 'container-1',
+        type: 'tray',
+        count: 24,
+      },
+      substrate: {
+        blueprintId: 'substrate-1',
+        slug: 'substrate-1',
+        type: 'soil',
+        totalVolumeLiters: 120,
+      },
+    },
+    environment: {
+      temperature: 24,
+      relativeHumidity: 0.6,
+      co2: 950,
+      ppfd: 520,
+      vpd: 1.2,
+    },
+    resources: {
+      waterLiters: 0,
+      nutrientSolutionLiters: 0,
+      nutrientStrength: 1,
+      substrateHealth: 1,
+      reservoirLevel: 1,
+      lastTranspirationLiters: 0,
+    },
+    metrics: {
+      averageTemperature: 24,
+      averageHumidity: 0.6,
+      averageCo2: 950,
+      averagePpfd: 520,
+      stressLevel: 0.12,
+      lastUpdatedTick: 0,
+    },
+    devices: [],
+    plants: [],
+    control: { setpoints: {} },
+    health: { diseases: 0, pests: 0, pendingTreatments: 0, appliedTreatments: 0 },
+  };
+
+  snapshot.rooms[0]!.zoneIds = [zone.id];
+  snapshot.zones = [zone];
+  return snapshot;
+};
 
 const buildMethodBlueprint = () => ({
   id: 'method-1',
@@ -421,6 +482,102 @@ describe('ModalHost', () => {
           },
         },
       },
+    });
+  });
+
+  it('dispatches duplicateZone intent when confirming the duplicate zone modal', async () => {
+    const snapshot = buildSnapshotWithZone();
+    act(() => {
+      useSimulationStore.setState({
+        snapshot,
+        timeStatus: { ...pausedStatus },
+        events: [],
+        connectionStatus: 'connected',
+        zoneHistory: {},
+        lastTick: snapshot.clock.tick,
+      });
+    });
+
+    sendIntentMock.mockResolvedValueOnce({ ok: true, data: { zoneId: 'zone-clone' } });
+
+    render(<ModalHost bridge={bridge} />);
+    const user = userEvent.setup();
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'duplicate-zone-1',
+        type: 'duplicateZone',
+        title: 'Duplicate zone',
+        context: { zoneId: 'zone-1' },
+      });
+    });
+
+    const nameInput = await screen.findByPlaceholderText(/Zone One Copy/i);
+    await user.type(nameInput, 'Beta Wing');
+
+    await user.click(screen.getByRole('button', { name: /Duplicate zone/i }));
+
+    await waitFor(() => {
+      expect(sendIntentMock).toHaveBeenCalledWith({
+        domain: 'world',
+        action: 'duplicateZone',
+        payload: { zoneId: 'zone-1', name: 'Beta Wing' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(useUIStore.getState().activeModal).toBeNull();
+    });
+  });
+
+  it('dispatches deleteZone intent when confirming the delete zone modal', async () => {
+    const snapshot = buildSnapshotWithZone();
+    act(() => {
+      useSimulationStore.setState({
+        snapshot,
+        timeStatus: { ...pausedStatus },
+        events: [],
+        connectionStatus: 'connected',
+        zoneHistory: {},
+        lastTick: snapshot.clock.tick,
+      });
+    });
+
+    sendIntentMock.mockResolvedValueOnce({ ok: true });
+
+    render(<ModalHost bridge={bridge} />);
+    const user = userEvent.setup();
+
+    act(() => {
+      useUIStore.getState().openModal({
+        id: 'delete-zone-1',
+        type: 'deleteZone',
+        title: 'Remove zone',
+        context: { zoneId: 'zone-1' },
+      });
+    });
+
+    const confirmationInput = await screen.findByPlaceholderText('Zone One');
+    const confirmButtonInitial = screen.getByRole('button', { name: /Remove zone/i });
+    expect(confirmButtonInitial).toBeDisabled();
+
+    await user.type(confirmationInput, 'Zone One');
+
+    const confirmButton = screen.getByRole('button', { name: /Remove zone/i });
+    expect(confirmButton).toBeEnabled();
+
+    await user.click(confirmButton);
+
+    await waitFor(() => {
+      expect(sendIntentMock).toHaveBeenCalledWith({
+        domain: 'world',
+        action: 'deleteZone',
+        payload: { zoneId: 'zone-1' },
+      });
+    });
+
+    await waitFor(() => {
+      expect(useUIStore.getState().activeModal).toBeNull();
     });
   });
 

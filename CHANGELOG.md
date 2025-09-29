@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   extending schemas, repository accessors, loader cross-checks, and docs to surface
   the new price sources.
 
+- Added cultivation metadata (method, container, substrate) to zone UI snapshots, updating backend tests and frontend types/fixtures to surface the new fields.【F:src/backend/src/lib/uiSnapshot.ts†L102-L178】【F:src/backend/src/lib/uiSnapshot.test.ts†L103-L159】【F:src/frontend/src/types/simulation.ts†L1-L64】【F:src/frontend/src/data/mockTelemetry.ts†L1-L207】
+
 ### Changed
 
 - Refined the Create Zone modal with a Max area shortcut, stricter numeric clamps,
@@ -106,6 +108,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   submit only changed setpoints when installing devices.
 - Surfaced blueprint coverage limits in the Install Device modal, presenting area and volume capacities (deriving floor
   coverage from room height when only volume is supplied) and extending Vitest coverage for both metrics.
+
+- Refreshed the Room view zone cards with cultivation method/substrate labels and icon-only duplicate/delete actions wired to the new zone modals, retiring the reservoir row and extending coverage/documentation for the updated flow.【F:src/frontend/src/views/RoomView.tsx†L1-L139】【F:src/frontend/src/views/**tests**/RoomView.test.tsx†L1-L68】【F:src/frontend/src/components/modals/ModalHost.tsx†L1635-L1727】【F:src/frontend/src/components/modals/ModalHost.test.tsx†L381-L434】【F:docs/ui/ui-components-desciption.md†L20-L22】【F:docs/ui/ui-components-desciption.md†L506-L516】
 
 ### Fixed
 

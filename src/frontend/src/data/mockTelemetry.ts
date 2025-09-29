@@ -38,6 +38,38 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     vpd: 1.3,
   };
 
+  const defaultCultivation = {
+    container: {
+      blueprintId: 'container-flood-table',
+      slug: 'ebb-flow-tray',
+      type: 'ebbFlowTable',
+      count: 4,
+    },
+    substrate: {
+      blueprintId: 'substrate-coco-mix',
+      slug: 'coco-blend',
+      type: 'coco',
+      totalVolumeLiters: 320,
+    },
+  };
+
+  const hasCultivationOverride = Object.prototype.hasOwnProperty.call(overrides, 'cultivation');
+  const cultivation = hasCultivationOverride
+    ? overrides.cultivation
+      ? {
+          container: overrides.cultivation.container
+            ? { ...overrides.cultivation.container }
+            : undefined,
+          substrate: overrides.cultivation.substrate
+            ? { ...overrides.cultivation.substrate }
+            : undefined,
+        }
+      : undefined
+    : {
+        container: { ...defaultCultivation.container },
+        substrate: { ...defaultCultivation.substrate },
+      };
+
   const defaultDevices: DeviceSnapshot[] = [
     createDevice({
       id: 'device-light-a1',
@@ -145,7 +177,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
     area: 20,
     ceilingHeight: 2.5,
     volume: 50,
-    cultivationMethodId: 'method-sog',
+    cultivationMethodId: overrides.cultivationMethodId ?? 'method-sog',
     environment,
     resources: {
       waterLiters: 9000,
@@ -210,6 +242,7 @@ const baseZone = (overrides: Partial<ZoneSnapshot>): ZoneSnapshot => {
       },
     ],
     ...overrides,
+    cultivation,
     devices: overrides.devices ?? defaultDevices,
     plants: overrides.plants ?? defaultPlants,
     plantingGroups: overrides.plantingGroups ?? [
