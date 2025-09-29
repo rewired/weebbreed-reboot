@@ -1,7 +1,18 @@
 import type { Config } from 'tailwindcss';
 import defaultTheme from 'tailwindcss/defaultTheme';
+import daisyui from 'daisyui';
 
-const config: Config = {
+type DaisyUIConfig = {
+  themes?: Array<string | Record<string, unknown>> | false;
+  darkTheme?: string | false;
+  base?: boolean;
+  styled?: boolean;
+  utils?: boolean;
+  logs?: boolean;
+  themeRoot?: string;
+};
+
+const config = {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   darkMode: 'class',
   theme: {
@@ -29,7 +40,16 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
-};
+  plugins: [daisyui],
+  daisyui: {
+    themes: ['forest --default --prefersdark'],
+    darkTheme: 'forest',
+    base: true,
+    styled: true,
+    utils: true,
+    logs: false,
+    themeRoot: ':root',
+  },
+} satisfies Config & { daisyui: DaisyUIConfig };
 
 export default config;
