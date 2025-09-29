@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
-import { ModalFrame } from './ModalFrame';
 import { Button } from '@/components/primitives/Button';
 import { Icon } from '@/components/common/Icon';
 import { useSimulationStore } from '@/store/simulation';
-import { type SimulationBridge } from '@/facade/systemFacade';
 import type { PlantSnapshot } from '@/types/simulation';
 
 export interface ConfirmPlantActionContext {
@@ -13,8 +11,7 @@ export interface ConfirmPlantActionContext {
   onConfirm?: () => Promise<boolean> | boolean;
 }
 
-interface ConfirmPlantActionModalProps {
-  bridge: SimulationBridge;
+export interface ConfirmPlantActionModalProps {
   closeModal: () => void;
   context?: Record<string, unknown>;
 }
@@ -94,6 +91,7 @@ export const ConfirmPlantActionModal = ({ closeModal, context }: ConfirmPlantAct
   const actionVerb = action === 'cull' ? 'cull' : 'harvest';
   const actionLabel = action === 'cull' ? 'Cull' : 'Harvest';
   const plural = plantIds.length !== 1;
+  const subtitle = `Confirm ${actionVerb} command${plural ? 's' : ''}`;
 
   const details = useMemo(() => {
     if (!plants.length) {
@@ -136,15 +134,11 @@ export const ConfirmPlantActionModal = ({ closeModal, context }: ConfirmPlantAct
   const disabled = busy || !plantIds.length;
 
   return (
-    <ModalFrame
-      title={`${actionLabel} plant${plural ? 's' : ''}`}
-      subtitle={`Confirm ${actionVerb} command${plural ? 's' : ''}`}
-      onClose={() => {
-        if (!busy) {
-          closeModal();
-        }
-      }}
-    >
+    <div className="grid gap-4">
+      <div>
+        <h3 className="text-base font-semibold text-text">{`${actionLabel} plant${plural ? 's' : ''}`}</h3>
+        <p className="text-sm text-text-muted">{subtitle}</p>
+      </div>
       <div className="rounded-2xl border border-warning/40 bg-warning/10 p-4 text-warning">
         <div className="flex items-start gap-3">
           <Icon name="report" className="mt-0.5" />
@@ -204,6 +198,6 @@ export const ConfirmPlantActionModal = ({ closeModal, context }: ConfirmPlantAct
           {busy ? `${actionLabel}ing…` : actionLabel}
         </Button>
       </div>
-    </ModalFrame>
+    </div>
   );
 };

@@ -23,7 +23,7 @@ import type { SimulationBridge } from '@/facade/systemFacade';
 import { EnvironmentPanel } from '@/components/zone/EnvironmentPanel';
 import { EnvironmentBadgeRow } from '@/components/zone/EnvironmentBadgeRow';
 import { buildEnvironmentBadgeDescriptors } from '@/components/zone/environmentBadges';
-import type { ConfirmPlantActionContext } from '@/components/modals/ConfirmPlantActionModal';
+import type { ConfirmPlantActionContext } from '@/components/modals/zones/ConfirmPlantActionModal';
 
 declare module '@tanstack/react-table' {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
