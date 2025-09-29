@@ -20,6 +20,11 @@ describe('loadBlueprintData', () => {
     expect(substrates.size).toBeGreaterThan(0);
     expect(containers.size).toBeGreaterThan(0);
 
+    const substrateSlugs = Array.from(substrates.values()).map((entry) => entry.slug);
+    expect(substrateSlugs).toContain('coco-coir');
+    const cocoCoir = Array.from(substrates.values()).find((entry) => entry.slug === 'coco-coir');
+    expect(cocoCoir?.type).toBe('coco');
+
     const scrog = cultivationMethods.get('41229377-ef2d-4723-931f-72eea87d7a62');
     expect(scrog?.strainTraitCompatibility?.preferred?.['genotype.sativa']?.min).toBe(0.5);
     expect(scrog?.strainTraitCompatibility?.conflicting?.['genotype.indica']?.min).toBe(0.7);
@@ -31,6 +36,8 @@ describe('loadBlueprintData', () => {
 
     const substratePrice = result.data.prices.consumables.substrates.get('soil-multi-cycle');
     expect(substratePrice?.costPerSquareMeter).toBe(3.5);
+    const cocoPrice = result.data.prices.consumables.substrates.get('coco-coir');
+    expect(cocoPrice?.costPerLiter).toBe(0.6);
     const containerPrice = result.data.prices.consumables.containers.get('pot-25l');
     expect(containerPrice?.costPerUnit).toBe(4);
 
