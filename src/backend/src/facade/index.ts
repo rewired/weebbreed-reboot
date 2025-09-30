@@ -993,7 +993,9 @@ export class SimulationFacade {
       frameCanceler: this.schedulerConfig.frameCanceler,
       onError: (error) => this.emitSchedulerError(error),
     };
-    return new SimulationScheduler(() => this.loop.processTick(), options);
+    return new SimulationScheduler(async () => {
+      await this.loop.processTick();
+    }, options);
   }
 
   private emitSchedulerError(error: unknown): void {
