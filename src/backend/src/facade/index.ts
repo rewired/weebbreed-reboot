@@ -59,6 +59,7 @@ import {
 } from './commands/plants.js';
 import {
   buildTimeCommands,
+  type TimeCommandRegistry,
   type TimeStatus,
   type TimeStartIntent,
   type TimeStepIntent,
@@ -81,6 +82,9 @@ import {
   type GetStructureBlueprintsIntent,
   type GetStrainBlueprintsIntent,
   type GetDeviceBlueprintsIntent,
+  type GetCultivationMethodBlueprintsIntent,
+  type GetContainerBlueprintsIntent,
+  type GetSubstrateBlueprintsIntent,
   type CreateRoomIntent,
   type UpdateRoomIntent,
   type DeleteRoomIntent,
