@@ -42,6 +42,18 @@ const zoneMetricSchema = z.object({
   lastUpdatedTick: z.number().int().nonnegative(),
 });
 
+const zoneControlSetpointsSchema = z.object({
+  temperature: z.number().optional(),
+  humidity: z.number().optional(),
+  co2: z.number().optional(),
+  ppfd: z.number().optional(),
+  vpd: z.number().optional(),
+});
+
+const zoneControlStateSchema = z.object({
+  setpoints: zoneControlSetpointsSchema,
+});
+
 const diseaseTreatmentEffectSchema = z.object({
   optionId: nonEmptyString,
   expiresTick: z.number().int().nonnegative(),
@@ -187,6 +199,7 @@ const zoneStateSchema = z.object({
   plants: z.array(plantStateSchema),
   devices: z.array(deviceInstanceSchema),
   metrics: zoneMetricSchema,
+  control: zoneControlStateSchema.optional(),
   health: zoneHealthSchema,
   activeTaskIds: z.array(nonEmptyString),
 });
