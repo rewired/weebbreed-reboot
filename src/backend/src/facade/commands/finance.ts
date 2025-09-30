@@ -3,6 +3,7 @@ import { nonNegativeNumber, positiveNumber, uuid } from './commonSchemas.js';
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -53,6 +54,7 @@ export interface FinanceCommandRegistry {
   sellInventory: CommandRegistration<SellInventoryIntent>;
   setUtilityPrices: CommandRegistration<SetUtilityPricesIntent>;
   setMaintenancePolicy: CommandRegistration<SetMaintenancePolicyIntent>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface FinanceCommandOptions {

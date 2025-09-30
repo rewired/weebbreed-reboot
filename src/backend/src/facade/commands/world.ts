@@ -25,6 +25,7 @@ import {
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -310,6 +311,7 @@ export interface WorldCommandRegistry {
   duplicateStructure: CommandRegistration<DuplicateStructureIntent, DuplicateStructureResult>;
   duplicateRoom: CommandRegistration<DuplicateRoomIntent, DuplicateRoomResult>;
   duplicateZone: CommandRegistration<DuplicateZoneIntent, DuplicateZoneResult>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface WorldCommandOptions {

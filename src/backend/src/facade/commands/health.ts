@@ -3,6 +3,7 @@ import { uuid } from './commonSchemas.js';
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -41,6 +42,7 @@ export interface HealthCommandRegistry {
   scheduleScouting: CommandRegistration<ScheduleScoutingIntent>;
   applyTreatment: CommandRegistration<ApplyTreatmentIntent>;
   quarantineZone: CommandRegistration<QuarantineZoneIntent>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface HealthCommandOptions {

@@ -5,6 +5,7 @@ import { entityIdentifier, settingsRecord, uuid } from './commonSchemas.js';
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -84,6 +85,7 @@ export interface DeviceCommandRegistry {
   removeDevice: CommandRegistration<RemoveDeviceIntent>;
   toggleDeviceGroup: CommandRegistration<ToggleDeviceGroupIntent, DeviceGroupToggleResult>;
   adjustLightingCycle: CommandRegistration<AdjustLightingCycleIntent, AdjustLightingCycleResult>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface DeviceCommandOptions {

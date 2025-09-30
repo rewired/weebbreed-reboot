@@ -4,6 +4,7 @@ import { emptyObjectSchema } from './commonSchemas.js';
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -18,6 +19,7 @@ export interface ConfigIntentHandlers {
 
 export interface ConfigCommandRegistry {
   getDifficultyConfig: CommandRegistration<GetDifficultyConfigIntent, DifficultyConfig>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface ConfigCommandOptions {
