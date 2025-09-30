@@ -17,22 +17,31 @@ const canonicalSetpointKeys = new Map(
   ].map((key) => [key.toLowerCase(), key] as const),
 );
 
-const settingsSchema = z
-  .object({
-    power: optionalNumericSetting,
-    ppfd: optionalNumericSetting,
-    coverageArea: optionalNumericSetting,
-    spectralRange: optionalRangeTuple,
-    heatFraction: optionalNumericSetting,
-    airflow: optionalNumericSetting,
-    coolingCapacity: optionalNumericSetting,
-    moistureRemoval: optionalNumericSetting,
-    targetTemperature: optionalNumericSetting,
-    targetTemperatureRange: optionalRangeTuple,
-    targetHumidity: optionalNumericSetting,
-    targetCO2: optionalNumericSetting,
-    targetCO2Range: optionalRangeTuple,
-  })
+const settingsBaseObject = z.object({
+  power: optionalNumericSetting,
+  ppfd: optionalNumericSetting,
+  coverageArea: optionalNumericSetting,
+  spectralRange: optionalRangeTuple,
+  heatFraction: optionalNumericSetting,
+  airflow: optionalNumericSetting,
+  coolingCapacity: optionalNumericSetting,
+  cop: optionalNumericSetting,
+  hysteresisK: optionalNumericSetting,
+  fullPowerAtDeltaK: optionalNumericSetting,
+  moistureRemoval: optionalNumericSetting,
+  targetTemperature: optionalNumericSetting,
+  targetTemperatureRange: optionalRangeTuple,
+  targetHumidity: optionalNumericSetting,
+  targetCO2: optionalNumericSetting,
+  targetCO2Range: optionalRangeTuple,
+  hysteresis: optionalNumericSetting,
+  pulsePpmPerTick: optionalNumericSetting,
+  latentRemovalKgPerTick: optionalNumericSetting,
+  humidifyRateKgPerTick: optionalNumericSetting,
+  dehumidifyRateKgPerTick: optionalNumericSetting,
+});
+
+const settingsSchema = settingsBaseObject
   .passthrough()
   .superRefine((settings, ctx) => {
     if (!settings || typeof settings !== 'object') {
@@ -50,7 +59,8 @@ const settingsSchema = z
         });
       }
     }
-  });
+  })
+  .pipe(settingsBaseObject.strict());
 
 // Coverage schema for different device types
 const coverageSchema = z
@@ -65,7 +75,7 @@ const coverageSchema = z
     removalPattern: z.enum(['ambient', 'targeted']).optional(),
     controlPattern: z.enum(['single-mode', 'dual-mode', 'multi-zone']).optional(),
   })
-  .passthrough();
+  .strict();
 
 // Limits schema for device operational boundaries
 const limitsSchema = z
@@ -88,7 +98,7 @@ const limitsSchema = z
     minHumidity_percent: z.number().min(0).max(100).optional(),
     maxHumidity_percent: z.number().min(0).max(100).optional(),
   })
-  .passthrough();
+  .strict();
 
 // Maintenance schema for service requirements
 const maintenanceSchema = z.object({
@@ -119,11 +129,11 @@ export const deviceSchema = z
         disadvantages: z.array(z.string()).optional(),
         notes: z.string().optional(),
       })
-      .passthrough(),
+      .strict(),
     // Legacy field for backward compatibility
     lifespan: numericSetting.optional(),
   })
-  .passthrough();
+  .strict();
 
 export type DeviceRoomPurposeCompatibility = z.infer<typeof roomPurposeCompatibilitySchema>;
 export type DeviceBlueprint = z.infer<typeof deviceSchema>;
