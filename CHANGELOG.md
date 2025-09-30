@@ -138,6 +138,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Backfilled missing zone control state during legacy save migrations so
+  migrated zones expose empty setpoints while the schema keeps the control field
+  optional for pre-existing save files.
 - Prevented `devices.installDevice` from crashing when a command context lacks
   an event collector and added regression coverage to ensure telemetry still
   emits when the collector is available, keeping socket intents resilient.
