@@ -15,6 +15,8 @@
       "@/data/*": ["data/*"],
       "@/facade/*": ["facade/*"],
       "@/config/*": ["config/*"],
+      "@/types/*": ["types/*"],
+      "@/utils/*": ["utils/*"],
       "clsx": ["utils/clsx"]
     }
   },
