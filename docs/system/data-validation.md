@@ -52,10 +52,38 @@ executes three independent jobs on every push and pull request:
 Each job installs dependencies with the pinned pnpm and Node.js versions so a
 failure in any command marks the workflow as failed.
 
-## Device Setpoint Casing Guard
+## Device Blueprint Strictness
 
 Device blueprints rely on precise casing for control setpoints that the engine
 expects (for example `targetTemperature`, `targetHumidity`, and `targetCO2`).
 The Zod schema backing `pnpm validate:data` now rejects mis-cased variants such
 as `targetCo2` and surfaces a clear suggestion in the validation report. This
 keeps blueprint typos from silently disabling device controllers.
+
+In addition to casing hints, the `settings`, `coverage`, `limits`, `meta`, and
+top-level device blocks are now **strict objects**. Blueprint authors must stay
+within the explicit set of keys encoded in the schema:
+
+- **Settings** — numeric controls such as `power`, `ppfd`,
+  `coverageArea`, `spectralRange`, `heatFraction`, `airflow`,
+  `coolingCapacity`, `cop`, `hysteresisK`, `fullPowerAtDeltaK`,
+  `moistureRemoval`, `targetTemperature`, `targetTemperatureRange`,
+  `targetHumidity`, `targetCO2`, `targetCO2Range`, `hysteresis`,
+  `pulsePpmPerTick`, `latentRemovalKgPerTick`,
+  `humidifyRateKgPerTick`, and `dehumidifyRateKgPerTick`.
+- **Coverage** — geometry descriptors limited to
+  `maxArea_m2`, `maxVolume_m3`, `effectivePPFD_at_m`, `beamProfile`,
+  `airflowPattern`, `distributionPattern`, `ventilationPattern`,
+  `removalPattern`, and `controlPattern`.
+- **Limits** — operational bounds including `power_W`, `maxPPFD`,
+  `minPPFD`, `coolingCapacity_kW`, `airflow_m3_h`, `maxAirflow_m3_h`,
+  `minAirflow_m3_h`, `maxStaticPressure_Pa`, `co2Rate_ppm_min`,
+  `maxCO2_ppm`, `minCO2_ppm`, `removalRate_kg_h`, `capacity_kg_h`,
+  `minTemperature_C`, `maxTemperature_C`, `minHumidity_percent`, and
+  `maxHumidity_percent`.
+- **Meta** — optional descriptive fields (`description`, `advantages`,
+  `disadvantages`, `notes`).
+
+Any new attribute must be added to the schema alongside documentation updates
+before it appears in JSON. This keeps validation aligned with the engine's
+expectations and makes blueprint errors fail fast during `pnpm validate:data`.

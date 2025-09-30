@@ -153,4 +153,117 @@ describe('deviceSchema', () => {
       ]);
     }
   });
+
+  it('rejects mis-cased setpoint keys and hints at the canonical casing', () => {
+    const blueprint = createDeviceBlueprint('CO2Injector', {
+      targetCo2: 900,
+    });
+
+    const result = deviceSchema.safeParse(blueprint);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const issueMessages = result.error.issues.map((issue) => issue.message);
+      expect(result.error.issues.map((issue) => issue.path)).toContainEqual([
+        'settings',
+        'targetCo2',
+      ]);
+      expect(issueMessages.some((message) => message?.includes('Did you mean "targetCO2"'))).toBe(
+        true,
+      );
+    }
+  });
+
+  it('rejects settings with stray properties', () => {
+    const blueprint = createDeviceBlueprint('Lamp', {
+      power: 0.5,
+      unexpected: 1,
+    });
+
+    const result = deviceSchema.safeParse(blueprint);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ['settings'],
+            code: 'unrecognized_keys',
+            keys: expect.arrayContaining(['unexpected']),
+          }),
+        ]),
+      );
+    }
+  });
+
+  it('rejects coverage objects with stray properties', () => {
+    const blueprint = {
+      ...createDeviceBlueprint('Lamp', { power: 0.5 }),
+      coverage: {
+        maxArea_m2: 1,
+        unsupported: 'value',
+      },
+    };
+
+    const result = deviceSchema.safeParse(blueprint);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ['coverage'],
+            code: 'unrecognized_keys',
+            keys: expect.arrayContaining(['unsupported']),
+          }),
+        ]),
+      );
+    }
+  });
+
+  it('rejects meta objects with stray properties', () => {
+    const blueprint = {
+      ...createDeviceBlueprint('Lamp', { power: 0.5 }),
+      meta: {
+        extra: 'value',
+      },
+    };
+
+    const result = deviceSchema.safeParse(blueprint);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: ['meta'],
+            code: 'unrecognized_keys',
+            keys: expect.arrayContaining(['extra']),
+          }),
+        ]),
+      );
+    }
+  });
+
+  it('rejects stray top-level properties', () => {
+    const blueprint = {
+      ...createDeviceBlueprint('Lamp', { power: 0.5 }),
+      extraneous: true,
+    };
+
+    const result = deviceSchema.safeParse(blueprint);
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            path: [],
+            code: 'unrecognized_keys',
+            keys: expect.arrayContaining(['extraneous']),
+          }),
+        ]),
+      );
+    }
+  });
 });
