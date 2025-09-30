@@ -394,12 +394,14 @@ describe('PlantHealthEngine', () => {
       target: 'disease',
       plantIds: [plant.id],
       scheduledTick: 2,
+      category: 'biological',
     });
     zone.health.pendingTreatments.push({
       optionId: 'bio-boost',
       target: 'pest',
       plantIds: [plant.id],
       scheduledTick: 2,
+      category: 'biological',
     });
 
     const tick2Events: SimulationEvent[] = [];
