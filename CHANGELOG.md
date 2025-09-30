@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Wrapped the simulation loop phases in per-phase state drafts, cloning structures and
+  accounting buffers so recoverable errors restore both state and telemetry buffers before
+  emitting any events.
 - Expanded the frontend Vite and TypeScript path aliases to cover scoped
   `@/components`, `@/store`, `@/hooks`, `@/styles`, `@/data`, `@/facade`,
   `@/config`, `@/types`, and `@/utils` imports so build tooling resolves the

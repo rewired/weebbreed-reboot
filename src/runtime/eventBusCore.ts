@@ -44,10 +44,15 @@ export type EventQueueFunction = {
   <T>(type: SimulationEvent<T>['type'], payload?: T, tick?: number, level?: EventLevel): void;
 };
 
+export interface EventCollectorCheckpoint {
+  restore(): void;
+}
+
 export interface EventCollector {
   readonly size: number;
   queue: EventQueueFunction;
   queueMany(events: Iterable<SimulationEvent>): void;
+  checkpoint(): EventCollectorCheckpoint;
 }
 
 const eventBusLogger = logger.child({ component: 'eventBus' });
@@ -254,6 +259,17 @@ export const createEventCollector = (buffer: SimulationEvent[], tick: number): E
     buffer.push(enriched);
   }) as EventQueueFunction;
 
+  const checkpoint = (): EventCollectorCheckpoint => {
+    const startLength = buffer.length;
+    const startSequence = sequence;
+    return {
+      restore: () => {
+        buffer.length = startLength;
+        sequence = startSequence;
+      },
+    } satisfies EventCollectorCheckpoint;
+  };
+
   return {
     get size() {
       return buffer.length;
@@ -264,5 +280,6 @@ export const createEventCollector = (buffer: SimulationEvent[], tick: number): E
         queue(event);
       }
     },
+    checkpoint,
   };
 };

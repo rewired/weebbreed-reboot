@@ -5,6 +5,7 @@ import {
 } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import type { GameState } from '@/state/types.js';
+import { cloneStateValue } from '@/state/snapshots.js';
 import type { EventCollector } from '@/lib/eventBus.js';
 
 interface UtilityTotals {
@@ -25,6 +26,8 @@ interface AccountingRuntime {
   purchases: PendingDevicePurchase[];
 }
 
+export type AccountingProcessorSnapshot = AccountingRuntime | null;
+
 export interface AccountingContext {
   state: GameState;
   tick: number;
@@ -43,6 +46,8 @@ export interface AccountingProcessor {
   finalize(context: AccountingContext): void;
   getService(): CostAccountingService | undefined;
   reset(): void;
+  createSnapshot(): AccountingProcessorSnapshot;
+  restoreSnapshot(snapshot: AccountingProcessorSnapshot): void;
 }
 
 class DisabledAccountingProcessor implements AccountingProcessor {
@@ -64,6 +69,15 @@ class DisabledAccountingProcessor implements AccountingProcessor {
   }
 
   reset(): void {
+    // no-op
+  }
+
+  createSnapshot(): AccountingProcessorSnapshot {
+    return null;
+  }
+
+  restoreSnapshot(_snapshot: AccountingProcessorSnapshot): void {
+    void _snapshot;
     // no-op
   }
 }
@@ -161,6 +175,23 @@ class CostAccountingProcessor implements AccountingProcessor {
 
   reset(): void {
     this.runtime = null;
+  }
+
+  createSnapshot(): AccountingProcessorSnapshot {
+    if (!this.runtime) {
+      return null;
+    }
+
+    return cloneStateValue(this.runtime);
+  }
+
+  restoreSnapshot(snapshot: AccountingProcessorSnapshot): void {
+    if (!snapshot) {
+      this.runtime = null;
+      return;
+    }
+
+    this.runtime = cloneStateValue(snapshot);
   }
 
   private createRuntime(): AccountingRuntime {
