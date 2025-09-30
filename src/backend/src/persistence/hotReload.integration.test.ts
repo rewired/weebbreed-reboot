@@ -32,7 +32,11 @@ describe('Blueprint hot reload integration', () => {
   it('applies room purpose changes on the next committed tick', async () => {
     const repository = await BlueprintRepository.loadFrom(tempDataDirectory);
     const rng = new RngService('hot-reload-integration');
-    const state = await createInitialState({ repository, rng, dataDirectory: tempDataDirectory });
+    const { state } = await createInitialState({
+      repository,
+      rng,
+      dataDirectory: tempDataDirectory,
+    });
     const bus = new EventBus();
     const manager = new BlueprintHotReloadManager(repository, bus, () => state.clock.tick);
     await manager.start();
@@ -111,7 +115,11 @@ describe('Blueprint hot reload integration', () => {
   it('commits staged data on the first tick even when staging is slow', async () => {
     const repository = await BlueprintRepository.loadFrom(tempDataDirectory);
     const rng = new RngService('hot-reload-slow-reload');
-    const state = await createInitialState({ repository, rng, dataDirectory: tempDataDirectory });
+    const { state } = await createInitialState({
+      repository,
+      rng,
+      dataDirectory: tempDataDirectory,
+    });
     const bus = new EventBus();
     const manager = new BlueprintHotReloadManager(repository, bus, () => state.clock.tick);
     await manager.start();

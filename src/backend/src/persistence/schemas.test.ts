@@ -6,7 +6,7 @@ import { createStateFactoryContext } from '@/testing/fixtures.js';
 describe('saveGameEnvelopeSchema', () => {
   it('accepts a well-formed save game envelope', async () => {
     const context = createStateFactoryContext('schema-seed');
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
 
     const createdAt = '2025-01-01T00:00:00.000Z';
     const envelope = {
@@ -29,7 +29,7 @@ describe('saveGameEnvelopeSchema', () => {
 
   it('rejects envelopes with invalid metadata', async () => {
     const context = createStateFactoryContext('schema-seed');
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
     const base = {
       header: { kind: SAVEGAME_KIND, version: '1.0.0', createdAt: '2025-01-01T00:00:00.000Z' },
       metadata: {
@@ -50,7 +50,7 @@ describe('saveGameEnvelopeSchema', () => {
 
   it('rejects save games that contain unknown personnel skills', async () => {
     const context = createStateFactoryContext('schema-skill-unknown');
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
     const employee = state.personnel.employees[0];
     expect(employee).toBeDefined();
     if (employee) {

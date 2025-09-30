@@ -159,7 +159,7 @@ describe('integration scenarios', () => {
         createStructureBlueprint({ footprint: { length: 12, width: 6, height: 4 } }),
       ],
     });
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
     const zone = state.structures[0].rooms[0].zones[0];
 
     zone.environment.ppfd = 0;
@@ -212,7 +212,7 @@ describe('integration scenarios', () => {
         createStructureBlueprint({ footprint: { length: 12, width: 6, height: 4 } }),
       ],
     });
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
     const zone = state.structures[0].rooms[0].zones[0];
 
     zone.environment.temperature = 26;
@@ -252,7 +252,7 @@ describe('integration scenarios', () => {
         createStructureBlueprint({ footprint: { length: 12, width: 6, height: 4 } }),
       ],
     });
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
     const zone = state.structures[0].rooms[0].zones[0];
 
     const initialHumidity = zone.environment.relativeHumidity;
@@ -310,7 +310,7 @@ describe('integration scenarios', () => {
         createStructureBlueprint({ footprint: { length: 12, width: 6, height: 4 } }),
       ],
     });
-    const stateSingle = await createInitialState(contextSingle);
+    const { state: stateSingle } = await createInitialState(contextSingle);
     const zoneSingle = stateSingle.structures[0].rooms[0].zones[0];
     zoneSingle.environment.ppfd = 0;
 
@@ -329,7 +329,7 @@ describe('integration scenarios', () => {
         createStructureBlueprint({ footprint: { length: 12, width: 6, height: 4 } }),
       ],
     });
-    const stateDouble = await createInitialState(contextDouble);
+    const { state: stateDouble } = await createInitialState(contextDouble);
     const zoneDouble = stateDouble.structures[0].rooms[0].zones[0];
     zoneDouble.environment.ppfd = 0;
     const lamp = zoneDouble.devices.find((device) => device.kind === 'Lamp');

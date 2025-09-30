@@ -34,6 +34,7 @@ import {
   createInitialState,
   loadPersonnelDirectory,
   type StateFactoryContext,
+  type StateFactoryEvent,
 } from '@/stateFactory.js';
 import type { GameState, PersonnelNameDirectory, UtilityPrices } from '@/state/types.js';
 import { provisionPersonnelDirectory } from '@/state/initialization/personnelProvisioner.js';
@@ -184,6 +185,7 @@ export interface StartServerOptions {
   port?: number;
   rngSeed?: string;
   dataDirectoryOverride?: string;
+  allowDataErrors?: boolean;
 }
 
 export interface BackendServerHandle {
@@ -200,6 +202,7 @@ export const startBackendServer = async (
 ): Promise<BackendServerHandle> => {
   const { repository, dataDirectory, summary } = await bootstrap({
     envOverride: options.dataDirectoryOverride,
+    allowErrors: options.allowDataErrors ?? true,
   });
   const rngSeed =
     options.rngSeed ??
@@ -211,6 +214,7 @@ export const startBackendServer = async (
     {
       dataDirectory,
       loadedFiles: summary.loadedFiles,
+      issueCount: summary.issues.length,
       rng: {
         seed: rng.getSeed(),
         streamIds: getRegisteredRngStreamIds(),
@@ -218,6 +222,36 @@ export const startBackendServer = async (
     },
     'Loaded blueprint repository.',
   );
+
+  telemetryEventBus.emit({
+    type: 'bootstrap.dataSummary',
+    level: summary.issues.some((issue) => issue.level === 'error') ? 'warning' : 'info',
+    payload: {
+      dataDirectory,
+      loadedFiles: summary.loadedFiles,
+      issueCount: summary.issues.length,
+      versions: summary.versions,
+    },
+    message: `Blueprint load completed (${summary.loadedFiles} files, ${summary.issues.length} issues).`,
+  });
+
+  if (summary.issues.length > 0) {
+    const issueLogger = serverLogger.child({ scope: 'bootstrap.dataIssues' });
+    for (const issue of summary.issues) {
+      const logLevel = issue.level === 'error' ? 'error' : 'warn';
+      const context: Record<string, unknown> = {
+        file: issue.file,
+        details: issue.details,
+      };
+      issueLogger[logLevel](context, issue.message);
+      telemetryEventBus.emit({
+        type: 'bootstrap.dataIssue',
+        level: issue.level === 'error' ? 'error' : 'warning',
+        payload: { ...issue },
+        message: issue.message,
+      });
+    }
+  }
 
   try {
     const provisioning = await provisionPersonnelDirectory({
@@ -255,7 +289,25 @@ export const startBackendServer = async (
     difficultyConfig,
   };
 
-  const state = await createInitialState(context);
+  const { state, events: stateFactoryEvents } = await createInitialState(context);
+  if (stateFactoryEvents.length > 0) {
+    const stateFactoryLogger = serverLogger.child({ scope: 'stateFactory.bootstrap' });
+    const emitStateFactoryEvent = (event: StateFactoryEvent) => {
+      const logLevel =
+        event.level === 'error' ? 'error' : event.level === 'warning' ? 'warn' : 'info';
+      const detailsContext = event.details
+        ? { details: event.details, code: event.code }
+        : { code: event.code };
+      stateFactoryLogger[logLevel](detailsContext, event.message);
+      telemetryEventBus.emit({
+        type: event.type,
+        level: event.level,
+        payload: { code: event.code, details: event.details },
+        message: event.message,
+      });
+    };
+    stateFactoryEvents.forEach(emitStateFactoryEvent);
+  }
   serverLogger.info('Initial game state created.');
 
   costAccountingService.updatePriceCatalog({

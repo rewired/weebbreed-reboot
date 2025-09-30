@@ -237,7 +237,7 @@ export const runBenchmark = async (ticks = Number(process.env.WEEBBREED_BENCH_TI
       structureBlueprints && structureBlueprints.length > 0 ? structureBlueprints : undefined,
   });
 
-  const state = await createInitialState(context);
+  const { state } = await createInitialState(context);
 
   const phenologies = new Map<string, PhenologyState>();
   const metrics = new Map<number, { biomassDelta: number; avgVpd: number; avgHealth: number }>();

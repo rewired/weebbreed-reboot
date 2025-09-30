@@ -7,8 +7,8 @@ import {
   bootstrap,
   formatError,
   logDataLoaderIssues,
+  type BootstrapOptions,
   type BootstrapResult,
-  type ResolveDataDirectoryOptions,
 } from './bootstrap.js';
 import { logger } from '@runtime/logger.js';
 
@@ -160,7 +160,7 @@ const registerFatalProcessHandlers = () => {
   });
 };
 
-export const main = async (options?: ResolveDataDirectoryOptions): Promise<BootstrapResult> => {
+export const main = async (options?: BootstrapOptions): Promise<BootstrapResult> => {
   const result = await bootstrap(options);
   startupLogger.info(
     {

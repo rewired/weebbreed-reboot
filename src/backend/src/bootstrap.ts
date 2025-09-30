@@ -30,6 +30,10 @@ export interface ResolveDataDirectoryOptions {
   envOverride?: string | undefined;
 }
 
+export interface BootstrapOptions extends ResolveDataDirectoryOptions {
+  allowErrors?: boolean;
+}
+
 const expectedBlueprintSubdirectories: string[][] = [
   ['blueprints', 'strains'],
   ['blueprints', 'devices'],
@@ -124,11 +128,18 @@ export const logDataLoaderIssues = (error: DataLoaderError) => {
   }
 };
 
-export const bootstrap = async (
-  options?: ResolveDataDirectoryOptions,
-): Promise<BootstrapResult> => {
-  const dataDirectory = await resolveDataDirectory(options);
-  const repository = await BlueprintRepository.loadFrom(dataDirectory);
+export const bootstrap = async (options: BootstrapOptions = {}): Promise<BootstrapResult> => {
+  const { allowErrors, ...resolveOptions } = options;
+  const dataDirectory = await resolveDataDirectory(resolveOptions);
+  let repository: BlueprintRepository;
+  try {
+    repository = await BlueprintRepository.loadFrom(dataDirectory, { allowErrors });
+  } catch (error) {
+    if (error instanceof DataLoaderError) {
+      logDataLoaderIssues(error);
+    }
+    throw error;
+  }
   const summary = repository.getSummary();
 
   return { repository, dataDirectory, summary };

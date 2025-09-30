@@ -49,7 +49,7 @@ describe('resolveDataDirectory', () => {
 
     mockLoadFrom.mockClear();
     await bootstrap({ envOverride: undefined });
-    expect(mockLoadFrom).toHaveBeenCalledWith(expected);
+    expect(mockLoadFrom).toHaveBeenCalledWith(expected, { allowErrors: undefined });
   });
 
   it('prefers a packaged data directory colocated with the dist build', async () => {
@@ -88,7 +88,7 @@ describe('resolveDataDirectory', () => {
 
       mockLoadFrom.mockClear();
       await bootstrap(options);
-      expect(mockLoadFrom).toHaveBeenCalledWith(packagedDataDirectory);
+      expect(mockLoadFrom).toHaveBeenCalledWith(packagedDataDirectory, { allowErrors: undefined });
     } finally {
       await rm(tempRoot, { recursive: true, force: true });
     }

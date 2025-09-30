@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Hardened the backend bootstrap pipeline to surface data-load summaries,
+  propagate structured state-factory degradation events, and keep the server
+  responsive when blueprints are missing, alongside a resilience integration
+  test covering incomplete data directories.
 - Wrapped the simulation loop phases in per-phase state drafts, cloning structures and
   accounting buffers so recoverable errors restore both state and telemetry buffers before
   emitting any events.
