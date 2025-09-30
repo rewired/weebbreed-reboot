@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tagged command errors with `category` metadata and taught the socket gateway to
+  budget per-socket internal failures, leaving clients connected on user
+  mistakes while disconnecting after repeated `ERR_INTERNAL` responses.
 - Hardened the backend bootstrap pipeline to surface data-load summaries,
   propagate structured state-factory degradation events, and keep the server
   responsive when blueprints are missing, alongside a resilience integration

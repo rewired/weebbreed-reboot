@@ -11,6 +11,7 @@ import type {
   TimeStepIntent,
   SetSpeedIntent,
 } from '@/facade/index.js';
+import { createError } from '@/facade/index.js';
 import {
   createUiStream,
   type EventBus,
@@ -86,6 +87,14 @@ export type SimulationUpdateEntry = UiSimulationUpdateEntry<SimulationSnapshot, 
 type SimulationUpdateMessage = UiSimulationUpdateMessage<SimulationSnapshot, TimeStatus>;
 
 const gatewayLogger = logger.child({ component: 'backend.socketGateway' });
+
+const INTERNAL_ERROR_DISCONNECT_THRESHOLD = 3;
+const INTERNAL_ERROR_DISCONNECT_DELAY_MS = 250;
+
+interface SocketErrorState {
+  fatalErrorCount: number;
+  disconnectTimer?: NodeJS.Timeout;
+}
 
 const requestMetadataSchema = z.object({
   requestId: z.string().trim().min(1).optional(),
@@ -175,6 +184,8 @@ export class SocketGateway {
 
   private disposed = false;
 
+  private readonly socketErrorState = new WeakMap<Socket, SocketErrorState>();
+
   constructor(options: SocketGatewayOptions) {
     this.facade = options.facade;
     this.roomPurposeSource = options.roomPurposeSource;
@@ -257,6 +268,13 @@ export class SocketGateway {
     socket.on('facade.intent', (payload, ack) =>
       this.handleFacadeIntent(socket, payload, ack as AckCallback<unknown> | undefined),
     );
+    socket.on('disconnect', () => {
+      const state = this.socketErrorState.get(socket);
+      if (state?.disconnectTimer) {
+        clearTimeout(state.disconnectTimer);
+      }
+      this.socketErrorState.delete(socket);
+    });
   }
 
   private forwardUiPacket(packet: UiStreamPacket<SimulationSnapshot, TimeStatus>): void {
@@ -483,10 +501,10 @@ export class SocketGateway {
         return {
           ok: false,
           errors: [
-            {
-              code: 'ERR_INVALID_STATE',
-              message: `Unsupported simulation control action: ${(command as SimulationControlCommand).action}`,
-            },
+            createError(
+              'ERR_INVALID_STATE',
+              `Unsupported simulation control action: ${(command as SimulationControlCommand).action}`,
+            ),
           ],
         } satisfies CommandResult<TimeStatus>;
     }
@@ -504,10 +522,10 @@ export class SocketGateway {
         return {
           ok: false,
           errors: [
-            {
-              code: 'ERR_INVALID_STATE',
-              message: `Unsupported config update type: ${(command as ConfigUpdateCommand).type}`,
-            },
+            createError(
+              'ERR_INVALID_STATE',
+              `Unsupported config update type: ${(command as ConfigUpdateCommand).type}`,
+            ),
           ],
         } satisfies CommandResult<TimeStatus>;
     }
@@ -515,9 +533,11 @@ export class SocketGateway {
 
   private buildValidationResult(error: ZodError, requestId?: string): CommandResponse<TimeStatus> {
     const issues: CommandError[] = error.issues.map((issue) => ({
-      code: 'ERR_VALIDATION',
-      message: issue.message,
-      path: issue.path.map((segment) => String(segment)),
+      ...createError(
+        'ERR_VALIDATION',
+        issue.message,
+        issue.path.map((segment) => String(segment)),
+      ),
     }));
     return {
       ok: false,
@@ -534,13 +554,7 @@ export class SocketGateway {
     return {
       ok: false,
       requestId,
-      errors: [
-        {
-          code: 'ERR_VALIDATION',
-          message,
-          path,
-        },
-      ],
+      errors: [createError('ERR_VALIDATION', message, path)],
     } satisfies CommandResponse<unknown>;
   }
 
@@ -548,13 +562,7 @@ export class SocketGateway {
     const message = error instanceof Error ? error.message : String(error);
     return {
       ok: false,
-      errors: [
-        {
-          code: 'ERR_INTERNAL',
-          message,
-          path: [command],
-        },
-      ],
+      errors: [createError('ERR_INTERNAL', message, [command])],
     } satisfies CommandResult<T>;
   }
 
@@ -567,6 +575,7 @@ export class SocketGateway {
     if (ack) {
       ack(response);
     }
+    this.trackCommandResponse(socket, response);
     socket.emit(channel, response);
   }
 
@@ -576,5 +585,72 @@ export class SocketGateway {
     }
     const candidate = (payload as { requestId?: unknown }).requestId;
     return typeof candidate === 'string' ? candidate : undefined;
+  }
+
+  private trackCommandResponse<T>(socket: Socket, response: CommandResponse<T>): void {
+    if (response.ok) {
+      this.resetSocketErrorState(socket);
+      return;
+    }
+
+    const errors = response.errors ?? [];
+    if (errors.length === 0) {
+      this.resetSocketErrorState(socket);
+      return;
+    }
+
+    const hasInternalError = errors.some((error) => error.category === 'internal');
+    if (!hasInternalError) {
+      this.resetSocketErrorState(socket);
+      return;
+    }
+
+    const state = this.ensureSocketErrorState(socket);
+    state.fatalErrorCount += 1;
+
+    if (state.fatalErrorCount < INTERNAL_ERROR_DISCONNECT_THRESHOLD) {
+      return;
+    }
+
+    gatewayLogger.warn(
+      {
+        fatalErrorCount: state.fatalErrorCount,
+        socketId: socket.id,
+      },
+      'Disconnecting socket after repeated internal failures.',
+    );
+
+    state.fatalErrorCount = 0;
+    if (state.disconnectTimer) {
+      clearTimeout(state.disconnectTimer);
+    }
+    state.disconnectTimer = setTimeout(() => {
+      if (socket.connected) {
+        socket.disconnect(true);
+      }
+      this.socketErrorState.delete(socket);
+    }, INTERNAL_ERROR_DISCONNECT_DELAY_MS);
+  }
+
+  private ensureSocketErrorState(socket: Socket): SocketErrorState {
+    const existing = this.socketErrorState.get(socket);
+    if (existing) {
+      return existing;
+    }
+    const state: SocketErrorState = { fatalErrorCount: 0 };
+    this.socketErrorState.set(socket, state);
+    return state;
+  }
+
+  private resetSocketErrorState(socket: Socket): void {
+    const state = this.socketErrorState.get(socket);
+    if (!state) {
+      return;
+    }
+    state.fatalErrorCount = 0;
+    if (state.disconnectTimer) {
+      clearTimeout(state.disconnectTimer);
+      state.disconnectTimer = undefined;
+    }
   }
 }

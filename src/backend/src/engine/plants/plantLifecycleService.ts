@@ -1,6 +1,7 @@
 import { generateId } from '@/state/initialization/common.js';
 import { RNG_STREAM_IDS, type RngService, type RngStream } from '@/lib/rng.js';
 import type { CommandExecutionContext, CommandResult, ErrorCode } from '@/facade/index.js';
+import { createError } from '@/facade/index.js';
 import type {
   GameState,
   HarvestBatch,
@@ -305,13 +306,7 @@ export class PlantLifecycleService {
   private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     } satisfies CommandResult<T>;
   }
 }

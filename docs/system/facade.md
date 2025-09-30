@@ -133,7 +133,7 @@ Common categories are below.
 - `setUtilityPrices({ electricityCostPerKWh, waterCostPerM3, nutrientsCostPerKg })`
 - `setMaintenancePolicy(patch)`
 
-**All commands** return `{ ok: boolean, warnings?: string[], errors?: string[] }` and emit events on success.
+**All commands** return `{ ok: boolean, warnings?: string[], errors?: { code: string, message: string, path?: string[], category: 'user' | 'internal' }[] }` and emit events on success.
 
 ---
 
@@ -146,7 +146,7 @@ Common categories are below.
 
 **Standard errors**
 
-- `ERR_NOT_FOUND`, `ERR_FORBIDDEN`, `ERR_CONFLICT`, `ERR_INVALID_STATE`, `ERR_VALIDATION`, `ERR_RATE_LIMIT`, `ERR_DATA_RELOAD_PENDING`.
+- `ERR_NOT_FOUND`, `ERR_FORBIDDEN`, `ERR_CONFLICT`, `ERR_INVALID_STATE`, `ERR_VALIDATION`, `ERR_RATE_LIMIT`, `ERR_DATA_RELOAD_PENDING` (tagged as `internal`), `ERR_INTERNAL`.
 
 ---
 

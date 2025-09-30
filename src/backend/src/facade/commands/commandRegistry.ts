@@ -13,10 +13,33 @@ export type ErrorCode =
   | 'ERR_INSUFFICIENT_FUNDS'
   | 'ERR_INTERNAL';
 
+export type ErrorCategory = 'user' | 'internal';
+
+const ERROR_CODE_CATEGORY: Record<ErrorCode, ErrorCategory> = {
+  ERR_NOT_FOUND: 'user',
+  ERR_FORBIDDEN: 'user',
+  ERR_CONFLICT: 'user',
+  ERR_INVALID_STATE: 'user',
+  ERR_VALIDATION: 'user',
+  ERR_RATE_LIMIT: 'user',
+  ERR_DATA_RELOAD_PENDING: 'internal',
+  ERR_INSUFFICIENT_FUNDS: 'user',
+  ERR_INTERNAL: 'internal',
+};
+
+export const classifyErrorCode = (code: ErrorCode): ErrorCategory => {
+  return ERROR_CODE_CATEGORY[code] ?? 'internal';
+};
+
+export const isInternalErrorCode = (code: ErrorCode): boolean => {
+  return classifyErrorCode(code) === 'internal';
+};
+
 export interface CommandError {
   code: ErrorCode;
   message: string;
   path?: string[];
+  category: ErrorCategory;
 }
 
 export interface CommandResult<T = void> {
@@ -34,7 +57,10 @@ export class CommandExecutionError extends Error {
   ) {
     super(message);
     this.name = 'CommandExecutionError';
+    this.category = classifyErrorCode(code);
   }
+
+  readonly category: ErrorCategory;
 }
 
 export interface CommandExecutionContext {
@@ -89,6 +115,7 @@ export const createError = (code: ErrorCode, message: string, path?: string[]): 
   code,
   message,
   path,
+  category: classifyErrorCode(code),
 });
 
 export const createFailure = <T = never>(
@@ -119,6 +146,7 @@ export const normalizeErrors = (errors?: CommandError[]): CommandError[] => {
       code: error.code,
       message: error.message,
       path: error.path && error.path.length > 0 ? error.path : undefined,
+      category: error.category ?? classifyErrorCode(error.code),
     }))
     .filter((error) => Boolean(error.message));
 };
