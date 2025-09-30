@@ -210,6 +210,7 @@ export interface PendingTreatmentApplication {
   target: HealthTarget;
   plantIds: string[];
   scheduledTick: number;
+  category?: TreatmentCategory;
   diseaseIds?: string[];
   pestIds?: string[];
   reentryIntervalTicks?: number;

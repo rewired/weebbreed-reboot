@@ -114,6 +114,7 @@ const pendingTreatmentSchema = z.object({
   target: z.enum(['disease', 'pest']),
   plantIds: z.array(nonEmptyString),
   scheduledTick: z.number().int().nonnegative(),
+  category: z.enum(['cultural', 'biological', 'mechanical', 'chemical', 'physical']).optional(),
   diseaseIds: z.array(nonEmptyString).optional(),
   pestIds: z.array(nonEmptyString).optional(),
   reentryIntervalTicks: z.number().int().nonnegative().optional(),

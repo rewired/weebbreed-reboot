@@ -324,6 +324,7 @@ export class PlantHealthEngine {
             if (!option) {
               continue;
             }
+            pending.category ??= option.category;
             if (!option.targets.includes(pending.target)) {
               continue;
             }
