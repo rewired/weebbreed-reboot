@@ -13,7 +13,10 @@ import type {
   SimulationNote,
 } from '@/state/types.js';
 import { DEFAULT_PERSONNEL_ROLE_BLUEPRINTS } from '@/state/personnel/roleBlueprints.js';
-import { getEmployeeSkillNames, resetPersonnelSkillBlueprints } from '@/state/personnel/skillBlueprints.js';
+import {
+  getEmployeeSkillNames,
+  resetPersonnelSkillBlueprints,
+} from '@/state/personnel/skillBlueprints.js';
 import { JobMarketService } from '../jobMarketService.js';
 import type { SimulationPhaseContext } from '@/sim/loop.js';
 
