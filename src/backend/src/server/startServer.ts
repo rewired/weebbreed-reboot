@@ -18,6 +18,7 @@ import {
   type SetUtilityPricesIntent,
   type CommandResult,
   type CommandExecutionContext,
+  type JobMarketRefreshSummary,
 } from '@/facade/index.js';
 import {
   buildDeviceBlueprintCatalog,
@@ -432,7 +433,10 @@ export const startBackendServer = async (
         plantingPlanService.togglePlantingPlan(intent.zoneId, intent.enabled, context),
     },
     workforce: {
-      refreshCandidates: (intent, serviceContext) =>
+      refreshCandidates: (
+        intent,
+        serviceContext,
+      ): Promise<CommandResult<JobMarketRefreshSummary>> =>
         jobMarketService.refreshCandidates(intent, serviceContext),
     },
     finance: {

@@ -1,6 +1,7 @@
 import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
 import { DEFAULT_TICK_INTERVAL_MS, MINUTES_PER_HOUR } from '@/constants/time.js';
 import { EventBus, type EventFilter } from '@/lib/eventBus.js';
+import type { JobMarketRefreshSummary } from '@/engine/workforce/jobMarketService.js';
 import {
   computeHumidityForVpd,
   ensureZoneControl,
@@ -225,6 +226,7 @@ export type {
   EnqueueTaskIntent,
   WorkforceIntentHandlers,
 } from './commands/workforce.js';
+export type { JobMarketRefreshSummary } from '@/engine/workforce/jobMarketService.js';
 export type {
   SellInventoryIntent,
   SetUtilityPricesIntent,
@@ -350,7 +352,9 @@ export interface HealthIntentAPI {
 }
 
 export interface WorkforceIntentAPI {
-  refreshCandidates(intent?: RefreshCandidatesIntent): Promise<CommandResult>;
+  refreshCandidates(
+    intent?: RefreshCandidatesIntent,
+  ): Promise<CommandResult<JobMarketRefreshSummary>>;
   hire(intent: HireIntent): Promise<CommandResult>;
   fire(intent: FireIntent): Promise<CommandResult>;
   setOvertimePolicy(intent: SetOvertimePolicyIntent): Promise<CommandResult>;
