@@ -48,6 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   personnel blueprint loaders into dedicated `state/personnel/*` modules, and updated
   backend imports/tests to rely on the smaller entry points instead of the monolithic
   `state/models` export.
+- Typed the workforce candidate refresh command to surface the job-market summary through
+  the facade and server layers, aligning downstream consumers on the structured result.
 - Extended the `UtilityPrices` state type with an index signature so passthrough schema
   metadata can round-trip without breaking strongly-typed access to known price fields.
 - Replaced the monolithic world service with dedicated structure/room/zone collaborators,

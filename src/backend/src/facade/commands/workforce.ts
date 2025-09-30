@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { JobMarketRefreshSummary } from '@/engine/workforce/jobMarketService.js';
 import {
   emptyObjectSchema,
   nonEmptyString,
@@ -65,7 +66,7 @@ export type AssignStructureIntent = z.infer<typeof assignStructureSchema>;
 export type EnqueueTaskIntent = z.infer<typeof enqueueTaskSchema>;
 
 export interface WorkforceIntentHandlers {
-  refreshCandidates: ServiceCommandHandler<RefreshCandidatesIntent>;
+  refreshCandidates: ServiceCommandHandler<RefreshCandidatesIntent, JobMarketRefreshSummary>;
   hire: ServiceCommandHandler<HireIntent>;
   fire: ServiceCommandHandler<FireIntent>;
   setOvertimePolicy: ServiceCommandHandler<SetOvertimePolicyIntent>;
@@ -74,7 +75,7 @@ export interface WorkforceIntentHandlers {
 }
 
 export interface WorkforceCommandRegistry {
-  refreshCandidates: CommandRegistration<RefreshCandidatesIntent>;
+  refreshCandidates: CommandRegistration<RefreshCandidatesIntent, JobMarketRefreshSummary>;
   hire: CommandRegistration<HireIntent>;
   fire: CommandRegistration<FireIntent>;
   setOvertimePolicy: CommandRegistration<SetOvertimePolicyIntent>;
@@ -91,7 +92,7 @@ export const buildWorkforceCommands = ({
   services,
   onMissingHandler,
 }: WorkforceCommandOptions): WorkforceCommandRegistry => ({
-  refreshCandidates: createServiceCommand(
+  refreshCandidates: createServiceCommand<RefreshCandidatesIntent, JobMarketRefreshSummary>(
     'workforce.refreshCandidates',
     refreshCandidatesSchema,
     () => services().refreshCandidates,
