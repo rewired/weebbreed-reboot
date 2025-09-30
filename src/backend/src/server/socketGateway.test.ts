@@ -12,6 +12,7 @@ import type {
   SetSpeedIntent,
   Unsubscribe,
 } from '@/facade/index.js';
+import { createError } from '@/facade/index.js';
 import type { EventFilter } from '@/lib/eventBus.js';
 import { EventBus, type SimulationEvent, type UiStreamPacket } from '@runtime/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '@/sim/loop.js';
@@ -852,5 +853,68 @@ describe('SocketGateway', () => {
 
     expect(response.ok).toBe(false);
     expect(response.errors?.[0]?.code).toBe('ERR_VALIDATION');
+  });
+
+  it('keeps sockets connected when only user-level errors occur', async () => {
+    const responses: CommandResult<TimeStatus>[] = [];
+
+    for (let index = 0; index < 5; index += 1) {
+      const result = await new Promise<CommandResult<TimeStatus>>((resolve) => {
+        client.emit(
+          'config.update',
+          { requestId: `invalid-${index}` },
+          (payload: CommandResult<TimeStatus>) => resolve(payload),
+        );
+      });
+      responses.push(result);
+    }
+
+    for (const response of responses) {
+      expect(response.ok).toBe(false);
+      expect(response.errors?.length).toBeGreaterThan(0);
+      for (const error of response.errors ?? []) {
+        expect(error.code).toBe('ERR_VALIDATION');
+        expect(error.category).toBe('user');
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    expect(client.connected).toBe(true);
+  });
+
+  it('disconnects sockets after repeated internal errors', async () => {
+    const disconnectPromise = new Promise<void>((resolve) => {
+      client.once('disconnect', () => resolve());
+    });
+
+    const createRoomSpy = vi.spyOn(facadeStub.world, 'createRoom').mockImplementation(async () => ({
+      ok: false,
+      errors: [
+        createError('ERR_INTERNAL', 'Simulated failure', ['facade.intent', 'world.createRoom']),
+      ],
+    }));
+
+    const payload = {
+      structureId: 'structure-1',
+      room: { name: 'Aux', purpose: 'grow', area: 10 },
+    };
+
+    for (let index = 0; index < 3; index += 1) {
+      const result = await new Promise<IntentResponse>((resolve) => {
+        client.emit(
+          'facade.intent',
+          { requestId: `fatal-${index}`, domain: 'world', action: 'createRoom', payload },
+          (response: IntentResponse) => resolve(response),
+        );
+      });
+      expect(result.ok).toBe(false);
+      expect(result.errors?.[0]?.code).toBe('ERR_INTERNAL');
+      expect(result.errors?.[0]?.category).toBe('internal');
+    }
+
+    await disconnectPromise;
+    expect(client.connected).toBe(false);
+
+    createRoomSpy.mockRestore();
   });
 });

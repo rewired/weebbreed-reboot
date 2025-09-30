@@ -5,6 +5,7 @@ import {
   LIGHT_DEVICE_KINDS,
 } from '@/constants/environment.js';
 import type { CommandExecutionContext, CommandResult, ErrorCode } from '@/facade/index.js';
+import { createError } from '@/facade/index.js';
 import type { EventQueueFunction } from '@/lib/eventBus.js';
 import type {
   GameState,
@@ -159,13 +160,7 @@ export class DeviceRemovalService {
   private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     } satisfies CommandResult<T>;
   }
 }

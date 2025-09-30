@@ -8,6 +8,7 @@ import {
   type CreateRoomIntent,
   type CreateZoneIntent,
   type UpdateZoneIntent,
+  createError,
 } from '@/facade/index.js';
 import {
   type DeviceFailureModifiers,
@@ -397,13 +398,7 @@ export class WorldService {
   private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     };
   }
 }

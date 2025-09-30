@@ -1,6 +1,6 @@
 # Simulation Facade Intents
 
-The simulation exposes a small number of validated intent domains. Each domain groups related commands that are available both through the in-process API and the Socket.IO `facade.intent` envelope. All commands return the shared `CommandResult` contract (`{ ok, data?, warnings?, errors? }`).【F:src/backend/src/facade/commands/commandRegistry.ts†L20-L67】【F:src/backend/src/server/socketGateway.ts†L364-L402】
+The simulation exposes a small number of validated intent domains. Each domain groups related commands that are available both through the in-process API and the Socket.IO `facade.intent` envelope. All commands return the shared `CommandResult` contract (`{ ok, data?, warnings?, errors? }`) where each error item includes `{ code, message, path?, category }` so callers can distinguish user mistakes from internal faults.【F:src/backend/src/facade/commands/commandRegistry.ts†L20-L114】【F:src/backend/src/server/socketGateway.ts†L518-L568】
 
 ## Domain Overview
 

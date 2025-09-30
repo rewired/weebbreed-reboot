@@ -11,6 +11,7 @@ import {
   createCultivationMethodBlueprint,
   createSubstrateBlueprint,
 } from '@/testing/fixtures.js';
+import { createError } from '@/facade/index.js';
 import type { CommandExecutionContext } from '@/facade/index.js';
 import type { GameState } from '@/state/types.js';
 
@@ -331,13 +332,7 @@ describe('ZoneService.updateZone', () => {
     };
     const failure: FailureFactory = (code, message, path) => ({
       ok: false as const,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     });
 
     zoneService = createZoneService({

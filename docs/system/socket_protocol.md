@@ -562,6 +562,13 @@ future without breaking existing clients.
 - Internal failures (`ERR_INTERNAL`) surface the error message and the command
   path. The gateway never throws – failures are returned via the Socket.IO ACK
   callback and the mirrored `*.result` event.
+- Every error entry carries a `category` field: `'user'` for caller mistakes or
+  rejected states, `'internal'` for fatal/back-end issues (`ERR_INTERNAL`,
+  `ERR_DATA_RELOAD_PENDING`). Clients can use this to drive UI messaging and
+  retry logic.
+- The gateway tracks consecutive internal failures per socket. After three
+  responses carrying `'internal'` errors it schedules a short disconnect so
+  clients back off before retrying.
 - Unsupported commands yield `ERR_INVALID_STATE`.
 
 ## Batching Guarantees

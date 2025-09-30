@@ -1,4 +1,5 @@
 import type { CommandExecutionContext, CommandResult, ErrorCode } from '@/facade/index.js';
+import { createError } from '@/facade/index.js';
 import { findZone } from '@/engine/world/stateSelectors.js';
 import type { GameState, ZoneLightingState } from '@/state/types.js';
 
@@ -111,13 +112,7 @@ export class LightingCycleService {
   private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     } satisfies CommandResult<T>;
   }
 }

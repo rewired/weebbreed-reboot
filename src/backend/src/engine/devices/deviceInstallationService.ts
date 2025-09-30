@@ -6,6 +6,7 @@ import {
   type CommandExecutionContext,
   type CommandResult,
   type ErrorCode,
+  createError,
 } from '@/facade/index.js';
 import type { GameState, DeviceInstanceState, ZoneState } from '@/state/types.js';
 import type { DeviceBlueprint } from '@/data/schemas/deviceSchema.js';
@@ -147,13 +148,7 @@ export class DeviceInstallationService {
   private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     } satisfies CommandResult<T>;
   }
 }

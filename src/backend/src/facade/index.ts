@@ -147,12 +147,25 @@ const cloneState = <T>(value: T): T => {
 };
 
 export { CommandExecutionError } from './commands/commandRegistry.js';
+export {
+  createError,
+  createFailure,
+  normalizeWarnings,
+  normalizeErrors,
+  normalizeResult,
+  stripIntentMetadata,
+  handleCommandError,
+  handleValidationError,
+  classifyErrorCode,
+  isInternalErrorCode,
+} from './commands/commandRegistry.js';
 export type {
   CommandError,
   CommandResult,
   CommandExecutionContext,
   ServiceCommandHandler,
   ErrorCode,
+  ErrorCategory,
 } from './commands/commandRegistry.js';
 export type {
   TimeStatus,

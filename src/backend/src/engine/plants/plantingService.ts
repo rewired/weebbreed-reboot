@@ -4,6 +4,7 @@ import {
   type CommandExecutionContext,
   type CommandResult,
   type ErrorCode,
+  createError,
 } from '@/facade/index.js';
 import type { GameState, PlantState, ZoneState, PlantHealthState } from '@/state/types.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
@@ -230,13 +231,7 @@ export class PlantingService {
   private failure<T = never>(code: ErrorCode, message: string, path: string[]): CommandResult<T> {
     return {
       ok: false,
-      errors: [
-        {
-          code,
-          message,
-          path,
-        },
-      ],
+      errors: [createError(code, message, path)],
     } satisfies CommandResult<T>;
   }
 }
