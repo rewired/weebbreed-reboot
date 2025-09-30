@@ -44,6 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Expanded the frontend Vite and TypeScript path aliases to cover scoped
+  `@/components`, `@/store`, `@/hooks`, `@/styles`, `@/data`, `@/facade`,
+  `@/config`, `@/types`, and `@/utils` imports so build tooling resolves the
+  shared modules consistently.
 - Extracted lightweight state type exports into `src/backend/src/state/types.ts`, split
   personnel blueprint loaders into dedicated `state/personnel/*` modules, and updated
   backend imports/tests to rely on the smaller entry points instead of the monolithic
