@@ -126,6 +126,102 @@ describe('saveGame persistence', () => {
     expect(result.rng.serialize()).toEqual(legacyEnvelope.rng);
   });
 
+  it('backfills missing zone control state when migrating legacy saves', () => {
+    const baseState = createMinimalState();
+
+    const zoneWithoutControl = {
+      id: 'zone-1',
+      roomId: 'room-1',
+      name: 'Zone 1',
+      cultivationMethodId: 'cult-1',
+      area: 10,
+      ceilingHeight: 3,
+      volume: 30,
+      environment: {
+        temperature: 25,
+        relativeHumidity: 0.6,
+        co2: 800,
+        ppfd: 500,
+        vpd: 1.1,
+      },
+      resources: {
+        waterLiters: 10,
+        nutrientSolutionLiters: 5,
+        nutrientStrength: 1,
+        substrateHealth: 1,
+        reservoirLevel: 5,
+        lastTranspirationLiters: 0,
+      },
+      plants: [],
+      devices: [],
+      metrics: {
+        averageTemperature: 25,
+        averageHumidity: 0.6,
+        averageCo2: 800,
+        averagePpfd: 500,
+        stressLevel: 0,
+        lastUpdatedTick: 0,
+      },
+      health: {
+        plantHealth: {},
+        pendingTreatments: [],
+        appliedTreatments: [],
+      },
+      activeTaskIds: [],
+    };
+
+    const legacyState = {
+      ...baseState,
+      structures: [
+        {
+          id: 'structure-1',
+          blueprintId: 'blueprint-1',
+          name: 'Structure 1',
+          status: 'active',
+          footprint: {
+            length: 10,
+            width: 10,
+            height: 3,
+            area: 100,
+            volume: 300,
+          },
+          rooms: [
+            {
+              id: 'room-1',
+              structureId: 'structure-1',
+              name: 'Room 1',
+              purposeId: '00000000-0000-0000-0000-000000000000',
+              area: 100,
+              height: 3,
+              volume: 300,
+              zones: [zoneWithoutControl],
+              cleanliness: 1,
+              maintenanceLevel: 1,
+            },
+          ],
+          rentPerTick: 0,
+          upfrontCostPaid: 0,
+        },
+      ],
+    } as unknown as GameState;
+
+    const rng = new RngService(legacyState.metadata.seed);
+    const legacyEnvelope = {
+      kind: SAVEGAME_KIND,
+      version: '0.1.0',
+      createdAt: '2023-12-31T00:00:00.000Z',
+      tickLengthMinutes: legacyState.metadata.tickLengthMinutes,
+      rngSeed: legacyState.metadata.seed,
+      rng: rng.serialize(),
+      state: legacyState,
+    };
+
+    const result = deserializeGameState(JSON.parse(JSON.stringify(legacyEnvelope)));
+    const migratedZone = result.state.structures[0].rooms[0].zones[0];
+
+    expect(migratedZone.control).toEqual({ setpoints: {} });
+  });
+
   it('rejects savegames with mismatched kind', () => {
     const state = createMinimalState();
     const rng = new RngService(state.metadata.seed);

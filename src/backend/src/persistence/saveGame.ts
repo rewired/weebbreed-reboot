@@ -155,6 +155,16 @@ const migrateLegacyEnvelope = (
     state: legacy.state,
   };
 
+  for (const structure of envelope.state.structures) {
+    for (const room of structure.rooms) {
+      for (const zone of room.zones) {
+        if (!zone.control) {
+          zone.control = { setpoints: {} };
+        }
+      }
+    }
+  }
+
   return envelope;
 };
 
