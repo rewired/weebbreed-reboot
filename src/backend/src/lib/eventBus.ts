@@ -2,6 +2,7 @@ export {
   EventBus,
   createEventCollector,
   type EventBufferOptions,
+  type EventCollectorCheckpoint,
   type EventCollector,
   type EventFilter,
   type EventFilterObject,

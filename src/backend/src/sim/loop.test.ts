@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { EventBus } from '@/lib/eventBus.js';
+import type { EventCollector } from '@/lib/eventBus.js';
 import { resolveRoomPurposeId } from '@/engine/roomPurposes/index.js';
 import { loadTestRoomPurposes } from '@/testing/loadTestRoomPurposes.js';
 import type { BlueprintRepository } from '@/data/blueprintRepository.js';
@@ -13,6 +14,7 @@ import type {
   ZoneResourceState,
   ZoneState,
 } from '@/state/types.js';
+import { captureMutableStateSnapshot } from '@/state/snapshots.js';
 import { SimulationLoop, type SimulationPhaseContext } from './loop.js';
 import { TICK_PHASES, type TickPhase } from './tickPhases.js';
 import { createTickStateMachine } from './tickStateMachine.js';
@@ -410,5 +412,49 @@ describe('SimulationLoop', () => {
     for (const reading of subsequentReadings) {
       expect(reading).toBeCloseTo(firstTickPpfd, 3);
     }
+  });
+
+  it('restores structures and event buffer when a recoverable phase error occurs', async () => {
+    const state = createGameStateWithZone();
+    const bus = new EventBus();
+    const snapshot = captureMutableStateSnapshot(state);
+    const received: string[] = [];
+    const subscription = bus.events().subscribe((event) => received.push(event.type));
+
+    const error = new Error('recoverable failure') as Error & { recoverable: true };
+    error.recoverable = true;
+
+    let phaseCollector: EventCollector | undefined;
+
+    const loop = new SimulationLoop({
+      state,
+      eventBus: bus,
+      phases: {
+        applyDevices: (context) => {
+          const zone = context.state.structures[0]?.rooms[0]?.zones[0];
+          if (!zone) {
+            throw new Error('Zone missing in test state.');
+          }
+          zone.environment.temperature = 99;
+          phaseCollector = context.events;
+          context.events.queue('test.event', undefined, context.tick);
+          throw error;
+        },
+      },
+    });
+
+    await expect(loop.processTick()).rejects.toThrow('recoverable failure');
+
+    subscription.unsubscribe();
+
+    const restoredZone = state.structures[0]?.rooms[0]?.zones[0];
+    expect(restoredZone).toBeDefined();
+    expect(restoredZone?.environment.temperature).toBe(
+      snapshot.structures[0]?.rooms[0]?.zones[0]?.environment.temperature,
+    );
+    expect(state.clock.tick).toBe(0);
+    expect(received).toEqual([]);
+    expect(phaseCollector).toBeDefined();
+    expect(phaseCollector?.size).toBe(0);
   });
 });

@@ -9,6 +9,7 @@ import {
   type HarvestQualityOptions,
 } from '@/engine/harvest/harvestQualityService.js';
 import type { GameState } from '@/state/types.js';
+import { createMutableStateView, restoreMutableStateSnapshot } from '@/state/snapshots.js';
 import { eventBus as telemetryEventBus } from '@runtime/eventBus.js';
 import {
   EventBus,
@@ -173,8 +174,11 @@ export class SimulationLoop {
       while (this.machine.isRunning()) {
         const phase = this.machine.currentPhase();
         const phaseStart = performance.now();
+        const phaseView = createMutableStateView(this.state);
+        const accountingSnapshot = this.accountingProcessor.createSnapshot();
+        const eventCheckpoint = collector.checkpoint();
         const context: SimulationPhaseContext = {
-          state: this.state,
+          state: phaseView.draft,
           tick: tickNumber,
           tickLengthMinutes,
           phase,
@@ -182,11 +186,19 @@ export class SimulationLoop {
           accounting: this.accountingProcessor.tools,
         };
 
-        if (phase === 'commit') {
-          commitTimestamp = await this.commitPhase(context, tickNumber);
-        } else {
-          const handler = this.phaseHandlers[phase as NonCommitPhase];
-          await handler(context);
+        try {
+          if (phase === 'commit') {
+            commitTimestamp = await this.commitPhase(context, tickNumber);
+          } else {
+            const handler = this.phaseHandlers[phase as NonCommitPhase];
+            await handler(context);
+          }
+          phaseView.commit();
+        } catch (phaseError) {
+          restoreMutableStateSnapshot(this.state, phaseView.snapshot);
+          this.accountingProcessor.restoreSnapshot(accountingSnapshot);
+          eventCheckpoint.restore();
+          throw phaseError;
         }
 
         const phaseEnd = performance.now();
