@@ -72,13 +72,13 @@ export const buildTimeCommands = (handlers: TimeCommandHandlers): TimeCommandReg
     name: 'time.pause',
     schema: emptyObjectSchema,
     preprocess: () => ({}),
-    handler: handlers.handlePause,
+    handler: (_payload, context) => handlers.handlePause(context),
   },
   resume: {
     name: 'time.resume',
     schema: emptyObjectSchema,
     preprocess: () => ({}),
-    handler: handlers.handleResume,
+    handler: (_payload, context) => handlers.handleResume(context),
   },
   step: {
     name: 'time.step',
