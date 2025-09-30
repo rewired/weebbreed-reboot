@@ -4,6 +4,7 @@ import type {
   CommandExecutionContext,
   CommandRegistration,
   CommandResult,
+  GenericCommandRegistration,
 } from './commandRegistry.js';
 
 export interface TimeStatus {
@@ -57,6 +58,7 @@ export interface TimeCommandRegistry {
   resume: CommandRegistration<z.infer<typeof emptyObjectSchema>, TimeStatus>;
   step: CommandRegistration<TimeStepIntent, TimeStatus>;
   setSpeed: CommandRegistration<SetSpeedIntent, TimeStatus>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export const buildTimeCommands = (handlers: TimeCommandHandlers): TimeCommandRegistry => ({

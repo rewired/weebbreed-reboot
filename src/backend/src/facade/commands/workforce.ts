@@ -11,6 +11,7 @@ import {
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -81,6 +82,7 @@ export interface WorkforceCommandRegistry {
   setOvertimePolicy: CommandRegistration<SetOvertimePolicyIntent>;
   assignStructure: CommandRegistration<AssignStructureIntent>;
   enqueueTask: CommandRegistration<EnqueueTaskIntent>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface WorkforceCommandOptions {

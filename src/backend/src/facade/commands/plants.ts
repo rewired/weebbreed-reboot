@@ -8,6 +8,7 @@ import { entityIdentifier, nonNegativeNumber, positiveInteger, uuid } from './co
 import {
   createServiceCommand,
   type CommandRegistration,
+  type GenericCommandRegistration,
   type MissingCommandHandler,
   type ServiceCommandHandler,
 } from './commandRegistry.js';
@@ -102,6 +103,7 @@ export interface PlantCommandRegistry {
   applyIrrigation: CommandRegistration<ApplyIrrigationIntent>;
   applyFertilizer: CommandRegistration<ApplyFertilizerIntent>;
   togglePlantingPlan: CommandRegistration<TogglePlantingPlanIntent, PlantingPlanToggleResult>;
+  [key: string]: GenericCommandRegistration;
 }
 
 export interface PlantCommandOptions {
