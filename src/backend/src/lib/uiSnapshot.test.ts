@@ -412,6 +412,7 @@ describe('buildSimulationSnapshot plants', () => {
         target: 'disease',
         plantIds: ['plant-1'],
         scheduledTick: 42,
+        category: 'cultural',
         diseaseIds: ['powdery-mildew'],
       },
     ] as unknown as typeof zone.health.pendingTreatments;
