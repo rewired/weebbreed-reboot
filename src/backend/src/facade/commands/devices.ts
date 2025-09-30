@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import type { DeviceGroupToggleResult } from '@/engine/devices/deviceGroupService.js';
 import type { AdjustLightingCycleResult } from '@/engine/devices/lightingCycleService.js';
-import { entityIdentifier, settingsRecord, uuid } from './commonSchemas.js';
+import {
+  deviceSettingsPatchSchema,
+  deviceSettingsSchema,
+  entityIdentifier,
+  uuid,
+} from './commonSchemas.js';
 import {
   createServiceCommand,
   type CommandRegistration,
@@ -14,17 +19,20 @@ const installDeviceSchema = z
   .object({
     targetId: entityIdentifier,
     deviceId: uuid,
-    settings: settingsRecord.optional(),
+    settings: deviceSettingsSchema.optional(),
   })
   .strict();
 
 const updateDeviceSchema = z
   .object({
     instanceId: uuid,
-    settings: settingsRecord
-      .refine((value) => Object.keys(value).length > 0, {
-        message: 'Settings patch must include at least one property.',
-      })
+    settings: deviceSettingsPatchSchema
+      .refine(
+        (value) => (value ? Object.values(value).some((setting) => setting !== undefined) : false),
+        {
+          message: 'Settings patch must include at least one property.',
+        },
+      )
       .optional(),
   })
   .strict();

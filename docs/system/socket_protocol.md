@@ -412,6 +412,11 @@ object:
 - **devices** — `installDevice`, `updateDevice`, `moveDevice`, `removeDevice`,
   `toggleDeviceGroup`. The toggle action returns `{ deviceIds: string[] }` with
   every instance that changed status.
+  - `installDevice` and `updateDevice` validate settings against the device blueprint contract: only
+    numeric control keys (`power`, `ppfd`, `coverageArea`, airflow/cooling controls, hysteresis/pulse
+    knobs, humidity/CO₂/temperature setpoints) are accepted. Range fields (`spectralRange`,
+    `targetTemperatureRange`, `targetCO2Range`) must be `[min, max]` tuples. Partial patches must supply
+    at least one defined value; unknown keys are rejected before a service handler runs.
 - **plants** — `addPlanting`, `cullPlanting`, `harvestPlanting`, `harvestPlant`,
   `cullPlant`, `applyIrrigation`, `applyFertilizer`, `togglePlantingPlan`. The
   automation toggle responds with `{ enabled: boolean }` and emits a follow-up

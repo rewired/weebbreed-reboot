@@ -96,6 +96,14 @@ Common categories are below.
 - `removeDevice(instanceId)`
 - `toggleDeviceGroup({ zoneId, kind, enabled })` — flips operational status in bulk and returns `{ deviceIds }` of affected units.
 
+  Device commands only accept the canonical control keys from the active blueprint catalog. All settings must be finite numbers unless noted:
+  - Scalar controls: `power`, `ppfd`, `coverageArea`, `heatFraction`, `airflow`, `coolingCapacity`, `cop`,
+    `hysteresisK`, `fullPowerAtDeltaK`, `moistureRemoval`, `hysteresis`, `pulsePpmPerTick`,
+    `latentRemovalKgPerTick`, `humidifyRateKgPerTick`, `dehumidifyRateKgPerTick`.
+  - Setpoints: `targetTemperature`, `targetHumidity` (0–1), `targetCO2`.
+  - Ranges: `spectralRange`, `targetTemperatureRange`, `targetCO2Range` must be two-number tuples `[min, max]`.
+  - Patches must define at least one concrete value; undefined entries are ignored, and unknown keys are rejected with validation errors.
+
 ### 4.5 Plants & Plantings
 
 - `addPlanting(zoneId, { strainId, count, startTick? })` — enforces cultivation method capacity, strain/method

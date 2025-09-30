@@ -2,10 +2,10 @@ import { z } from 'zod';
 import type { JobMarketRefreshSummary } from '@/engine/workforce/jobMarketService.js';
 import {
   emptyObjectSchema,
+  looseRecord,
   nonEmptyString,
   nonNegativeNumber,
   positiveNumber,
-  settingsRecord,
   uuid,
 } from './commonSchemas.js';
 import {
@@ -55,7 +55,7 @@ const assignStructureSchema = z
 const enqueueTaskSchema = z
   .object({
     taskKind: nonEmptyString,
-    payload: settingsRecord.optional(),
+    payload: looseRecord.optional(),
   })
   .strict();
 

@@ -44,6 +44,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tightened façade device-setting schemas to accept only canonical numeric controls and
+  two-value tuples, rejecting undefined patches and unknown keys. Updated command docs and
+  regression tests capture the stricter validation.
 - Tagged command errors with `category` metadata and taught the socket gateway to
   budget per-socket internal failures, leaving clients connected on user
   mistakes while disconnecting after repeated `ERR_INTERNAL` responses.
