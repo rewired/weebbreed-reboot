@@ -62,7 +62,7 @@ describe('Difficulty presets sync with JSON config', () => {
       difficultyConfig: TEST_CONFIG,
     });
 
-    const state = await createInitialState(context, { difficulty: 'easy' });
+    const { state } = await createInitialState(context, { difficulty: 'easy' });
 
     expect(state.metadata.difficulty).toBe('easy');
     expect(state.metadata.economics).toEqual(TEST_CONFIG.easy.modifiers.economics);
@@ -78,7 +78,7 @@ describe('Difficulty presets sync with JSON config', () => {
     const context = createStateFactoryContext('diff-world', {
       difficultyConfig: TEST_CONFIG,
     });
-    const initialState = await createInitialState(context, { difficulty: 'normal' });
+    const { state: initialState } = await createInitialState(context, { difficulty: 'normal' });
 
     const repository = context.repository;
     const rng = new RngService('world-service');
@@ -119,7 +119,7 @@ describe('Difficulty presets sync with JSON config', () => {
     const context = createStateFactoryContext('diff-world-override', {
       difficultyConfig: TEST_CONFIG,
     });
-    const initialState = await createInitialState(context, { difficulty: 'normal' });
+    const { state: initialState } = await createInitialState(context, { difficulty: 'normal' });
 
     const repository = context.repository;
     const rng = new RngService('world-service');

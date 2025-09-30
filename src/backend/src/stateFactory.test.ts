@@ -98,7 +98,7 @@ describe('createInitialState', () => {
       taskDefinitions,
     });
 
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
 
     expect(state.tasks.backlog).toHaveLength(3);
     const byDefinition = Object.fromEntries(
@@ -129,10 +129,14 @@ describe('createInitialState', () => {
         structureBlueprints: [createStructureBlueprint()],
       });
 
-    const firstState = await createInitialState(contextFactory());
-    const secondState = await createInitialState(contextFactory());
+    const firstResult = await createInitialState(contextFactory());
+    const secondResult = await createInitialState(contextFactory());
+
+    const firstState = firstResult.state;
+    const secondState = secondResult.state;
 
     expect(firstState.tasks.backlog).toEqual(secondState.tasks.backlog);
+    expect(firstResult.events).toEqual(secondResult.events);
 
     const firstZone = firstState.structures[0]?.rooms[0]?.zones[0];
     const secondZone = secondState.structures[0]?.rooms[0]?.zones[0];
@@ -154,11 +158,11 @@ describe('createInitialState', () => {
       structureBlueprints: [createStructureBlueprint()],
     });
 
-    const defaultState = await createInitialState(baseContext);
+    const { state: defaultState } = await createInitialState(baseContext);
     expect(defaultState.metadata.tickLengthMinutes).toBe(DEFAULT_TICK_LENGTH_MINUTES);
 
     const overrideMinutes = 7;
-    const overriddenState = await createInitialState(
+    const { state: overriddenState } = await createInitialState(
       createStateFactoryContext('tick-override', {
         repository: createBlueprintRepositoryStub(),
         structureBlueprints: [createStructureBlueprint()],
@@ -186,9 +190,15 @@ describe('createInitialState', () => {
       .spyOn(blueprintModule, 'chooseDeviceBlueprints')
       .mockReturnValue([incompatibleDevice]);
 
-    await expect(createInitialState(context)).rejects.toThrow(/not compatible with room purpose/i);
+    const { state, events } = await createInitialState(context);
 
     expect(spy).toHaveBeenCalled();
+    const incompatibilityEvent = events.find((event) => event.code === 'device.incompatible');
+    expect(incompatibilityEvent).toBeDefined();
+    expect(incompatibilityEvent?.level).toBe('warning');
+
+    const zoneDevices = state.structures[0]?.rooms[0]?.zones[0]?.devices ?? [];
+    expect(zoneDevices).toHaveLength(0);
   });
 
   it('uses the default ceiling height when a structure blueprint omits height', async () => {
@@ -199,7 +209,7 @@ describe('createInitialState', () => {
       structureBlueprints: [structureBlueprint],
     });
 
-    const state = await createInitialState(context);
+    const { state } = await createInitialState(context);
 
     const structure = state.structures[0];
     expect(structure?.footprint.height).toBe(blueprintModule.DEFAULT_STRUCTURE_HEIGHT_METERS);
@@ -221,7 +231,7 @@ describe('createInitialState', () => {
     });
 
     const overrideHeight = 3.1;
-    const state = await createInitialState(context, {
+    const { state } = await createInitialState(context, {
       defaultStructureHeightMeters: overrideHeight,
     });
 
@@ -245,7 +255,7 @@ describe('createInitialState', () => {
       defaultStructureHeightMeters: 2.9,
     });
 
-    const state = await createInitialState(context, {
+    const { state } = await createInitialState(context, {
       defaultStructureHeightMeters: 3.3,
     });
 

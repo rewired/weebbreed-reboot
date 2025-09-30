@@ -1,7 +1,12 @@
 import path from 'path';
 import { watchData } from '@runtime/dataWatcher.js';
 import { DataLoaderError, loadBlueprintData } from './dataLoader.js';
-import type { BlueprintData, DataLoadResult, DataLoadSummary } from './dataLoader.js';
+import type {
+  BlueprintData,
+  DataLoadResult,
+  DataLoadSummary,
+  LoadBlueprintDataOptions,
+} from './dataLoader.js';
 import type {
   DevicePriceEntry,
   StrainPriceEntry,
@@ -40,9 +45,12 @@ export class BlueprintRepository {
     this.rebuildSlugIndexes();
   }
 
-  static async loadFrom(dataDirectory: string): Promise<BlueprintRepository> {
+  static async loadFrom(
+    dataDirectory: string,
+    options: LoadBlueprintDataOptions = {},
+  ): Promise<BlueprintRepository> {
     const absoluteDir = path.resolve(dataDirectory);
-    const result = await loadBlueprintData(absoluteDir);
+    const result = await loadBlueprintData(absoluteDir, options);
     return new BlueprintRepository(absoluteDir, result);
   }
 

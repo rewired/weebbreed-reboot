@@ -60,6 +60,29 @@ import { validateStructureGeometry } from './state/geometry.js';
 import { addDeviceToZone } from './state/devices.js';
 import type { DifficultyConfig } from '@/data/configs/difficulty.js';
 
+export type StateFactoryEventLevel = 'info' | 'warning' | 'error';
+
+export interface StateFactoryEvent {
+  code: string;
+  type: string;
+  level: StateFactoryEventLevel;
+  message: string;
+  details?: Record<string, unknown>;
+}
+
+export interface CreateInitialStateResult {
+  state: GameState;
+  events: StateFactoryEvent[];
+}
+
+interface StateFactoryEventInput {
+  level: StateFactoryEventLevel;
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+  noteLevel?: SimulationNote['level'] | null;
+}
+
 export { loadStructureBlueprints } from './state/initialization/blueprints.js';
 export { loadPersonnelDirectory } from './state/initialization/personnel.js';
 export { loadTaskDefinitions } from './state/initialization/tasks.js';
@@ -292,6 +315,7 @@ const buildStructureState = (
   rng: RngService,
   growRoomPurpose: RoomPurpose,
   defaultStructureHeight: number,
+  recordEvent: (input: StateFactoryEventInput) => StateFactoryEvent,
   plantCountOverride?: number,
 ): StructureCreationResult => {
   const footprint = computeFootprint(blueprint, defaultStructureHeight);
@@ -343,43 +367,92 @@ const buildStructureState = (
     maintenanceLevel: 0.9,
   } satisfies StructureState['rooms'][number];
 
-  const breakRoomPurposeId = resolveRoomPurposeId(context.repository, 'Break Room');
-  const supportRoom = {
-    id: generateId(idStream, 'room'),
-    structureId,
-    name: 'Support Room',
-    purposeId: breakRoomPurposeId,
-    area: supportRoomArea,
-    height: footprint.height,
-    volume: supportRoomArea * footprint.height,
-    zones: [],
-    cleanliness: 0.9,
-    maintenanceLevel: 0.95,
-  } satisfies StructureState['rooms'][number];
+  let breakRoomPurposeId: string | undefined;
+  try {
+    breakRoomPurposeId = resolveRoomPurposeId(context.repository, 'Break Room');
+  } catch (error) {
+    const message = 'Room purpose "Break Room" is unavailable; the support room will be omitted.';
+    recordEvent({
+      level: 'warning',
+      code: 'roomPurpose.breakRoomMissing',
+      message,
+      details: {
+        error: error instanceof Error ? error.message : String(error),
+      },
+      noteLevel: 'warning',
+    });
+  }
+
+  const supportRoom: StructureState['rooms'][number] | undefined = breakRoomPurposeId
+    ? {
+        id: generateId(idStream, 'room'),
+        structureId,
+        name: 'Support Room',
+        purposeId: breakRoomPurposeId,
+        area: supportRoomArea,
+        height: footprint.height,
+        volume: supportRoomArea * footprint.height,
+        zones: [],
+        cleanliness: 0.9,
+        maintenanceLevel: 0.95,
+      }
+    : undefined;
 
   const installationNotes: SimulationNote[] = [];
   const installedDeviceBlueprints: DeviceBlueprint[] = [];
 
   for (const deviceBlueprint of deviceBlueprints) {
-    const instance = createDeviceInstance(deviceBlueprint, zoneId, idStream, growRoomPurpose.kind);
-    const result = addDeviceToZone(zone, instance);
+    try {
+      const instance = createDeviceInstance(
+        deviceBlueprint,
+        zoneId,
+        idStream,
+        growRoomPurpose.kind,
+      );
+      const result = addDeviceToZone(zone, instance);
 
-    for (const warning of result.warnings) {
+      for (const warning of result.warnings) {
+        installationNotes.push({
+          id: generateId(idStream, 'note'),
+          tick: 0,
+          message: warning.message,
+          level: warning.level,
+        });
+      }
+
+      if (result.added) {
+        installedDeviceBlueprints.push(deviceBlueprint);
+      }
+    } catch (error) {
+      const message = `Device blueprint ${deviceBlueprint.name} (${deviceBlueprint.kind}) is not compatible with room purpose "${growRoomPurpose.kind}" and will be skipped.`;
+      recordEvent({
+        level: 'warning',
+        code: 'device.incompatible',
+        message,
+        details: {
+          deviceId: deviceBlueprint.id,
+          deviceKind: deviceBlueprint.kind,
+          roomPurpose: growRoomPurpose.kind,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        noteLevel: 'warning',
+      });
       installationNotes.push({
         id: generateId(idStream, 'note'),
         tick: 0,
-        message: warning.message,
-        level: warning.level,
+        message,
+        level: 'warning',
       });
-    }
-
-    if (result.added) {
-      installedDeviceBlueprints.push(deviceBlueprint);
     }
   }
 
   const hoursPerMonth = 30 * 24;
   const rentPerHour = (blueprint.rentalCostPerSqmPerMonth * footprint.area) / hoursPerMonth;
+
+  const rooms: StructureState['rooms'] = [growRoom];
+  if (supportRoom) {
+    rooms.push(supportRoom);
+  }
 
   const structure: StructureState = {
     id: structureId,
@@ -387,7 +460,7 @@ const buildStructureState = (
     name: blueprint.name,
     status: 'active',
     footprint,
-    rooms: [growRoom, supportRoom],
+    rooms,
     rentPerTick: rentPerHour,
     upfrontCostPaid: blueprint.upfrontFee,
   };
@@ -405,19 +478,10 @@ const buildStructureState = (
 };
 
 const createInventory = (
-  strain: StrainBlueprint,
+  strain: StrainBlueprint | undefined,
   plantCount: number,
   idStream: RngStream,
 ): GlobalInventoryState => {
-  const seedQuantity = Math.max(plantCount * 3, 30);
-  const seeds: SeedStockEntry = {
-    id: generateId(idStream, 'seed'),
-    strainId: strain.id,
-    quantity: seedQuantity,
-    viability: strain.germinationRate,
-    storedAtTick: 0,
-  };
-
   const resources: ResourceInventory = {
     waterLiters: 12_000,
     nutrientsGrams: 8_000,
@@ -427,9 +491,21 @@ const createInventory = (
     sparePartsValue: 1_500,
   };
 
+  const seeds: SeedStockEntry[] = [];
+  if (strain) {
+    const seedQuantity = Math.max(plantCount * 3, 30);
+    seeds.push({
+      id: generateId(idStream, 'seed'),
+      strainId: strain.id,
+      quantity: seedQuantity,
+      viability: strain.germinationRate,
+      storedAtTick: 0,
+    });
+  }
+
   return {
     resources,
-    seeds: [seeds],
+    seeds,
     devices: [],
     harvest: [] as HarvestBatch[],
     consumables: {
@@ -444,7 +520,7 @@ const createInventory = (
 export const createInitialState = async (
   context: StateFactoryContext,
   options: StateFactoryOptions = {},
-): Promise<GameState> => {
+): Promise<CreateInitialStateResult> => {
   const difficulty = options.difficulty ?? 'normal';
   const difficultyModifiers = deriveDifficultyModifiers(context.difficultyConfig, difficulty);
   const economics: EconomicsSettings = difficultyModifiers.economics;
@@ -465,88 +541,184 @@ export const createInitialState = async (
           defaultHeightMeters: defaultStructureHeight,
         })
       : []);
-  if (structureBlueprints.length === 0) {
-    throw new Error('No structure blueprints available to create initial state.');
-  }
+  const events: StateFactoryEvent[] = [];
+  const notes: SimulationNote[] = [];
 
-  // const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
-  // Structure blueprint is handled on-demand per structure creation
-  // const structureBlueprint = selectBlueprint(
-  //   structureBlueprints,
-  //   structureSelectionStream,
-  //   options.structureId,
-  // );
+  const recordEvent = (input: StateFactoryEventInput): StateFactoryEvent => {
+    const event: StateFactoryEvent = {
+      code: input.code,
+      type: `stateFactory.${input.code}`,
+      level: input.level,
+      message: input.message,
+      details: input.details ? { ...input.details } : undefined,
+    };
+    events.push(event);
+
+    const inferredNoteLevel: SimulationNote['level'] | null =
+      input.noteLevel === undefined
+        ? input.level === 'warning' || input.level === 'error'
+          ? input.level
+          : null
+        : input.noteLevel;
+
+    if (inferredNoteLevel) {
+      notes.push({
+        id: generateId(idStream, 'note'),
+        tick: 0,
+        message: input.message,
+        level: inferredNoteLevel,
+      });
+    }
+
+    return event;
+  };
+
+  const pushInfoNote = (message: string) => {
+    notes.push({
+      id: generateId(idStream, 'note'),
+      tick: 0,
+      message,
+      level: 'info',
+    });
+  };
+
+  pushInfoNote('Simulation initialized.');
+
+  if (structureBlueprints.length === 0) {
+    recordEvent({
+      level: 'warning',
+      code: 'structures.missingBlueprints',
+      message:
+        'No structure blueprints are available; the simulation will start without any rented buildings.',
+      details: context.dataDirectory ? { dataDirectory: context.dataDirectory } : undefined,
+    });
+  }
 
   const strains = context.repository.listStrains();
+  let strain: StrainBlueprint | undefined;
   if (strains.length === 0) {
-    throw new Error('Blueprint repository has no strain blueprints.');
+    recordEvent({
+      level: 'warning',
+      code: 'strains.missingBlueprints',
+      message:
+        'No strain blueprints are available; grow zones will be created without plants until data is restored.',
+      details: { available: 0 },
+    });
+  } else {
+    strain = selectBlueprint(
+      strains,
+      context.rng.getStream(RNG_STREAM_IDS.strains),
+      options.preferredStrainId,
+    );
   }
-  const strain = selectBlueprint(
-    strains,
-    context.rng.getStream(RNG_STREAM_IDS.strains),
-    options.preferredStrainId,
-  );
 
   const cultivationMethods = context.repository.listCultivationMethods();
+  let method: CultivationMethodBlueprint | undefined;
   if (cultivationMethods.length === 0) {
-    throw new Error('Blueprint repository has no cultivation method blueprints.');
+    recordEvent({
+      level: 'warning',
+      code: 'methods.missingBlueprints',
+      message:
+        'No cultivation method blueprints are available; starter zones cannot be configured for planting.',
+      details: { available: 0 },
+    });
+  } else {
+    method = selectBlueprint(
+      cultivationMethods,
+      context.rng.getStream(RNG_STREAM_IDS.methods),
+      options.preferredCultivationMethodId,
+    );
   }
-  // Cultivation method is handled on-demand per structure creation
-  // const method = selectBlueprint(
-  //   cultivationMethods,
-  //   context.rng.getStream(RNG_STREAM_IDS.methods),
-  //   options.preferredCultivationMethodId,
-  // );
 
-  // const growRoomPurpose = requireRoomPurposeByName(context.repository, 'Grow Room');
   const devices = context.repository.listDevices();
   if (devices.length === 0) {
-    throw new Error('Blueprint repository has no device blueprints.');
+    recordEvent({
+      level: 'warning',
+      code: 'devices.missingBlueprints',
+      message:
+        'No device blueprints are available; starter zones will have no environmental hardware installed.',
+      details: { available: 0 },
+    });
   }
-  // Device blueprints are handled on-demand per structure creation
-  // const deviceBlueprints = chooseDeviceBlueprints(
-  //   devices,
-  //   context.rng.getStream(RNG_STREAM_IDS.devices),
-  //   growRoomPurpose.kind,
-  // );
 
-  // Create the first structure
-  const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
-  const structureBlueprint = selectBlueprint(
-    structureBlueprints,
-    structureSelectionStream,
-    options.structureId,
-  );
+  let growRoomPurpose: RoomPurpose | undefined;
+  try {
+    growRoomPurpose = requireRoomPurposeByName(context.repository, 'Grow Room');
+  } catch (error) {
+    recordEvent({
+      level: 'warning',
+      code: 'roomPurpose.growRoomMissing',
+      message: 'Room purpose "Grow Room" is unavailable; starter structures cannot be initialised.',
+      details: {
+        error: error instanceof Error ? error.message : String(error),
+      },
+    });
+  }
 
-  const method = selectBlueprint(
-    cultivationMethods,
-    context.rng.getStream(RNG_STREAM_IDS.methods),
-    options.preferredCultivationMethodId,
-  );
+  let structureBlueprint: StructureBlueprint | undefined;
+  if (structureBlueprints.length > 0) {
+    const structureSelectionStream = context.rng.getStream(RNG_STREAM_IDS.structures);
+    structureBlueprint = selectBlueprint(
+      structureBlueprints,
+      structureSelectionStream,
+      options.structureId,
+    );
+  }
 
-  const growRoomPurpose = requireRoomPurposeByName(context.repository, 'Grow Room');
-  const deviceBlueprints = chooseDeviceBlueprints(
-    devices,
-    context.rng.getStream(RNG_STREAM_IDS.devices),
-    growRoomPurpose.kind,
-  );
+  let deviceBlueprints: DeviceBlueprint[] = [];
+  if (devices.length > 0 && growRoomPurpose) {
+    deviceBlueprints = chooseDeviceBlueprints(
+      devices,
+      context.rng.getStream(RNG_STREAM_IDS.devices),
+      growRoomPurpose.kind,
+    );
+    if (deviceBlueprints.length === 0) {
+      recordEvent({
+        level: 'warning',
+        code: 'devices.noCompatibleBlueprints',
+        message:
+          'No compatible devices could be selected for the starter grow room; it will launch without hardware.',
+        details: { roomPurpose: growRoomPurpose.kind, availableDevices: devices.length },
+      });
+    }
+  }
 
-  const structureId = generateId(idStream, 'structure');
-  const result = buildStructureState(
-    context,
-    structureBlueprint,
-    structureId,
-    strain,
-    method,
-    deviceBlueprints,
-    idStream,
-    context.rng,
-    growRoomPurpose,
-    defaultStructureHeight,
-    options.zonePlantCount,
-  );
+  let structureResult: StructureCreationResult | undefined;
+  if (structureBlueprint && strain && method && growRoomPurpose) {
+    const structureId = generateId(idStream, 'structure');
+    structureResult = buildStructureState(
+      context,
+      structureBlueprint,
+      structureId,
+      strain,
+      method,
+      deviceBlueprints,
+      idStream,
+      context.rng,
+      growRoomPurpose,
+      defaultStructureHeight,
+      recordEvent,
+      options.zonePlantCount,
+    );
+    if (structureResult.installationNotes.length > 0) {
+      notes.push(...structureResult.installationNotes);
+    }
+  } else {
+    recordEvent({
+      level: 'warning',
+      code: 'structure.initializationSkipped',
+      message:
+        'Initial structure creation skipped due to missing prerequisites; the world will start empty.',
+      details: {
+        hasStructureBlueprint: Boolean(structureBlueprint),
+        hasStrain: Boolean(strain),
+        hasCultivationMethod: Boolean(method),
+        hasGrowRoomPurpose: Boolean(growRoomPurpose),
+      },
+    });
+  }
 
-  const structures = [result.structure];
+  const structures = structureResult ? [structureResult.structure] : [];
 
   const personnelDirectory =
     context.personnelDirectory ??
@@ -570,13 +742,14 @@ export const createInitialState = async (
     { roleBlueprints: personnelRoleBlueprints },
   );
 
-  const inventory = createInventory(strain, result.plantCount, idStream);
+  const plantCount = structureResult?.plantCount ?? 0;
+  const inventory = createInventory(strain, plantCount, idStream);
 
   const finance = createFinanceState(
     createdAt,
     economics,
-    structureBlueprint,
-    result.installedDeviceBlueprints,
+    structureResult ? structureBlueprint : undefined,
+    structureResult?.installedDeviceBlueprints ?? [],
     context.repository,
     idStream,
   );
@@ -586,10 +759,10 @@ export const createInitialState = async (
     (context.dataDirectory ? await loadTaskDefinitions(context.dataDirectory) : undefined);
 
   const tasks = createTasks(
-    result.structure,
-    result.growRoom,
-    result.growZone,
-    result.plantCount,
+    structureResult?.structure,
+    structureResult?.growRoom,
+    structureResult?.growZone,
+    plantCount,
     taskDefinitions,
     idStream,
   );
@@ -614,17 +787,7 @@ export const createInitialState = async (
     targetTickRate: DEFAULT_TARGET_TICK_RATE,
   };
 
-  const notes = [
-    {
-      id: generateId(idStream, 'note'),
-      tick: 0,
-      message: 'Simulation initialized.',
-      level: 'info' as const,
-    },
-    ...result.installationNotes,
-  ];
-
-  return {
+  const state: GameState = {
     metadata,
     clock,
     structures,
@@ -634,4 +797,6 @@ export const createInitialState = async (
     tasks,
     notes,
   };
+
+  return { state, events };
 };
