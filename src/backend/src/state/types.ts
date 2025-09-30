@@ -415,6 +415,7 @@ export interface LoanState {
 }
 
 export interface UtilityPrices {
+  [key: string]: unknown;
   version?: string;
   pricePerKwh: number;
   pricePerLiterWater: number;
