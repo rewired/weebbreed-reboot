@@ -421,8 +421,9 @@ class StructureListState:
             return None
         return self.entries[self.selected_index]
 
-    def render_lines(self) -> List[str]:
-        lines = [f"Structures ({len(self.entries)}):"]
+    def render_lines(self, focused: bool) -> List[str]:
+        prefix = "▶" if focused else " "
+        lines = [f"{prefix} Structures ({len(self.entries)}):"]
         if not self.entries:
             lines.append("  (no structures available)")
             return lines
@@ -457,6 +458,7 @@ class ConsoleRenderer:
         self,
         kpi_line: str,
         structure_lines: Sequence[str],
+        room_lines: Sequence[str],
         message: Optional[str],
     ) -> None:
         self._ensure_cursor_hidden()
@@ -464,9 +466,159 @@ class ConsoleRenderer:
         if message:
             lines.append(message)
         lines.extend(structure_lines)
+        if room_lines:
+            lines.append("")
+            lines.extend(room_lines)
         output = "\n".join(lines)
         sys.stdout.write("\x1b[2J\x1b[H" + output + "\n")
         sys.stdout.flush()
+
+
+@dataclass
+class RoomRow:
+    """Normalized representation of a room entry."""
+
+    identifier: str
+    structure_identifier: str
+    name: str
+    purpose: Optional[str]
+    zone_count: Optional[int]
+    area: Optional[float]
+
+    def display_label(self) -> str:
+        parts: List[str] = [self.name]
+        if self.purpose:
+            parts.append(f"purpose: {self.purpose}")
+        if isinstance(self.zone_count, int):
+            parts.append(f"zones: {self.zone_count}")
+        if isinstance(self.area, (int, float)) and not isinstance(self.area, bool):
+            parts.append(f"area: {self.area:.0f} m²")
+        return " | ".join(parts)
+
+
+def _parse_room(payload: Dict[str, Any]) -> Optional["RoomRow"]:
+    identifier = payload.get("id")
+    name = payload.get("name")
+    structure_identifier = payload.get("structureId")
+    if (
+        not isinstance(identifier, str)
+        or not isinstance(name, str)
+        or not isinstance(structure_identifier, str)
+    ):
+        return None
+    purpose_value = payload.get("purposeName")
+    purpose = purpose_value if isinstance(purpose_value, str) else None
+    zone_ids = payload.get("zoneIds")
+    zone_count = len(zone_ids) if isinstance(zone_ids, list) else None
+    area_value = payload.get("area")
+    area = None
+    if isinstance(area_value, (int, float)) and not isinstance(area_value, bool):
+        area = float(area_value)
+    return RoomRow(
+        identifier=identifier,
+        structure_identifier=structure_identifier,
+        name=name,
+        purpose=purpose,
+        zone_count=zone_count,
+        area=area,
+    )
+
+
+@dataclass
+class RoomListState:
+    """Tracks rooms for the selected structure and the current selection."""
+
+    entries: List[RoomRow] = field(default_factory=list)
+    selected_index: int = 0
+    _rooms_by_structure: Dict[str, List[RoomRow]] = field(default_factory=dict)
+    _current_structure_id: Optional[str] = None
+
+    def update_from_snapshot(
+        self, snapshot: Dict[str, Any], structure_id: Optional[str]
+    ) -> bool:
+        rooms = snapshot.get("rooms") if isinstance(snapshot, dict) else None
+        new_map: Dict[str, List[RoomRow]] = {}
+        if isinstance(rooms, list):
+            for item in rooms:
+                if isinstance(item, dict):
+                    parsed = _parse_room(item)
+                    if parsed:
+                        new_map.setdefault(parsed.structure_identifier, []).append(parsed)
+        changed = new_map != self._rooms_by_structure
+        if changed:
+            self._rooms_by_structure = new_map
+        structure_changed = self.select_structure(structure_id)
+        return changed or structure_changed
+
+    def select_structure(self, structure_id: Optional[str]) -> bool:
+        if structure_id == self._current_structure_id and not self._rooms_changed():
+            return False
+        self._current_structure_id = structure_id
+        return self._apply_current_structure()
+
+    def _rooms_changed(self) -> bool:
+        if self._current_structure_id is None:
+            return bool(self.entries)
+        expected = self._rooms_by_structure.get(self._current_structure_id, [])
+        return expected != self.entries
+
+    def _apply_current_structure(self) -> bool:
+        if self._current_structure_id is None:
+            changed = bool(self.entries)
+            self.entries = []
+            self.selected_index = 0
+            return changed
+        previous_selected_id = None
+        if self.entries and 0 <= self.selected_index < len(self.entries):
+            previous_selected_id = self.entries[self.selected_index].identifier
+        new_entries = list(self._rooms_by_structure.get(self._current_structure_id, []))
+        if new_entries == self.entries:
+            return False
+        self.entries = new_entries
+        if not self.entries:
+            self.selected_index = 0
+            return True
+        if previous_selected_id:
+            for idx, entry in enumerate(self.entries):
+                if entry.identifier == previous_selected_id:
+                    self.selected_index = idx
+                    break
+            else:
+                self.selected_index = 0
+        else:
+            self.selected_index = min(self.selected_index, len(self.entries) - 1)
+        return True
+
+    def move_selection(self, delta: int) -> bool:
+        if not self.entries:
+            self.selected_index = 0
+            return False
+        new_index = (self.selected_index + delta) % len(self.entries)
+        if new_index == self.selected_index:
+            return False
+        self.selected_index = new_index
+        return True
+
+    def selected(self) -> Optional[RoomRow]:
+        if not self.entries:
+            return None
+        if not (0 <= self.selected_index < len(self.entries)):
+            return None
+        return self.entries[self.selected_index]
+
+    def render_lines(self, focused: bool) -> List[str]:
+        prefix = "▶" if focused else " "
+        lines = [f"{prefix} Rooms ({len(self.entries)}):"]
+        if not self.entries:
+            lines.append("  (no rooms available)")
+            return lines
+        for idx, entry in enumerate(self.entries):
+            label = entry.display_label()
+            if idx == self.selected_index:
+                lines.append(f"> \x1b[7m{label}\x1b[0m")
+            else:
+                lines.append(f"  {label}")
+        return lines
 
 
 class MonitorState:
@@ -475,11 +627,13 @@ class MonitorState:
     def __init__(self) -> None:
         self.kpis = SimulationKpiState()
         self.structures = StructureListState()
+        self.rooms = RoomListState()
         self.renderer = ConsoleRenderer()
         self.message: Optional[str] = None
         self._lock = threading.Lock()
         self._render_event = threading.Event()
         self._stop_event = threading.Event()
+        self._focus: str = "structures"
 
     def stop(self) -> None:
         self._stop_event.set()
@@ -502,9 +656,44 @@ class MonitorState:
         with self._lock:
             message = self.message
             kpi_line = self.kpis.format_line()
-            structure_lines = self.structures.render_lines()
-        self.renderer.render(kpi_line, structure_lines, message)
+            structure_lines = self.structures.render_lines(
+                focused=self._focus == "structures"
+            )
+            room_lines: List[str] = []
+            if self.structures.selected():
+                room_lines = self.rooms.render_lines(focused=self._focus == "rooms")
+        self.renderer.render(kpi_line, structure_lines, room_lines, message)
         self._render_event.clear()
+
+    def selected_structure_id(self) -> Optional[str]:
+        selected = self.structures.selected()
+        return selected.identifier if selected else None
+
+    def toggle_focus(self) -> bool:
+        if self._focus == "structures":
+            if not self.rooms.entries:
+                return False
+            self._focus = "rooms"
+            return True
+        self._focus = "structures"
+        return True
+
+    def ensure_structure_focus(self) -> bool:
+        if self._focus != "structures":
+            self._focus = "structures"
+            return True
+        return False
+
+    def move_selection(self, delta: int) -> bool:
+        if self._focus == "rooms":
+            return self.rooms.move_selection(delta)
+        changed = self.structures.move_selection(delta)
+        if changed:
+            self.rooms.select_structure(self.selected_structure_id())
+        return changed
+
+    def ensure_room_sync(self) -> bool:
+        return self.rooms.select_structure(self.selected_structure_id())
 
     def handle_event(self, name: str, raw_payload: str) -> None:
         try:
@@ -526,8 +715,23 @@ class MonitorState:
                             changed = True
                         snapshot = update.get("snapshot")
                         if isinstance(snapshot, dict):
-                            if self.structures.update_from_snapshot(snapshot):
+                            structure_changed = self.structures.update_from_snapshot(
+                                snapshot
+                            )
+                            if structure_changed:
                                 changed = True
+                            rooms_changed = self.rooms.update_from_snapshot(
+                                snapshot, self.selected_structure_id()
+                            )
+                            if rooms_changed:
+                                changed = True
+                            if self._focus == "rooms" and not self.rooms.entries:
+                                if self.ensure_structure_focus():
+                                    changed = True
+        else:
+            return
+        if self.ensure_room_sync():
+            changed = True
         if changed:
             self.request_render()
 
@@ -542,16 +746,31 @@ def _handle_keypress(state: MonitorState, controller: TerminalController) -> boo
         return False
     if char == "\x03":
         raise KeyboardInterrupt
+    if char in ("\r", "\n"):
+        changed = state.toggle_focus()
+        if changed:
+            state.request_render()
+        return changed
+    if char in ("\x7f", "\b"):
+        changed = state.ensure_structure_focus()
+        if changed:
+            state.request_render()
+        return changed
     if char != "\x1b":
         return False
     second = _read_additional_input(controller, 0.01)
+    if second is None:
+        changed = state.ensure_structure_focus()
+        if changed:
+            state.request_render()
+        return changed
     if second != "[":
         return False
     third = _read_additional_input(controller, 0.01)
     if third == "A":
-        changed = state.structures.move_selection(-1)
+        changed = state.move_selection(-1)
     elif third == "B":
-        changed = state.structures.move_selection(1)
+        changed = state.move_selection(1)
     else:
         changed = False
     if changed:
