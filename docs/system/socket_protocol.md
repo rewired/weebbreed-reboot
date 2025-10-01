@@ -57,6 +57,21 @@ buildSimulationSnapshot(state, repository))`.
   `http://localhost:7331/socket.io`, matching the default backend dev server
   (`WEEBBREED_BACKEND_PORT=7331`).
 
+### Terminal Monitoring CLI
+
+- The repository ships a Node-based CLI under `@weebbreed/monitoring` that
+  consumes the same SSE feed as the browser dashboard. Launch it with
+  `pnpm monitor` for a hot-reloading development loop or
+  `pnpm --filter @weebbreed/monitoring start -- --url <endpoint>` for a static
+  run.
+- Keyboard controls mirror the legacy RESIN workflow: `Tab`/arrow keys cycle the
+  focus between structures → rooms → zones, `↑/↓` move within the active list,
+  `r` triggers a reconnect, and `q`/`Ctrl+C` exits.
+- The CLI defaults to `http://localhost:7331/events`; pass `--url` to inspect a
+  remote backend. The detail pane surfaces zone environment KPIs, setpoints,
+  resource levels, and counts so backend developers can verify payloads without
+  the React app.
+
 ## Outgoing Events
 
 ### `simulationUpdate`

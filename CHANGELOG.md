@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Introduced `@weebbreed/monitoring`, a Node-based terminal CLI that mirrors the
+  RESIN workflow with neo-blessed panes, keyboard navigation, and automatic
+  reconnects for the SSE stream (`src/monitoring`).
 - Added `colorama` to the Python monitor tooling and initialized ANSI handling
   on startup to keep Windows consoles warning-free while retaining rich output.
 - Added state selector unit tests that build multi-structure fixtures and validate
@@ -54,6 +57,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Replaced Python monitor setup docs with the Node CLI workflow and wired a
+  `pnpm monitor` helper script to launch it from the workspace root.
 - Refactored the SSE console monitor list handling to share a reusable selection
   helper, keeping the 80×30 viewport formatting intact while deduplicating the
   structure and room pane logic (`tools/monitor/weedmonitor.py`).

@@ -70,22 +70,30 @@ Our automation pipeline keeps data, security, and code quality aligned with the
    - `pnpm audit:run`
    - `pnpm lint`
 
-### RESIN/weedwire - Real-time Event Stream INspector (`tools/resin/weedwire.py`)
+### Monitoring CLI (`@weebbreed/monitoring`)
 
-For quick smoke tests against live simulation traffic, the repository ships a
-small Python monitor at `tools/resin/weedwire.py`. It listens to the SSE
-telemetry stream and prints a condensed event feed that mirrors what the React
-dashboard consumes. To run it, prepare a local virtual environment and install
-the helper dependencies:
+For real-time smoke tests against the simulation stream, use the Node-based
+terminal dashboard that mirrors the legacy RESIN workflow. The CLI listens to
+the SSE feed, presents structure/room/zone hierarchies, and surfaces the key
+environmental KPIs the React dashboard consumes.
 
-1. `cd tools/resin`
-2. `python3 -m venv .venv`
-3. `source .venv/bin/activate`
-4. `python -m pip install --upgrade pip`
-5. `pip install -r requirements.txt`
+```
+pnpm install
+pnpm monitor             # runs `pnpm --filter @weebbreed/monitoring dev`
+# or
+pnpm --filter @weebbreed/monitoring start -- --url http://localhost:7331/events
+```
 
-After the environment is ready, execute `python weedwire.py` while the backend
-dev server is running to view live updates.
+Keyboard controls:
+
+- `Tab` / `Shift+Tab` / `←` / `→` – cycle focus between structures, rooms, and
+  zones.
+- `↑` / `↓` – move within the focused list.
+- `r` – force a reconnect when testing connection handling.
+- `q` / `Ctrl+C` – exit the monitor.
+
+By default the CLI targets `http://localhost:7331/events`; pass `--url` to
+point at a different backend instance.
 
 Refer to the docs for simulation tuning, schema updates, and naming conventions
 before changing blueprints or code. Review the changelog and ADRs when planning
