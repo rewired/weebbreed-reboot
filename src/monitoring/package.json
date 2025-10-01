@@ -9,6 +9,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "blessed": "npm:neo-blessed@^0.2.0",
     "blessed-contrib": "^4.11.0",
     "commander": "^12.1.0",
     "eventsource": "^3.0.5",
