@@ -421,23 +421,37 @@ class StructureListState:
             return None
         return self.entries[self.selected_index]
 
-    def render_lines(self, focused: bool) -> List[str]:
+    def build_pane(self, focused: bool) -> "ListPane":
         prefix = "▶" if focused else " "
-        lines = [f"{prefix} Structures ({len(self.entries)}):"]
+        title = f"{prefix} Structures ({len(self.entries)}):"
         if not self.entries:
-            lines.append("  (no structures available)")
-            return lines
-        for idx, entry in enumerate(self.entries):
-            label = entry.display_label()
-            if idx == self.selected_index:
-                lines.append(f"> \x1b[7m{label}\x1b[0m")
-            else:
-                lines.append(f"  {label}")
-        return lines
+            rows = ["(no structures available)"]
+            selected_index = None
+        else:
+            rows = [entry.display_label() for entry in self.entries]
+            selected_index = (
+                self.selected_index if 0 <= self.selected_index < len(rows) else None
+            )
+        return ListPane(title=title, rows=rows, selected_index=selected_index, focused=focused)
+
+
+@dataclass
+class ListPane:
+    """Structured description of a list pane within the viewport."""
+
+    title: str
+    rows: Sequence[str]
+    selected_index: Optional[int]
+    focused: bool
 
 
 class ConsoleRenderer:
     """Handles terminal rendering for the monitor."""
+
+    WIDTH = 80
+    HEIGHT = 30
+    INNER_WIDTH = WIDTH - 2
+    INNER_HEIGHT = HEIGHT - 2
 
     def __init__(self) -> None:
         self._cursor_hidden = False
@@ -454,22 +468,139 @@ class ConsoleRenderer:
             sys.stdout.flush()
             self._cursor_hidden = False
 
+    @staticmethod
+    def _truncate_line(text: str, max_width: int) -> str:
+        if max_width <= 0:
+            return ""
+        if len(text) <= max_width:
+            return text
+        if max_width == 1:
+            return text[:1]
+        return text[: max_width - 1] + "…"
+
+    def _format_title(self, pane: ListPane) -> str:
+        return self._truncate_line(pane.title, self.INNER_WIDTH)
+
+    def _format_row(self, text: str, selected: bool) -> str:
+        prefix = ">" if selected else " "
+        body = f" {text}" if text else ""
+        return self._truncate_line(f"{prefix}{body}", self.INNER_WIDTH)
+
+    def _limit_rows(
+        self, rows: Sequence[str], selected_index: Optional[int], max_slots: int
+    ) -> List[tuple[str, bool]]:
+        if max_slots <= 0:
+            return []
+        total = len(rows)
+        if total == 0:
+            return [("(no entries)", False)]
+        if selected_index is None:
+            selected_index = 0
+        selected_index = max(0, min(selected_index, total - 1))
+        if total <= max_slots:
+            return [(rows[idx], idx == selected_index) for idx in range(total)]
+
+        window = max_slots
+        start = max(0, min(selected_index - window // 2, total - window))
+        end = min(start + window, total)
+
+        output: List[tuple[str, bool]] = []
+        slots_remaining = max_slots
+        if start > 0:
+            output.append(("…", False))
+            slots_remaining -= 1
+
+        for idx in range(start, end):
+            if slots_remaining <= 0:
+                break
+            output.append((rows[idx], idx == selected_index))
+            slots_remaining -= 1
+
+        if end < total:
+            if slots_remaining <= 0:
+                for i in range(len(output) - 1, -1, -1):
+                    text, is_selected = output[i]
+                    if not is_selected:
+                        output[i] = ("…", False)
+                        break
+            else:
+                output.append(("…", False))
+
+        return output[:max_slots]
+
+    def _compose_content(
+        self,
+        header_lines: Sequence[str],
+        message_lines: Sequence[str],
+        panes: Sequence[ListPane],
+    ) -> List[str]:
+        content: List[str] = []
+
+        for line in header_lines:
+            if len(content) >= self.INNER_HEIGHT:
+                break
+            content.append(self._truncate_line(line, self.INNER_WIDTH))
+
+        for line in message_lines:
+            if len(content) >= self.INNER_HEIGHT:
+                break
+            content.append(self._truncate_line(line, self.INNER_WIDTH))
+
+        for pane_index, pane in enumerate(panes):
+            if len(content) >= self.INNER_HEIGHT:
+                break
+            if content and (pane_index > 0 or message_lines):
+                if len(content) >= self.INNER_HEIGHT:
+                    break
+                content.append("")
+            if len(content) >= self.INNER_HEIGHT:
+                break
+            content.append(self._format_title(pane))
+            remaining = self.INNER_HEIGHT - len(content)
+            limited_rows = self._limit_rows(pane.rows, pane.selected_index, remaining)
+            for text, is_selected in limited_rows:
+                if len(content) >= self.INNER_HEIGHT:
+                    break
+                content.append(self._format_row(text, is_selected))
+
+        return content
+
     def render(
         self,
-        kpi_line: str,
-        structure_lines: Sequence[str],
-        room_lines: Sequence[str],
-        message: Optional[str],
+        header_lines: Sequence[str],
+        message_lines: Sequence[str],
+        panes: Sequence[ListPane],
     ) -> None:
         self._ensure_cursor_hidden()
-        lines = [kpi_line]
-        if message:
-            lines.append(message)
-        lines.extend(structure_lines)
-        if room_lines:
-            lines.append("")
-            lines.extend(room_lines)
-        output = "\n".join(lines)
+
+        buffer: List[List[str]] = [
+            [" "] * self.WIDTH for _ in range(self.HEIGHT)
+        ]
+
+        # Draw border
+        buffer[0][0] = "┌"
+        buffer[0][-1] = "┐"
+        buffer[-1][0] = "└"
+        buffer[-1][-1] = "┘"
+        for col in range(1, self.WIDTH - 1):
+            buffer[0][col] = "─"
+            buffer[-1][col] = "─"
+        for row in range(1, self.HEIGHT - 1):
+            buffer[row][0] = "│"
+            buffer[row][-1] = "│"
+
+        content_lines = self._compose_content(header_lines, message_lines, panes)
+
+        for row_index, line in enumerate(content_lines[: self.INNER_HEIGHT]):
+            padded = self._truncate_line(line, self.INNER_WIDTH).ljust(
+                self.INNER_WIDTH, " "
+            )
+            target_row = row_index + 1
+            for col_index, char in enumerate(padded):
+                buffer[target_row][col_index + 1] = char
+
+        output_lines = ["".join(row) for row in buffer]
+        output = "\n".join(output_lines)
         sys.stdout.write("\x1b[2J\x1b[H" + output + "\n")
         sys.stdout.flush()
 
@@ -606,19 +737,21 @@ class RoomListState:
             return None
         return self.entries[self.selected_index]
 
-    def render_lines(self, focused: bool) -> List[str]:
+    def build_pane(self, focused: bool) -> "ListPane":
         prefix = "▶" if focused else " "
-        lines = [f"{prefix} Rooms ({len(self.entries)}):"]
-        if not self.entries:
-            lines.append("  (no rooms available)")
-            return lines
-        for idx, entry in enumerate(self.entries):
-            label = entry.display_label()
-            if idx == self.selected_index:
-                lines.append(f"> \x1b[7m{label}\x1b[0m")
-            else:
-                lines.append(f"  {label}")
-        return lines
+        title = f"{prefix} Rooms ({len(self.entries)}):"
+        if self._current_structure_id is None:
+            rows = ["Select a structure to view rooms"]
+            selected_index = None
+        elif not self.entries:
+            rows = ["(no rooms available)"]
+            selected_index = None
+        else:
+            rows = [entry.display_label() for entry in self.entries]
+            selected_index = (
+                self.selected_index if 0 <= self.selected_index < len(rows) else None
+            )
+        return ListPane(title=title, rows=rows, selected_index=selected_index, focused=focused)
 
 
 class MonitorState:
@@ -655,14 +788,13 @@ class MonitorState:
     def render(self) -> None:
         with self._lock:
             message = self.message
-            kpi_line = self.kpis.format_line()
-            structure_lines = self.structures.render_lines(
-                focused=self._focus == "structures"
-            )
-            room_lines: List[str] = []
-            if self.structures.selected():
-                room_lines = self.rooms.render_lines(focused=self._focus == "rooms")
-        self.renderer.render(kpi_line, structure_lines, room_lines, message)
+            header_lines = [self.kpis.format_line()]
+            message_lines = [message] if message else []
+            panes = [
+                self.structures.build_pane(focused=self._focus == "structures"),
+                self.rooms.build_pane(focused=self._focus == "rooms"),
+            ]
+        self.renderer.render(header_lines, message_lines, panes)
         self._render_event.clear()
 
     def selected_structure_id(self) -> Optional[str]:
