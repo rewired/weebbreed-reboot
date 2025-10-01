@@ -777,6 +777,170 @@ class RoomListState(SelectableListState[RoomRow]):
         )
 
 
+@dataclass
+class ZoneRow(DisplayLabelProvider):
+    """Normalized representation of a zone entry."""
+
+    identifier: str
+    room_identifier: str
+    name: str
+    area: Optional[float]
+    temperature: Optional[float]
+    humidity: Optional[float]
+    vpd: Optional[float]
+
+    def display_label(self) -> str:
+        parts: List[str] = [self.name]
+        metrics: List[str] = []
+        if isinstance(self.temperature, (int, float)) and not isinstance(self.temperature, bool):
+            metrics.append(f"T: {self.temperature:.1f}°C")
+        if isinstance(self.humidity, (int, float)) and not isinstance(self.humidity, bool):
+            metrics.append(f"RH: {self.humidity:.0%}")
+        if isinstance(self.vpd, (int, float)) and not isinstance(self.vpd, bool):
+            metrics.append(f"VPD: {self.vpd:.2f}")
+        if metrics:
+            parts.append(" | ".join(metrics))
+        if isinstance(self.area, (int, float)) and not isinstance(self.area, bool):
+            parts.append(f"area: {self.area:.0f} m²")
+        return " | ".join(parts)
+
+
+def _parse_zone(payload: Dict[str, Any]) -> Optional[ZoneRow]:
+    identifier = payload.get("id")
+    name = payload.get("name")
+    room_identifier = payload.get("roomId")
+    if (
+        not isinstance(identifier, str)
+        or not isinstance(name, str)
+        or not isinstance(room_identifier, str)
+    ):
+        return None
+    area_value = payload.get("area")
+    area: Optional[float] = None
+    if isinstance(area_value, (int, float)) and not isinstance(area_value, bool):
+        area = float(area_value)
+    environment = payload.get("environment")
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    vpd: Optional[float] = None
+    if isinstance(environment, dict):
+        temp_value = environment.get("temperature")
+        if isinstance(temp_value, (int, float)) and not isinstance(temp_value, bool):
+            temperature = float(temp_value)
+        humidity_value = environment.get("relativeHumidity")
+        if isinstance(humidity_value, (int, float)) and not isinstance(humidity_value, bool):
+            humidity = float(humidity_value)
+        vpd_value = environment.get("vpd")
+        if isinstance(vpd_value, (int, float)) and not isinstance(vpd_value, bool):
+            vpd = float(vpd_value)
+    return ZoneRow(
+        identifier=identifier,
+        room_identifier=room_identifier,
+        name=name,
+        area=area,
+        temperature=temperature,
+        humidity=humidity,
+        vpd=vpd,
+    )
+
+
+@dataclass
+class ZoneListState(SelectableListState[ZoneRow]):
+    """Tracks zones for the selected room and their selection."""
+
+    _zones_by_room: Dict[str, List[ZoneRow]] = field(default_factory=dict)
+    _current_room_id: Optional[str] = None
+    _selected_per_room: Dict[str, int] = field(default_factory=dict)
+
+    def update_from_snapshot(
+        self, snapshot: Dict[str, Any], room_id: Optional[str]
+    ) -> bool:
+        zones = snapshot.get("zones") if isinstance(snapshot, dict) else None
+        new_map: Dict[str, List[ZoneRow]] = {}
+        if isinstance(zones, list):
+            for item in zones:
+                if isinstance(item, dict):
+                    parsed = _parse_zone(item)
+                    if parsed:
+                        new_map.setdefault(parsed.room_identifier, []).append(parsed)
+        changed = new_map != self._zones_by_room
+        if changed:
+            self._zones_by_room = new_map
+        room_changed = self.select_room(room_id)
+        return changed or room_changed
+
+    def select_room(self, room_id: Optional[str]) -> bool:
+        if room_id == self._current_room_id and not self._zones_changed():
+            return False
+        self._remember_selection()
+        self._current_room_id = room_id
+        return self._apply_current_room()
+
+    def _zones_changed(self) -> bool:
+        if self._current_room_id is None:
+            return bool(self.entries)
+        expected = self._zones_by_room.get(self._current_room_id, [])
+        return expected != self.entries
+
+    def _remember_selection(self) -> None:
+        if self._current_room_id is None:
+            return
+        if self.entries and 0 <= self.selected_index < len(self.entries):
+            self._selected_per_room[self._current_room_id] = self.selected_index
+
+    def _apply_current_room(self) -> bool:
+        if self._current_room_id is None:
+            changed = bool(self.entries)
+            self.entries = []
+            self.selected_index = 0
+            return changed
+        previous_selected_id = None
+        if self.entries and 0 <= self.selected_index < len(self.entries):
+            previous_selected_id = self.entries[self.selected_index].identifier
+        new_entries = list(self._zones_by_room.get(self._current_room_id, []))
+        if new_entries == self.entries:
+            return False
+        self.entries = new_entries
+        if not self.entries:
+            self.selected_index = 0
+            return True
+        saved_index = self._selected_per_room.get(self._current_room_id)
+        if saved_index is not None and 0 <= saved_index < len(self.entries):
+            self.selected_index = saved_index
+        elif previous_selected_id:
+            for idx, entry in enumerate(self.entries):
+                if entry.identifier == previous_selected_id:
+                    self.selected_index = idx
+                    break
+            else:
+                self.selected_index = 0
+        else:
+            self.selected_index = min(self.selected_index, len(self.entries) - 1)
+        self._selected_per_room[self._current_room_id] = self.selected_index
+        return True
+
+    def move_selection(self, delta: int) -> bool:
+        changed = super().move_selection(delta)
+        if changed and self._current_room_id is not None and self.entries:
+            self._selected_per_room[self._current_room_id] = self.selected_index
+        return changed
+
+    def build_pane(self, focused: bool) -> "ListPane":
+        if self._current_room_id is None:
+            return self.build_list_pane(
+                focused=focused,
+                title="Zones",
+                empty_message="(no zones available)",
+                rows=["Select a room to view zones"],
+                selected_index=None,
+            )
+        return self.build_list_pane(
+            focused=focused,
+            title="Zones",
+            empty_message="(no zones available)",
+        )
+
+
 class MonitorState:
     """Co-ordinates SSE updates, rendering, and user input."""
 
@@ -784,6 +948,7 @@ class MonitorState:
         self.kpis = SimulationKpiState()
         self.structures = StructureListState()
         self.rooms = RoomListState()
+        self.zones = ZoneListState()
         self.renderer = ConsoleRenderer()
         self.message: Optional[str] = None
         self._lock = threading.Lock()
@@ -816,6 +981,7 @@ class MonitorState:
             panes = [
                 self.structures.build_pane(focused=self._focus == "structures"),
                 self.rooms.build_pane(focused=self._focus == "rooms"),
+                self.zones.build_pane(focused=self._focus == "zones"),
             ]
         self.renderer.render(header_lines, message_lines, panes)
         self._render_event.clear()
@@ -824,31 +990,79 @@ class MonitorState:
         selected = self.structures.selected()
         return selected.identifier if selected else None
 
-    def toggle_focus(self) -> bool:
-        if self._focus == "structures":
-            if not self.rooms.entries:
-                return False
-            self._focus = "rooms"
-            return True
-        self._focus = "structures"
-        return True
+    def selected_room_id(self) -> Optional[str]:
+        selected = self.rooms.selected()
+        return selected.identifier if selected else None
 
-    def ensure_structure_focus(self) -> bool:
-        if self._focus != "structures":
+    def selected_zone_id(self) -> Optional[str]:
+        selected = self.zones.selected()
+        return selected.identifier if selected else None
+
+    def toggle_focus(self) -> bool:
+        focus_order = ["structures", "rooms", "zones"]
+        if self._focus not in focus_order:
+            self._focus = "structures"
+            return True
+        current_index = focus_order.index(self._focus)
+        for step in range(1, len(focus_order) + 1):
+            next_focus = focus_order[(current_index + step) % len(focus_order)]
+            if next_focus == "rooms" and not self.rooms.entries:
+                continue
+            if next_focus == "zones" and not self.zones.entries:
+                continue
+            if next_focus != self._focus:
+                self._focus = next_focus
+                return True
+            break
+        return False
+
+    def focus_parent(self) -> bool:
+        if self._focus == "zones":
+            if self.rooms.entries:
+                self._focus = "rooms"
+            else:
+                self._focus = "structures"
+            return True
+        if self._focus == "rooms":
+            self._focus = "structures"
+            return True
+        return False
+
+    def ensure_valid_focus(self) -> bool:
+        if self._focus == "zones" and not self.zones.entries:
+            if self.rooms.entries:
+                self._focus = "rooms"
+            else:
+                self._focus = "structures"
+            return True
+        if self._focus == "rooms" and not self.rooms.entries:
+            self._focus = "structures"
+            return True
+        if self._focus not in ("structures", "rooms", "zones"):
             self._focus = "structures"
             return True
         return False
 
     def move_selection(self, delta: int) -> bool:
+        if self._focus == "zones":
+            return self.zones.move_selection(delta)
         if self._focus == "rooms":
-            return self.rooms.move_selection(delta)
+            changed = self.rooms.move_selection(delta)
+            if self.zones.select_room(self.selected_room_id()):
+                changed = True
+            return changed
         changed = self.structures.move_selection(delta)
-        if changed:
-            self.rooms.select_structure(self.selected_structure_id())
+        if self.rooms.select_structure(self.selected_structure_id()):
+            changed = True
+        if self.zones.select_room(self.selected_room_id()):
+            changed = True
         return changed
 
     def ensure_room_sync(self) -> bool:
-        return self.rooms.select_structure(self.selected_structure_id())
+        changed = self.rooms.select_structure(self.selected_structure_id())
+        if self.zones.select_room(self.selected_room_id()):
+            changed = True
+        return changed
 
     def handle_event(self, name: str, raw_payload: str) -> None:
         try:
@@ -880,12 +1094,22 @@ class MonitorState:
                             )
                             if rooms_changed:
                                 changed = True
+                            zones_changed = self.zones.update_from_snapshot(
+                                snapshot, self.selected_room_id()
+                            )
+                            if zones_changed:
+                                changed = True
                             if self._focus == "rooms" and not self.rooms.entries:
-                                if self.ensure_structure_focus():
+                                if self.focus_parent():
+                                    changed = True
+                            if self._focus == "zones" and not self.zones.entries:
+                                if self.focus_parent():
                                     changed = True
         else:
             return
         if self.ensure_room_sync():
+            changed = True
+        if self.ensure_valid_focus():
             changed = True
         if changed:
             self.request_render()
@@ -907,7 +1131,7 @@ def _handle_keypress(state: MonitorState, controller: TerminalController) -> boo
             state.request_render()
         return changed
     if char in ("\x7f", "\b"):
-        changed = state.ensure_structure_focus()
+        changed = state.focus_parent()
         if changed:
             state.request_render()
         return changed
@@ -915,7 +1139,7 @@ def _handle_keypress(state: MonitorState, controller: TerminalController) -> boo
         return False
     second = _read_additional_input(controller, 0.01)
     if second is None:
-        changed = state.ensure_structure_focus()
+        changed = state.focus_parent()
         if changed:
             state.request_render()
         return changed
