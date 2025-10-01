@@ -1,3 +1,5 @@
 # 00 Vision Summary
 
-Content will be curated in subsequent stages.
+- Deliver a modular Node.js simulation that streams deterministic plant and climate telemetry to the dashboard so teams can iterate on physiology without ripple effects.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L12-L15】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L42-L44】
+- Keep the experience extensible by boxing formulas for drop-in upgrades and ensuring real-time controls stay responsive across personas who tune setpoints, author UI, and calibrate plant models.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L27-L36】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L55-L64】
+- Ship with validated save/load, schema-governed blueprints, and a front-end built on React, Zustand, Socket.IO, Recharts, and TanStack Table to visualize tick updates.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L15-L36】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L104-L117】

@@ -1,3 +1,7 @@
 # 03 Data Dictionary Delta
 
-Content will be curated in subsequent stages.
+- **Strain blueprint** — captures genotype, chemotype, morphology, environment preferences, photoperiod, and disease and harvest windows for the plant factory.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L96-L99】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L206-L208】
+- **Cultivation method blueprint** — specifies substrate, containerSpec, areaPerPlant, and compatibility data used for capacity checks.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L96-L100】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L206-L209】
+- **Device blueprint** — stores device kind, settings such as power or airflow, and metadata; prices and maintenance remain outside the blueprint files.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L96-L101】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L206-L210】
+- **Strain price sheet** — holds `seedPrice` and `harvestPricePerGram` at quality 1 so runtime modifiers can apply market logic without altering strain definitions.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L96-L101】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L210-L211】
+- **Save header** — every JSON save includes `kind`, semantic `version`, `createdAt`, `tickLengthMinutes`, deterministic `rngSeed`, and the serialized `state` payload for validation.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L94-L96】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L193-L204】
