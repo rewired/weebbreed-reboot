@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added state selector unit tests that build multi-structure fixtures and validate
+  structure, room, and zone lookup metadata including miss cases for empty
+  collections and similar-looking ids.
 - Added zone service unit tests validating create/clone/duplicate flows with
   blueprint compatibility fixtures, geometry validation, and cost accounting
   purchase recording.
