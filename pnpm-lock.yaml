@@ -230,6 +230,9 @@ importers:
 
   src/monitoring:
     dependencies:
+      blessed:
+        specifier: npm:neo-blessed@^0.2.0
+        version: neo-blessed@0.2.0
       blessed-contrib:
         specifier: ^4.11.0
         version: 4.11.0
