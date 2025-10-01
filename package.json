@@ -14,7 +14,8 @@
     "bench": "pnpm --filter @weebbreed/backend bench",
     "audit:run": "pnpm exec tsx --tsconfig src/backend/tsconfig.build.json scripts/run_audit.ts",
     "validate:data": "tsx tools/validate-data.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "monitor": "pnpm --filter @weebbreed/monitoring dev"
   },
   "dependencies": {
     "ajv": "^8.17.1",

@@ -48,15 +48,16 @@
   `dist/index.js` with sourcemaps. `pnpm start` executes `node dist/index.js`
   under the package `type: module` contract.
 
-**Python telemetry monitor (`tools/resin/weedwire.py`)**
+**Monitoring CLI (`src/monitoring`)**
 
-- Use the bundled Python script to watch websocket traffic during backend smoke
-  tests. Set up the environment once per machine:
-  1. `cd tools/resin`
-  2. `python3 -m venv .venv`
-  3. `source .venv/bin/activate`
-  4. `python -m pip install --upgrade pip`
-  5. `pip install -r requirements.txt`
+- Use the Node-based CLI (`@weebbreed/monitoring`) to watch the SSE gateway
+  during backend smoke tests. Install dependencies via `pnpm install` and run
+  `pnpm monitor` (alias for `pnpm --filter @weebbreed/monitoring dev`) to launch
+  the dashboard with hot reload.
+- The CLI mirrors the RESIN flow: focus panes for structures/rooms/zones,
+  environment KPIs, and reconnect handling. Default endpoint is
+  `http://localhost:7331/events`; override with `--url` when targeting another
+  host.
 
 **`src/backend/tsconfig.json` (minimal)**
 
