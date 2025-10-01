@@ -58,6 +58,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the Python SSE monitor to use platform-specific terminal controllers,
   enabling Windows console input handling and a safe fallback when interactive
   controls are unavailable.
+- Expanded the SSE console monitor with a zone pane, hierarchical focus
+  navigation, and viewport-safe rendering when drilling into rooms so zone
+  metrics stay within the 80×30 frame (`tools/monitor/weedmonitor.py`).
 - Bounded the SSE console monitor viewport to a framed 80×30 layout, adding
   clipping, ellipsis truncation, and list row limiting so KPIs and selections
   render consistently across terminals.
