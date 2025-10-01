@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added `colorama` to the Python monitor tooling and initialized ANSI handling
+  on startup to keep Windows consoles warning-free while retaining rich output.
 - Added state selector unit tests that build multi-structure fixtures and validate
   structure, room, and zone lookup metadata including miss cases for empty
   collections and similar-looking ids.

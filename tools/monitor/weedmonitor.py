@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Any, Dict, Generic, Iterable, List, Optional, Protocol, Sequence, TypeVar
 
+import colorama
 import requests
 
 IS_POSIX = os.name == "posix"
@@ -89,7 +90,6 @@ class WindowsTerminalController(TerminalController):
     ENABLE_LINE_INPUT = 0x0002
     ENABLE_EXTENDED_FLAGS = 0x0080
     ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200
-    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
 
     def __init__(self) -> None:
         if msvcrt is None or ctypes is None or wintypes is None:
@@ -105,17 +105,6 @@ class WindowsTerminalController(TerminalController):
         if not self._kernel32.GetConsoleMode(self._stdin_handle, ctypes.byref(mode)):
             raise OSError("Failed to read Windows console mode")
         self._original_mode = mode.value
-        self._stdout_handle = self._kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
-        if self._stdout_handle in (0, invalid_handle):
-            self._stdout_handle = None
-            self._original_output_mode: Optional[int] = None
-        else:
-            output_mode = wintypes.DWORD()
-            if self._kernel32.GetConsoleMode(self._stdout_handle, ctypes.byref(output_mode)):
-                self._original_output_mode = output_mode.value
-            else:
-                self._original_output_mode = None
-        self._output_warning_emitted = False
         self._buffer: List[str] = []
 
     def enter_raw_mode(self) -> None:
@@ -125,17 +114,10 @@ class WindowsTerminalController(TerminalController):
         new_mode &= ~(self.ENABLE_LINE_INPUT | self.ENABLE_ECHO_INPUT)
         new_mode |= self.ENABLE_EXTENDED_FLAGS | self.ENABLE_VIRTUAL_TERMINAL_INPUT
         self._kernel32.SetConsoleMode(self._stdin_handle, new_mode)
-        self._enable_virtual_terminal_processing()
 
     def restore_mode(self) -> None:
         if self._original_mode is not None:
             self._kernel32.SetConsoleMode(self._stdin_handle, self._original_mode)
-        if (
-            self._stdout_handle is not None
-            and self._original_output_mode is not None
-            and sys.stdout.isatty()
-        ):
-            self._kernel32.SetConsoleMode(self._stdout_handle, self._original_output_mode)
 
     def _dequeue(self) -> Optional[str]:
         if self._buffer:
@@ -183,26 +165,6 @@ class WindowsTerminalController(TerminalController):
 
     def read_key(self, timeout: float) -> Optional[str]:
         return self.poll_key(timeout)
-
-    def _enable_virtual_terminal_processing(self) -> None:
-        if not sys.stdout.isatty() or ctypes is None or wintypes is None:
-            return
-        if self._stdout_handle is None:
-            return
-        current_mode = wintypes.DWORD()
-        if not self._kernel32.GetConsoleMode(
-            self._stdout_handle, ctypes.byref(current_mode)
-        ):
-            return
-        desired_mode = current_mode.value | self.ENABLE_VIRTUAL_TERMINAL_PROCESSING
-        if self._kernel32.SetConsoleMode(self._stdout_handle, desired_mode):
-            return
-        if not self._output_warning_emitted:
-            sys.stderr.write(
-                "Warning: unable to enable ANSI escape sequences on this Windows console; output will be plain.\n"
-            )
-            sys.stderr.flush()
-            self._output_warning_emitted = True
 
 
 class NonInteractiveTerminalController(TerminalController):
@@ -1228,6 +1190,8 @@ def main() -> None:
         help="SSE endpoint to connect to (default: %(default)s)",
     )
     args = parser.parse_args()
+
+    colorama.init()
 
     monitor_state = MonitorState()
     monitor_state.set_message(f"Verbinde mit {args.url} …")
