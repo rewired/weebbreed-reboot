@@ -93,6 +93,9 @@ class WindowsTerminalController(TerminalController):
     ENABLE_LINE_INPUT = 0x0002
     ENABLE_EXTENDED_FLAGS = 0x0080
     ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200
+    ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
+    STD_INPUT_HANDLE = -10
+    STD_OUTPUT_HANDLE = -11
 
     def __init__(self) -> None:
         if msvcrt is None or ctypes is None or wintypes is None:
@@ -100,27 +103,74 @@ class WindowsTerminalController(TerminalController):
 
         self._msvcrt = msvcrt
         self._kernel32 = ctypes.windll.kernel32
-        self._stdin_handle = self._kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+
         invalid_handle = ctypes.c_void_p(-1).value
+
+        self._stdin_handle = self._kernel32.GetStdHandle(self.STD_INPUT_HANDLE)
         if self._stdin_handle in (0, invalid_handle):
             raise OSError("Failed to obtain Windows STDIN handle")
-        mode = wintypes.DWORD()
-        if not self._kernel32.GetConsoleMode(self._stdin_handle, ctypes.byref(mode)):
-            raise OSError("Failed to read Windows console mode")
-        self._original_mode = mode.value
+        input_mode = wintypes.DWORD()
+        if not self._kernel32.GetConsoleMode(self._stdin_handle, ctypes.byref(input_mode)):
+            raise OSError("Failed to read Windows console input mode")
+        self._original_input_mode = input_mode.value
+
+        stdout_handle = self._kernel32.GetStdHandle(self.STD_OUTPUT_HANDLE)
+        self._stdout_handle = None if stdout_handle in (0, invalid_handle) else stdout_handle
+        output_mode_value: Optional[int] = None
+        if self._stdout_handle is not None:
+            output_mode = wintypes.DWORD()
+            if self._kernel32.GetConsoleMode(self._stdout_handle, ctypes.byref(output_mode)):
+                output_mode_value = output_mode.value
+            else:
+                self._stdout_handle = None
+        self._original_output_mode = output_mode_value
+
         self._buffer: List[str] = []
+        self._input_mode_changed = False
+        self._output_mode_changed = False
+        self._warned_virtual_terminal = False
 
     def enter_raw_mode(self) -> None:
-        if not sys.stdin.isatty():
-            return
-        new_mode = self._original_mode
-        new_mode &= ~(self.ENABLE_LINE_INPUT | self.ENABLE_ECHO_INPUT)
-        new_mode |= self.ENABLE_EXTENDED_FLAGS | self.ENABLE_VIRTUAL_TERMINAL_INPUT
-        self._kernel32.SetConsoleMode(self._stdin_handle, new_mode)
+        if sys.stdin.isatty():
+            new_mode = self._original_input_mode
+            new_mode &= ~(self.ENABLE_LINE_INPUT | self.ENABLE_ECHO_INPUT)
+            new_mode |= self.ENABLE_EXTENDED_FLAGS | self.ENABLE_VIRTUAL_TERMINAL_INPUT
+            if new_mode != self._original_input_mode:
+                if self._kernel32.SetConsoleMode(self._stdin_handle, new_mode):
+                    self._input_mode_changed = True
+
+        if sys.stdout.isatty():
+            if self._stdout_handle is not None and self._original_output_mode is not None:
+                new_output_mode = self._original_output_mode | self.ENABLE_VIRTUAL_TERMINAL_PROCESSING
+                if new_output_mode != self._original_output_mode:
+                    if self._kernel32.SetConsoleMode(self._stdout_handle, new_output_mode):
+                        self._output_mode_changed = True
+                    elif not self._warned_virtual_terminal:
+                        sys.stderr.write(
+                            "Warning: Failed to enable ANSI escape sequence support on Windows console."
+                            "\n"
+                        )
+                        sys.stderr.flush()
+                        self._warned_virtual_terminal = True
+            elif not self._warned_virtual_terminal:
+                sys.stderr.write(
+                    "Warning: Unable to access Windows console output handle; ANSI sequences may not render correctly."
+                    "\n"
+                )
+                sys.stderr.flush()
+                self._warned_virtual_terminal = True
 
     def restore_mode(self) -> None:
-        if self._original_mode is not None:
-            self._kernel32.SetConsoleMode(self._stdin_handle, self._original_mode)
+        if self._input_mode_changed and self._original_input_mode is not None:
+            self._kernel32.SetConsoleMode(self._stdin_handle, self._original_input_mode)
+            self._input_mode_changed = False
+        if (
+            self._output_mode_changed
+            and self._stdout_handle is not None
+            and self._original_output_mode is not None
+        ):
+            self._kernel32.SetConsoleMode(self._stdout_handle, self._original_output_mode)
+            self._output_mode_changed = False
 
     def _dequeue(self) -> Optional[str]:
         if self._buffer:
