@@ -96,3 +96,8 @@ docs/weedbreed-final-truth.backup.md,Full Document,kept,Retained; thematically c
 docs/weedbreed-final-truth.md,Full Document,kept,Retained; thematically categorized,curated/vision.md,Weedbreed Final Truth (docs/weedbreed-final-truth.md)
 sources_inventory.md,Full Document,kept,Retained; thematically categorized,curated/vision.md,Sources Inventory (sources_inventory.md)
 src/backend/README.md,Full Document,kept,Retained; thematically categorized,curated/data-schema.md,Backend Development (src/backend/README.md)
+docs/system/simulation-engine.md,"§ Timebase & Core Loop; § Environment Model; § Plant Growth; § Health; § Tasks & Agentic Employees; § Economics",kept,Consolidated loop responsibilities and emissions,appendices/04_sim_loop_and_events.md,"Fixed-Step Loop Overview; Canonical Tick Phases; Domain Event Taxonomy"
+docs/TDD.md,"§ 2) Simulation Loop (fixed-step); § 11) Events & Telemetry",kept,Canonical phase order and event taxonomy aligned,appendices/04_sim_loop_and_events.md,"Canonical Tick Phases; Domain Event Taxonomy"
+docs/system/facade.md,"§ 8) Tick Orchestration",kept,Documented façade-controlled tick orchestration and emissions,appendices/04_sim_loop_and_events.md,"Canonical Tick Phases; Domain Event Taxonomy"
+docs/system/socket_protocol.md,"§ UI Stream; § Connection & Handshake; § Outgoing Events",kept,Recorded transport channel shapes and payload structure,appendices/04_sim_loop_and_events.md,"Event Bus and Transport Shapes"
+docs/system/runtime-event-bus-migration.md,"§ Overview",kept,Referenced runtime event bus helpers for telemetry context,appendices/04_sim_loop_and_events.md,"Event Bus and Transport Shapes"
