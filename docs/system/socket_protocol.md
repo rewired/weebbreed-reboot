@@ -391,7 +391,11 @@ object:
 - `action` selects a command within that domain. Actions are validated against
   the domain catalog that `SimulationFacade` builds during startup.
 - `payload` is validated with the command’s Zod schema before any engine service
-  executes. Missing payloads default to `{}` when a schema allows it.
+  executes. The socket gateway strips helper metadata, runs the command
+  preprocess hook (when present), and responds with the same normalized
+  `ERR_VALIDATION` payload the façade would emit. Validation failures do **not**
+  invoke command handlers or mutate simulation state. Missing payloads default
+  to `{}` when a schema allows it.
 - Responses are emitted on `<domain>.intent.result` and include the merged
   `CommandResult` (`{ ok, data?, warnings?, errors? }`). Unknown domains/actions
   yield `ERR_VALIDATION` with the offending field path (`['facade.intent',

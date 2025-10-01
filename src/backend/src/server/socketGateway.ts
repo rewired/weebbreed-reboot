@@ -12,6 +12,7 @@ import type {
   SetSpeedIntent,
 } from '@/facade/index.js';
 import { createError } from '@/facade/index.js';
+import { handleValidationError, stripIntentMetadata } from '@/facade/commands/commandRegistry.js';
 import {
   createUiStream,
   type EventBus,
@@ -409,15 +410,50 @@ export class SocketGateway {
       return;
     }
 
+    const registration = this.facade.getIntentRegistration(command.domain, command.action);
     const handler = this.facade.getIntentHandler(command.domain, command.action);
 
-    if (!handler) {
+    if (!handler || !registration) {
       const response = this.buildIntentValidationError(
         `Unsupported action ${command.domain}.${command.action}.`,
         ['facade.intent', 'action'],
         requestId,
       );
       this.emitCommandResponse(socket, 'facade.intent.result', response, ack);
+      return;
+    }
+
+    let validationInput = stripIntentMetadata(command.payload);
+    try {
+      if (registration.preprocess) {
+        validationInput = registration.preprocess(validationInput);
+      }
+    } catch (error) {
+      const result = this.buildInternalError(`${command.domain}.${command.action}`, error);
+      this.emitCommandResponse(
+        socket,
+        'facade.intent.result',
+        {
+          requestId,
+          ...result,
+        },
+        ack,
+      );
+      return;
+    }
+
+    const parsedIntent = registration.schema.safeParse(validationInput);
+    if (!parsedIntent.success) {
+      const result = handleValidationError<unknown>(registration.name, parsedIntent.error);
+      this.emitCommandResponse(
+        socket,
+        'facade.intent.result',
+        {
+          requestId,
+          ...result,
+        },
+        ack,
+      );
       return;
     }
 
