@@ -48,6 +48,16 @@
   `dist/index.js` with sourcemaps. `pnpm start` executes `node dist/index.js`
   under the package `type: module` contract.
 
+**Python telemetry monitor (`tools/resin/weedwire.py`)**
+
+- Use the bundled Python script to watch websocket traffic during backend smoke
+  tests. Set up the environment once per machine:
+  1. `cd tools/resin`
+  2. `python3 -m venv .venv`
+  3. `source .venv/bin/activate`
+  4. `python -m pip install --upgrade pip`
+  5. `pip install -r requirements.txt`
+
 **`src/backend/tsconfig.json` (minimal)**
 
 ---
