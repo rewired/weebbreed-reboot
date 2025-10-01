@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""weedwire"""
+"""RESIN - Real-time Event Stream INspector"""
 """Interactive CLI monitor for the WeedBreed simulation via Server-Sent Events."""
 
 from __future__ import annotations
