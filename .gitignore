@@ -143,3 +143,49 @@ dist
 
 # End of https://www.toptal.com/developers/gitignore/api/node
 /.vscode
+
+# --- WeedBreed: Python Monitor & venv-Schutz -------------------------------
+
+# venvs (root & tools/monitor)
+.venv/
+tools/monitor/.venv/
+
+# typische venv-/Build-Reste (root & monitor – doppelt absichern)
+Lib/
+Scripts/
+Include/
+pyvenv.cfg
+tools/monitor/Lib/
+tools/monitor/Scripts/
+tools/monitor/Include/
+tools/monitor/pyvenv.cfg
+
+# Python caches & Testartefakte
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.tools/
+.tox/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+.coverage
+htmlcov/
+
+# Monitor-spezifische Outputs
+tools/monitor/__pycache__/
+tools/monitor/.pytest_cache/
+tools/monitor/.mypy_cache/
+tools/monitor/.ruff_cache/
+tools/monitor/.coverage
+tools/monitor/coverage.xml
+tools/monitor/build/
+tools/monitor/dist/
+tools/monitor/*.egg-info/
+tools/monitor/*.log
+
+# Optionale lokale Configs
+tools/monitor/.env
+tools/monitor/.python-version  # pyenv/uv optional
