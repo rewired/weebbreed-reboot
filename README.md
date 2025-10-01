@@ -70,10 +70,10 @@ Our automation pipeline keeps data, security, and code quality aligned with the
    - `pnpm audit:run`
    - `pnpm lint`
 
-### Resin Telemetry Monitor (`tools/resin/weedwire.py`)
+### RESIN/weedwire - Real-time Event Stream INspector (`tools/resin/weedwire.py`)
 
 For quick smoke tests against live simulation traffic, the repository ships a
-small Python monitor at `tools/resin/weedwire.py`. It listens to the websocket
+small Python monitor at `tools/resin/weedwire.py`. It listens to the SSE
 telemetry stream and prints a condensed event feed that mirrors what the React
 dashboard consumes. To run it, prepare a local virtual environment and install
 the helper dependencies:
