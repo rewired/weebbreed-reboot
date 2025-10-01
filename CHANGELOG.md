@@ -49,6 +49,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Reworked the Python SSE monitor to use platform-specific terminal controllers,
+  enabling Windows console input handling and a safe fallback when interactive
+  controls are unavailable.
 - Excluded the Python-based monitoring utilities under `tools/monitor` from JavaScript
   linting and formatting workflows so repository checks ignore non-Node tooling.
 - Tightened façade device-setting schemas to accept only canonical numeric controls and

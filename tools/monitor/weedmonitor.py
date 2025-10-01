@@ -5,17 +5,209 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import select
 import sys
-import termios
 import threading
 import time
-import tty
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 import requests
 
+IS_POSIX = os.name == "posix"
+IS_WINDOWS = os.name == "nt"
+
+if IS_POSIX:
+    import termios
+    import tty
+else:  # pragma: no cover - imported conditionally for typing friendliness
+    termios = None  # type: ignore[assignment]
+    tty = None  # type: ignore[assignment]
+
+if IS_WINDOWS:
+    import msvcrt  # type: ignore
+else:  # pragma: no cover - imported conditionally for typing friendliness
+    msvcrt = None  # type: ignore[assignment]
+
+
+class TerminalController:
+    """Abstracts platform-specific terminal control helpers."""
+
+    def enter_raw_mode(self) -> None:  # pragma: no cover - interface method
+        """Put stdin into raw/unbuffered mode when supported."""
+
+    def restore_mode(self) -> None:  # pragma: no cover - interface method
+        """Restore the terminal to its original settings."""
+
+    def poll_key(self, timeout: float) -> Optional[str]:  # pragma: no cover - interface method
+        """Poll for a single character within ``timeout`` seconds."""
+
+    def read_key(self, timeout: float) -> Optional[str]:  # pragma: no cover - interface method
+        """Read the next character, waiting up to ``timeout`` seconds."""
+
+
+class PosixTerminalController(TerminalController):
+    """Terminal controller implementation for POSIX platforms."""
+
+    def __init__(self) -> None:
+        self._previous_settings: Optional[Sequence[int]] = None
+        self._fd = sys.stdin.fileno()
+
+    def enter_raw_mode(self) -> None:
+        if not sys.stdin.isatty() or termios is None or tty is None:
+            return
+        self._previous_settings = termios.tcgetattr(self._fd)
+        tty.setcbreak(self._fd)
+
+    def restore_mode(self) -> None:
+        if self._previous_settings is None or termios is None:
+            return
+        termios.tcsetattr(self._fd, termios.TCSADRAIN, self._previous_settings)
+        self._previous_settings = None
+
+    def poll_key(self, timeout: float) -> Optional[str]:
+        if not sys.stdin.isatty():
+            return None
+        ready, _, _ = select.select([sys.stdin], [], [], timeout)
+        if not ready:
+            return None
+        return sys.stdin.read(1)
+
+    def read_key(self, timeout: float) -> Optional[str]:
+        return self.poll_key(timeout)
+
+
+class WindowsTerminalController(TerminalController):
+    """Terminal controller implementation for Windows consoles."""
+
+    ENABLE_ECHO_INPUT = 0x0004
+    ENABLE_LINE_INPUT = 0x0002
+    ENABLE_EXTENDED_FLAGS = 0x0080
+    ENABLE_VIRTUAL_TERMINAL_INPUT = 0x0200
+
+    def __init__(self) -> None:
+        if msvcrt is None:
+            raise OSError("msvcrt module is unavailable on this platform")
+        import ctypes
+        from ctypes import wintypes
+
+        self._msvcrt = msvcrt
+        self._kernel32 = ctypes.windll.kernel32
+        self._stdin_handle = self._kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+        if self._stdin_handle in (0, ctypes.c_void_p(-1).value):
+            raise OSError("Failed to obtain Windows STDIN handle")
+        mode = wintypes.DWORD()
+        if not self._kernel32.GetConsoleMode(self._stdin_handle, ctypes.byref(mode)):
+            raise OSError("Failed to read Windows console mode")
+        self._original_mode = mode.value
+        self._buffer: List[str] = []
+
+    def enter_raw_mode(self) -> None:
+        if not sys.stdin.isatty():
+            return
+        new_mode = self._original_mode
+        new_mode &= ~(self.ENABLE_LINE_INPUT | self.ENABLE_ECHO_INPUT)
+        new_mode |= self.ENABLE_EXTENDED_FLAGS | self.ENABLE_VIRTUAL_TERMINAL_INPUT
+        self._kernel32.SetConsoleMode(self._stdin_handle, new_mode)
+
+    def restore_mode(self) -> None:
+        if self._original_mode is None:
+            return
+        self._kernel32.SetConsoleMode(self._stdin_handle, self._original_mode)
+
+    def _dequeue(self) -> Optional[str]:
+        if self._buffer:
+            return self._buffer.pop(0)
+        return None
+
+    def _queue_sequence(self, sequence: Sequence[str]) -> None:
+        self._buffer.extend(sequence)
+
+    def _read_windows_key_sequence(self) -> None:
+        char = self._msvcrt.getwch()
+        if char in ("\x00", "\xe0"):
+            if self._msvcrt.kbhit():
+                code = self._msvcrt.getwch()
+            else:
+                code = self._msvcrt.getwch()
+            mapping = {
+                "H": ["\x1b", "[", "A"],
+                "P": ["\x1b", "[", "B"],
+                "K": ["\x1b", "[", "D"],
+                "M": ["\x1b", "[", "C"],
+            }
+            sequence = mapping.get(code)
+            if sequence:
+                self._queue_sequence(sequence)
+            return
+        self._buffer.append(char)
+
+    def poll_key(self, timeout: float) -> Optional[str]:
+        if not sys.stdin.isatty():
+            return None
+        deadline = time.time() + max(timeout, 0.0)
+        while True:
+            buffered = self._dequeue()
+            if buffered is not None:
+                return buffered
+            if self._msvcrt.kbhit():
+                self._read_windows_key_sequence()
+                continue
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                break
+            time.sleep(min(0.01, remaining))
+        return self._dequeue()
+
+    def read_key(self, timeout: float) -> Optional[str]:
+        return self.poll_key(timeout)
+
+
+class NonInteractiveTerminalController(TerminalController):
+    """Fallback controller when interactive features are unavailable."""
+
+    def __init__(self, reason: str) -> None:
+        self._reason = reason
+        self._warned = False
+
+    def enter_raw_mode(self) -> None:
+        if not self._warned:
+            sys.stderr.write(f"Warning: {self._reason}\n")
+            sys.stderr.flush()
+            self._warned = True
+
+    def restore_mode(self) -> None:
+        return
+
+    def poll_key(self, timeout: float) -> Optional[str]:
+        if timeout > 0:
+            time.sleep(timeout)
+        return None
+
+    def read_key(self, timeout: float) -> Optional[str]:
+        if timeout > 0:
+            time.sleep(timeout)
+        return None
+
+
+def create_terminal_controller() -> TerminalController:
+    """Instantiate the best available terminal controller for this platform."""
+
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        return NonInteractiveTerminalController("interactive monitoring requires a TTY; running without keyboard controls")
+    if IS_POSIX:
+        return PosixTerminalController()
+    if IS_WINDOWS:
+        try:
+            return WindowsTerminalController()
+        except OSError as error:
+            return NonInteractiveTerminalController(
+                f"interactive terminal controls unavailable: {error}"
+            )
+    return NonInteractiveTerminalController(
+        "unsupported platform for interactive terminal controls"
+    )
 
 @dataclass
 class SimulationKpiState:
@@ -340,29 +532,22 @@ class MonitorState:
             self.request_render()
 
 
-def _read_additional_input(timeout: float) -> Optional[str]:
-    ready, _, _ = select.select([sys.stdin], [], [], timeout)
-    if not ready:
-        return None
-    return sys.stdin.read(1)
+def _read_additional_input(controller: TerminalController, timeout: float) -> Optional[str]:
+    return controller.read_key(timeout)
 
 
-def _handle_keypress(state: MonitorState) -> bool:
-    if not sys.stdin.isatty():
-        time.sleep(0.05)
+def _handle_keypress(state: MonitorState, controller: TerminalController) -> bool:
+    char = controller.poll_key(0.05)
+    if char is None:
         return False
-    ready, _, _ = select.select([sys.stdin], [], [], 0.05)
-    if not ready:
-        return False
-    char = sys.stdin.read(1)
     if char == "\x03":
         raise KeyboardInterrupt
     if char != "\x1b":
         return False
-    second = _read_additional_input(0.01)
+    second = _read_additional_input(controller, 0.01)
     if second != "[":
         return False
-    third = _read_additional_input(0.01)
+    third = _read_additional_input(controller, 0.01)
     if third == "A":
         changed = state.structures.move_selection(-1)
     elif third == "B":
@@ -405,30 +590,25 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if not sys.stdin.isatty() or not sys.stdout.isatty():
-        print("Interactive monitoring requires a TTY.")
-        sys.exit(1)
-
     monitor_state = MonitorState()
     monitor_state.set_message(f"Verbinde mit {args.url} …")
     stream_thread = threading.Thread(target=_stream_loop, args=(args.url, monitor_state), daemon=True)
     stream_thread.start()
 
-    fd = sys.stdin.fileno()
-    previous_settings = termios.tcgetattr(fd)
-    tty.setcbreak(fd)
+    terminal = create_terminal_controller()
+    terminal.enter_raw_mode()
     try:
         while not monitor_state.stopped():
             try:
                 if monitor_state.wait_for_render(timeout=0.05):
                     monitor_state.render()
-                _handle_keypress(monitor_state)
+                _handle_keypress(monitor_state, terminal)
             except KeyboardInterrupt:
                 monitor_state.stop()
     finally:
         monitor_state.stop()
         stream_thread.join(timeout=1.0)
-        termios.tcsetattr(fd, termios.TCSADRAIN, previous_settings)
+        terminal.restore_mode()
         monitor_state.renderer.restore_cursor()
         print("\nMonitoring stopped.")
 
