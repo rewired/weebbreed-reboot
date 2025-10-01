@@ -44,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Excluded the Python-based monitoring utilities under `tools/monitor` from JavaScript
+  linting and formatting workflows so repository checks ignore non-Node tooling.
 - Tightened façade device-setting schemas to accept only canonical numeric controls and
   two-value tuples, rejecting undefined patches and unknown keys. Updated command docs and
   regression tests capture the stricter validation.
