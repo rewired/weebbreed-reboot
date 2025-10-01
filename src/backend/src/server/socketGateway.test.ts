@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { Subject } from 'rxjs';
 import { io as createClient, type Socket as ClientSocket } from 'socket.io-client';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 import type {
   CommandResult,
   SimulationFacade,
@@ -13,6 +14,7 @@ import type {
   Unsubscribe,
 } from '@/facade/index.js';
 import { createError } from '@/facade/index.js';
+import type { CommandRegistration } from '@/facade/commands/commandRegistry.js';
 import type { EventFilter } from '@/lib/eventBus.js';
 import { EventBus, type SimulationEvent, type UiStreamPacket } from '@runtime/eventBus.js';
 import { TICK_PHASES, type PhaseTiming, type TickCompletedPayload } from '@/sim/loop.js';
@@ -418,6 +420,11 @@ class StubFacade {
 
   public intentInvocations: Array<{ domain: string; action: string; payload: unknown }> = [];
 
+  private readonly intentRegistrations = new Map<
+    string,
+    Record<string, CommandRegistration<unknown, unknown>>
+  >();
+
   public readonly world = {
     rentStructure: (payload: unknown) => this.resolveIntent('world', 'rentStructure', payload),
     createRoom: (payload: unknown) => this.resolveIntent('world', 'createRoom', payload),
@@ -476,6 +483,73 @@ class StubFacade {
 
   constructor(state: GameState) {
     this.state = state;
+    this.initializeIntentRegistrations();
+  }
+
+  getIntentRegistration(
+    domain: string,
+    action: string,
+  ): CommandRegistration<unknown, unknown> | undefined {
+    return this.intentRegistrations.get(domain)?.[action];
+  }
+
+  public setIntentSchema(
+    domain: string,
+    action: string,
+    schema: z.ZodTypeAny,
+    preprocess?: (payload: unknown) => unknown,
+  ): void {
+    const domainMap = this.intentRegistrations.get(domain) ?? {};
+    domainMap[action] = {
+      name: `${domain}.${action}`,
+      schema,
+      preprocess,
+      handler: async () => ({ ok: true }),
+    } satisfies CommandRegistration<unknown, unknown>;
+    this.intentRegistrations.set(domain, domainMap);
+  }
+
+  private initializeIntentRegistrations(): void {
+    const anySchema = z.any();
+    const register = (domain: string, action: string) => {
+      this.setIntentSchema(domain, action, anySchema);
+    };
+
+    [
+      'rentStructure',
+      'createRoom',
+      'updateRoom',
+      'deleteRoom',
+      'createZone',
+      'updateZone',
+      'deleteZone',
+    ].forEach((action) => register('world', action));
+    ['installDevice', 'updateDevice', 'moveDevice', 'removeDevice'].forEach((action) =>
+      register('devices', action),
+    );
+    [
+      'addPlanting',
+      'cullPlanting',
+      'harvestPlanting',
+      'harvestPlant',
+      'cullPlant',
+      'applyIrrigation',
+      'applyFertilizer',
+    ].forEach((action) => register('plants', action));
+    ['scheduleScouting', 'applyTreatment', 'quarantineZone'].forEach((action) =>
+      register('health', action),
+    );
+    [
+      'refreshCandidates',
+      'hire',
+      'fire',
+      'setOvertimePolicy',
+      'assignStructure',
+      'enqueueTask',
+    ].forEach((action) => register('workforce', action));
+    ['sellInventory', 'setUtilityPrices', 'setMaintenancePolicy'].forEach((action) =>
+      register('finance', action),
+    );
   }
 
   listIntentDomains(): string[] {
@@ -840,6 +914,42 @@ describe('SocketGateway', () => {
       action: 'createRoom',
       payload: intentPayload,
     });
+  });
+
+  it('rejects facade intents with invalid payloads before invoking handlers', async () => {
+    const schema = z.object({
+      structureId: z.string().min(1),
+      room: z.object({
+        name: z.string().min(1),
+        purpose: z.string().min(1),
+        area: z.number().positive(),
+      }),
+    });
+    facadeStub.setIntentSchema('world', 'createRoom', schema);
+
+    const response = await new Promise<IntentResponse>((resolve) => {
+      client.emit(
+        'facade.intent',
+        {
+          requestId: 'intent-invalid',
+          domain: 'world',
+          action: 'createRoom',
+          payload: { room: { name: '', purpose: 'grow', area: -5 } },
+        },
+        (payload: IntentResponse) => resolve(payload),
+      );
+    });
+
+    expect(response.ok).toBe(false);
+    expect(response.errors?.[0]?.code).toBe('ERR_VALIDATION');
+    const hasStructureIdIssue = (response.errors ?? []).some(
+      (error) =>
+        Array.isArray(error.path) &&
+        error.path[0] === 'world.createRoom' &&
+        error.path[1] === 'structureId',
+    );
+    expect(hasStructureIdIssue).toBe(true);
+    expect(facadeStub.intentInvocations).toHaveLength(0);
   });
 
   it('validates unknown facade intent domains', async () => {

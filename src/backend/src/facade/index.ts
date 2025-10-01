@@ -840,6 +840,13 @@ export class SimulationFacade {
     return this.intentCatalog.has(domain);
   }
 
+  getIntentRegistration(
+    domain: string,
+    action: string,
+  ): CommandRegistration<unknown, unknown> | undefined {
+    return this.domainRegistrations.get(domain)?.[action];
+  }
+
   getIntentHandler(domain: string, action: string): DomainCommandInvoker | undefined {
     return this.domainHandlers.get(domain)?.[action];
   }
