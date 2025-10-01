@@ -70,6 +70,23 @@ Our automation pipeline keeps data, security, and code quality aligned with the
    - `pnpm audit:run`
    - `pnpm lint`
 
+### Resin Telemetry Monitor (`tools/resin/weedwire.py`)
+
+For quick smoke tests against live simulation traffic, the repository ships a
+small Python monitor at `tools/resin/weedwire.py`. It listens to the websocket
+telemetry stream and prints a condensed event feed that mirrors what the React
+dashboard consumes. To run it, prepare a local virtual environment and install
+the helper dependencies:
+
+1. `cd tools/resin`
+2. `python3 -m venv .venv`
+3. `source .venv/bin/activate`
+4. `python -m pip install --upgrade pip`
+5. `pip install -r requirements.txt`
+
+After the environment is ready, execute `python weedwire.py` while the backend
+dev server is running to view live updates.
+
 Refer to the docs for simulation tuning, schema updates, and naming conventions
 before changing blueprints or code. Review the changelog and ADRs when planning
 tooling or architecture updates to stay aligned with previous decisions.
