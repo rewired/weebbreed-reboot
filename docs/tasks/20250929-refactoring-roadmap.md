@@ -1,5 +1,11 @@
 # Refactoring Roadmap — Backend & Frontend Monolith Decomposition
 
+## Status: ✅ COMPLETED
+
+- **Module footprint:** `worldService.ts` now sits at 413 lines while collaborators `structureService.ts` (328 lines), `roomService.ts` (225 lines), `zoneService.ts` (951 lines), and `worldDefaults.ts` (109 lines) encapsulate the extracted responsibilities.
+- **New modules:** Backend state contracts now live in `state/types.ts` (684 lines) alongside dedicated initialization/personnel loaders, and the frontend modal system is organised through `modalRegistry.tsx` with feature-specific directories under `components/modals/`.
+- **Test suites:** Backend world services are exercised by 3,330 lines of Vitest coverage across the dedicated `world` tests, and the modal registry plus per-modal scenarios add 1,797 lines of React Testing Library coverage.
+
 ## Context
 
 Several critical modules have grown well beyond the size and responsibility boundaries outlined in our architecture guardrails. The affected areas are the backend world orchestration, the shared state models, and the frontend modal framework. Each has become a "god module" that hampers onboarding, testing, and reuse of their underlying concepts.
@@ -35,9 +41,9 @@ Several critical modules have grown well beyond the size and responsibility boun
 
 ## Sequencing & Dependencies
 
-1. Start with backend world service extraction to unlock cleaner command handlers.
-2. Follow with model modularisation so subsequent refactors (including the modal work) can lean on slimmer type imports.
-3. Close with the frontend modal split, leveraging backend clarity for telemetry-driven modals.
+1. ✅ Backend world service extraction completed — `worldService` now delegates to defaults, structure, room, and zone services while keeping the façade stable for command handlers.
+2. ✅ Model modularisation finalised — shared interfaces moved into `state/types.ts` with blueprint loaders split into focused initialization and personnel modules.
+3. ✅ Frontend modal split delivered — `modalRegistry.tsx` orchestrates feature-scoped modal components, slimming `ModalHost` to a declarative shell.
 
 ## Risks & Mitigations
 
@@ -50,3 +56,9 @@ Several critical modules have grown well beyond the size and responsibility boun
 - Services expose typed, dependency-injected collaborators with deterministic behaviour.
 - Modules do not exceed 500 lines; new files carry module-scoped tests.
 - Documentation and changelog entries reflect the extracted architecture.
+
+## Completion Notes
+
+- **Architecture decisions:** The world orchestration layer now routes through composable services with deterministic defaults, while state definitions and modal components have been distributed into domain-focused modules to keep the original façades thin and dependency-injected.
+- **Testing strategy:** Comprehensive Vitest suites were added for each backend service collaborator and React Testing Library suites cover modal registry flows and targeted modal behaviours, ensuring regression coverage for the extracted seams.
+- **Breaking changes:** No API contracts changed—the `WorldService` façade, state snapshot shapes, and modal entrypoints remain backward compatible for existing callers.
