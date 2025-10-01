@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Archived the Modular Plant Growth Simulation PRD and populated the re-reboot hub with curated summaries, appendices, and traceability for the Node.js simulation reboot.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L1-L274】【F:docs/re-reboot/\_index.md†L1-L19】
 - Introduced `@weebbreed/monitoring`, a Node-based terminal CLI that mirrors the
   RESIN workflow with neo-blessed panes, keyboard navigation, and automatic
   reconnects for the SSE stream (`src/monitoring`).
@@ -224,6 +225,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Archived the Modular Plant Growth Simulation PRD and populated the re-reboot hub with curated summaries, appendices, and traceability for the Node.js simulation reboot.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L1-L274】【F:docs/re-reboot/\_index.md†L1-L19】
 - Added an EnvironmentPanel photoperiod slider that programs lighting cycles
   via the new `devices.adjustLightingCycle` bridge intent, keeps KPI badges in
   sync through lighting-cycle domain events, and includes Vitest coverage for
@@ -280,6 +282,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Archived the Modular Plant Growth Simulation PRD and populated the re-reboot hub with curated summaries, appendices, and traceability for the Node.js simulation reboot.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L1-L274】【F:docs/re-reboot/\_index.md†L1-L19】
 - **New Game Setup View**: Completely redesigned the New Game experience from a cramped modal to a full-screen dedicated view. Features clean layout with Game Seed as the first, full-width section, followed by Difficulty Preset selection. The Game Balance Modifiers section uses a 2-column grid layout for better space utilization. Removed unnecessary border styling for cleaner appearance. All modifier inputs now use proper float number inputs with 2 decimal precision, supporting direct keyboard input without complex parsing. Users can fine-tune plant stress multipliers, device failure rates, and economic settings within validated ranges. Difficulty presets (Easy, Normal, Hard) serve as starting points with automatic state synchronization via useEffect. Backend integration supports custom seed storage and modifier application to game state initialization.
 - **Financial Dashboard Enhancement**: Implemented comprehensive Financial Dashboard system providing detailed revenue, expense, and profitability analysis. Created dedicated FinanceView with interactive time-range filters (1D, 1W, 1M, 1Y) displaying key financial metrics including cash on hand, total revenue, net income with profit margins, and burn rate calculations with runway days. Added RevenueBreakdown component showcasing detailed analysis of harvest sales and market pricing with revenue analytics. Implemented ExpenseBreakdown component featuring comprehensive expense analysis covering CapEx, OpEx, maintenance, and payroll with categorical breakdowns and cost optimization insights. Created ProfitChart component rendering interactive time-series visualizations of financial performance trends with computed growth metrics. Added UtilityPricing component enabling adjustment of electricity, water, and nutrient costs via facade intents with market context and price impact analysis. Enhanced DashboardHeader with Finance navigation button and integrated routing in App.tsx. All components leverage the facade intent system for backend integration and provide responsive UI with financial insights for business decision-making.
 

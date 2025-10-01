@@ -1,3 +1,7 @@
 # Appendix C: Glossary
 
-Canonical terms will be compiled here.
+| Term               | Context                                                                                                                                                                                                                                                                                       |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| VPD                | Vapor pressure deficit proxy calculated each tick for telemetry and physiology feedback loops.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L55-L64】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L160-L175】                      |
+| PPFD               | Photosynthetic photon flux density metric consumed by the plant model and exposed to clients in telemetry payloads.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L55-L63】【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L160-L175】 |
+| `simulationUpdate` | Socket.IO event carrying tick, timestamp, environment snapshot, plant entries, and domain events for the dashboard.【F:docs/re-reboot/source_documents/modular-plant-growth-simulation-prd.md†L104-L176】                                                                                     |
