@@ -1,8 +1,6 @@
 import contrib from 'blessed-contrib';
 import { Command } from 'commander';
-// eslint-disable-next-line import/default
-import EventSource from 'eventsource';
-import type { MessageEvent } from 'eventsource';
+import { EventSource, type MessageEvent } from 'eventsource';
 import blessed from 'neo-blessed';
 
 type FocusTarget = 'structures' | 'rooms' | 'zones';
