@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Added zone service unit tests validating create/clone/duplicate flows with
+  blueprint compatibility fixtures, geometry validation, and cost accounting
+  purchase recording.
 - Documented the refactoring roadmap covering world service, state model, and modal host decompositions under `docs/tasks/20250929-refactoring-roadmap.md`.
 - Captured refactoring governance thresholds and reuse triggers in ADR 0012.
 - Documented the cultivation setup UI consolidation in ADR 0011, covering the shared
