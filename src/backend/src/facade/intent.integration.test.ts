@@ -16,6 +16,19 @@ import { CostAccountingService } from '@/engine/economy/costAccounting.js';
 import type { PriceCatalog } from '@/engine/economy/pricing.js';
 import { RngService } from '@/lib/rng.js';
 import {
+  MIN_ZONE_TEMPERATURE_SETPOINT_C,
+  MAX_ZONE_TEMPERATURE_SETPOINT_C,
+  MIN_ZONE_HUMIDITY_SETPOINT,
+  MAX_ZONE_HUMIDITY_SETPOINT,
+  MIN_ZONE_CO2_SETPOINT_PPM,
+  MAX_ZONE_CO2_SETPOINT_PPM,
+  MIN_ZONE_PPFD_SETPOINT,
+  MAX_ZONE_PPFD_SETPOINT,
+  MIN_ZONE_VPD_SETPOINT_KPA,
+  MAX_ZONE_VPD_SETPOINT_KPA,
+} from '@/constants/environment.js';
+import { saturationVaporPressure } from '@/engine/physio/vpd.js';
+import {
   buildDeviceBlueprintCatalog,
   buildStrainBlueprintCatalog,
   buildCultivationMethodBlueprintCatalog,
@@ -411,6 +424,16 @@ describe('SimulationFacade new intents', () => {
     });
   });
 
+  const findLastSetpointEvent = () => {
+    for (let index = events.length - 1; index >= 0; index -= 1) {
+      const event = events[index];
+      if (event?.type === 'env.setpointUpdated') {
+        return event;
+      }
+    }
+    return undefined;
+  };
+
   it('registers all intent domains with accessible handlers', async () => {
     const domains = facade.listIntentDomains();
     expect(domains).toEqual(
@@ -759,5 +782,229 @@ describe('SimulationFacade new intents', () => {
         ? (humidityEvent.payload as { control?: { humidity?: number } }).control
         : undefined;
     expect(control?.humidity).toBeCloseTo(0.58, 6);
+  });
+
+  it('clamps temperature setpoints within the configured range and emits warnings', () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const climateUnit: DeviceInstanceState = {
+      id: 'device-climate-1',
+      blueprintId: 'blueprint-climate-1',
+      kind: 'ClimateUnit',
+      name: 'Precision HVAC',
+      zoneId: ZONE_ID,
+      status: 'operational',
+      efficiency: 0.9,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+        condition: 1,
+        runtimeHoursAtLastService: 0,
+        degradation: 0,
+      },
+      settings: { targetTemperature: 24, airflow: 320, coolingCapacity: 3 },
+    };
+
+    zone.devices.push(climateUnit);
+    zone.control = { setpoints: {} };
+
+    const belowResult = facade.setZoneSetpoint(
+      ZONE_ID,
+      'temperature',
+      MIN_ZONE_TEMPERATURE_SETPOINT_C - 4,
+    );
+
+    expect(belowResult.ok).toBe(true);
+    expect(belowResult.warnings).toContain(
+      `Temperature setpoint was clamped to the [${MIN_ZONE_TEMPERATURE_SETPOINT_C}, ${MAX_ZONE_TEMPERATURE_SETPOINT_C}] °C range.`,
+    );
+    expect(zone.control?.setpoints.temperature).toBe(MIN_ZONE_TEMPERATURE_SETPOINT_C);
+    expect(climateUnit.settings.targetTemperature).toBe(MIN_ZONE_TEMPERATURE_SETPOINT_C);
+    const firstEvent = findLastSetpointEvent();
+    expect(firstEvent?.payload).toMatchObject({
+      zoneId: ZONE_ID,
+      metric: 'temperature',
+      value: MIN_ZONE_TEMPERATURE_SETPOINT_C,
+    });
+
+    const aboveResult = facade.setZoneSetpoint(
+      ZONE_ID,
+      'temperature',
+      MAX_ZONE_TEMPERATURE_SETPOINT_C + 4,
+    );
+
+    expect(aboveResult.ok).toBe(true);
+    expect(aboveResult.warnings).toContain(
+      `Temperature setpoint was clamped to the [${MIN_ZONE_TEMPERATURE_SETPOINT_C}, ${MAX_ZONE_TEMPERATURE_SETPOINT_C}] °C range.`,
+    );
+    expect(zone.control?.setpoints.temperature).toBe(MAX_ZONE_TEMPERATURE_SETPOINT_C);
+    expect(climateUnit.settings.targetTemperature).toBe(MAX_ZONE_TEMPERATURE_SETPOINT_C);
+    const secondEvent = findLastSetpointEvent();
+    expect(secondEvent?.payload).toMatchObject({
+      zoneId: ZONE_ID,
+      metric: 'temperature',
+      value: MAX_ZONE_TEMPERATURE_SETPOINT_C,
+    });
+  });
+
+  it('clamps relative humidity setpoints within the configured range', () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const humidityUnit: DeviceInstanceState = {
+      id: 'device-humidity-1',
+      blueprintId: 'blueprint-humidity-1',
+      kind: 'HumidityControlUnit',
+      name: 'MistMaster 100',
+      zoneId: ZONE_ID,
+      status: 'operational',
+      efficiency: 0.9,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+        condition: 1,
+        runtimeHoursAtLastService: 0,
+        degradation: 0,
+      },
+      settings: { targetHumidity: 0.55, humidifyRateKgPerTick: 0.1, dehumidifyRateKgPerTick: 0.1 },
+    };
+
+    zone.devices = [humidityUnit];
+    zone.control = { setpoints: {} };
+
+    const belowResult = facade.setZoneSetpoint(ZONE_ID, 'relativeHumidity', -0.2);
+    expect(belowResult.ok).toBe(true);
+    expect(belowResult.warnings).toContain(
+      'Relative humidity setpoint was clamped to the [0, 1] range.',
+    );
+    expect(zone.control?.setpoints.humidity).toBe(MIN_ZONE_HUMIDITY_SETPOINT);
+    expect(humidityUnit.settings.targetHumidity).toBe(MIN_ZONE_HUMIDITY_SETPOINT);
+
+    const aboveResult = facade.setZoneSetpoint(ZONE_ID, 'relativeHumidity', 1.5);
+    expect(aboveResult.ok).toBe(true);
+    expect(aboveResult.warnings).toContain(
+      'Relative humidity setpoint was clamped to the [0, 1] range.',
+    );
+    expect(zone.control?.setpoints.humidity).toBe(MAX_ZONE_HUMIDITY_SETPOINT);
+    expect(humidityUnit.settings.targetHumidity).toBe(MAX_ZONE_HUMIDITY_SETPOINT);
+  });
+
+  it('clamps CO₂ setpoints within the configured range', () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const injector: DeviceInstanceState = {
+      id: 'device-co2-1',
+      blueprintId: 'blueprint-co2-1',
+      kind: 'CO2Injector',
+      name: 'CarbonLift',
+      zoneId: ZONE_ID,
+      status: 'operational',
+      efficiency: 0.95,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+        condition: 1,
+        runtimeHoursAtLastService: 0,
+        degradation: 0,
+      },
+      settings: { targetCO2: 900, targetCO2Range: [400, 1500], hysteresis: 50 },
+    };
+
+    zone.devices = [injector];
+    zone.control = { setpoints: {} };
+
+    const belowResult = facade.setZoneSetpoint(ZONE_ID, 'co2', -250);
+    expect(belowResult.ok).toBe(true);
+    expect(belowResult.warnings).toContain(
+      `CO₂ setpoint was clamped to the [${MIN_ZONE_CO2_SETPOINT_PPM}, ${MAX_ZONE_CO2_SETPOINT_PPM}] ppm range.`,
+    );
+    expect(zone.control?.setpoints.co2).toBe(MIN_ZONE_CO2_SETPOINT_PPM);
+    expect(injector.settings.targetCO2).toBe(MIN_ZONE_CO2_SETPOINT_PPM);
+
+    const aboveResult = facade.setZoneSetpoint(ZONE_ID, 'co2', MAX_ZONE_CO2_SETPOINT_PPM + 800);
+    expect(aboveResult.ok).toBe(true);
+    expect(aboveResult.warnings).toContain(
+      `CO₂ setpoint was clamped to the [${MIN_ZONE_CO2_SETPOINT_PPM}, ${MAX_ZONE_CO2_SETPOINT_PPM}] ppm range.`,
+    );
+    expect(zone.control?.setpoints.co2).toBe(MAX_ZONE_CO2_SETPOINT_PPM);
+    expect(injector.settings.targetCO2).toBe(MAX_ZONE_CO2_SETPOINT_PPM);
+  });
+
+  it('clamps PPFD setpoints within the configured range', () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const lamp = zone.devices.find((device) => device.kind === 'Lamp');
+    if (!lamp) {
+      throw new Error('Expected lamp device to be present in test zone.');
+    }
+    lamp.settings = { ...lamp.settings, ppfd: 600 };
+    zone.control = { setpoints: {} };
+
+    const belowResult = facade.setZoneSetpoint(ZONE_ID, 'ppfd', -120);
+    expect(belowResult.ok).toBe(true);
+    expect(belowResult.warnings).toContain(
+      `PPFD setpoint was clamped to the [${MIN_ZONE_PPFD_SETPOINT}, ${MAX_ZONE_PPFD_SETPOINT}] µmol·m⁻²·s⁻¹ range.`,
+    );
+    expect(zone.control?.setpoints.ppfd).toBe(MIN_ZONE_PPFD_SETPOINT);
+    expect(lamp.settings.ppfd).toBe(MIN_ZONE_PPFD_SETPOINT);
+    expect(lamp.settings.power).toBe(0);
+
+    lamp.settings.power = 0.8;
+    lamp.settings.ppfd = 600;
+
+    const aboveResult = facade.setZoneSetpoint(ZONE_ID, 'ppfd', MAX_ZONE_PPFD_SETPOINT + 250);
+    expect(aboveResult.ok).toBe(true);
+    expect(aboveResult.warnings).toContain(
+      `PPFD setpoint was clamped to the [${MIN_ZONE_PPFD_SETPOINT}, ${MAX_ZONE_PPFD_SETPOINT}] µmol·m⁻²·s⁻¹ range.`,
+    );
+    expect(zone.control?.setpoints.ppfd).toBe(MAX_ZONE_PPFD_SETPOINT);
+    expect(lamp.settings.ppfd).toBe(MAX_ZONE_PPFD_SETPOINT);
+    expect(lamp.settings.power).toBeCloseTo(2, 6);
+  });
+
+  it('clamps VPD setpoints within the configured range', () => {
+    const zone = state.structures[0]!.rooms[0]!.zones[0]!;
+    const humidityUnit: DeviceInstanceState = {
+      id: 'device-humidity-2',
+      blueprintId: 'blueprint-humidity-2',
+      kind: 'HumidityControlUnit',
+      name: 'MistMaster 200',
+      zoneId: ZONE_ID,
+      status: 'operational',
+      efficiency: 0.9,
+      runtimeHours: 0,
+      maintenance: {
+        lastServiceTick: 0,
+        nextDueTick: DEFAULT_MAINTENANCE_INTERVAL_TICKS,
+        condition: 1,
+        runtimeHoursAtLastService: 0,
+        degradation: 0,
+      },
+      settings: { targetHumidity: 0.6, humidifyRateKgPerTick: 0.12, dehumidifyRateKgPerTick: 0.1 },
+    };
+
+    zone.devices = [humidityUnit];
+    zone.control = { setpoints: {} };
+
+    const belowResult = facade.setZoneSetpoint(ZONE_ID, 'vpd', -0.5);
+    expect(belowResult.ok).toBe(true);
+    expect(belowResult.warnings).toContain(
+      `VPD setpoint was clamped to the [${MIN_ZONE_VPD_SETPOINT_KPA}, ${MAX_ZONE_VPD_SETPOINT_KPA}] kPa range.`,
+    );
+    expect(zone.control?.setpoints.vpd).toBe(MIN_ZONE_VPD_SETPOINT_KPA);
+    expect(zone.control?.setpoints.humidity).toBeCloseTo(MAX_ZONE_HUMIDITY_SETPOINT, 6);
+    expect(humidityUnit.settings.targetHumidity).toBeCloseTo(MAX_ZONE_HUMIDITY_SETPOINT, 6);
+
+    const aboveResult = facade.setZoneSetpoint(ZONE_ID, 'vpd', MAX_ZONE_VPD_SETPOINT_KPA + 0.7);
+    expect(aboveResult.ok).toBe(true);
+    expect(aboveResult.warnings).toContain(
+      `VPD setpoint was clamped to the [${MIN_ZONE_VPD_SETPOINT_KPA}, ${MAX_ZONE_VPD_SETPOINT_KPA}] kPa range.`,
+    );
+    expect(zone.control?.setpoints.vpd).toBe(MAX_ZONE_VPD_SETPOINT_KPA);
+    const saturation = saturationVaporPressure(zone.environment.temperature);
+    const expectedHumidity = Math.min(
+      Math.max(1 - MAX_ZONE_VPD_SETPOINT_KPA / Math.max(saturation, Number.EPSILON), 0),
+      1,
+    );
+    expect(zone.control?.setpoints.humidity).toBeCloseTo(expectedHumidity, 6);
+    expect(humidityUnit.settings.targetHumidity).toBeCloseTo(expectedHumidity, 6);
   });
 });

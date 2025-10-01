@@ -9,8 +9,11 @@ import {
   filterZoneDevices,
   HUMIDITY_DEVICE_KINDS,
   LIGHT_DEVICE_KINDS,
-  sanitizeNonNegative,
+  sanitizeCo2Setpoint,
+  sanitizePpfdSetpoint,
   sanitizeRelativeHumidity,
+  sanitizeTemperatureSetpoint,
+  sanitizeVpdSetpoint,
   TEMPERATURE_DEVICE_KINDS,
   CO2_DEVICE_KINDS,
   resolveTemperatureForVpd,
@@ -671,10 +674,12 @@ export class SimulationFacade {
               command,
             );
           }
+          const target = sanitizeTemperatureSetpoint(rawValue, warnings);
           for (const device of devices) {
-            device.settings.targetTemperature = rawValue;
+            device.settings.targetTemperature = target;
           }
-          control.setpoints.temperature = rawValue;
+          control.setpoints.temperature = target;
+          effectiveValue = target;
           break;
         }
 
@@ -707,11 +712,7 @@ export class SimulationFacade {
               command,
             );
           }
-          const target = sanitizeNonNegative(
-            rawValue,
-            warnings,
-            'CO₂ setpoint was clamped to zero or greater.',
-          );
+          const target = sanitizeCo2Setpoint(rawValue, warnings);
           for (const device of devices) {
             device.settings.targetCO2 = target;
           }
@@ -729,11 +730,7 @@ export class SimulationFacade {
               command,
             );
           }
-          const target = sanitizeNonNegative(
-            rawValue,
-            warnings,
-            'PPFD setpoint was clamped to zero or greater.',
-          );
+          const target = sanitizePpfdSetpoint(rawValue, warnings);
           for (const device of devices) {
             const settings = device.settings;
             const previousPpfd = extractFiniteNumber(settings.ppfd);
@@ -762,11 +759,7 @@ export class SimulationFacade {
               command,
             );
           }
-          const vpd = sanitizeNonNegative(
-            rawValue,
-            warnings,
-            'VPD setpoint was clamped to zero or greater.',
-          );
+          const vpd = sanitizeVpdSetpoint(rawValue, warnings);
           const referenceTemperature = resolveTemperatureForVpd(zone);
           const humidity = computeHumidityForVpd(referenceTemperature, vpd, warnings);
           for (const device of devices) {

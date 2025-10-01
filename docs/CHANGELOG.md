@@ -10,9 +10,14 @@
 - Recorded the accepted zone setpoint routing contract in
   [ADR 0004](system/adr/0004-zone-setpoint-routing.md) and aligned the socket
   protocol/AGENTS docs with the implemented metrics and response semantics.
+- Captured the canonical zone setpoint ranges (temperature, humidity, VPD, CO₂,
+  PPFD) in the constants and UI tuning guides so operators know the supported
+  corridors.
 
 ### Changed
 
 - Clarified that `baseMaintenanceCostPerTick`, `rentPerTick`, and room purpose
   base rent values are stored as hourly rates that must be multiplied by the
   active tick length when booking recurring costs.
+- Simulation facade now clamps all zone setpoint writes to the documented ranges
+  and emits warning messages when adjustments are forced into bounds.
