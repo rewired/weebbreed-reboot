@@ -264,7 +264,10 @@ Users navigate through containers forming the core gameplay loop.
 - Setpoint modals send `config.update` commands with the zone's `id`
   (UUID v4) as `zoneId`, `metric` (`temperature`, `relativeHumidity`,
   `vpd`, `co2`, `ppfd`), and surface backend warnings (e.g., clamp
-  notifications) returned in
+  notifications). Inputs must stay within the enforced ranges —
+  Temperature `[10, 35]` °C, Relative Humidity `[0, 1]`, VPD `[0, 2.5]` kPa,
+  CO₂ `[0, 1800]` ppm, PPFD `[0, 1500]` µmol·m⁻²·s⁻¹ — and the UI should
+  reflect any clamp messages returned in
   `config.update.result`. The UI should also react to the
   `env.setpointUpdated` event to keep forms in sync when other clients adjust
   targets. Backend validation now trims and honours these identifiers, so the

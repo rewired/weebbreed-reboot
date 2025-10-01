@@ -16,6 +16,36 @@ export const AMBIENT_HUMIDITY_RH = 0.5;
 /** The default CO₂ concentration (in parts per million) of the outside world. */
 export const AMBIENT_CO2_PPM = 400;
 
+/** Minimum zone temperature setpoint (°C) accepted by climate controllers. */
+export const MIN_ZONE_TEMPERATURE_SETPOINT_C = 10;
+
+/** Maximum zone temperature setpoint (°C) accepted by climate controllers. */
+export const MAX_ZONE_TEMPERATURE_SETPOINT_C = 35;
+
+/** Minimum relative humidity setpoint accepted for zone control (0–1). */
+export const MIN_ZONE_HUMIDITY_SETPOINT = 0;
+
+/** Maximum relative humidity setpoint accepted for zone control (0–1). */
+export const MAX_ZONE_HUMIDITY_SETPOINT = 1;
+
+/** Minimum CO₂ concentration (ppm) accepted when programming zone setpoints. */
+export const MIN_ZONE_CO2_SETPOINT_PPM = 0;
+
+/** Maximum CO₂ concentration (ppm) accepted when programming zone setpoints. */
+export const MAX_ZONE_CO2_SETPOINT_PPM = 1800;
+
+/** Minimum PPFD setpoint (µmol·m⁻²·s⁻¹) accepted for controllable lighting. */
+export const MIN_ZONE_PPFD_SETPOINT = 0;
+
+/** Maximum PPFD setpoint (µmol·m⁻²·s⁻¹) accepted for controllable lighting. */
+export const MAX_ZONE_PPFD_SETPOINT = 1500;
+
+/** Minimum VPD setpoint (kPa) accepted when targeting humidity via VPD. */
+export const MIN_ZONE_VPD_SETPOINT_KPA = 0;
+
+/** Maximum VPD setpoint (kPa) accepted when targeting humidity via VPD. */
+export const MAX_ZONE_VPD_SETPOINT_KPA = 2.5;
+
 /** Device kinds that provide active temperature control within a zone. */
 export const TEMPERATURE_DEVICE_KINDS: ReadonlySet<string> = new Set(['ClimateUnit', 'HVAC']);
 

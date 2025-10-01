@@ -21,6 +21,29 @@ The default relative humidity (as a fraction from 0 to 1) of the outside world.
 `AMBIENT_CO2_PPM = 400`
 The default CO₂ concentration (in parts per million) of the outside world.
 
+## Zone Setpoint Bounds
+
+`MIN_ZONE_TEMPERATURE_SETPOINT_C = 10`
+Lowest canopy temperature (°C) operators can program through zone setpoints.
+`MAX_ZONE_TEMPERATURE_SETPOINT_C = 35`
+Highest canopy temperature (°C) accepted before clamping occurs.
+`MIN_ZONE_HUMIDITY_SETPOINT = 0`
+Lower bound (0–1) for humidity targets applied to humidifiers/dehumidifiers.
+`MAX_ZONE_HUMIDITY_SETPOINT = 1`
+Upper bound (0–1) for humidity targets applied to humidifiers/dehumidifiers.
+`MIN_ZONE_CO2_SETPOINT_PPM = 0`
+Minimum CO₂ concentration (ppm) accepted when programming enrichment devices.
+`MAX_ZONE_CO2_SETPOINT_PPM = 1800`
+Maximum CO₂ concentration (ppm) enforced for safety across enrichment devices.
+`MIN_ZONE_PPFD_SETPOINT = 0`
+Lower limit (µmol·m⁻²·s⁻¹) for controllable lighting targets.
+`MAX_ZONE_PPFD_SETPOINT = 1500`
+Upper limit (µmol·m⁻²·s⁻¹) for controllable lighting targets.
+`MIN_ZONE_VPD_SETPOINT_KPA = 0`
+Minimum vapour pressure deficit (kPa) accepted when driving humidity via VPD.
+`MAX_ZONE_VPD_SETPOINT_KPA = 2.5`
+Maximum vapour pressure deficit (kPa) accepted when driving humidity via VPD.
+
 ## Normalization & Physics Factors
 
 `TEMP_NORMALIZATION_FACTOR = 0.1`
