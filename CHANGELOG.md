@@ -41,6 +41,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ledgers (`data/prices/cultivationMethodPrices.json`, `data/prices/consumablePrices.json`),
   extending schemas, repository accessors, loader cross-checks, and docs to surface
   the new price sources.
+- Added an interactive structure list to the CLI monitoring tool with cursor navigation
+  for selecting structures while streaming simulation updates (`tools/monitor/weedmonitor.py`).
 
 ### Changed
 
