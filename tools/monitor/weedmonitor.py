@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Generic, Iterable, List, Optional, Protocol, Sequence, TypeVar
 
 import requests
 
@@ -358,12 +358,78 @@ def _parse_structure(payload: Dict[str, Any]) -> Optional[StructureRow]:
     return StructureRow(identifier=identifier, name=name, status=status, room_count=room_count, area=area)
 
 
-@dataclass
-class StructureListState:
-    """Tracks available structures and the current selection."""
+class DisplayLabelProvider(Protocol):
+    """Protocol for list rows that can be rendered within a pane."""
 
-    entries: List[StructureRow] = field(default_factory=list)
+    def display_label(self) -> str:
+        """Return the human readable label for the row."""
+
+
+TSelectable = TypeVar("TSelectable", bound=DisplayLabelProvider)
+
+
+@dataclass
+class SelectableListState(Generic[TSelectable]):
+    """Shared selection mechanics for monitor list panes."""
+
+    entries: List[TSelectable] = field(default_factory=list)
     selected_index: int = 0
+
+    def move_selection(self, delta: int) -> bool:
+        if not self.entries:
+            self.selected_index = 0
+            return False
+        new_index = (self.selected_index + delta) % len(self.entries)
+        if new_index == self.selected_index:
+            return False
+        self.selected_index = new_index
+        return True
+
+    def selected(self) -> Optional[TSelectable]:
+        if not self.entries:
+            return None
+        if not (0 <= self.selected_index < len(self.entries)):
+            return None
+        return self.entries[self.selected_index]
+
+    def _rows_with_selection(self) -> tuple[List[str], Optional[int]]:
+        if not self.entries:
+            return ([], None)
+        rows = [entry.display_label() for entry in self.entries]
+        selected_index = (
+            self.selected_index if 0 <= self.selected_index < len(rows) else None
+        )
+        return (rows, selected_index)
+
+    def build_list_pane(
+        self,
+        *,
+        focused: bool,
+        title: str,
+        empty_message: str,
+        rows: Optional[Sequence[str]] = None,
+        selected_index: Optional[int] = None,
+    ) -> "ListPane":
+        if rows is None:
+            computed_rows, computed_selected = self._rows_with_selection()
+        else:
+            computed_rows = list(rows)
+            computed_selected = selected_index
+        if not computed_rows:
+            computed_rows = [empty_message]
+            computed_selected = None
+        prefix = "▶" if focused else " "
+        pane_title = f"{prefix} {title} ({len(self.entries)}):"
+        return ListPane(
+            title=pane_title,
+            rows=computed_rows,
+            selected_index=computed_selected,
+            focused=focused,
+        )
+
+
+class StructureListState(SelectableListState[StructureRow]):
+    """Tracks available structures and the current selection."""
 
     def update_from_snapshot(self, snapshot: Dict[str, Any]) -> bool:
         structures = snapshot.get("structures") if isinstance(snapshot, dict) else None
@@ -404,35 +470,12 @@ class StructureListState:
 
         return True
 
-    def move_selection(self, delta: int) -> bool:
-        if not self.entries:
-            self.selected_index = 0
-            return False
-        new_index = (self.selected_index + delta) % len(self.entries)
-        if new_index == self.selected_index:
-            return False
-        self.selected_index = new_index
-        return True
-
-    def selected(self) -> Optional[StructureRow]:
-        if not self.entries:
-            return None
-        if not (0 <= self.selected_index < len(self.entries)):
-            return None
-        return self.entries[self.selected_index]
-
     def build_pane(self, focused: bool) -> "ListPane":
-        prefix = "▶" if focused else " "
-        title = f"{prefix} Structures ({len(self.entries)}):"
-        if not self.entries:
-            rows = ["(no structures available)"]
-            selected_index = None
-        else:
-            rows = [entry.display_label() for entry in self.entries]
-            selected_index = (
-                self.selected_index if 0 <= self.selected_index < len(rows) else None
-            )
-        return ListPane(title=title, rows=rows, selected_index=selected_index, focused=focused)
+        return self.build_list_pane(
+            focused=focused,
+            title="Structures",
+            empty_message="(no structures available)",
+        )
 
 
 @dataclass
@@ -656,11 +699,9 @@ def _parse_room(payload: Dict[str, Any]) -> Optional["RoomRow"]:
 
 
 @dataclass
-class RoomListState:
+class RoomListState(SelectableListState[RoomRow]):
     """Tracks rooms for the selected structure and the current selection."""
 
-    entries: List[RoomRow] = field(default_factory=list)
-    selected_index: int = 0
     _rooms_by_structure: Dict[str, List[RoomRow]] = field(default_factory=dict)
     _current_structure_id: Optional[str] = None
 
@@ -720,38 +761,20 @@ class RoomListState:
             self.selected_index = min(self.selected_index, len(self.entries) - 1)
         return True
 
-    def move_selection(self, delta: int) -> bool:
-        if not self.entries:
-            self.selected_index = 0
-            return False
-        new_index = (self.selected_index + delta) % len(self.entries)
-        if new_index == self.selected_index:
-            return False
-        self.selected_index = new_index
-        return True
-
-    def selected(self) -> Optional[RoomRow]:
-        if not self.entries:
-            return None
-        if not (0 <= self.selected_index < len(self.entries)):
-            return None
-        return self.entries[self.selected_index]
-
     def build_pane(self, focused: bool) -> "ListPane":
-        prefix = "▶" if focused else " "
-        title = f"{prefix} Rooms ({len(self.entries)}):"
         if self._current_structure_id is None:
-            rows = ["Select a structure to view rooms"]
-            selected_index = None
-        elif not self.entries:
-            rows = ["(no rooms available)"]
-            selected_index = None
-        else:
-            rows = [entry.display_label() for entry in self.entries]
-            selected_index = (
-                self.selected_index if 0 <= self.selected_index < len(rows) else None
+            return self.build_list_pane(
+                focused=focused,
+                title="Rooms",
+                empty_message="(no rooms available)",
+                rows=["Select a structure to view rooms"],
+                selected_index=None,
             )
-        return ListPane(title=title, rows=rows, selected_index=selected_index, focused=focused)
+        return self.build_list_pane(
+            focused=focused,
+            title="Rooms",
+            empty_message="(no rooms available)",
+        )
 
 
 class MonitorState:

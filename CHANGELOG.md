@@ -52,6 +52,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refactored the SSE console monitor list handling to share a reusable selection
+  helper, keeping the 80×30 viewport formatting intact while deduplicating the
+  structure and room pane logic (`tools/monitor/weedmonitor.py`).
 - Reworked the Python SSE monitor to use platform-specific terminal controllers,
   enabling Windows console input handling and a safe fallback when interactive
   controls are unavailable.
